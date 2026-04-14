@@ -1,0 +1,44 @@
+name: Auto_Merge_Main
+
+on:
+  push:
+    branches:
+      - main
+
+defaults:
+  run:
+    shell: bash -ieo pipefail {0}
+
+jobs:
+  initial:
+    name: Initial
+    runs-on: ct-ci-runners
+    outputs:
+      INITIAL_OUTPUT: ${{ steps.initial.outputs.INITIAL_OUTPUT }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.5.2
+        with:
+          fetch-depth: 0
+
+      - name: "Initial"
+        id: initial
+        run: |
+          export DISABLE_AUTO_VERSIONING=true
+          runner_init
+
+  auto_merge:
+    name: Auto Merge
+    runs-on: ct-ci-runners
+    needs: initial
+    env:
+      INITIAL_OUTPUT: ${{ needs.initial.outputs.INITIAL_OUTPUT }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.5.2
+
+      - name: Auto merge
+        run: |
+          runner_utils
+          runner_merge main dev-platform,dev-marketplace,dev-vertical,dev-revenue,dev-buyer
+

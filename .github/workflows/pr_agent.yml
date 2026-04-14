@@ -1,0 +1,15 @@
+name: PR Review
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+    branches:
+      - "dev-**"
+  workflow_dispatch:
+
+jobs:
+  ai-review:
+    name: AI Review
+    if: ${{ github.sender.type != 'Bot' && !contains(github.event.pull_request.title, '[runner]') }}
+    uses: carousell/ct-pr-ai-agent/.github/workflows/review-openai.yaml@main
+    secrets: inherit

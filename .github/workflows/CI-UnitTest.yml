@@ -1,0 +1,120 @@
+name: CI-UnitTest
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - "release/**"
+      - "dev-**"
+
+jobs:
+  swiftlint:
+    runs-on: [self-hosted, macOS]
+    env:
+      FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 180
+      FASTLANE_XCODEBUILD_SETTINGS_RETRIES: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Clean workspace
+        run: |
+          find . -name "changed-files.txt" -exec rm -f {} \;
+      - name: Get changed files
+        id: changed_files
+        run: |
+          git diff --diff-filter=ACMTUXB --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} -- '*.swift' > changed-files.txt
+          echo "Changed files:"
+          cat changed-files.txt
+      - name: Install SwiftLint
+        run: |
+          brew install swiftlint
+      - name: Install jq
+        run: |
+          brew install jq
+          
+      - name: Run SwiftLint on changed files using .swiftlint.yml
+        id: run_swiftlint
+        run: |
+          if [ -s changed-files.txt ]; then
+            # Run SwiftLint with JSON reporter and save the report
+            swiftlint lint --config .swiftlint.yml --strict $(cat changed-files.txt) --reporter json > swiftlint-report.json || true
+            # Run SwiftLint with GitHub Actions logging reporter
+            swiftlint lint --config .swiftlint.yml --strict $(cat changed-files.txt) --reporter github-actions-logging
+            cat swiftlint-report.json || echo "swiftlint-report.json does not exist or is empty."
+          else
+            echo "No Swift files changed."
+            echo "report=No Swift files changed."
+          fi
+
+      - name: Process SwiftLint Report
+        if: always()
+        id: process_report
+        run: |
+          if [ -s swiftlint-report.json ]; then
+            echo "Processing SwiftLint report..."
+             issues=$(jq -r '.[] | "<b>File:</b> \(.file) <br><b>Line:</b> \(.line) <br><b>Reason:</b> \(.reason) <br><b>Rule Id:</b> \(.rule_id) <br><br>--------<br><br>" ' swiftlint-report.json | tr '\n\n' ' ')
+            # Set output for further steps
+            echo "issues=$issues" >> $GITHUB_OUTPUT
+          else
+            echo "No SwiftLint report to show."
+            echo "issues=No SwiftLint report to show." >> $GITHUB_OUTPUT
+          fi
+
+      - name: Review SwiftLint Results
+        if: always()
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          header: "SwiftLint Issues"
+          message: |
+            ### SwiftLint Issues Report
+            ${{ steps.process_report.outputs.issues }}
+          recreate: true
+
+  build:
+    needs: swiftlint
+    runs-on: [self-hosted, macOS]
+    env:
+      FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 180
+      FASTLANE_XCODEBUILD_SETTINGS_RETRIES: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Disable Debug Menu 
+        run: |
+            sed -i "" "s/pod 'FLEX'/#pod 'FLEX'/" Podfile
+            sed -i "" "s/pod 'DebugSwift'/#pod 'DebugSwift'/" Podfile
+        
+      - name: Show checklist
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: show_checklist
+          message: |
+            ## :exclamation: Reviewer Checklist
+            - Using chapter architecture
+            - Is the code consistent with the agreed coding guidelines?
+            - No memory leaks
+            - No duplicate code
+            - No unnecessary code
+            - No hardcode string
+            - Have Unittest for new features
+            - [ ] This pull request has fully complied with all the rules mentioned above.
+            
+      - name: Pod Install
+        working-directory: ./
+        run: pod install
+        continue-on-error: true
+        id: pod1
+
+      - name: Trying to fix in case of failed
+        working-directory: ./
+        if: steps.pod1.outcome == 'failure'
+        run: |
+          echo "Run pod install again with repo update"
+          pod install --repo-update --verbose
+
+      - name: Build & test
+        run: bundle exec fastlane tests
+        
+      - name: Slack Notification
+        run: fastlane send_test_report actor:"${{ github.actor }}" prLink:"${{ github.event.pull_request.html_url }}"

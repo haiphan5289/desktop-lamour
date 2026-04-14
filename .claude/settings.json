@@ -1,0 +1,55 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "error|crash|fail|does not conform|build|exception|fatal",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Reminder: invoke ct-bugfix-skill before analyzing this problem.'"
+          }
+        ]
+      },
+      {
+        "matcher": "implement|create.*view|swiftui|new screen|add.*component|build.*ui",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Reminder: invoke ct-swiftui-expert-skill before writing UI code.'"
+          }
+        ]
+      },
+      {
+        "matcher": "review|check.*code|is this correct|is this right|audit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Reminder: invoke review-code skill before responding.'"
+          }
+        ]
+      },
+      {
+        "matcher": "best way|alternative|options|approach|compare|which.*better",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Reminder: invoke ct-alternative-approaches skill before responding.'"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Edit(/.claude/skills/swiftui-design-system/**)",
+      "Bash(sed -i '' 's/                CDSDivider\\(\\)$/                Divider\\(\\).background\\(theme.border.borderDivider\\)/g' \"/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/.claude/skills/swiftui-design-system/references/review-code-swiftUI.md\")",
+      "Bash(__NEW_LINE_d5aa2bf25acf2988__ sed:*)",
+      "Bash(find /Users/hai.phan/Desktop/haiphan/ct-ios-app--v3 -name *.xcassets -path */CTCorePayment/*)",
+      "Edit(/.claude/skills/review-code/**)",
+      "Bash(swiftlint lint:*)"
+    ],
+    "additionalDirectories": [
+      "/Users/hai.phan/Library/Developer/Xcode/DerivedData"
+    ]
+  }
+}

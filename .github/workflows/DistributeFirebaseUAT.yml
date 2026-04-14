@@ -1,0 +1,39 @@
+name: Distribute_Firebase_UAT
+
+on:
+  workflow_dispatch:
+    inputs:
+      notes:
+        default: ""
+        description: Firebase release notes
+
+
+jobs:
+  build:
+    runs-on: [self-hosted, macOS]
+    env:
+        FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 180
+        FASTLANE_XCODEBUILD_SETTINGS_RETRIES: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enable Debug View
+        run: sed -i "" "s/, :configurations/#, :configurations/" Podfile
+      - name: Pod Install
+        working-directory: ./
+        run: pod install
+        continue-on-error: true
+        id: pod1
+      - name: Trying to fix in case of failed
+        working-directory: ./
+        if: steps.pod1.outcome == 'failure'
+        run: |
+            echo "Run pod install again with repo update"
+            pod install --repo-update --verbose
+      - name: Build UAT
+        run: bundle exec fastlane job_build env:uat
+      - name: Deploy to firebase
+        run: bundle exec fastlane job_distribute_firebase env:uat fbmsg:"${{ github.event.inputs.notes }}"
+      - name: Slack Notification
+        run: fastlane send_build_status jobStatus:"${{ job.status }}" jobTitleMsg:"Distribute Firebase UAT Status !!!!!!!!" fbmsg:"${{ github.event.inputs.notes }}" actor:"${{ github.actor }}"
+      - name: Cleanup archives
+        run: find ~/Library/Developer/Xcode/Archives -ctime +7 -maxdepth 1 -print0 -exec rm -f -r {} \;

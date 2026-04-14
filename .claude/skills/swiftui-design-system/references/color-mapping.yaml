@@ -1,0 +1,238 @@
+# CT Design System Color Mapping
+# Maps hex values to CT theme tokens
+# Reference: .claude/skills/ct-design-system/colors.md
+# Last synced: 2026-01-26
+
+# ============================================
+# HEX TO TOKEN MAPPING (CT Palette)
+# ============================================
+
+hex_to_token:
+  # ---- Gray Family (0, 25, 50-900) ----
+  "#FFFFFF": "theme.background.backgroundPrimary"   # Gray 0 (also theme.text.textBlank for white text)
+  "#FAFAFA": "theme.background.backgroundSecondary" # Gray 25
+  "#F5F5F5": "theme.background.backgroundSecondary" # Gray 50
+  "#EEEEEE": "theme.background.backgroundTertiary"  # Gray 100
+  "#E0E0E0": "theme.border.borderDivider"           # Gray 200
+  "#BDBDBD": "theme.border.borderRegular"           # Gray 300
+  "#9E9E9E": "theme.text.textTertiary"              # Gray 400
+  "#757575": "theme.text.textSecondary"             # Gray 500
+  "#616161": "theme.text.textSecondary"             # Gray 600
+  "#424242": "theme.text.textPrimary"               # Gray 700
+  "#212121": "theme.text.textPrimary"               # Gray 800
+  "#121212": "theme.text.textPrimary"               # Gray 900
+
+  # ---- Yellow/Chotot Family (50-900) ----
+  "#FFFDE7": "theme.background.backgroundBrandLight"  # Yellow 50
+  "#FFF9C4": "theme.background.backgroundBrandLight"  # Yellow 100
+  "#FFF59D": "theme.background.backgroundBrand"       # Yellow 200
+  "#FFEE58": "theme.button.buttonChotot"              # Yellow 400
+  "#FFEB3B": "theme.button.buttonChotot"              # Yellow 500
+  "#FDD835": "theme.button.buttonPrimary"             # Yellow 600
+  "#FBC02D": "theme.button.buttonPrimary"             # Yellow 700
+
+  # ---- Blue/ViecLamTot Family (50-900) ----
+  "#E3F2FD": "theme.background.backgroundInfoLight"   # Blue 50
+  "#BBDEFB": "theme.background.backgroundInfoLight"   # Blue 100
+  "#90CAF9": "theme.background.backgroundInfo"        # Blue 200
+  "#2196F3": "theme.button.buttonInfo"                # Blue 500
+  "#1976D2": "theme.button.buttonInfo"                # Blue 700
+  "#0D47A1": "theme.text.textLink"                    # Blue 900
+
+  # ---- Red Family (50-900) ----
+  "#FFEBEE": "theme.background.backgroundErrorLight"  # Red 50
+  "#FFCDD2": "theme.background.backgroundErrorLight"  # Red 100
+  "#EF5350": "theme.text.textError"                   # Red 400
+  "#F44336": "theme.button.buttonError"               # Red 500
+  "#D32F2F": "theme.button.buttonError"               # Red 700
+  "#B71C1C": "theme.text.textError"                   # Red 900
+
+  # ---- Green Family (50-900) ----
+  "#E8F5E9": "theme.background.backgroundSuccessLight"  # Green 50
+  "#C8E6C9": "theme.background.backgroundSuccessLight"  # Green 100
+  "#66BB6A": "theme.text.textSuccess"                   # Green 400
+  "#4CAF50": "theme.button.buttonSuccess"               # Green 500
+  "#388E3C": "theme.button.buttonSuccess"               # Green 700
+
+  # ---- Orange/NhaTot Family (50-900) ----
+  "#FFF3E0": "theme.background.backgroundWarningLight"  # Orange 50
+  "#FFE0B2": "theme.background.backgroundWarningLight"  # Orange 100
+  "#FFA726": "theme.text.textWarning"                   # Orange 400
+  "#FF9800": "theme.button.buttonPrimary"               # Orange 500 (NhaTot)
+  "#F57C00": "theme.button.buttonPrimary"               # Orange 700
+
+  # ---- Text Colors ----
+  "#000000": "theme.text.textPrimary"
+  # "#FFFFFF" → use theme.text.textBlank (for white text on dark bg)
+
+# ============================================
+# SPACING TO TOKEN MAPPING
+# ============================================
+
+spacing_to_token:
+  "0-3":   "DS.Gap.gapMin"           # 2px
+  "4-6":   "DS.Gap.gap2xSmall"       # 4px
+  "7-10":  "DS.Gap.gapxSmall"        # 8px
+  "11-14": "DS.Gap.gapSmall"         # 12px
+  "15-18": "DS.Gap.gapMedium"        # 16px
+  "19+":   "DS.Gap.gapLarge"         # 20px
+
+padding_to_token:
+  "0-3":   "DS.Padding.paddingMin"
+  "4-6":   "DS.Padding.padding2xSmall"
+  "7-10":  "DS.Padding.paddingxSmall"
+  "11-14": "DS.Padding.paddingSmall"
+  "15-18": "DS.Padding.paddingMedium"
+  "19+":   "DS.Padding.paddingLarge"
+
+# ============================================
+# CORNER RADIUS TO TOKEN MAPPING
+# ============================================
+
+radius_to_token:
+  "0-5":   "DS.BorderRadius.radiusAdSmall"    # 4px
+  "6-7":   "DS.BorderRadius.radiusAd"         # 6px
+  "8-10":  "DS.BorderRadius.radiusCardSmall"  # 8px
+  "11-16": "DS.BorderRadius.radiusCard"       # 12px
+  "17+":   "DS.BorderRadius.radiusModal"      # 20px
+
+# ============================================
+# TYPOGRAPHY TO TOKEN MAPPING (23 tokens)
+# ============================================
+
+typography_to_token:
+  # Display (Bold, large)
+  "32-bold": ".displayPage"           # 32px Bold
+  "24-bold": ".displaySection"        # 24px Bold
+  "20-bold": ".displayCaption"        # 20px Bold
+  "18-bold": ".displayAnnotation"     # 18px Bold
+
+  # Header (SemiBold)
+  "20-semibold": ".headerPage"        # 20px SemiBold
+  "16-semibold": ".headerSection"     # 16px SemiBold
+  "14-semibold": ".headerCaption"     # 14px SemiBold
+  "12-semibold": ".headerAnnotation"  # 12px SemiBold
+
+  # Label (SemiBold/Bold)
+  "16-semibold-label": ".labelPage"   # 16px SemiBold
+  "14-bold": ".labelSection"          # 14px Bold
+  "12-bold": ".labelCaption"          # 12px Bold
+  "10-bold": ".labelAnnotation"       # 10px Bold
+
+  # Body (Regular)
+  "16-regular": ".bodyPage"           # 16px Regular
+  "14-regular": ".bodySection"        # 14px Regular
+  "12-regular": ".bodyCaption"        # 12px Regular
+  "10-regular": ".bodyAnnotation"     # 10px Regular
+
+  # Note (Italic)
+  "14-italic": ".notePage"            # 14px Italic
+  "12-italic": ".noteSection"         # 12px Italic
+  "10-italic": ".noteCaption"         # 10px Italic
+
+  # Tagline (Medium)
+  "16-medium": ".taglineSection"      # 16px Medium
+  "14-medium": ".taglineCaption"      # 14px Medium
+  "12-medium": ".taglineAnnotation"   # 12px Medium
+  "10-medium": ".taglineFootext"      # 10px Medium
+
+# ============================================
+# COMPONENT TYPE MAPPING
+# ============================================
+
+component_mapping:
+  # Buttons
+  button_primary:
+    detection: "filled button, brand/yellow color"
+    token: "Button(...).cdsButtonStyle(.primary, size: .large)"
+    colors: "theme.button.buttonPrimary"
+
+  button_secondary:
+    detection: "outlined button, border visible"
+    token: "Button(...).cdsButtonStyle(.secondary)"
+    colors: "theme.border.borderBrand"
+
+  button_ghost:
+    detection: "text-only button, no background"
+    token: "Button(...).cdsButtonStyle(.ghost)"
+    colors: "theme.text.textBrand"
+
+  button_destructive:
+    detection: "red/error colored button"
+    token: "Button(...).cdsButtonStyle(.primary)"
+    colors: "theme.button.buttonError"
+
+  # Inputs
+  text_field:
+    detection: "single-line input, text field"
+    token: "CDSTextField(...)"
+    colors: "theme.text.textPrimary, theme.border.borderRegular"
+
+  text_area:
+    detection: "multi-line input, text area"
+    token: "CDSTextView(...)"
+    colors: "theme.text.textPrimary, theme.border.borderRegular"
+
+  search_field:
+    detection: "search bar, magnifying glass icon"
+    token: "CDSSearchInput(...)"
+    colors: "theme.background.backgroundSecondary"
+
+  # Toggles
+  switch:
+    detection: "toggle switch, on/off"
+    token: "Toggle(...).cdsToggleStyle(.switch)"
+    colors: "theme.button.buttonPrimary"
+
+  checkbox:
+    detection: "checkbox, checkmark"
+    token: "Toggle(...).cdsToggleStyle(.checkbox(style: .brand))"
+    colors: "theme.button.buttonPrimary"
+
+  radio:
+    detection: "radio button, circular selection"
+    token: "Toggle(...).cdsToggleStyle(.radio())"
+    colors: "theme.button.buttonPrimary"
+
+  # Cards
+  card_flat:
+    detection: "card without shadow"
+    token: "VStack { }.background(theme.background.backgroundSecondary).cornerRadius(DS.BorderRadius.radiusCard.value())"
+    colors: "theme.background.backgroundSecondary"
+
+  card_elevated:
+    detection: "card with shadow/elevation"
+    token: "VStack { }.background(theme.background.backgroundSecondary).shadow(radius: 2).cornerRadius(DS.BorderRadius.radiusCard.value())"
+    colors: "theme.background.backgroundSecondary"
+
+  # Feedback
+  badge:
+    detection: "small label/tag, pill shape"
+    token: "CDSBadge(...).badgeSize(.medium)"
+    colors: "theme.background.backgroundBrand"
+
+  announcer_success:
+    detection: "success banner, green"
+    token: "CDSAnnouncerView(...).cdsAnnouncerType(.success)"
+    colors: "theme.background.backgroundSuccess, theme.text.textSuccess"
+
+  announcer_error:
+    detection: "error banner, red"
+    token: "CDSAnnouncerView(...).cdsAnnouncerType(.error)"
+    colors: "theme.background.backgroundError, theme.text.textError"
+
+  snackbar:
+    detection: "bottom toast/snackbar"
+    token: ".cdsSnackBar(isPresented: $show, message: \"...\", position: .bottom)"
+    colors: "theme.background.backgroundInverted, theme.text.textBlank"
+
+# ============================================
+# USAGE NOTES
+# ============================================
+
+notes:
+  - "Use sub-protocol access: theme.text.textPrimary (NOT theme.textPrimary)"
+  - "Call DS.registerFonts() in App init before using typography"
+  - "Dark mode mapping not yet available - all themes are light mode"
+  - "Prefer closest CT palette match when exact hex not found"
+  - "See colors.md for complete sub-protocol property lists"

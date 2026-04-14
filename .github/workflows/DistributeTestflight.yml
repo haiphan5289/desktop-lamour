@@ -1,0 +1,45 @@
+name: Distribute_Testflight
+
+on:
+  workflow_dispatch:
+
+
+jobs:
+  build:
+    runs-on: [self-hosted, macOS]
+    env:
+        FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 180
+        FASTLANE_XCODEBUILD_SETTINGS_RETRIES: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pod Install
+        working-directory: ./
+        run: pod install
+        continue-on-error: true
+        id: pod1
+      - name: Trying to fix in case of failed
+        working-directory: ./
+        if: steps.pod1.outcome == 'failure'
+        run: |
+            echo "Run pod install again with repo update"
+            pod install --repo-update --verbose
+      - name: Clear Derived Data
+        run: rm -rf ~/Library/Developer/Xcode/DerivedData
+      - name: Build Production
+        uses: nick-fields/retry@v3
+        with:
+            max_attempts: 5
+            retry_on: error
+            timeout_minutes: 30
+            command: bundle exec fastlane job_build env:pro jobStatus:true
+      - name: Deploy to Testflight
+        uses: nick-fields/retry@v3
+        with:
+            max_attempts: 5
+            retry_on: error
+            timeout_minutes: 30
+            command: bundle exec fastlane job_distribute_testflight env:pro
+      - name: Slack Notification
+        run: fastlane send_build_status jobStatus:"${{ job.status }}" jobTitleMsg:"Distribute Testflight Status !!!!!!!!" fbmsg:"Release a Testflight version" actor:"${{ github.actor }}"
+      - name: Cleanup archives
+        run: find ~/Library/Developer/Xcode/Archives -ctime +7 -maxdepth 1 -print0 -exec rm -f -r {} \;
