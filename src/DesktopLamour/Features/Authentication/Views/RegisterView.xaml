@@ -1,0 +1,205 @@
+<UserControl x:Class="DesktopLamour.Features.Authentication.Views.RegisterView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+             Background="{StaticResource AppColor.BackgroundPrimary}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Header -->
+            <RowDefinition Height="*"/>     <!-- Content steps -->
+            <RowDefinition Height="Auto"/>  <!-- Footer actions -->
+        </Grid.RowDefinitions>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Loading overlay                               -->
+        <!-- ══════════════════════════════════════════════ -->
+        <Grid Grid.RowSpan="3"
+              Panel.ZIndex="100"
+              Background="{StaticResource AppColor.BackgroundOverlay}"
+              Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
+            <ProgressBar IsIndeterminate="True"
+                         Width="48"
+                         Height="48"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"/>
+        </Grid>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Header                                        -->
+        <!-- ══════════════════════════════════════════════ -->
+        <StackPanel Grid.Row="0" Margin="24,40,24,0">
+
+            <!-- Back button (password step only) -->
+            <controls:AppButton Content="← Back"
+                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                Command="{Binding GoBackCommand}"
+                                HorizontalAlignment="Left"
+                                Margin="0,0,0,16"
+                                Visibility="{Binding IsPasswordStep,
+                                             Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+            <controls:AppLabel Text="Create Account"
+                               Style="{StaticResource AppTypography.DisplayPage}"/>
+
+            <controls:AppLabel Text="Join us today — it only takes a minute."
+                               Style="{StaticResource AppTypography.BodySection}"
+                               Foreground="{StaticResource AppColor.TextSecondary}"
+                               Margin="0,8,0,0"/>
+        </StackPanel>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  STEP 1: Phone entry                           -->
+        <!-- ══════════════════════════════════════════════ -->
+        <StackPanel Grid.Row="1"
+                    Margin="24,32,24,0"
+                    Visibility="{Binding IsPhoneStep,
+                                 Converter={StaticResource BoolToVisibilityConverter}}">
+
+            <controls:AppLabel Text="Phone Number"
+                               Style="{StaticResource AppTypography.LabelSection}"/>
+
+            <controls:AppTextField x:Name="PhoneField"
+                                   Text="{Binding PhoneNumber, Mode=TwoWay,
+                                          UpdateSourceTrigger=PropertyChanged}"
+                                   Placeholder="e.g. 0912345678"
+                                   Margin="0,8,0,0"
+                                   TabIndex="0"
+                                   AutomationProperties.Name="Phone Number"/>
+
+            <!-- Phone validation error -->
+            <controls:AppLabel Text="{Binding PhoneError}"
+                               Style="{StaticResource AppTypography.BodyCaption}"
+                               Foreground="{StaticResource AppColor.TextError}"
+                               Margin="0,6,0,0"
+                               Visibility="{Binding PhoneError,
+                                            Converter={StaticResource StringToVisibilityConverter}}"/>
+
+            <!-- General network error -->
+            <Border Background="{StaticResource AppColor.BackgroundErrorLight}"
+                    CornerRadius="8"
+                    Padding="12,10"
+                    Margin="0,16,0,0"
+                    Visibility="{Binding ErrorMessage,
+                                 Converter={StaticResource StringToVisibilityConverter}}">
+                <controls:AppLabel Text="{Binding ErrorMessage}"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   Foreground="{StaticResource AppColor.TextError}"/>
+            </Border>
+
+        </StackPanel>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  STEP 2: Password entry                        -->
+        <!-- ══════════════════════════════════════════════ -->
+        <StackPanel Grid.Row="1"
+                    Margin="24,32,24,0"
+                    Visibility="{Binding IsPasswordStep,
+                                 Converter={StaticResource BoolToVisibilityConverter}}">
+
+            <!-- Display name (optional) -->
+            <controls:AppLabel Text="Display Name (optional)"
+                               Style="{StaticResource AppTypography.LabelSection}"/>
+
+            <controls:AppTextField Text="{Binding DisplayName, Mode=TwoWay,
+                                          UpdateSourceTrigger=PropertyChanged}"
+                                   Placeholder="How should we call you?"
+                                   Margin="0,8,0,24"
+                                   TabIndex="1"
+                                   AutomationProperties.Name="Display Name"/>
+
+            <!-- Password -->
+            <controls:AppLabel Text="Password"
+                               Style="{StaticResource AppTypography.LabelSection}"/>
+
+            <controls:AppPasswordField BoundPassword="{Binding Password, Mode=TwoWay}"
+                                       Margin="0,8,0,0"
+                                       TabIndex="2"
+                                       AutomationProperties.Name="Password"/>
+
+            <controls:AppLabel Text="{Binding PasswordError}"
+                               Style="{StaticResource AppTypography.BodyCaption}"
+                               Foreground="{StaticResource AppColor.TextError}"
+                               Margin="0,6,0,16"
+                               Visibility="{Binding PasswordError,
+                                            Converter={StaticResource StringToVisibilityConverter}}"/>
+
+            <!-- Password hint -->
+            <controls:AppLabel Text="Minimum 8 characters, with at least one uppercase letter and one number."
+                               Style="{StaticResource AppTypography.NoteSection}"
+                               Margin="0,4,0,16"
+                               Visibility="{Binding PasswordError,
+                                            Converter={StaticResource StringToVisibilityConverter},
+                                            ConverterParameter=Inverse}"/>
+
+            <!-- Confirm password -->
+            <controls:AppLabel Text="Confirm Password"
+                               Style="{StaticResource AppTypography.LabelSection}"/>
+
+            <controls:AppPasswordField BoundPassword="{Binding ConfirmPassword, Mode=TwoWay}"
+                                       Margin="0,8,0,0"
+                                       TabIndex="3"
+                                       AutomationProperties.Name="Confirm Password"/>
+
+            <controls:AppLabel Text="{Binding ConfirmPasswordError}"
+                               Style="{StaticResource AppTypography.BodyCaption}"
+                               Foreground="{StaticResource AppColor.TextError}"
+                               Margin="0,6,0,0"
+                               Visibility="{Binding ConfirmPasswordError,
+                                            Converter={StaticResource StringToVisibilityConverter}}"/>
+
+            <!-- General error -->
+            <Border Background="{StaticResource AppColor.BackgroundErrorLight}"
+                    CornerRadius="8"
+                    Padding="12,10"
+                    Margin="0,16,0,0"
+                    Visibility="{Binding ErrorMessage,
+                                 Converter={StaticResource StringToVisibilityConverter}}">
+                <controls:AppLabel Text="{Binding ErrorMessage}"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   Foreground="{StaticResource AppColor.TextError}"/>
+            </Border>
+
+        </StackPanel>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Footer actions                                -->
+        <!-- ══════════════════════════════════════════════ -->
+        <StackPanel Grid.Row="2" Margin="24,24,24,40">
+
+            <!-- Continue (phone step) -->
+            <controls:AppButton Content="Continue"
+                                Style="{StaticResource AppButton.Primary.Large}"
+                                Command="{Binding ContinueCommand}"
+                                TabIndex="10"
+                                Visibility="{Binding IsPhoneStep,
+                                             Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+            <!-- Create Account (password step) -->
+            <controls:AppButton Content="Create Account"
+                                Style="{StaticResource AppButton.Primary.Large}"
+                                Command="{Binding RegisterCommand}"
+                                TabIndex="11"
+                                Visibility="{Binding IsPasswordStep,
+                                             Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+            <!-- Sign in link -->
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        Margin="0,16,0,0">
+                <controls:AppLabel Text="Already have an account?"
+                                   Style="{StaticResource AppTypography.BodySection}"
+                                   Foreground="{StaticResource AppColor.TextSecondary}"
+                                   VerticalAlignment="Center"/>
+                <controls:AppButton Content="Sign In"
+                                    Style="{StaticResource AppButton.Tertiary.Medium}"
+                                    Command="{Binding NavigateToLoginCommand}"
+                                    TabIndex="12"
+                                    Margin="4,0,0,0"/>
+            </StackPanel>
+
+        </StackPanel>
+
+    </Grid>
+
+</UserControl>
