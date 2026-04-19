@@ -2,25 +2,70 @@
   "hooks": {
     "UserPromptSubmit": [
       {
-        "matcher": "error|crash|fail|does not conform|build|exception|fatal",
+        "matcher": ".*",
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'Reminder: invoke ct-bugfix-skill before analyzing this problem.'"
+            "command": "echo 'Reminder: invoke ct-ai-persona-pattern skill before responding.'"
           }
         ]
       },
       {
-        "matcher": "implement|create.*view|swiftui|new screen|add.*component|build.*ui",
+        "matcher": "null.*exception|binding.*error|command.*not.*fire|di.*resolution|deadlock|không.*cập nhật.*ui|app.*crash|lỗi.*null|lỗi.*binding|fix.*bug|debug.*this",
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'Reminder: invoke ct-swiftui-expert-skill before writing UI code.'"
+            "command": "echo 'Agent routing: invoke lamour-wpf-expert with ct-bugfix-skill.'"
           }
         ]
       },
       {
-        "matcher": "review|check.*code|is this correct|is this right|audit",
+        "matcher": "add.*usecase|create.*usecase|new.*usecase|wire.*usecase|implement.*feature|add.*repository|new.*repository|add.*service.*layer|scaffold.*module|tạo.*usecase|thêm.*tính năng|new.*feature|thêm.*chức năng",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Agent routing: invoke lamour-wpf-expert for feature implementation.'"
+          }
+        ]
+      },
+      {
+        "matcher": "appstyles|apptypography|resource.*key|datatrigger|control.*template|value.*converter|add.*style|style.*resource|update.*style|thêm.*style",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Agent routing: invoke lamour-xaml-design-expert for XAML/style tasks.'"
+          }
+        ]
+      },
+      {
+        "matcher": "business.*rule|stock.*rule|invoice.*logic|validate.*stock|tồn kho|hoá đơn|nhập.*hàng|xuất.*hàng|phân quyền|nhân viên.*role|role.*permission|vat.*calc|domain.*model",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Agent routing: invoke lamour-domain-expert for business rules and domain logic.'"
+          }
+        ]
+      },
+      {
+        "matcher": "which.*layer|where.*file|module.*structure|how.*organized|navigate.*module|explain.*architecture|cấu trúc.*module|kiến trúc.*dự án|folder.*structure",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Agent routing: invoke lamour-module-context-expert for module navigation.'"
+          }
+        ]
+      },
+      {
+        "matcher": "design.*screen|new.*screen|implement.*screen|ui.*spec|create.*view.*xaml|wireframe|figma|giao diện.*màn hình|tạo.*màn hình|layout.*screen",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Agent routing: invoke lamour-ui-implementer for UI spec to XAML.'"
+          }
+        ]
+      },
+      {
+        "matcher": "review.*code|check.*this.*code|code.*review|audit.*code|kiểm tra.*code",
         "hooks": [
           {
             "type": "command",
@@ -29,7 +74,7 @@
         ]
       },
       {
-        "matcher": "best way|alternative|options|approach|compare|which.*better",
+        "matcher": "best.*approach|alternative.*solution|compare.*approach|which.*better.*approach|cách.*tốt nhất.*implement",
         "hooks": [
           {
             "type": "command",
@@ -37,19 +82,29 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Post-edit check: verify generated code compiles (no missing using directives, correct interface names, DI registration complete). Consider invoking review-code skill for full review.'"
+          }
+        ]
+      }
     ]
   },
   "permissions": {
     "allow": [
-      "Edit(/.claude/skills/swiftui-design-system/**)",
-      "Bash(sed -i '' 's/                CDSDivider\\(\\)$/                Divider\\(\\).background\\(theme.border.borderDivider\\)/g' \"/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/.claude/skills/swiftui-design-system/references/review-code-swiftUI.md\")",
-      "Bash(__NEW_LINE_d5aa2bf25acf2988__ sed:*)",
-      "Bash(find /Users/hai.phan/Desktop/haiphan/ct-ios-app--v3 -name *.xcassets -path */CTCorePayment/*)",
-      "Edit(/.claude/skills/review-code/**)",
-      "Bash(swiftlint lint:*)"
-    ],
-    "additionalDirectories": [
-      "/Users/hai.phan/Library/Developer/Xcode/DerivedData"
+      "Bash(dotnet build*)",
+      "Bash(dotnet run*)",
+      "Bash(dotnet test*)",
+      "Bash(dotnet add package*)",
+      "Bash(dotnet restore*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git status*)"
     ]
   }
 }

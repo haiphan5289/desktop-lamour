@@ -1,205 +1,192 @@
 ---
 name: ct-cell
-description: Generate a basic iOS TableViewCell or CollectionViewCell using CTDesignSystem. Creates the cell class with Config enum, CTDesignSystem UI components (DSLabel, DSButton), configure(with:) method, CellViewModel struct, and SnapKit constraints. Use when creating a new reusable cell.
+description: Generate a WPF DataTemplate or DataGrid row template for Desktop Lamour. Creates XAML DataTemplate for ItemsControl/ListBox/DataGrid with proper binding, style references from AppStyles.xaml, and a C# item ViewModel class. Use when displaying a list of items in any container type.
+model: haiku
+effort: low
 ---
 
-# iOS Basic Cell Generator
+# WPF DataTemplate / Row Template Generator
 
-> **Anti-Hallucination:** Verify every symbol, token, path, and identifier against the codebase before generating code. See [ct-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
+> **Anti-Hallucination:** Verify every class name, interface, namespace, and file path against the codebase before generating code. See [lamour-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
 
-Generate TableViewCell or CollectionViewCell using CTDesignSystem.
+Generate WPF DataTemplates and item ViewModels for Desktop Lamour list/grid containers.
 
 ## Input Format
 
 ```
-CELL_NAME: <Name, e.g. "UserProfile">
-CELL_TYPE: <TableViewCell | CollectionViewCell>
-FEATURE: <Module, e.g. "CTUserManagement">
-DATA_MODEL: <Data model type, e.g. "User">
+TEMPLATE_NAME: <Name, e.g. "EmployeeCard">
+ENTITY: <domain entity, e.g. "Employee">
+BINDINGS: <comma-separated field names, e.g. "FullName, PhoneNumber, Role, IsActive">
+CONTAINER_TYPE: <DataGrid | ListBox | ItemsControl>
 ```
 
-## TableViewCell Template
+---
 
-```swift
-import UIKit
-import CTDesignSystem
-import CTCommon
-import SnapKit
+## DataGrid Column Template
 
-final class [Name]Cell: UITableViewCell {
+For `CONTAINER_TYPE: DataGrid`:
 
-    // MARK: - Properties
-
-    enum Config {
-        // static let cornerRadius: CGFloat = 8
-        // static let padding: CGFloat = 16
-        // static let imageSize: CGFloat = 40
-    }
-
-    // MARK: - UI Components
-
-    private var theme = CMStaticThemeLoader.defaultTheme
-
-    lazy var titleLabel: DSLabel = {
-        let label = DSLabel()
-        label.setStyle(DS.TypoToken.Label.Section(color: theme.text.textPrimary.color))
-        return label
-    }()
-
-    lazy var subtitleLabel: DSLabel = {
-        let label = DSLabel()
-        label.setStyle(DS.TypoToken.Body.Caption(color: theme.text.textSecondary.color))
-        return label
-    }()
-
-    // MARK: - Lifecycle
-
-    override func awakeFromNib() {
-        super.awakeFromNib()
-        setupUI()
-    }
-
-    // For programmatic cells (no XIB):
-    // override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
-    //     super.init(style: style, reuseIdentifier: reuseIdentifier)
-    //     setupUI()
-    // }
-    //
-    // required init?(coder: NSCoder) {
-    //     super.init(coder: coder)
-    // }
-
-    override func prepareForReuse() {
-        super.prepareForReuse()
-        titleLabel.text = nil
-        subtitleLabel.text = nil
-    }
-
-    // MARK: - Configuration
-
-    func configure(with viewModel: [Name]CellViewModel) {
-        titleLabel.text = viewModel.title
-        subtitleLabel.text = viewModel.subtitle
-    }
-
-    // MARK: - Private Methods
-
-    private func setupUI() {
-        selectionStyle = .none
-        contentView.addSubview(titleLabel)
-        contentView.addSubview(subtitleLabel)
-
-        titleLabel.snp.makeConstraints { make in
-            make.top.leading.trailing.equalToSuperview().inset(16)
-        }
-
-        subtitleLabel.snp.makeConstraints { make in
-            make.top.equalTo(titleLabel.snp.bottom).offset(4)
-            make.leading.trailing.bottom.equalToSuperview().inset(16)
-        }
-    }
-}
-
-// MARK: - CellViewModel
-struct [Name]CellViewModel {
-
-    let title: String
-    let subtitle: String?
-
-    init(title: String, subtitle: String? = nil) {
-        self.title = title
-        self.subtitle = subtitle
-    }
-}
+```xml
+<!-- In [Name]View.xaml — DataGrid with typed columns -->
+<DataGrid ItemsSource="{Binding Employees}"
+          AutoGenerateColumns="False"
+          IsReadOnly="True"
+          Style="{StaticResource DataGridStyle}"
+          RowStyle="{StaticResource DataGridRowStyle}">
+    <DataGrid.Columns>
+        <DataGridTextColumn Header="Họ tên"
+                            Binding="{Binding FullName}"
+                            Width="*"/>
+        <DataGridTextColumn Header="Điện thoại"
+                            Binding="{Binding PhoneNumber}"
+                            Width="150"/>
+        <DataGridTextColumn Header="Chức vụ"
+                            Binding="{Binding Role}"
+                            Width="120"/>
+        <DataGridCheckBoxColumn Header="Hoạt động"
+                                Binding="{Binding IsActive}"
+                                Width="100"/>
+        <!-- Action column -->
+        <DataGridTemplateColumn Header="" Width="80">
+            <DataGridTemplateColumn.CellTemplate>
+                <DataTemplate>
+                    <Button Content="Xoá"
+                            Style="{StaticResource ButtonDangerStyle}"
+                            Command="{Binding DataContext.DeleteCommand,
+                                      RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                            CommandParameter="{Binding Id}"/>
+                </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+    </DataGrid.Columns>
+</DataGrid>
 ```
 
-## CollectionViewCell Template
+---
 
-```swift
-import UIKit
-import CTDesignSystem
-import CTCommon
-import SnapKit
+## ListBox DataTemplate
 
-final class [Name]CollectionViewCell: UICollectionViewCell {
+For `CONTAINER_TYPE: ListBox`:
 
-    // MARK: - Properties
+```xml
+<!-- In [Name]View.xaml -->
+<ListBox ItemsSource="{Binding Items}"
+         SelectedItem="{Binding SelectedItem}">
+    <ListBox.ItemTemplate>
+        <DataTemplate>
+            <Border Style="{StaticResource CardBorderStyle}" Margin="0,4">
+                <Grid Margin="12,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-    enum Config {
-        // static let cornerRadius: CGFloat = 8
-        // static let padding: CGFloat = 16
-    }
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="{Binding FullName}"
+                                   Style="{StaticResource TextSubheadingStyle}"/>
+                        <TextBlock Text="{Binding PhoneNumber}"
+                                   Style="{StaticResource TextBodyStyle}"/>
+                    </StackPanel>
 
-    static let reuseIdentifier = "[Name]CollectionViewCell"
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding Role}"
+                               Style="{StaticResource TextCaptionStyle}"
+                               VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </ListBox.ItemTemplate>
+</ListBox>
+```
 
-    // MARK: - UI Components
+---
 
-    private var theme = CMStaticThemeLoader.defaultTheme
+## ItemsControl DataTemplate
 
-    lazy var titleLabel: DSLabel = {
-        let label = DSLabel()
-        label.setStyle(DS.TypoToken.Label.Section(color: theme.text.textPrimary.color))
-        return label
-    }()
+For `CONTAINER_TYPE: ItemsControl` (read-only list, no selection):
 
-    // MARK: - Lifecycle
+```xml
+<!-- In [Name]View.xaml -->
+<ItemsControl ItemsSource="{Binding Items}">
+    <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+            <StackPanel/>
+        </ItemsPanelTemplate>
+    </ItemsControl.ItemsPanel>
+    <ItemsControl.ItemTemplate>
+        <DataTemplate>
+            <Border Style="{StaticResource CardBorderStyle}" Margin="0,4">
+                <Grid Margin="12,8">
+                    <TextBlock Text="{Binding FullName}"
+                               Style="{StaticResource TextBodyStyle}"/>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </ItemsControl.ItemTemplate>
+</ItemsControl>
+```
 
-    override func awakeFromNib() {
-        super.awakeFromNib()
-        setupUI()
-    }
+---
 
-    override func prepareForReuse() {
-        super.prepareForReuse()
-        titleLabel.text = nil
-    }
+## Item ViewModel Class (C#)
 
-    // MARK: - Configuration
+When binding complex objects, define a dedicated item ViewModel:
 
-    func configure(with viewModel: [Name]CellViewModel) {
-        titleLabel.text = viewModel.title
-    }
+```csharp
+// File: src/DesktopLamour/Features/[Module]/ViewModels/[Name]ItemViewModel.cs
+using CommunityToolkit.Mvvm.ComponentModel;
 
-    // MARK: - Private Methods
+namespace DesktopLamour.Features.[Module].ViewModels;
 
-    private func setupUI() {
-        contentView.addSubview(titleLabel)
+public partial class [Name]ItemViewModel : ObservableObject
+{
+    public int Id { get; init; }
 
-        titleLabel.snp.makeConstraints { make in
-            make.center.equalToSuperview()
-            make.edges.equalToSuperview().inset(8)
-        }
+    [ObservableProperty]
+    private string _fullName = string.Empty;
 
-        backgroundColor = .clear
-    }
-}
+    [ObservableProperty]
+    private string _phoneNumber = string.Empty;
 
-// MARK: - CellViewModel
-struct [Name]CellViewModel {
-    let title: String
+    [ObservableProperty]
+    private string _role = string.Empty;
+
+    [ObservableProperty]
+    private bool _isActive;
+
+    // Factory method from domain model
+    public static [Name]ItemViewModel From([Entity] entity) => new()
+    {
+        Id = entity.Id,
+        FullName = entity.FullName,
+        PhoneNumber = entity.PhoneNumber,
+        Role = entity.Role,
+        IsActive = entity.IsActive
+    };
 }
 ```
 
-## Theme Selection by Module
+---
 
-```swift
-// Default (generic)
-private var theme = CMStaticThemeLoader.defaultTheme
+## Binding to Parent ViewModel Commands
 
-// Job module
-private var theme = CMStaticThemeLoader.jobTheme
+When a DataTemplate button needs to call a parent ViewModel command, use `RelativeSource`:
 
-// Property module
-private var theme = CMStaticThemeLoader.ptyTheme
+```xml
+<Button Command="{Binding DataContext.DeleteEmployeeCommand,
+                  RelativeSource={RelativeSource AncestorType=UserControl}}"
+        CommandParameter="{Binding Id}"
+        Content="Xoá"
+        Style="{StaticResource ButtonDangerStyle}"/>
 ```
+
+---
 
 ## Rules
 
-- **ALWAYS** use `DSLabel`, `DSButton`, `DSImageView` — never `UILabel`, `UIButton`
-- **ALWAYS** use SnapKit for constraints
-- Use `Config` enum for layout constants
-- Use `selectionStyle = .none` for TableViewCells (unless selection is needed)
-- Reset all configurable content in `prepareForReuse`
-- CollectionViewCells need a static `reuseIdentifier`
-- `CellViewModel` is a struct in the same file
-- Match theme loader to module type (`defaultTheme`, `jobTheme`, `ptyTheme`)
+- Always reference style keys via `StaticResource` — never hardcode colors or fonts
+- Verify style keys exist in `AppStyles.xaml` before using them
+- Use `RelativeSource AncestorType` to reach parent ViewModel commands from DataTemplate
+- Prefer `DataGrid` for tabular data (employees, products, invoice lines)
+- Prefer `ListBox` for card-style items with selection
+- Prefer `ItemsControl` for read-only scrollable lists

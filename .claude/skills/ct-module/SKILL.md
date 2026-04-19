@@ -1,220 +1,368 @@
 ---
 name: ct-module
-description: Generate a complete MVVM-C module structure with ViewController, ViewModel, and Builder files. Use when creating a new feature module from scratch. Generates all three files with protocol definitions, RxSwift patterns, CTDesignSystem usage, Swinject DI setup, and TODO guidance.
+description: Generate a complete Desktop Lamour feature module — Domain (Model + IUseCase + UseCase) + Data (IRepository + Repository + IService + Service + DTOs) + Views (UserControl XAML) + ViewModels + ServiceCollectionExtensions DI registration. Use when creating a new feature module from scratch.
+model: sonnet
+effort: high
 ---
 
-# iOS Basic Module Generator
+# Complete Module Generator for Desktop Lamour
 
-> **Anti-Hallucination:** Verify every symbol, token, path, and identifier against the codebase before generating code. See [ct-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
+> **Anti-Hallucination:** Verify every class name, interface, namespace, and file path against the codebase before generating code. See [lamour-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
 
-Generate complete MVVM-C module with barebone structure following production patterns.
+Generate a full MVVM + Clean Architecture feature module with all 5 layers wired together.
 
 ## Input Format
 
 ```
-MODULE_NAME: <ModuleName, e.g. "UserProfile">
-FEATURE: <Feature module, e.g. "CTUserManagement">
+MODULE_NAME: <ModuleName, e.g. "Employees">
+DESCRIPTION: <brief module description>
+ENTITIES: <comma-separated domain entities, e.g. "Employee">
 ```
 
 ## Output Files
 
-1. `[ModuleName]ViewController.swift` — UI layer with CTDesignSystem
-2. `[ModuleName]ViewModel.swift` — Business logic with UseCase dependencies + all protocols
-3. `[ModuleName]Builder.swift` — Dependency injection setup
+For a module named `Employees` with entity `Employee`:
 
-## ViewController.swift
+```
+src/DesktopLamour/Features/Employees/
+├── Domain/
+│   ├── Employee.cs                          (domain model)
+│   ├── IGetEmployeesUseCase.cs             (use case interface)
+│   └── GetEmployeesUseCase.cs              (use case implementation)
+├── Data/
+│   ├── DTOs/
+│   │   └── EmployeeDto.cs                  (API response DTO)
+│   ├── IEmployeeRepository.cs              (repository interface)
+│   ├── EmployeeRepository.cs               (repository implementation)
+│   ├── IEmployeeService.cs                 (service interface)
+│   └── EmployeeService.cs                  (service implementation)
+├── ViewModels/
+│   └── EmployeeListViewModel.cs            (ViewModel)
+├── Views/
+│   ├── EmployeeListView.xaml               (UserControl XAML)
+│   └── EmployeeListView.xaml.cs            (code-behind)
+└── EmployeesServiceExtensions.cs           (DI registration)
+```
 
-```swift
-import UIKit
-import CTDesignSystem
-import CTCommon
-import RxSwift
-import RxRelay
-import SnapKit
+---
 
-final class [ModuleName]ViewController: UIViewController, [ModuleName]Presentable {
+## Domain/Employee.cs
 
-    // MARK: - Properties
+```csharp
+namespace DesktopLamour.Features.Employees.Domain;
 
-    enum Config {
-        // static let standardSize: CGFloat = 44
-        // static let padding: CGFloat = 16
+public class Employee
+{
+    public int Id { get; set; }
+    public string FullName { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
+    public string Role { get; set; } = string.Empty; // Admin | Thu ngân | Kho
+    public bool IsActive { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+```
+
+---
+
+## Domain/IGetEmployeesUseCase.cs + GetEmployeesUseCase.cs
+
+```csharp
+namespace DesktopLamour.Features.Employees.Domain;
+
+public interface IGetEmployeesUseCase
+{
+    Task<IEnumerable<Employee>> ExecuteAsync(CancellationToken ct = default);
+}
+
+public class GetEmployeesUseCase : IGetEmployeesUseCase
+{
+    private readonly IEmployeeRepository _repository;
+
+    public GetEmployeesUseCase(IEmployeeRepository repository)
+    {
+        _repository = repository;
     }
 
-    var viewModel: [ModuleName]ViewModelType?
-    weak var listener: [ModuleName]PresentableListener?
-
-    // var isLoadingRelay = BehaviorRelay<Bool>(value: false)
-    // var errorMessage = BehaviorRelay<String?>(value: nil)
-
-    let disposeBag = DisposeBag()
-
-    // MARK: - UI Components
-
-    // private var theme = CMStaticThemeLoader.defaultTheme
-    //
-    // lazy var titleLabel: DSLabel = {
-    //     let label = DSLabel()
-    //     label.setStyle(DS.TypoToken.Label.Caption(color: theme.text.textPrimary.color))
-    //     return label
-    // }()
-
-    // MARK: - Life Cycle
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        setupViews()
-        setupActions()
-        configurePresenter()
-        configureViewModel()
-    }
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-    }
-
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-    }
-
-    deinit {
-        Logger.print("\(self) deallocated.")
-        NotificationCenter.default.removeObserver(self)
-    }
-
-    // MARK: - Private Methods
-
-    private func setupViews() {
-        // view.addSubview(titleLabel)
-        // titleLabel.snp.makeConstraints { make in
-        //     make.edges.equalToSuperview().inset(16)
-        // }
-    }
-
-    private func setupActions() { }
-
-    private func configurePresenter() {
-        // Bind presenter relays to UI
-    }
-
-    private func configureViewModel() {
-        viewModel?.didBecomeActive()
+    public async Task<IEnumerable<Employee>> ExecuteAsync(CancellationToken ct = default)
+    {
+        return await _repository.GetAllAsync(ct);
     }
 }
 ```
 
-## ViewModel.swift (includes all protocols)
+---
 
-```swift
-import RxSwift
-import RxRelay
-import Action
-import CTCommon
+## Data/DTOs/EmployeeDto.cs
 
-// MARK: - ViewModelType
-protocol [ModuleName]ViewModelType: CTViewModelType {
-    var presenter: [ModuleName]Presentable? { get set }
-    var router: [ModuleName]Router? { get set }
-    var listener: [ModuleName]PresentableListener? { get set }
+```csharp
+using System.Text.Json.Serialization;
+
+namespace DesktopLamour.Features.Employees.Data.DTOs;
+
+public class EmployeeDto
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("full_name")]
+    public string FullName { get; set; } = string.Empty;
+
+    [JsonPropertyName("phone_number")]
+    public string PhoneNumber { get; set; } = string.Empty;
+
+    [JsonPropertyName("role")]
+    public string Role { get; set; } = string.Empty;
+
+    [JsonPropertyName("is_active")]
+    public bool IsActive { get; set; }
+
+    [JsonPropertyName("created_at")]
+    public DateTime CreatedAt { get; set; }
+}
+```
+
+---
+
+## Data/IEmployeeRepository.cs + EmployeeRepository.cs
+
+```csharp
+namespace DesktopLamour.Features.Employees.Data;
+
+public interface IEmployeeRepository
+{
+    Task<IEnumerable<Employee>> GetAllAsync(CancellationToken ct = default);
+    Task CreateAsync(Employee employee, CancellationToken ct = default);
+    Task UpdateAsync(Employee employee, CancellationToken ct = default);
+    Task DeleteAsync(int id, CancellationToken ct = default);
 }
 
-// MARK: - Presentable
-protocol [ModuleName]Presentable: AnyObject {
-    var listener: [ModuleName]PresentableListener? { get set }
-    // var isLoadingRelay: BehaviorRelay<Bool> { get set }
-    // var datasource: BehaviorRelay<[SomeModel]> { get set }
-}
+public class EmployeeRepository : IEmployeeRepository
+{
+    private readonly IEmployeeService _service;
 
-// MARK: - PresentableListener
-protocol [ModuleName]PresentableListener: AnyObject {
-    // var triggerSomeAction: PublishRelay<SomeInputType> { get }
-}
-
-// MARK: - Router
-protocol [ModuleName]Router: AnyObject {
-    // func navigateToSomeScreen()
-}
-
-final class [ModuleName]ViewModel: [ModuleName]ViewModelType, [ModuleName]PresentableListener {
-
-    // MARK: - Properties
-
-    weak var presenter: [ModuleName]Presentable?
-    weak var router: [ModuleName]Router?
-    weak var listener: [ModuleName]PresentableListener?
-
-    // private let someUseCase: SomeUseCaseType
-    let disposeBag = DisposeBag()
-
-    // MARK: - Initialization
-
-    init(
-        // someUseCase: SomeUseCaseType
-    ) {
-        // self.someUseCase = someUseCase
+    public EmployeeRepository(IEmployeeService service)
+    {
+        _service = service;
     }
 
-    // MARK: - Life Cycle
-
-    func didBecomeActive() {
-        presenter?.listener = self
-        configureListener()
-        configurePresenter()
+    public async Task<IEnumerable<Employee>> GetAllAsync(CancellationToken ct = default)
+    {
+        var dtos = await _service.GetAllAsync(ct);
+        return dtos.Select(d => new Employee
+        {
+            Id = d.Id,
+            FullName = d.FullName,
+            PhoneNumber = d.PhoneNumber,
+            Role = d.Role,
+            IsActive = d.IsActive,
+            CreatedAt = d.CreatedAt
+        });
     }
 
-    // MARK: - Private Methods
+    // Implement CreateAsync, UpdateAsync, DeleteAsync similarly
+    public Task CreateAsync(Employee employee, CancellationToken ct = default) => throw new NotImplementedException();
+    public Task UpdateAsync(Employee employee, CancellationToken ct = default) => throw new NotImplementedException();
+    public Task DeleteAsync(int id, CancellationToken ct = default) => throw new NotImplementedException();
+}
+```
 
-    private func configureListener() {
-        // presenter?.triggerSomeAction
-        //     .subscribeNext { [weak self] input in
-        //         self?.handleSomeAction(input)
-        //     }.disposed(by: disposeBag)
+---
+
+## Data/IEmployeeService.cs + EmployeeService.cs
+
+```csharp
+using System.Net.Http.Json;
+using DesktopLamour.Features.Employees.Data.DTOs;
+
+namespace DesktopLamour.Features.Employees.Data;
+
+public interface IEmployeeService
+{
+    Task<IEnumerable<EmployeeDto>> GetAllAsync(CancellationToken ct = default);
+    Task<EmployeeDto> CreateAsync(EmployeeDto dto, CancellationToken ct = default);
+    Task<EmployeeDto> UpdateAsync(int id, EmployeeDto dto, CancellationToken ct = default);
+    Task DeleteAsync(int id, CancellationToken ct = default);
+}
+
+public class EmployeeService : IEmployeeService
+{
+    private readonly HttpClient _httpClient;
+
+    public EmployeeService(HttpClient httpClient)
+    {
+        _httpClient = httpClient;
     }
 
-    private func configurePresenter() {
-        // someUseCase.action?.elements
-        //     .observe(on: MainScheduler.instance)
-        //     .subscribeNext { [weak self] result in
-        //         self?.presenter?.datasource.accept(result)
-        //     }.disposed(by: disposeBag)
+    public async Task<IEnumerable<EmployeeDto>> GetAllAsync(CancellationToken ct = default)
+    {
+        return await _httpClient.GetFromJsonAsync<IEnumerable<EmployeeDto>>("/api/employees", ct)
+               ?? Enumerable.Empty<EmployeeDto>();
+    }
+
+    public async Task<EmployeeDto> CreateAsync(EmployeeDto dto, CancellationToken ct = default)
+    {
+        var response = await _httpClient.PostAsJsonAsync("/api/employees", dto, ct);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<EmployeeDto>(ct)
+               ?? throw new InvalidOperationException("Failed to create employee.");
+    }
+
+    public async Task<EmployeeDto> UpdateAsync(int id, EmployeeDto dto, CancellationToken ct = default)
+    {
+        var response = await _httpClient.PutAsJsonAsync($"/api/employees/{id}", dto, ct);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<EmployeeDto>(ct)
+               ?? throw new InvalidOperationException("Failed to update employee.");
+    }
+
+    public async Task DeleteAsync(int id, CancellationToken ct = default)
+    {
+        var response = await _httpClient.DeleteAsync($"/api/employees/{id}", ct);
+        response.EnsureSuccessStatusCode();
     }
 }
 ```
 
-## Builder.swift
+---
 
-```swift
-import UIKit
-import Swinject
+## ViewModels/EmployeeListViewModel.cs
 
-final class [ModuleName]Builder {
+```csharp
+using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using DesktopLamour.Features.Employees.Domain;
 
-    // MARK: - Build
+namespace DesktopLamour.Features.Employees.ViewModels;
 
-    static func build(listener: [ModuleName]PresentableListener? = nil) -> UIViewController {
-        let viewModel = [ModuleName]ViewModel(
-            // Resolve UseCase dependencies from container or create inline
-        )
-        let viewController = [ModuleName]ViewController()
-        let router = [ModuleName]RouterImpl(viewController: viewController)
+public partial class EmployeeListViewModel : ObservableObject
+{
+    private readonly IGetEmployeesUseCase _getEmployeesUseCase;
 
-        viewModel.presenter = viewController
-        viewModel.router = router
-        viewModel.listener = listener
-        viewController.viewModel = viewModel
+    [ObservableProperty]
+    private bool _isLoading;
 
-        return viewController
+    [ObservableProperty]
+    private string _errorMessage = string.Empty;
+
+    public ObservableCollection<Employee> Employees { get; } = new();
+
+    public EmployeeListViewModel(IGetEmployeesUseCase getEmployeesUseCase)
+    {
+        _getEmployeesUseCase = getEmployeesUseCase;
+    }
+
+    [RelayCommand]
+    private async Task LoadEmployeesAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            IsLoading = true;
+            ErrorMessage = string.Empty;
+            var employees = await _getEmployeesUseCase.ExecuteAsync(ct);
+            Employees.Clear();
+            foreach (var emp in employees)
+                Employees.Add(emp);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 }
 ```
+
+---
+
+## Views/EmployeeListView.xaml
+
+```xml
+<UserControl x:Class="DesktopLamour.Features.Employees.Views.EmployeeListView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0" Text="Quản lý nhân viên"
+                   Style="{StaticResource TextHeadingStyle}"
+                   Margin="16,16,16,8"/>
+
+        <!-- Loading indicator -->
+        <TextBlock Grid.Row="1" Text="Đang tải..."
+                   Style="{StaticResource TextBodyStyle}"
+                   Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+        <!-- Error message -->
+        <TextBlock Grid.Row="1" Text="{Binding ErrorMessage}"
+                   Style="{StaticResource TextErrorStyle}"
+                   Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}"
+                   Margin="16,8"/>
+
+        <!-- Employee list -->
+        <DataGrid Grid.Row="1" ItemsSource="{Binding Employees}"
+                  AutoGenerateColumns="False" IsReadOnly="True"
+                  Margin="16,0">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Họ tên" Binding="{Binding FullName}" Width="*"/>
+                <DataGridTextColumn Header="Điện thoại" Binding="{Binding PhoneNumber}" Width="150"/>
+                <DataGridTextColumn Header="Chức vụ" Binding="{Binding Role}" Width="120"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>
+```
+
+---
+
+## EmployeesServiceExtensions.cs
+
+```csharp
+using Microsoft.Extensions.DependencyInjection;
+using DesktopLamour.Features.Employees.Data;
+using DesktopLamour.Features.Employees.Domain;
+using DesktopLamour.Features.Employees.ViewModels;
+
+namespace DesktopLamour.Features.Employees;
+
+public static class EmployeesServiceExtensions
+{
+    public static IServiceCollection AddEmployeesModule(this IServiceCollection services)
+    {
+        // Service (HttpClient)
+        services.AddHttpClient<IEmployeeService, EmployeeService>();
+
+        // Repository
+        services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+
+        // UseCases
+        services.AddScoped<IGetEmployeesUseCase, GetEmployeesUseCase>();
+
+        // ViewModel
+        services.AddTransient<EmployeeListViewModel>();
+
+        return services;
+    }
+}
+```
+
+---
 
 ## Rules
 
-- All 3 files must be created together
-- `ViewController` conforms to `Presentable` protocol
-- `ViewModel` conforms to `ViewModelType` and `PresentableListener`
-- Protocols are defined in the `ViewModel` file
-- Use `Logger.print("\(self) deallocated.")` in ViewController `deinit`
-- `configureViewModel()` calls `viewModel?.didBecomeActive()`
-- Use SnapKit for all constraints, never NSLayoutConstraint
-- Only use DSLabel, DSButton — never UILabel, UIButton directly
+- All ViewModels are `partial class` inheriting `ObservableObject`
+- All UseCase methods accept `CancellationToken ct = default`
+- HttpClient is registered via `AddHttpClient<IService, Service>()`
+- Never create `new HttpClient()` — always inject via DI
+- DTO field names use `[JsonPropertyName]` for JSON mapping
+- Namespace matches folder path exactly
+
+See `docs/project-overview.md` for full project context.

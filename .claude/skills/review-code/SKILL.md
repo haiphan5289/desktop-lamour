@@ -1,83 +1,161 @@
 ---
 name: review-code
-description: "SwiftUI code review for Chợ Tốt iOS — CT Design System compliance, MVVM patterns, state management, color/typography/spacing tokens, and SwiftLint rules. Use when asked to review SwiftUI code."
-argument-hint: "[file path or code to review] [focus area: DS Components | Color Tokens | Typography | Spacing Tokens | State Management | MVVM | SwiftLint All | Full Review]"
+description: C# WPF code review for Desktop Lamour — MVVM Clean Architecture compliance, CommunityToolkit.Mvvm patterns, XAML style compliance (AppStyles/AppTypography), DI registration correctness, async/await correctness, no business logic in View, interface usage. Use when asked to review C# or XAML files.
+model: sonnet
+effort: high
 ---
 
-# SwiftUI Code Review Skill
+# C# WPF Code Review for Desktop Lamour
 
-> **Anti-Hallucination:** Verify every symbol, token, path, and identifier against the codebase before generating code. See [ct-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
+> **Anti-Hallucination:** Verify every class name, interface, namespace, and file path against the codebase before generating code. See [lamour-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
 
-Full code review for SwiftUI files in the **Chợ Tốt iOS** app.
+## Overview
 
-**Last synced:** 2026-03-25
-
----
-
-## When to Use
-
-Invoke this skill when asked to:
-- Review a SwiftUI file or directory
-- Check CT Design System compliance
-- Audit MVVM architecture in SwiftUI
-- Verify SwiftLint compliance
-
----
-
-## Read Guide
-
-| Task | File |
-|------|------|
-| Full review template, Few-Shot examples, SwiftLint rules | [references/review-code-swiftUI.md](./references/review-code-swiftUI.md) |
-
-> Always read `references/review-code-swiftUI.md` before performing any review.
-
----
+Full code review for C# and XAML files in **Desktop Lamour** (WPF .NET 8, MVVM + Clean Architecture).
 
 ## Focus Areas
 
-| Area | What Is Checked |
-|------|----------------|
-| `DS Components` | `.cdsButtonStyle()`, `CDSTextField`, `.cdsTextStyle()` vs raw SwiftUI |
-| `Color Tokens` | `theme.*.*` sub-protocol access, no raw `Color.*` |
-| `Typography` | `.cdsTextStyle()`, no `Font.system()` |
-| `Spacing Tokens` | `DS.Gap.*`, `DS.Padding.*`, `DS.BorderRadius.*`, no hardcoded values |
-| `State Management` | `@State`, `@StateObject`, `@ObservedObject`, `@EnvironmentObject` correctness |
-| `MVVM` | No business logic in View body, proper ViewModel separation |
-| `Memory Management` | `[weak self]`, retain cycles in Combine/closures |
-| `SwiftLint All` | All rules from `.swiftlint.yml` |
-| `Full Review` | All of the above combined |
+| Area | Invoke with |
+|---|---|
+| Architecture compliance | `FOCUS: Architecture` |
+| ViewModel patterns (CommunityToolkit.Mvvm) | `FOCUS: ViewModel` |
+| XAML style compliance | `FOCUS: XAML` |
+| DI registration | `FOCUS: DI` |
+| Async/await correctness | `FOCUS: Async` |
+| Business rules compliance | `FOCUS: Business` |
+| Full review | `FOCUS: All` |
 
 ---
 
-## Key Rules (ALWAYS APPLY)
+## Architecture Checklist
 
-| ❌ Forbidden | ✅ Required |
-|-------------|-------------|
-| `Color.blue` | `theme.text.textBrand` |
-| `Color(hex: "...")` | `theme.*.*` |
-| `.padding(16)` | `.padding(DS.Padding.paddingMedium)` |
-| `Font.system(size:)` | `.cdsTextStyle(...)` |
-| `theme.textPrimary` | `theme.text.textPrimary` (sub-protocol) |
-| ViewModel created in `body` | `@StateObject` with `init(flow:)` |
-| `@Environment(\.presentationMode)` | `@Environment(\.dismiss)` |
-| `as!`, `try!`, `!` | `as?` + guard, do/catch, guard let |
-| `Button(action: {}) { }` | `Button(action: {}, label: { })` |
+```
+LAYER SEPARATION
+[ ] View (XAML + code-behind) contains ONLY: InitializeComponent, DataContext binding, event-to-command wiring
+[ ] View does NOT contain: business logic, direct service calls, data transformation
+[ ] ViewModel inherits ObservableObject (never INotifyPropertyChanged manually)
+[ ] ViewModel does NOT reference any WPF/UI types (no UIElement, no Window)
+[ ] UseCase has single responsibility — one ExecuteAsync method
+[ ] UseCase injects IRepository interface, not concrete Repository
+[ ] Repository injects IService interface, not concrete Service
+[ ] Service injects HttpClient — no direct instantiation of HttpClient
 
-## Anti-Hallucination Rule
+NAMING CONVENTIONS
+[ ] ViewModel: [Feature]ViewModel.cs
+[ ] UseCase interface: I[Name]UseCase.cs
+[ ] UseCase implementation: [Name]UseCase.cs
+[ ] Repository interface: I[Name]Repository.cs
+[ ] Repository: [Name]Repository.cs
+[ ] Service interface: I[Name]Service.cs
+[ ] Service: [Name]Service.cs
+[ ] DTO: [Name]Dto.cs (in Data/DTOs/)
 
-> **NEVER suggest a `CDS*` component unless it is verified in [references/review-code-swiftUI.md](./references/review-code-swiftUI.md).**
-> If unsure — use raw SwiftUI with CT tokens instead.
-
-**Verified components:** `CDSTextField`, `CDSCard`, `CDSBottomSheet`, `CDSBadge`, `CDSChip`, `CDSTag`, `CDSAvatar`, `CDSAsyncImage`, `CDSPopupView`, `CDSEmptyState`, `CDSSkeleton`, `CDSToast`, `CDSSnackBarView`
-
-**Do NOT exist:** `CDSDivider`, `CDSLabel`, `CDSText`, `CDSImage`, `CDSStack`, `CDSButton`
+NAMESPACE
+[ ] Namespace matches folder path: DesktopLamour.Features.[Module].[Layer]
+[ ] No cross-module namespace references without abstraction
+```
 
 ---
 
-## SwiftLint Source
+## ViewModel Patterns Checklist
 
-**File:** `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/.swiftlint.yml`
-- `force_cast`, `force_try` → **error** (CI fails)
-- `opening_brace`, `multiple_closures_with_trailing_closure` → default rules (always active)
-- See full rules in [references/review-code-swiftUI.md](./references/review-code-swiftUI.md)
+```
+COMMUNITYTOOOLKIT.MVVM
+[ ] ViewModel class is partial: partial class [Name]ViewModel : ObservableObject
+[ ] All observable fields use [ObservableProperty] attribute
+[ ] All command methods use [RelayCommand] attribute
+[ ] [ObservableProperty] field is private with underscore prefix: _isLoading
+[ ] Generated property name (PascalCase) used in XAML bindings — NOT the field name
+[ ] No manual PropertyChanged.Invoke or OnPropertyChanged() calls
+[ ] No manual ICommand implementation — always [RelayCommand]
+
+STATE MANAGEMENT
+[ ] IsLoading properly set to true before async and false in finally
+[ ] ErrorMessage cleared before each operation
+[ ] ObservableCollection used for lists — not List<T> or IEnumerable<T>
+[ ] All [RelayCommand] async methods accept CancellationToken ct = default
+[ ] try/catch/finally pattern on all async commands
+```
+
+---
+
+## XAML Style Checklist
+
+```
+STYLE USAGE
+[ ] All TextBlock uses StaticResource style key — no inline FontSize/FontWeight
+[ ] All Button uses StaticResource style key — no inline Background/Foreground
+[ ] No hardcoded color values: #FF5733, Red, Colors.Blue
+[ ] No hardcoded font sizes: FontSize="14"
+[ ] Verify every StaticResource key exists in AppStyles.xaml or AppTypography.xaml
+
+BINDING PATTERNS
+[ ] Two-way TextBox bindings use UpdateSourceTrigger=PropertyChanged
+[ ] Command bindings use {Binding XxxCommand} — not Click="..."
+[ ] Boolean-to-Visibility uses StaticResource converter — not code-behind
+[ ] No x:Name references in ViewModel — only ViewModel properties
+[ ] DataContext set via DI — not new ViewModel() in code-behind
+
+DATA GRID / LISTS
+[ ] DataGrid columns have explicit Header and Binding
+[ ] DataGrid AutoGenerateColumns="False" when columns are defined
+[ ] Command parameters in DataTemplates use RelativeSource binding to reach parent ViewModel
+```
+
+---
+
+## DI Registration Checklist
+
+```
+[ ] Every interface+implementation pair is registered in ServiceCollectionExtensions
+[ ] HttpClient registered via AddHttpClient<IService, Service>() — not AddSingleton<HttpClient>()
+[ ] ViewModel registered as Transient (new instance per view)
+[ ] UseCase registered as Scoped or Transient
+[ ] Repository registered as Scoped
+[ ] No "new" instantiation of dependencies in ViewModels or Services
+[ ] DI registration file exists for each module: [Module]ServiceExtensions.cs
+```
+
+---
+
+## Async/Await Checklist
+
+```
+[ ] No .Result or .Wait() calls — always await
+[ ] No async void (except event handlers) — always async Task
+[ ] CancellationToken propagated through all layers
+[ ] EnsureSuccessStatusCode() called on HTTP mutations (POST/PUT/DELETE)
+[ ] HttpClient methods use *FromJsonAsync / *AsJsonAsync from System.Net.Http.Json
+[ ] No blocking calls in UI thread (no Task.Run(() => ...GetResult()))
+[ ] OperationCanceledException caught and handled gracefully
+```
+
+---
+
+## Business Rules Checklist
+
+```
+[ ] Stock never goes negative (validation in UseCase, not ViewModel)
+[ ] Invoice total = sum of line items (calculated in domain model or UseCase)
+[ ] Export invoice cannot be confirmed if any line item stock < requested quantity
+[ ] Import invoice increases stock on confirmation
+[ ] Employee role checked before allowing admin-only operations
+[ ] Confirmed invoices are immutable (UseCase throws if modification attempted)
+```
+
+---
+
+## Key Rules — Always Apply
+
+| Forbidden | Required |
+|---|---|
+| `FontSize="14"` in XAML | `Style="{StaticResource TextBodyStyle}"` |
+| `Background="#FF0000"` | `Background="{StaticResource PrimaryBrush}"` |
+| `var vm = new EmployeeViewModel()` in code-behind | Inject via DI |
+| `_isLoading` in XAML binding | `IsLoading` (generated property) |
+| `.Result` on async method | `await` |
+| Manual `INotifyPropertyChanged` | `[ObservableProperty]` |
+| `List<T>` for bindable data | `ObservableCollection<T>` |
+| Business logic in XAML event handler | Move to UseCase |
+
+See `docs/project-overview.md` for business rules and architecture context.

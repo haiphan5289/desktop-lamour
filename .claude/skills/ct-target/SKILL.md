@@ -1,171 +1,172 @@
 ---
 name: ct-target
-description: Generate a basic iOS API Target following the Requestable protocol. Use when adding a new API endpoint. Each operation is a nested struct inside a [Name]Target container. Targets define httpMethod, params, additionalHeaders, endpoint, and decode(data:). Uses Alamofire + ObjectMapper for response mapping.
+description: Generate an HttpClient API endpoint helper for Desktop Lamour. Creates strongly-typed request/response DTOs and the Service method that calls the endpoint using System.Net.Http.Json extensions. Use when adding a new API endpoint to an existing Service.
+model: haiku
+effort: low
 ---
 
-# iOS Basic API Target Generator
+# HttpClient Endpoint Helper Generator
 
-> **Anti-Hallucination:** Verify every symbol, token, path, and identifier against the codebase before generating code. See [ct-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
+> **Anti-Hallucination:** Verify every class name, interface, namespace, and file path against the codebase before generating code. See [lamour-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
 
-Generate API Target following the Requestable protocol pattern.
+Generate strongly-typed DTOs and HttpClient service methods for a new API endpoint in Desktop Lamour.
 
 ## Input Format
 
 ```
-TARGET_NAME: <Name, e.g. "UserProfile">
-FEATURE: <Module, e.g. "CTUserManagement">
-OPERATIONS: <comma-separated, e.g. "get,create,update,delete">
-ENTITY: <entity name, e.g. "User">
+ENDPOINT_PATH: <e.g. /api/inventory/products>
+HTTP_METHOD: <GET | POST | PUT | PATCH | DELETE>
+REQUEST_DTO: <e.g. CreateProductRequest | void>
+RESPONSE_DTO: <e.g. ProductDto | IEnumerable<ProductDto>>
+SERVICE_NAME: <e.g. Inventory>
 ```
 
-## Single Operation Target Template
+---
 
-```swift
-import Foundation
-import Action
-import Alamofire
-import ObjectMapper
-import CTCommon
-import CTApiClient
+## Request DTO Template
 
-struct [Name]Target {
-    typealias HTTPMethod = Alamofire.HTTPMethod
-    typealias Parameters = Alamofire.Parameters
+```csharp
+// File: src/DesktopLamour/Features/[Module]/Data/DTOs/Create[Entity]Request.cs
+using System.Text.Json.Serialization;
 
-    struct [Operation]Target: Requestable {
-        typealias Output = [ResponseType]?
+namespace DesktopLamour.Features.[Module].Data.DTOs;
 
-        // let someID: String
-        // let someData: SomeModel
+public class Create[Entity]Request
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
 
-        var httpMethod: HTTPMethod {
-            .post // or .get, .put, .delete
-        }
+    [JsonPropertyName("unit_price")]
+    public decimal UnitPrice { get; set; }
 
-        var params: Parameters {
-            var params: Parameters = [:]
-            // params["key"] = value
-            return params
-        }
+    [JsonPropertyName("initial_stock")]
+    public int InitialStock { get; set; }
 
-        var additionalHeaders: Alamofire.HTTPHeaders {
-            HTTPConstants.HTTPAcceptHeaders.V1.plain
-        }
-
-        var endpoint: String {
-            "api-endpoint/path"
-        }
-
-        func decode(data: Any) -> Output {
-            Mapper<[WrapperType]<[ResponseType]>>()
-                .map(JSONObject: data)?.data
-        }
-    }
+    // Add fields matching the API contract
 }
 ```
 
-## Multiple Operations Template
+## Response DTO Template
 
-```swift
-import Foundation
-import Action
-import Alamofire
-import ObjectMapper
-import CTCommon
-import CTApiClient
+```csharp
+// File: src/DesktopLamour/Features/[Module]/Data/DTOs/[Entity]Dto.cs
+using System.Text.Json.Serialization;
 
-struct [Name]Target {
-    typealias HTTPMethod = Alamofire.HTTPMethod
-    typealias Parameters = Alamofire.Parameters
+namespace DesktopLamour.Features.[Module].Data.DTOs;
 
-    struct Get[Entity]Target: Requestable {
-        typealias Output = [Entity]?
+public class [Entity]Dto
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
 
-        let entityID: String
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
 
-        var httpMethod: HTTPMethod { .get }
+    [JsonPropertyName("unit_price")]
+    public decimal UnitPrice { get; set; }
 
-        var params: Parameters {
-            ["id": entityID]
-        }
+    [JsonPropertyName("stock")]
+    public int Stock { get; set; }
 
-        var additionalHeaders: Alamofire.HTTPHeaders {
-            HTTPConstants.HTTPAcceptHeaders.V1.plain
-        }
-
-        var endpoint: String {
-            "api/[entity]/\(entityID)"
-        }
-
-        func decode(data: Any) -> Output {
-            Mapper<[WrapperType]<[Entity]>>()
-                .map(JSONObject: data)?.data
-        }
-    }
-
-    struct Create[Entity]Target: Requestable {
-        typealias Output = [Entity]?
-
-        let entityData: [Entity]CreateParams
-
-        var httpMethod: HTTPMethod { .post }
-
-        var params: Parameters {
-            entityData.toJSON()
-        }
-
-        var additionalHeaders: Alamofire.HTTPHeaders {
-            HTTPConstants.HTTPAcceptHeaders.V1.plain
-        }
-
-        var endpoint: String {
-            "api/[entity]"
-        }
-
-        func decode(data: Any) -> Output {
-            Mapper<[WrapperType]<[Entity]>>()
-                .map(JSONObject: data)?.data
-        }
-    }
+    [JsonPropertyName("created_at")]
+    public DateTime CreatedAt { get; set; }
 }
 ```
 
-## Common Parameter Patterns
+---
 
-```swift
-// GET with optional query params
-var params: Parameters {
-    var params: Parameters = [:]
-    if let filterValue = filterValue {
-        params["filter"] = filterValue
-    }
-    params["page"] = page
-    params["limit"] = limit
-    return params
+## Service Interface Method
+
+```csharp
+// ADD to I[ServiceName]Service.cs interface:
+
+// GET list
+Task<IEnumerable<[Entity]Dto>> Get[Entities]Async(CancellationToken ct = default);
+
+// GET single
+Task<[Entity]Dto?> Get[Entity]ByIdAsync(int id, CancellationToken ct = default);
+
+// POST create
+Task<[Entity]Dto> Create[Entity]Async(Create[Entity]Request request, CancellationToken ct = default);
+
+// PUT update
+Task<[Entity]Dto> Update[Entity]Async(int id, Update[Entity]Request request, CancellationToken ct = default);
+
+// DELETE
+Task Delete[Entity]Async(int id, CancellationToken ct = default);
+```
+
+---
+
+## Service Implementation Methods
+
+```csharp
+// ADD to [ServiceName]Service.cs implementation:
+// using System.Net.Http.Json;
+
+// GET list
+public async Task<IEnumerable<[Entity]Dto>> Get[Entities]Async(CancellationToken ct = default)
+{
+    return await _httpClient.GetFromJsonAsync<IEnumerable<[Entity]Dto>>(
+        "/api/[endpoint]", ct)
+           ?? Enumerable.Empty<[Entity]Dto>();
 }
 
-// POST with optional fields
-var params: Parameters {
-    var params: Parameters = [:]
-    params["owner"] = (UserManager.shared().getUserInfo()?.accountId ?? 0).stringValue
-    if let fileID = fileID, !fileID.isEmpty {
-        params["file_id"] = fileID
-    }
-    return params
+// GET single
+public async Task<[Entity]Dto?> Get[Entity]ByIdAsync(int id, CancellationToken ct = default)
+{
+    return await _httpClient.GetFromJsonAsync<[Entity]Dto>(
+        $"/api/[endpoint]/{id}", ct);
 }
 
-// POST from Mappable model
-var params: Parameters {
-    entityData.toJSON()
+// POST create
+public async Task<[Entity]Dto> Create[Entity]Async(
+    Create[Entity]Request request, CancellationToken ct = default)
+{
+    var response = await _httpClient.PostAsJsonAsync("/api/[endpoint]", request, ct);
+    response.EnsureSuccessStatusCode();
+    return await response.Content.ReadFromJsonAsync<[Entity]Dto>(ct)
+           ?? throw new InvalidOperationException("Server returned no content.");
+}
+
+// PUT update
+public async Task<[Entity]Dto> Update[Entity]Async(
+    int id, Update[Entity]Request request, CancellationToken ct = default)
+{
+    var response = await _httpClient.PutAsJsonAsync($"/api/[endpoint]/{id}", request, ct);
+    response.EnsureSuccessStatusCode();
+    return await response.Content.ReadFromJsonAsync<[Entity]Dto>(ct)
+           ?? throw new InvalidOperationException("Server returned no content.");
+}
+
+// DELETE
+public async Task Delete[Entity]Async(int id, CancellationToken ct = default)
+{
+    var response = await _httpClient.DeleteAsync($"/api/[endpoint]/{id}", ct);
+    response.EnsureSuccessStatusCode();
 }
 ```
+
+---
+
+## JSON Naming Conventions
+
+| JSON key (snake_case) | C# property (PascalCase) | JsonPropertyName |
+|---|---|---|
+| `full_name` | `FullName` | `[JsonPropertyName("full_name")]` |
+| `unit_price` | `UnitPrice` | `[JsonPropertyName("unit_price")]` |
+| `created_at` | `CreatedAt` | `[JsonPropertyName("created_at")]` |
+| `is_active` | `IsActive` | `[JsonPropertyName("is_active")]` |
+| `phone_number` | `PhoneNumber` | `[JsonPropertyName("phone_number")]` |
+
+---
 
 ## Rules
 
-1. All targets are nested structs inside a container `struct [Name]Target`
-2. Each operation struct conforms to `Requestable`
-3. `Output` typealias is always Optional: `[ResponseType]?`
-4. `decode(data:)` uses `Mapper<WrapperType<ResponseType>>().map(JSONObject: data)?.data`
-5. `additionalHeaders` defaults to `HTTPConstants.HTTPAcceptHeaders.V1.plain` unless specified
-6. No business logic in targets — only HTTP method, params, endpoint, decode
-7. Endpoints use string literals (not `Api.*` key lookup — that's added in NetworkHelper separately)
+1. All DTO properties use `[JsonPropertyName]` with snake_case keys
+2. Use `System.Net.Http.Json` extension methods — never `JsonConvert` or manual JSON
+3. Call `EnsureSuccessStatusCode()` on POST/PUT/PATCH/DELETE
+4. GET endpoints return `null`-safe results (use `?? Enumerable.Empty<T>()`)
+5. Never put DTOs in the Domain layer — they belong in `Data/DTOs/`
+6. Request DTOs are separate classes from Response DTOs
+7. All methods accept `CancellationToken ct = default`

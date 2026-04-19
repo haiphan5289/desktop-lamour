@@ -5,14 +5,16 @@
     <!-- ================================================ -->
     <!--  Display                                          -->
     <!-- ================================================ -->
-    <Style x:Key="AppTypography.DisplayPage" TargetType="{x:Type controls:AppLabel}">
+    <Style x:Key="AppTypography.DisplayPage" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
         <Setter Property="FontSize"   Value="32"/>
         <Setter Property="FontWeight" Value="Bold"/>
         <Setter Property="Foreground" Value="{StaticResource AppColor.TextPrimary}"/>
         <Setter Property="Padding"    Value="0"/>
     </Style>
 
-    <Style x:Key="AppTypography.DisplaySection" TargetType="{x:Type controls:AppLabel}">
+    <Style x:Key="AppTypography.DisplaySection" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
         <Setter Property="FontSize"   Value="24"/>
         <Setter Property="FontWeight" Value="Bold"/>
         <Setter Property="Foreground" Value="{StaticResource AppColor.TextPrimary}"/>
@@ -22,14 +24,16 @@
     <!-- ================================================ -->
     <!--  Header                                           -->
     <!-- ================================================ -->
-    <Style x:Key="AppTypography.HeaderPage" TargetType="{x:Type controls:AppLabel}">
+    <Style x:Key="AppTypography.HeaderPage" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
         <Setter Property="FontSize"   Value="20"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{StaticResource AppColor.TextPrimary}"/>
         <Setter Property="Padding"    Value="0"/>
     </Style>
 
-    <Style x:Key="AppTypography.HeaderSection" TargetType="{x:Type controls:AppLabel}">
+    <Style x:Key="AppTypography.HeaderSection" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
         <Setter Property="FontSize"   Value="16"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{StaticResource AppColor.TextPrimary}"/>
@@ -39,21 +43,24 @@
     <!-- ================================================ -->
     <!--  Label                                            -->
     <!-- ================================================ -->
-    <Style x:Key="AppTypography.LabelPage" TargetType="{x:Type controls:AppLabel}">
+    <Style x:Key="AppTypography.LabelPage" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
         <Setter Property="FontSize"   Value="16"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{StaticResource AppColor.TextPrimary}"/>
         <Setter Property="Padding"    Value="0"/>
     </Style>
 
-    <Style x:Key="AppTypography.LabelSection" TargetType="{x:Type controls:AppLabel}">
+    <Style x:Key="AppTypography.LabelSection" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
         <Setter Property="FontSize"   Value="14"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{StaticResource AppColor.TextPrimary}"/>
         <Setter Property="Padding"    Value="0"/>
     </Style>
 
-    <Style x:Key="AppTypography.LabelCaption" TargetType="{x:Type controls:AppLabel}">
+    <Style x:Key="AppTypography.LabelCaption" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
         <Setter Property="FontSize"   Value="12"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{StaticResource AppColor.TextPrimary}"/>
@@ -63,14 +70,16 @@
     <!-- ================================================ -->
     <!--  Body                                             -->
     <!-- ================================================ -->
-    <Style x:Key="AppTypography.BodySection" TargetType="{x:Type controls:AppLabel}">
+    <Style x:Key="AppTypography.BodySection" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
         <Setter Property="FontSize"   Value="14"/>
         <Setter Property="FontWeight" Value="Normal"/>
         <Setter Property="Foreground" Value="{StaticResource AppColor.TextPrimary}"/>
         <Setter Property="Padding"    Value="0"/>
     </Style>
 
-    <Style x:Key="AppTypography.BodyCaption" TargetType="{x:Type controls:AppLabel}">
+    <Style x:Key="AppTypography.BodyCaption" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
         <Setter Property="FontSize"   Value="12"/>
         <Setter Property="FontWeight" Value="Normal"/>
         <Setter Property="Foreground" Value="{StaticResource AppColor.TextSecondary}"/>
@@ -80,7 +89,8 @@
     <!-- ================================================ -->
     <!--  Note (italic)                                    -->
     <!-- ================================================ -->
-    <Style x:Key="AppTypography.NoteSection" TargetType="{x:Type controls:AppLabel}">
+    <Style x:Key="AppTypography.NoteSection" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
         <Setter Property="FontSize"   Value="12"/>
         <Setter Property="FontWeight" Value="Normal"/>
         <Setter Property="FontStyle"  Value="Italic"/>

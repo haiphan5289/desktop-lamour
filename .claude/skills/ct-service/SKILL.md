@@ -1,135 +1,126 @@
 ---
 name: ct-service
-description: Generate a basic iOS Service (protocol + implementation) following Clean Architecture patterns. Services call API Targets with .execute() and return RxSwift Observables. Use when adding a new service layer for network API calls. Named [Name]ServiceType (protocol) and [Name]Service (struct).
+description: Generate a C# Service (interface + implementation) for Desktop Lamour. Interface named I[Name]Service, implementation [Name]Service. Constructor injects HttpClient. Methods call REST API via HttpClient using System.Net.Http.Json extensions and return deserialized DTOs.
+model: haiku
+effort: low
 ---
 
-# iOS Basic Service Generator
+# C# Service Generator for Desktop Lamour
 
-> **Anti-Hallucination:** Verify every symbol, token, path, and identifier against the codebase before generating code. See [ct-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
+> **Anti-Hallucination:** Verify every class name, interface, namespace, and file path against the codebase before generating code. See [lamour-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
 
-Generate Service protocol and implementation following Clean Architecture and API integration patterns.
+Generate Service interface and implementation following Clean Architecture. Services are the outermost data layer — they call the REST API via HttpClient and return raw DTOs.
 
 ## Input Format
 
 ```
-SERVICE_NAME: <ServiceName, e.g. "SmartAd">
-FEATURE: <Module, e.g. "CTInsertAd">
-OPERATIONS: <comma-separated, e.g. "fetch,submit,update,delete">
-ENTITY: <entity type, e.g. "Category">
+SERVICE_NAME: <Name, e.g. "Employee">
+MODULE: <Module name, e.g. "Employees">
+ENDPOINTS: <comma-separated endpoint descriptions, e.g. "GET /api/employees, POST /api/employees, PUT /api/employees/{id}, DELETE /api/employees/{id}">
 ```
 
 ## Service Template
 
-```swift
-import Foundation
-import RxSwift
-import CTApiClient
+```csharp
+// File: src/DesktopLamour/Features/[Module]/Data/I[Name]Service.cs
+using DesktopLamour.Features.[Module].Data.DTOs;
 
-protocol [Name]ServiceType {
-    // func fetchSomeData(parameter: String) -> Observable<[SomeModel]?>
-    // func submitData(_ data: SomeInputModel) -> Observable<SomeResponseModel?>
-    // func updateData(id: String, data: SomeInputModel) -> Observable<SomeResponseModel?>
-    // func deleteData(id: String) -> Observable<Bool>
-}
+namespace DesktopLamour.Features.[Module].Data;
 
-struct [Name]Service: [Name]ServiceType {
-
-    // MARK: - [Name]ServiceType
-
-    // func fetchSomeData(parameter: String) -> Observable<[SomeModel]?> {
-    //     [Name]Targets.FetchData(parameter: parameter)
-    //         .execute()
-    //         .observe(on: MainScheduler.instance)
-    // }
-    //
-    // func submitData(_ data: SomeInputModel) -> Observable<SomeResponseModel?> {
-    //     [Name]Targets.SubmitData(data: data)
-    //         .execute()
-    //         .observe(on: MainScheduler.instance)
-    // }
-    //
-    // func updateData(id: String, data: SomeInputModel) -> Observable<SomeResponseModel?> {
-    //     [Name]Targets.UpdateData(id: id, data: data)
-    //         .execute()
-    //         .observe(on: MainScheduler.instance)
-    // }
-    //
-    // func deleteData(id: String) -> Observable<Bool> {
-    //     [Name]Targets.DeleteData(id: id)
-    //         .execute()
-    //         .map { _ in true }
-    //         .catchAndReturn(false)
-    //         .observe(on: MainScheduler.instance)
-    // }
+public interface I[Name]Service
+{
+    Task<IEnumerable<[Name]Dto>> GetAllAsync(CancellationToken ct = default);
+    Task<[Name]Dto?> GetByIdAsync(int id, CancellationToken ct = default);
+    Task<[Name]Dto> CreateAsync([Name]Dto dto, CancellationToken ct = default);
+    Task<[Name]Dto> UpdateAsync(int id, [Name]Dto dto, CancellationToken ct = default);
+    Task DeleteAsync(int id, CancellationToken ct = default);
 }
 ```
 
-## Advanced Service with Error Handling
+```csharp
+// File: src/DesktopLamour/Features/[Module]/Data/[Name]Service.cs
+using System.Net.Http.Json;
+using DesktopLamour.Features.[Module].Data.DTOs;
 
-```swift
-import Foundation
-import RxSwift
-import CTApiClient
-import CTCommon
+namespace DesktopLamour.Features.[Module].Data;
 
-protocol [Name]ServiceType {
-    // func fetchConfiguredData(categoryId: String, type: String) -> Observable<ConfigModel>
-}
+public class [Name]Service : I[Name]Service
+{
+    private readonly HttpClient _httpClient;
 
-struct [Name]Service: [Name]ServiceType {
-
-    // func fetchConfiguredData(categoryId: String, type: String) -> Observable<ConfigModel> {
-    //     let observable = [Name]Targets.GetConfiguration(categoryId: categoryId).execute()
-    //     return observable
-    //         .map { response in
-    //             guard let config = response[type] else {
-    //                 throw LoadingError.noResponse
-    //             }
-    //             return config
-    //         }
-    //         .observe(on: MainScheduler.instance)
-    // }
-}
-```
-
-## Naming Conventions
-
-- **Protocol**: `[Name]ServiceType`
-- **Implementation**: `[Name]Service` (struct, not class)
-- **Methods**: descriptive verbs — `fetch`, `submit`, `update`, `delete`, `check`, `analyze`
-
-## Required Imports
-
-```swift
-import Foundation
-import RxSwift
-import CTApiClient
-// Optional: import CTCommon for error handling
-```
-
-## Error Handling Patterns
-
-```swift
-// Simple fallback
-.catchAndReturn(defaultValue)
-
-// Custom error mapping
-.map { response in
-    guard let data = response.data else {
-        throw LoadingError.noResponse
+    public [Name]Service(HttpClient httpClient)
+    {
+        _httpClient = httpClient;
     }
-    return data
-}
 
-// Optional compaction
-.compactMap { $0 }
+    public async Task<IEnumerable<[Name]Dto>> GetAllAsync(CancellationToken ct = default)
+    {
+        return await _httpClient.GetFromJsonAsync<IEnumerable<[Name]Dto>>(
+            "/api/[endpoint]", ct)
+               ?? Enumerable.Empty<[Name]Dto>();
+    }
+
+    public async Task<[Name]Dto?> GetByIdAsync(int id, CancellationToken ct = default)
+    {
+        return await _httpClient.GetFromJsonAsync<[Name]Dto>(
+            $"/api/[endpoint]/{id}", ct);
+    }
+
+    public async Task<[Name]Dto> CreateAsync([Name]Dto dto, CancellationToken ct = default)
+    {
+        var response = await _httpClient.PostAsJsonAsync("/api/[endpoint]", dto, ct);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<[Name]Dto>(ct)
+               ?? throw new InvalidOperationException("No response from server.");
+    }
+
+    public async Task<[Name]Dto> UpdateAsync(int id, [Name]Dto dto, CancellationToken ct = default)
+    {
+        var response = await _httpClient.PutAsJsonAsync($"/api/[endpoint]/{id}", dto, ct);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<[Name]Dto>(ct)
+               ?? throw new InvalidOperationException("No response from server.");
+    }
+
+    public async Task DeleteAsync(int id, CancellationToken ct = default)
+    {
+        var response = await _httpClient.DeleteAsync($"/api/[endpoint]/{id}", ct);
+        response.EnsureSuccessStatusCode();
+    }
+}
 ```
+
+## HttpClient Registration
+
+Services with HttpClient must be registered via `AddHttpClient<>` in the DI extension:
+
+```csharp
+// In [Module]ServiceExtensions.cs
+services.AddHttpClient<I[Name]Service, [Name]Service>(client =>
+{
+    client.BaseAddress = new Uri(configuration["ApiBaseUrl"]!);
+});
+```
+
+## HTTP Method Reference
+
+| Operation | Method | Extension |
+|---|---|---|
+| Fetch list | GET | `GetFromJsonAsync<T>()` |
+| Fetch single | GET | `GetFromJsonAsync<T?>()` |
+| Create | POST | `PostAsJsonAsync()` + `ReadFromJsonAsync<T>()` |
+| Update | PUT | `PutAsJsonAsync()` + `ReadFromJsonAsync<T>()` |
+| Partial update | PATCH | `PatchAsJsonAsync()` + `ReadFromJsonAsync<T>()` |
+| Delete | DELETE | `DeleteAsync()` + `EnsureSuccessStatusCode()` |
 
 ## Rules
 
-1. Always define a protocol `[Name]ServiceType` — never a concrete-only service
-2. All methods MUST return `Observable<T>` (RxSwift)
-3. Always add `.observe(on: MainScheduler.instance)` at the end of each chain
-4. Use Target's `.execute()` method for API calls
-5. Implementation is a `struct`, not a `class`
-6. Never add business logic to services — only data fetch/transform
+1. Interface named `I[Name]Service` — always define interface, never concrete-only
+2. Implementation class `[Name]Service`
+3. All methods are `async Task<T>` with `CancellationToken ct = default`
+4. Constructor injects `HttpClient` — registered via `AddHttpClient<>`
+5. Use `System.Net.Http.Json` extension methods — never `JsonConvert` or manual deserialization
+6. Call `EnsureSuccessStatusCode()` on mutating operations (POST/PUT/DELETE)
+7. Return type is always DTO, never domain model
+8. No business logic in services — only HTTP calls and deserialization
+9. Namespace: `DesktopLamour.Features.[Module].Data`

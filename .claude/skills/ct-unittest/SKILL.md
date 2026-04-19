@@ -1,246 +1,309 @@
 ---
 name: ct-unittest
-description: Generate iOS unit test structure using Quick and Nimble with mock classes. Creates QuickSpec test files with beforeEach setup, BDD-style describe/context/it blocks, mock repository, mock presentable, and mock use case. Use when writing tests for ViewModels, UseCases, or Repositories. Follows Given-When-Then pattern.
+description: Generate xUnit unit tests for Desktop Lamour C# classes. Creates test file with [Fact]/[Theory] tests, Moq mocks for interfaces, Arrange/Act/Assert pattern. Use for ViewModel, UseCase, or Repository tests covering happy path, error path, and edge cases.
+model: sonnet
+effort: medium
 ---
 
-# iOS Unit Test Generator
+# xUnit Unit Test Generator for Desktop Lamour
 
-> **Anti-Hallucination:** Verify every symbol, token, path, and identifier against the codebase before generating code. See [ct-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
+> **Anti-Hallucination:** Verify every class name, interface, namespace, and file path against the codebase before generating code. See [lamour-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
 
-Generate unit test structure with Quick, Nimble, and mock classes.
+Generate xUnit unit tests using Moq for Desktop Lamour C# classes.
 
 ## Input Format
 
 ```
-CLASS_NAME: <Class being tested, e.g. "UserProfileViewModel">
-FEATURE: <Feature module, e.g. "CTUserManagement">
-TEST_TYPE: <viewModel | useCase | repository>
+CLASS_NAME: <class being tested, e.g. "GetEmployeesUseCase">
+CLASS_TYPE: <ViewModel | UseCase | Repository>
+MODULE: <e.g. "Employees">
 ```
 
-## Test Spec Template
+---
 
-```swift
-import Foundation
-import UIKit
-import CTDesignSystem
-import CTCommon
-import RxSwift
-import Quick
-import Nimble
+## ViewModel Test Template
 
-@testable import [FeatureModule]
+```csharp
+// File: tests/DesktopLamour.Tests/Features/[Module]/[Name]ViewModelTests.cs
+using CommunityToolkit.Mvvm.Input;
+using DesktopLamour.Features.[Module].Domain;
+using DesktopLamour.Features.[Module].ViewModels;
+using Moq;
+using Xunit;
 
-final class [ClassName]Spec: QuickSpec {
-    override func spec() {
-        var sut: [ClassUnderTest]!
-        var mockPresenter: Mock[ClassName]Presentable!
-        var mockRepository: Mock[Repository]!
-        // var mockRouter: Mock[Router]!
-        // var mockUseCase: Mock[UseCase]!
+namespace DesktopLamour.Tests.Features.[Module];
 
-        beforeEach {
-            mockRepository = Mock[Repository]()
-            mockPresenter = Mock[ClassName]Presentable()
+public class [Name]ViewModelTests
+{
+    private readonly Mock<IGet[Entity]sUseCase> _mockUseCase;
+    private readonly [Name]ViewModel _sut;
 
-            sut = [ClassUnderTest](
-                // repository: mockRepository
-            )
+    public [Name]ViewModelTests()
+    {
+        _mockUseCase = new Mock<IGet[Entity]sUseCase>();
+        _sut = new [Name]ViewModel(_mockUseCase.Object);
+    }
 
-            mockPresenter.stubbedIsLoadingRelay = BehaviorRelay<Bool>(value: false)
-            mockPresenter.stubbedListener = sut
-            sut.presenter = mockPresenter
-            sut.didBecomeActive()
-        }
+    [Fact]
+    public async Task Load[Entity]sCommand_OnSuccess_PopulatesCollection()
+    {
+        // Arrange
+        var expected = new List<[Entity]>
+        {
+            new() { Id = 1, FullName = "Test Employee" }
+        };
+        _mockUseCase
+            .Setup(x => x.ExecuteAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expected);
 
-        describe("[ClassUnderTest]") {
-            context("when initialized") {
-                it("should set presenter's listener to the SUT") {
-                    expect(mockPresenter.stubbedListener).to(beIdenticalTo(sut))
-                }
+        // Act
+        await _sut.Load[Entity]sCommand.ExecuteAsync(null);
 
-                it("should configure initial state") {
-                    expect(sut).toNot(beNil())
-                }
-            }
+        // Assert
+        Assert.Single(_sut.Items);
+        Assert.Equal("Test Employee", _sut.Items[0].FullName);
+        Assert.False(_sut.IsLoading);
+        Assert.Empty(_sut.ErrorMessage);
+    }
 
-            context("when didBecomeActive is called") {
-                it("should configure presenter and listener") {
-                    expect(mockPresenter.stubbedListener).to(beIdenticalTo(sut))
-                }
-            }
+    [Fact]
+    public async Task Load[Entity]sCommand_OnException_SetsErrorMessage()
+    {
+        // Arrange
+        _mockUseCase
+            .Setup(x => x.ExecuteAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException("Network error"));
 
-            context("when [specific action] occurs") {
-                it("should [expected behavior]") {
-                    // Given
-                    // When
-                    // Then
-                }
-            }
-        }
+        // Act
+        await _sut.Load[Entity]sCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Empty(_sut.Items);
+        Assert.NotEmpty(_sut.ErrorMessage);
+        Assert.False(_sut.IsLoading); // IsLoading must be false even after error
+    }
+
+    [Fact]
+    public async Task Load[Entity]sCommand_OnEmptyResult_CollectionIsEmpty()
+    {
+        // Arrange
+        _mockUseCase
+            .Setup(x => x.ExecuteAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Enumerable.Empty<[Entity]>());
+
+        // Act
+        await _sut.Load[Entity]sCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Empty(_sut.Items);
+        Assert.False(_sut.IsLoading);
+    }
+
+    [Fact]
+    public async Task Load[Entity]sCommand_Always_SetsIsLoadingFalseInFinally()
+    {
+        // Arrange — use task that throws
+        _mockUseCase
+            .Setup(x => x.ExecuteAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Any error"));
+
+        // Act
+        await _sut.Load[Entity]sCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.False(_sut.IsLoading); // Must be false even on exception
     }
 }
 ```
 
-## Mock Repository Template
+---
 
-```swift
-import Foundation
-import RxSwift
+## UseCase Test Template
 
-@testable import [FeatureModule]
+```csharp
+// File: tests/DesktopLamour.Tests/Features/[Module]/[Name]UseCaseTests.cs
+using DesktopLamour.Features.[Module].Data;
+using DesktopLamour.Features.[Module].Domain;
+using Moq;
+using Xunit;
 
-final class Mock[RepositoryName]: [RepositoryName]Type {
+namespace DesktopLamour.Tests.Features.[Module];
 
-    var invokedMethodName = false
-    var invokedMethodNameCount = 0
-    var invokedMethodNameParameters: ([ParameterType], [ParameterType])?
-    var stubbedMethodNameResult: Observable<[ReturnType]>!
+public class [Name]UseCaseTests
+{
+    private readonly Mock<I[Entity]Repository> _mockRepository;
+    private readonly [Name]UseCase _sut;
 
-    func methodName(
-        parameter1: [ParameterType],
-        parameter2: [ParameterType]
-    ) -> Observable<[ReturnType]> {
-        invokedMethodName = true
-        invokedMethodNameCount += 1
-        invokedMethodNameParameters = (parameter1, parameter2)
-        return stubbedMethodNameResult
+    public [Name]UseCaseTests()
+    {
+        _mockRepository = new Mock<I[Entity]Repository>();
+        _sut = new [Name]UseCase(_mockRepository.Object);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ReturnsRepositoryResult()
+    {
+        // Arrange
+        var expected = new List<[Entity]>
+        {
+            new() { Id = 1, FullName = "Employee 1" }
+        };
+        _mockRepository
+            .Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expected);
+
+        // Act
+        var result = await _sut.ExecuteAsync();
+
+        // Assert
+        Assert.Equal(expected, result);
+        _mockRepository.Verify(x => x.GetAllAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenRepositoryThrows_PropagatesException()
+    {
+        // Arrange
+        _mockRepository
+            .Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("DB error"));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _sut.ExecuteAsync());
+    }
+
+    // Business rule test (e.g. for ExportInvoice UseCase):
+    [Fact]
+    public async Task ExecuteAsync_WhenStockInsufficient_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var product = new Product { Id = 1, Stock = 5 };
+        _mockRepository
+            .Setup(x => x.GetProductAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(product);
+
+        var request = new ExportInvoiceLine { ProductId = 1, Quantity = 10 };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _sut.ExecuteAsync(request));
     }
 }
 ```
 
-## Mock Presentable Template
+---
 
-```swift
-import Foundation
-import RxSwift
-import RxRelay
+## Repository Test Template
 
-@testable import [FeatureModule]
+```csharp
+// File: tests/DesktopLamour.Tests/Features/[Module]/[Name]RepositoryTests.cs
+using DesktopLamour.Features.[Module].Data;
+using DesktopLamour.Features.[Module].Data.DTOs;
+using Moq;
+using Xunit;
 
-final class Mock[PresentableName]: [PresentableName] {
+namespace DesktopLamour.Tests.Features.[Module];
 
-    // MARK: - Listener
-    var invokedListenerSetter = false
-    var invokedListener: [PresentableListener]?
-    var stubbedListener: [PresentableListener]!
+public class [Name]RepositoryTests
+{
+    private readonly Mock<I[Entity]Service> _mockService;
+    private readonly [Name]Repository _sut;
 
-    var listener: [PresentableListener]? {
-        set {
-            invokedListenerSetter = true
-            invokedListener = newValue
-        }
-        get { stubbedListener }
+    public [Name]RepositoryTests()
+    {
+        _mockService = new Mock<I[Entity]Service>();
+        _sut = new [Name]Repository(_mockService.Object);
     }
 
-    // MARK: - BehaviorRelay Properties
+    [Fact]
+    public async Task GetAllAsync_MapssDtoToDomainModel()
+    {
+        // Arrange
+        var dtos = new List<[Entity]Dto>
+        {
+            new() { Id = 1, FullName = "Test", PhoneNumber = "0901234567" }
+        };
+        _mockService
+            .Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(dtos);
 
-    var stubbedIsLoadingRelay: BehaviorRelay<Bool>!
-    var isLoadingRelay: BehaviorRelay<Bool> {
-        get { stubbedIsLoadingRelay }
-        set { stubbedIsLoadingRelay = newValue }
+        // Act
+        var result = await _sut.GetAllAsync();
+
+        // Assert
+        var single = Assert.Single(result);
+        Assert.Equal(1, single.Id);
+        Assert.Equal("Test", single.FullName);
+        Assert.Equal("0901234567", single.PhoneNumber);
     }
 
-    var stubbedDataSource: BehaviorRelay<[DataModel]>!
-    var dataSource: BehaviorRelay<[DataModel]> {
-        get { stubbedDataSource }
-        set { stubbedDataSource = newValue }
-    }
+    [Fact]
+    public async Task GetAllAsync_WhenServiceReturnsEmpty_ReturnsEmptyCollection()
+    {
+        // Arrange
+        _mockService
+            .Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Enumerable.Empty<[Entity]Dto>());
 
-    var stubbedErrorMessage: BehaviorRelay<String?>!
-    var errorMessage: BehaviorRelay<String?> {
-        get { stubbedErrorMessage }
-        set { stubbedErrorMessage = newValue }
-    }
+        // Act
+        var result = await _sut.GetAllAsync();
 
-    // MARK: - Methods
-
-    var invokedMethodName = false
-    var invokedMethodNameCount = 0
-
-    func methodName(parameter: [ParameterType]) {
-        invokedMethodName = true
-        invokedMethodNameCount += 1
-    }
-}
-```
-
-## Mock UseCase Template
-
-```swift
-import Foundation
-import RxSwift
-import Action
-
-@testable import [FeatureModule]
-
-final class Mock[UseCaseName]: [UseCaseName]Type {
-
-    var invokedActionGetter = false
-    var stubbedAction: Action<[InputType], [OutputType]>?
-
-    var action: Action<[InputType], [OutputType]>? {
-        get {
-            invokedActionGetter = true
-            return stubbedAction
-        }
-        set { stubbedAction = newValue }
+        // Assert
+        Assert.Empty(result);
     }
 }
 ```
 
-## Test Organization Patterns
+---
 
-### BDD Structure
-```swift
-describe("UserProfileViewModel") {
-    context("when user data is loaded") {
-        it("should update the data source") { }
-        it("should stop loading state") { }
-    }
+## [Theory] with Test Data
 
-    context("when error occurs") {
-        it("should display error message") { }
-    }
+```csharp
+[Theory]
+[InlineData(0, 5, false)]   // requested 0, stock 5 — should be valid
+[InlineData(5, 5, true)]    // requested 5, stock 5 — exact match, valid
+[InlineData(6, 5, false)]   // requested 6, stock 5 — invalid
+public async Task ExportUseCase_StockValidation(
+    int requested, int available, bool expectException)
+{
+    // Arrange
+    var product = new Product { Stock = available };
+    _mockRepository.Setup(x => x.GetProductAsync(1, default)).ReturnsAsync(product);
+
+    var line = new ExportInvoiceLine { ProductId = 1, Quantity = requested };
+
+    // Act & Assert
+    if (expectException)
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.ExecuteAsync(line));
+    else
+        await _sut.ExecuteAsync(line); // Should not throw
 }
 ```
 
-### Given-When-Then
-```swift
-it("should handle successful login") {
-    // Given
-    let expectedUser = UserModel.mock()
-    mockUseCase.stubbedRunResult = Observable.just(expectedUser)
+---
 
-    // When
-    sut.login(email: "test@example.com", password: "password")
+## Test Project Setup
 
-    // Then
-    expect(mockPresenter.stubbedDataSource.value).to(equal(expectedUser))
-    expect(mockPresenter.stubbedIsLoadingRelay.value).to(beFalse())
-}
+```xml
+<!-- tests/DesktopLamour.Tests/DesktopLamour.Tests.csproj -->
+<ItemGroup>
+    <PackageReference Include="xunit" Version="2.9.*"/>
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.*"/>
+    <PackageReference Include="Moq" Version="4.20.*"/>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.*"/>
+</ItemGroup>
 ```
 
-### Mock Verification
-```swift
-it("should call repository with correct parameters") {
-    // Given
-    let userID = "123"
-
-    // When
-    sut.loadUser(id: userID)
-
-    // Then
-    expect(mockRepository.invokedGetUser).to(beTrue())
-    expect(mockRepository.invokedGetUserParameters?.userID).to(equal(userID))
-}
-```
+---
 
 ## Rules
 
-- All test files use `QuickSpec` with `override func spec()`
-- Always initialize mocks in `beforeEach`
-- Mock properties track invocation count (`invokedXCount`) and last params (`invokedXParameters`)
-- Use `@testable import [FeatureModule]` for access
-- Never test implementation details — test behavior only
-- Use `beTrue()`, `beFalse()`, `beNil()`, `equal()`, `beIdenticalTo()` from Nimble
-- Tests should not depend on order of execution
+- Test class name: `[ClassName]Tests`
+- Constructor creates SUT (`_sut`) and mocks
+- Use Moq `Mock<IInterface>` for all dependencies
+- `[Fact]` for single-path tests, `[Theory]` with `[InlineData]` for parameterized tests
+- Arrange / Act / Assert comments in each test method
+- Verify `IsLoading = false` after any async command (even on error)
+- Business rule tests use `Assert.ThrowsAsync<>` for validation failures
+- Never test implementation details — test observable behavior only

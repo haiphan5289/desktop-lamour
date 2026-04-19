@@ -1,71 +1,210 @@
 ---
 name: swiftui-design-system
-description: "CT Design System tokens and components for SwiftUI. Use for colors, typography, spacing, buttons, inputs, cards — always use CT tokens, never raw values."
-argument-hint: "[component or token type]"
+description: Desktop Lamour XAML design system quick reference. AppStyles.xaml keys, AppTypography.xaml keys, color brush keys, spacing thickness keys, correct binding patterns (UpdateSourceTrigger=PropertyChanged), DataGrid column templates, loading overlay pattern.
+model: haiku
+effort: low
 ---
 
-# CT Design System Skill
+# Desktop Lamour XAML Design System Quick Reference
 
-> **Anti-Hallucination:** Verify every symbol, token, path, and identifier against the codebase before generating code. See [ct-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
+> **Anti-Hallucination:** Verify every class name, interface, namespace, and file path against the codebase before generating code. See [lamour-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
 
-Complete reference for CTDesignSystem tokens and components (v3.0+).
-
-**Last synced:** 2026-01-26
+Quick reference card for Desktop Lamour WPF styles, bindings, and patterns.
 
 ---
 
-## Setup
+## Resource Dictionary Locations
 
-- `DS.registerFonts()` in App init (REQUIRED for custom fonts)
-- `import CTDesignSystemSwiftUI` in every SwiftUI file
-- `@Environment(\.colorTheme) var theme` in every View
-- `.environment(\.colorTheme, .pty)` at app root
+| File | Contains |
+|---|---|
+| `src/DesktopLamour/Themes/AppTypography.xaml` | Text styles, font sizes, label styles |
+| `src/DesktopLamour/Shared/AppStyles.xaml` | Button, input, DataGrid, card styles |
+| `src/DesktopLamour/App.xaml` | Merged dictionaries, global converters |
 
-## Themes
+---
 
-`.chotot` (Yellow) | `.job` (Blue) | `.pty` (Orange-red) | `.veh` (Yellow)
+## Typography Keys (from AppTypography.xaml)
 
-## Read Guide
+Verify keys exist before use with: `Grep: pattern="x:Key=\"...\""` in Themes folder.
 
-| Task | File |
-|------|------|
-| Color tokens, theme colors | [references/colors.md](./references/colors.md) |
-| Text styles, fonts | [references/typography.md](./references/typography.md) |
-| Spacing, padding, radius, borders | [references/spacing.md](./references/spacing.md) |
-| UI components (buttons, inputs...) | [references/components.md](./references/components.md) |
-| Hex→token conversion (Figma) | [references/color-mapping.yaml](./references/color-mapping.yaml) |
-| SwiftUI code review (Few-Shot) | [../review-code/references/review-code-swiftUI.md](../review-code/references/review-code-swiftUI.md) |
+```xml
+<!-- Headings -->
+Style="{StaticResource TextHeadingStyle}"       <!-- Page/section title -->
+Style="{StaticResource TextSubheadingStyle}"    <!-- Sub-section title -->
 
-## Forbidden (ALWAYS APPLY)
+<!-- Body -->
+Style="{StaticResource TextBodyStyle}"          <!-- Regular content -->
+Style="{StaticResource TextCaptionStyle}"       <!-- Small labels, hints -->
 
-| ❌ Forbidden | ✅ Required |
-|-------------|-------------|
-| `Color.blue` | `theme.text.textBrand` |
-| `Color(hex: "...")` | `theme.*.*` |
-| `.padding(16)` | `.padding(DS.Padding.paddingMedium)` |
-| `Font.system(size:)` | `.cdsTextStyle(...)` |
-| `theme.textPrimary` | `theme.text.textPrimary` |
+<!-- State text -->
+Style="{StaticResource TextErrorStyle}"         <!-- Validation errors -->
+Style="{StaticResource TextSuccessStyle}"       <!-- Success messages -->
+Style="{StaticResource TextMutedStyle}"         <!-- Disabled/secondary text -->
+```
 
-## Gotchas
+---
 
-- `DS.StrokeLine.strokeDivider` (struct member) vs `.strokeDivide` (CGFloat extension) — different names!
-- `DS.BorderRadius.radiusCard.value()` — needs `.value()` call for CGFloat
-- Color sub-protocol access: `theme.text.textPrimary` NOT `theme.textPrimary`
-- Dark mode NOT available yet. All themes light mode only.
+## Button Keys (from AppStyles.xaml)
 
-## Source
+```xml
+Style="{StaticResource ButtonPrimaryStyle}"     <!-- Main CTA: Lưu, Xác nhận -->
+Style="{StaticResource ButtonSecondaryStyle}"   <!-- Secondary: Huỷ, Quay lại -->
+Style="{StaticResource ButtonDangerStyle}"      <!-- Destructive: Xoá -->
+Style="{StaticResource ButtonGhostStyle}"       <!-- Text-only: Xem chi tiết -->
+```
 
-> ⚠️ Path contains a DerivedData build hash — if DerivedData is cleared, regenerate via `pod install` or build once.
+---
 
-**Package root:** `/Users/hai.phan/Library/Developer/Xcode/DerivedData/ChoTot-emrqzdagaqgtgleygywbvfeauazo/SourcePackages/checkouts/ct-ios-design-system-swiftui`
+## Input Keys
 
-| Resource | Path |
-|----------|------|
-| README (overview + component status) | `…/README.md` |
-| API Reference (authoritative component list) | `…/docs/API_REFERENCE.md` |
-| Component Examples (copy-paste) | `…/docs/COMPONENT_EXAMPLES.md` |
-| Best Practices | `…/docs/BEST_PRACTICES.md` |
-| Integration Guide | `…/docs/INTEGRATION_GUIDE.md` |
-| Troubleshooting | `…/docs/TROUBLESHOOTING.md` |
-| Source code | `…/Sources/CTDesignSystemSwiftUI/Sources` |
-| Demo App | `…/CTDesignSystemSwiftUIApp/` |
+```xml
+Style="{StaticResource TextBoxStyle}"           <!-- Standard text input -->
+Style="{StaticResource PasswordBoxStyle}"       <!-- Password input -->
+Style="{StaticResource ComboBoxStyle}"          <!-- Dropdown select -->
+```
+
+---
+
+## DataGrid Keys
+
+```xml
+Style="{StaticResource DataGridStyle}"
+RowStyle="{StaticResource DataGridRowStyle}"
+ColumnHeaderStyle="{StaticResource DataGridColumnHeaderStyle}"
+```
+
+---
+
+## Card / Container Keys
+
+```xml
+Style="{StaticResource CardBorderStyle}"        <!-- White card with shadow -->
+Style="{StaticResource SeparatorStyle}"         <!-- Horizontal divider -->
+```
+
+---
+
+## Correct Binding Patterns
+
+### Two-way TextBox (ALWAYS use UpdateSourceTrigger)
+
+```xml
+<TextBox Text="{Binding SearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+         Style="{StaticResource TextBoxStyle}"/>
+```
+
+### Command binding
+
+```xml
+<!-- Method Load() → generated LoadCommand -->
+<Button Command="{Binding LoadCommand}" Content="Tải"/>
+
+<!-- With parameter -->
+<Button Command="{Binding DeleteCommand}"
+        CommandParameter="{Binding Id}"
+        Content="Xoá"/>
+```
+
+### Command from DataTemplate → parent ViewModel
+
+```xml
+<Button Command="{Binding DataContext.DeleteEmployeeCommand,
+                  RelativeSource={RelativeSource AncestorType=UserControl}}"
+        CommandParameter="{Binding Id}"/>
+```
+
+### Visibility converters
+
+```xml
+<!-- Bool to Visibility -->
+<TextBlock Visibility="{Binding IsLoading,
+           Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+<!-- Inverse: hide when loading -->
+<Grid Visibility="{Binding IsLoading,
+      Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
+
+<!-- String to Visibility (hide when empty) -->
+<TextBlock Text="{Binding ErrorMessage}"
+           Visibility="{Binding ErrorMessage,
+           Converter={StaticResource StringToVisibilityConverter}}"/>
+```
+
+---
+
+## Loading Overlay Pattern
+
+Standard loading overlay for any view:
+
+```xml
+<Grid>
+    <!-- Main content -->
+    <ContentPresenter Visibility="{Binding IsLoading,
+                      Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
+
+    <!-- Loading overlay -->
+    <Border Visibility="{Binding IsLoading,
+            Converter={StaticResource BoolToVisibilityConverter}}"
+            Background="#80FFFFFF">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock Text="Đang tải..." Style="{StaticResource TextBodyStyle}"/>
+        </StackPanel>
+    </Border>
+
+    <!-- Error message -->
+    <TextBlock Text="{Binding ErrorMessage}"
+               Style="{StaticResource TextErrorStyle}"
+               Visibility="{Binding ErrorMessage,
+               Converter={StaticResource StringToVisibilityConverter}}"
+               Margin="16,8"/>
+</Grid>
+```
+
+---
+
+## DataGrid with Action Column Pattern
+
+```xml
+<DataGrid ItemsSource="{Binding Items}"
+          AutoGenerateColumns="False" IsReadOnly="True"
+          Style="{StaticResource DataGridStyle}">
+    <DataGrid.Columns>
+        <DataGridTextColumn Header="Tên" Binding="{Binding Name}" Width="*"/>
+        <DataGridTextColumn Header="Số lượng" Binding="{Binding Stock}" Width="100"/>
+        <DataGridTemplateColumn Header="" Width="80">
+            <DataGridTemplateColumn.CellTemplate>
+                <DataTemplate>
+                    <Button Content="Xoá"
+                            Style="{StaticResource ButtonDangerStyle}"
+                            Command="{Binding DataContext.DeleteCommand,
+                                      RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                            CommandParameter="{Binding Id}"/>
+                </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+    </DataGrid.Columns>
+</DataGrid>
+```
+
+---
+
+## CommunityToolkit.Mvvm Generated Names
+
+| Field declaration | Generated binding name |
+|---|---|
+| `_isLoading` | `IsLoading` |
+| `_errorMessage` | `ErrorMessage` |
+| `_searchQuery` | `SearchQuery` |
+| `LoadAsync()` with `[RelayCommand]` | `LoadAsyncCommand` |
+| `DeleteEmployee()` with `[RelayCommand]` | `DeleteEmployeeCommand` |
+
+---
+
+## Forbidden Patterns
+
+```xml
+<!-- FORBIDDEN -->
+<TextBlock FontSize="16" FontWeight="Bold"/>       ← use StaticResource style
+<Button Background="#007AFF" Foreground="White"/>  ← use StaticResource style
+<TextBox Text="{Binding Name}"/>                   ← missing UpdateSourceTrigger
+```

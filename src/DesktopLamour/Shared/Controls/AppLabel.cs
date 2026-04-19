@@ -17,7 +17,7 @@ public class AppLabel : Label
             nameof(Text),
             typeof(string),
             typeof(AppLabel),
-            new FrameworkPropertyMetadata(string.Empty));
+            new FrameworkPropertyMetadata(string.Empty, OnTextChanged));
 
     static AppLabel()
     {
@@ -32,10 +32,8 @@ public class AppLabel : Label
         set => SetValue(TextProperty, value);
     }
 
-    public override void OnApplyTemplate()
+    private static void OnTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        base.OnApplyTemplate();
-        // Content follows Text binding
-        SetBinding(ContentProperty, new System.Windows.Data.Binding(nameof(Text)) { Source = this });
+        ((AppLabel)d).Content = e.NewValue as string ?? string.Empty;
     }
 }

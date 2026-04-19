@@ -1,245 +1,200 @@
 ---
 name: revert-spm-to-cocoapods
-description: "Revert a previously-migrated SPM package back to CocoaPods in the ChoTot iOS monorepo. Handles dual-linking SIGABRT crashes and the critical sub-module cleanup (every AppFeatures/Libraries sub-project must be cleaned, not just ChoTot.xcodeproj). Use when CI fails with ARCHS=x86_64 undefined symbol errors or when a runtime crash shows 'deallocated with non-zero retain count' after SPM migration."
-argument-hint: "[package1] [package2] ... — pod names as they appear in the Podfile (e.g. SwiftDate Lottie Swinject SwinjectAutoregistration)"
+description: Roll back a NuGet package upgrade in Desktop Lamour. Pin a package to a previous version, resolve NU1605 downgrade conflicts, remove a problematic package entirely, and restore a clean build. Use when a package update breaks the build or causes runtime errors.
+argument-hint: "[package-name] [target-version] — e.g. CommunityToolkit.Mvvm 8.2.2"
 model: sonnet
-effort: high
+effort: medium
 ---
 
-# SPM → CocoaPods Revert Skill
+# NuGet Package Rollback for Desktop Lamour
 
-Revert one or more SPM packages back to CocoaPods in the **Chợ Tốt iOS** monorepo.
+> **Anti-Hallucination:** Verify every class name, interface, namespace, and file path against the codebase before generating code. See [lamour-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
 
-**Reference guide:** `references/revert-guide.md` — read before making any changes.
+Roll back, pin, or remove NuGet packages when an upgrade breaks the Desktop Lamour .NET 8 WPF solution.
 
 ---
 
 ## When to Use
 
-- CI linker error: `Undefined symbol: <Package>.<Symbol>` with `ARCHS=x86_64`
-- Runtime SIGABRT: `Object of class X deallocated with non-zero retain count N`
-- SPM package builds arm64-only slice; CI machine requires x86_64
+- Build fails after `dotnet add package` or `dotnet restore` with a newer version
+- `NU1605` downgrade conflict after updating a transitive dependency
+- Runtime `TypeLoadException` or `MissingMethodException` after upgrading
+- Source generator stops working after `CommunityToolkit.Mvvm` upgrade
+- `[ObservableProperty]` / `[RelayCommand]` attributes no longer recognized
 
 ---
 
-## Examples
+## Step 1 — Identify the Problematic Package
 
 ```bash
-# Single package
-/revert-spm-to-cocoapods SwiftDate
+# List all installed packages with versions
+dotnet list src/DesktopLamour/DesktopLamour.csproj package
 
-# Multiple packages — run sequentially, one pod install at the end
-/revert-spm-to-cocoapods SwiftDate Lottie Swinject SwinjectAutoregistration
+# List packages with known vulnerabilities or outdated status
+dotnet list src/DesktopLamour/DesktopLamour.csproj package --vulnerable
+dotnet list src/DesktopLamour/DesktopLamour.csproj package --outdated
+```
 
-# With explicit pod name if different from SPM product name
-/revert-spm-to-cocoapods Kingfisher
+Check the build output for the error source:
+
+```
+error CS0246: The type or namespace name 'ObservableObject' could not be found
+→ CommunityToolkit.Mvvm version mismatch or source generator not running
+
+error NU1605: Detected package downgrade: Microsoft.Extensions.Http from 8.0.1 to 8.0.0
+→ transitive dependency conflict, pin to higher version
 ```
 
 ---
 
-## ❗ Critical Rule
+## Step 2 — Pin to a Previous Version
 
-> **ALWAYS clean SPM references from EVERY sub-project `.xcodeproj` in `AppFeatures/` and
-> `Libraries/`, not just `ChoTot.xcodeproj`.** Skipping this causes version-mismatch linker
-> errors even after the main project is clean.
+```bash
+# Re-add the package at the desired version (overwrites current)
+dotnet add src/DesktopLamour/DesktopLamour.csproj package CommunityToolkit.Mvvm --version 8.2.2
+```
+
+Verify the `.csproj` shows the pinned version:
+
+```xml
+<PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+```
+
+If using `Directory.Packages.props`, update the version there instead:
+
+```xml
+<!-- Directory.Packages.props -->
+<PackageVersion Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+```
 
 ---
 
-## Execution Flow
+## Step 3 — Resolve NU1605 Transitive Conflicts
 
-### Step 1 — Read the Reference Guide
-
-```
-references/revert-guide.md
-```
-
-### Step 2 — Confirm Inputs
-
-Ask (or infer from context):
-- Package name(s) to revert
-- CocoaPods pod name (usually same as SPM product name)
-- Whether the package is already declared in the `Podfile` as `pod 'X'`
-
-### Step 3 — Find All Affected Projects
+When a transitive (indirect) dependency causes a downgrade warning:
 
 ```bash
-# For each package URL:
-grep -rl "<github-url>" AppFeatures/ Libraries/ --include="project.pbxproj"
-# Also check main project:
-grep -c "<github-url>" ChoTot.xcodeproj/project.pbxproj
+# See full dependency tree
+dotnet list src/DesktopLamour/DesktopLamour.csproj package --include-transitive
 ```
 
-### Step 4 — Clean Main `ChoTot.xcodeproj`
+**Fix:** Explicitly pin the conflicting transitive package at the higher version:
 
-Remove ALL of these entry types for the package:
-
-| Entry type | Identifier pattern |
-|---|---|
-| `PBXBuildFile` | `/* <Product> in Frameworks */` |
-| `PBXFrameworksBuildPhase` file ref | inside `files = (...)` of ChoTot target |
-| `packageProductDependencies` entry | inside ChoTot target |
-| `packageReferences` entry | at project root level |
-| `XCRemoteSwiftPackageReference` object block | full `{ isa = ...; repositoryURL = ...; }` block |
-| `XCSwiftPackageProductDependency` object block | full `{ isa = ...; package = ...; productName = ...; }` block |
-
-### Step 5 — Clean All Sub-projects (via xcodeproj gem)
-
-Create and run `bin/remove_<package>_spm.rb`:
-
-```ruby
-#!/usr/bin/env ruby
-# frozen_string_literal: true
-require 'xcodeproj'
-
-PACKAGE_URL = 'https://github.com/owner/repo'
-PRODUCT_NAMES = %w[ProductName].freeze  # add all products from this package
-
-PROJECTS = %w[
-  # paste the grep results from Step 3 here
-].freeze
-
-PROJECTS.each do |rel_path|
-  project_path = File.join(Dir.pwd, rel_path)
-  next puts "⚠️  Skip: #{rel_path}" unless File.exist?(project_path)
-
-  project = Xcodeproj::Project.open(project_path)
-  changed = false
-
-  project.root_object.package_references.delete_if do |ref|
-    next false unless ref.respond_to?(:repositoryURL)
-    (ref.repositoryURL == PACKAGE_URL).tap { |r| changed = true if r }
-  end
-
-  project.targets.each do |target|
-    target.package_product_dependencies.delete_if do |dep|
-      PRODUCT_NAMES.include?(dep.product_name).tap { |r| changed = true if r }
-    end
-
-    next unless target.respond_to?(:frameworks_build_phase) && target.frameworks_build_phase
-    target.frameworks_build_phase.files.delete_if do |file|
-      (file.product_ref.respond_to?(:product_name) &&
-        PRODUCT_NAMES.include?(file.product_ref.product_name)).tap { |r| changed = true if r }
-    rescue StandardError
-      false
-    end
-  end
-
-  project.save
-  puts changed ? "✅  Cleaned: #{rel_path}" : "⏭️  No refs: #{rel_path}"
-end
+```xml
+<!-- DesktopLamour.csproj -->
+<PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
+<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
 ```
 
-Run: `ruby bin/remove_<package>_spm.rb`
+This forces NuGet to use the declared version rather than the lower transitive version.
 
-### Step 6 — Remove Orphaned Object Blocks
+---
 
-The xcodeproj gem removes list references but leaves orphaned object block definitions.
-Clean them with Python:
-
-```python
-import re, os
-
-# Fill in: repo-name = the name after the last "/" in the GitHub URL
-# Fill in: ProductName = the SPM product name
-
-pkg_ref_pat = re.compile(
-    r'\t\t[A-F0-9]+ /\* XCRemoteSwiftPackageReference "<repo-name>" \*/ = \{[^\}]+\{[^\}]+\}[^\}]+\};\n',
-    re.MULTILINE)
-prod_dep_pat = re.compile(
-    r'\t\t[A-F0-9]+ /\* <ProductName> \*/ = \{\n\t\t\tisa = XCSwiftPackageProductDependency;\n(?:\t\t\t[^\n]+\n)*\t\t\};\n',
-    re.MULTILINE)
-build_file_pat = re.compile(
-    r'\t\t[A-F0-9]+ /\* <ProductName> in Frameworks \*/ = \{[^\}]+\};\n',
-    re.MULTILINE)
-
-PROJECTS = [
-    # same list as Step 5, but full paths to project.pbxproj
-]
-
-for rel in PROJECTS:
-    path = os.path.join(os.getcwd(), rel, "project.pbxproj")
-    if not os.path.exists(path): continue
-    content = open(path).read()
-    new = content
-    for pat in [pkg_ref_pat, prod_dep_pat, build_file_pat]:
-        new = pat.sub('', new)
-    if new != content:
-        open(path, 'w').write(new)
-        print(f"✅ {rel}")
-```
-
-### Step 7 — Verify Clean
+## Step 4 — Remove a Package Entirely
 
 ```bash
-# Should return nothing for each reverted package
-grep -rl "<github-url>" AppFeatures/ Libraries/ ChoTot.xcodeproj --include="project.pbxproj"
+dotnet remove src/DesktopLamour/DesktopLamour.csproj package SomePackage
+dotnet restore src/DesktopLamour/DesktopLamour.csproj
 ```
 
-### Step 8 — Update Podfile (if not already using `pod 'X'`)
-
-The Podfile helper for the package should call `pod 'X'` directly (not `[:spm, 'XPackage']`).
-
-Example after revert:
-```ruby
-def spm_swift_date
-  pod 'SwiftDate'   # was: [:spm, 'SwiftDatePackage']
-end
-```
-
-Also ensure `bin/sync_spm_packages.rb` does **NOT** list this package in `SPM_PACKAGES` —
-it should not be re-injected by the `post_integrate` hook.
-
-### Step 9 — Remove Stale Pins from `Package.resolved`
-
-```python
-import json
-path = "ChoTot.xcworkspace/xcshareddata/swiftpm/Package.resolved"
-data = json.load(open(path))
-REMOVE = {"<identity>"}   # lowercase identity from Package.resolved
-data["pins"] = [p for p in data["pins"] if p["identity"] not in REMOVE]
-with open(path, "w") as f:
-    json.dump(data, f, indent=2)
-    f.write("\n")
-```
-
-### Step 10 — `pod install` + Clean Build
+Then grep for any remaining usages in source files:
 
 ```bash
-pod install
-# Then in Xcode: Shift+Cmd+K (Clean Build Folder), then Cmd+B
+grep -r "using SomePackage" src/DesktopLamour/ --include="*.cs"
+```
+
+Fix or remove any compilation errors from the deleted package before restoring.
+
+---
+
+## Step 5 — Clear NuGet Cache and Restore Clean
+
+When a package cache is corrupt or stale:
+
+```bash
+# Clear local caches
+dotnet nuget locals all --clear
+
+# Restore fresh
+dotnet restore src/DesktopLamour.sln
+```
+
+---
+
+## Step 6 — Rebuild and Validate
+
+```bash
+dotnet clean src/DesktopLamour.sln
+dotnet build src/DesktopLamour.sln
+dotnet test src/DesktopLamour.sln
+```
+
+---
+
+## Common Rollback Scenarios
+
+### CommunityToolkit.Mvvm source generator stops working
+
+**Symptom:** `[ObservableProperty]` and `[RelayCommand]` attributes compile but generate no code. Properties missing at runtime.
+
+**Causes:**
+1. Package downgraded below 8.0
+2. Class not declared `partial`
+3. Incompatible .NET SDK version
+
+**Fix:**
+```bash
+# Pin to known-good version
+dotnet add src/DesktopLamour/DesktopLamour.csproj package CommunityToolkit.Mvvm --version 8.3.2
+
+dotnet clean src/DesktopLamour.sln
+dotnet build src/DesktopLamour.sln
+```
+
+Verify class is `partial`:
+```csharp
+// REQUIRED — source generators only work on partial classes
+public partial class EmployeesViewModel : ObservableObject { }
+```
+
+---
+
+### Microsoft.Extensions.Http conflict
+
+**Symptom:** `NU1605 Detected package downgrade: Microsoft.Extensions.Http from 8.0.1 to 8.0.0`
+
+**Fix:**
+```xml
+<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+```
+
+---
+
+### HttpClient GetFromJsonAsync missing after downgrade
+
+**Symptom:** `CS1061: 'HttpClient' does not contain a definition for 'GetFromJsonAsync'`
+
+**Cause:** `System.Net.Http.Json` is bundled in .NET 6+ but the project may be targeting an older TFM, or the package was removed.
+
+**Fix:** Verify `DesktopLamour.csproj` targets .NET 8:
+```xml
+<TargetFramework>net8.0-windows</TargetFramework>
+```
+
+If still missing, add explicitly:
+```bash
+dotnet add src/DesktopLamour/DesktopLamour.csproj package System.Net.Http.Json --version 8.0.1
 ```
 
 ---
 
 ## Validation Checklist
 
-- [ ] `grep` for package URL returns nothing in all `.xcodeproj` files
-- [ ] `Package.resolved` no longer pins the reverted package(s)
-- [ ] `pod install` completes without error
-- [ ] Clean build succeeds (no undefined symbol linker errors)
-- [ ] App launches without SIGABRT / retain count crash
+- [ ] `dotnet restore` completes without NU1605 warnings
+- [ ] `dotnet build` succeeds with 0 errors and 0 warnings
+- [ ] `[ObservableProperty]` fields generate PascalCase properties (source generators active)
+- [ ] `[RelayCommand]` generates `*Command` properties
+- [ ] `dotnet test` passes — no test regressions from rollback
+- [ ] No `TypeLoadException` or `MissingMethodException` at runtime
 
----
-
-## Known Reverted Packages in This Project
-
-| Package | SPM Identity | Sub-projects cleaned | Helper script |
-|---|---|---|---|
-| SwiftDate | `swiftdate` | 19 | `bin/remove_swiftdate_spm.rb` |
-| Lottie | `lottie-ios` | 9 | `bin/remove_lottie_spm.rb` |
-| Swinject | `swinject` | 16 | `bin/remove_swinject_spm.rb` |
-| SwinjectAutoregistration | `swinjectautoregistration` | 16 (same run) | `bin/remove_swinject_spm.rb` |
-
-**Root cause for all:** SPM builds arm64-only simulator slice on Apple Silicon; CI uses
-`ARCHS=x86_64` → undefined symbols. CocoaPods fat frameworks include both slices.
-
----
-
-## 🧠 Claude Behavior Rules
-
-- MUST read `references/revert-guide.md` before any file edits
-- MUST search sub-projects before declaring the main project clean
-- NEVER assume a package only appears in `ChoTot.xcodeproj`
-- Run `ruby bin/remove_*.rb` directly (not via `bundle exec` — fastlane gems not installed)
-- After running xcodeproj gem script, ALWAYS run the Python orphan-block cleanup
-- Run `pod install` automatically — do not ask the user to run it
+See `docs/project-overview.md` for tech stack context.

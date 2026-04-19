@@ -1,167 +1,275 @@
 ---
 name: ct-chotot-module-context
-description: "Quick reference for Cho Tot module architecture, MVVM-C patterns, CTDesignSystem usage, and DI setup. Use when working on CTInsertAd, CTJOB, CTVEH, CTChat, or any module — understanding directory structure, Assembler/DI configuration, protocol patterns ([Feature]ViewModelType, [Feature]Presentable, [Feature]PresentableListener), UseCase/Repository patterns, ECS enum handling, or module-specific conventions. Provides quick patterns, file paths, localization usage, and logging guidance."
+description: Quick reference for Desktop Lamour module architecture, MVVM + Clean Architecture patterns, DI setup, and standard file naming. Use when working on Authentication, Employees, Inventory, ImportInvoices, or ExportInvoices — understanding directory structure, service registration, ViewModel patterns, UseCase/Repository conventions, and module-specific business rules.
 model: sonnet
-effort: medium
-argument-hint: "[module name or architecture pattern]"
+effort: low
+argument-hint: "[module name or pattern — e.g. Employees, ImportInvoices, DI, ViewModel]"
 ---
 
-# Cho Tot Module Context
+# Desktop Lamour Module Context
 
-> **Anti-Hallucination:** Verify every symbol, token, path, and identifier against the codebase before generating code. See [ct-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
+> **Anti-Hallucination:** Verify every class name, interface, namespace, and file path against the codebase before generating code. See [lamour-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
 
-This skill provides quick reference for patterns and architecture you use frequently.
-
-## How to Use This Skill
-
-**With arguments:**
-```
-/ct-chotot-module-context CTInsertAd
-/ct-chotot-module-context MVVM-C architecture
-/ct-chotot-module-context UseCase pattern
-```
-
-**Supported argument patterns:**
-- **Module names**: `CTInsertAd`, `CTJOB`, `CTChat`, `CTFeed`, any AppFeature or Library
-- **Architecture patterns**: `MVVM-C`, `Coordinator`, `UseCase`, `Repository`, `RxSwift`
-- **Specific components**: `ViewModel`, `ViewController`, `Presenter`, `PresentableListener`
-- **File context**: When selected text is provided via `{selectedText}`, reviews code patterns directly
+Quick reference for architecture patterns, file locations, and conventions used across all Desktop Lamour modules.
 
 ---
 
-**Your focus:** $ARGUMENTS
-
-Provide quick reference and guidance specifically for: **$ARGUMENTS**
-
-## MVVM-C Architecture in Cho Tot
-
-**3-Protocol Pattern** (per module):
-
-1. **`[Feature]ViewModelType`** — ViewModel protocol (conforms to `CTViewModelType`)
-2. **`[Feature]Presentable`** — ViewController protocol exposing `BehaviorRelay`/`PublishRelay` state
-3. **`[Feature]PresentableListener`** — ViewController → ViewModel trigger relays (user interactions)
-
-**Data Flow:**
-```
-ViewController triggers → ViewModel (via PresentableListener relays)
-                       → UseCase (CTActionUseCaseType, action?.execute)
-                       → Repository → Service → API Target
-                       ← UseCase action?.elements
-                       ← Presenter relays (BehaviorRelay.accept)
-                       ← ViewController binds to UI
-```
-
-**Coordinator Pattern:**
-- Navigation is handled by Coordinator, not ViewController
-- ViewControllers don't know about other ViewControllers
-- Coordinator is injected into ViewModel and triggered via listener
-
-## CTInsertAd Module Structure
+## How to Use
 
 ```
-AppFeatures/CTInsertAd/
-├── CTInsertAd/
-│   ├── Presentation/
-│   │   ├── ViewControllers/
-│   │   ├── Views/
-│   │   └── ViewModels/
-│   ├── Domain/
-│   │   ├── UseCases/
-│   │   └── Models/
-│   ├── Data/
-│   │   ├── Repositories/
-│   │   └── Services/
-│   └── Assembler/
+/ct-chotot-module-context Employees
+/ct-chotot-module-context ImportInvoices
+/ct-chotot-module-context DI registration
+/ct-chotot-module-context ViewModel pattern
 ```
 
-Common modules you work on:
-- **CreateAd** — Ad creation flow
-- **ReviewAd** — Ad review/publish
-- **Categories** — Category selection
-- **Location** — Location picker
+---
 
-## CTDesignSystem Component Usage
+## Solution Structure
 
-**ALWAYS use DS components**, never raw UIKit:
-- `DSLabel` instead of `UILabel`
-- `DSButton` instead of `UIButton`
-- `DSTextField` instead of `UITextField`
-- `DSImageView` instead of `UIImageView`
-
-**Styling Example:**
-```swift
-label.setStyle(DS.TypoToken.Header.Section(color: theme.text.textPrimary.color))
+```
+desktop-lamour/
+├── src/
+│   └── DesktopLamour/
+│       ├── App.xaml / App.xaml.cs          — DI host, startup
+│       ├── MainWindow/
+│       │   ├── MainWindow.xaml             — Shell window
+│       │   └── MainWindow.xaml.cs
+│       ├── Features/
+│       │   ├── Authentication/
+│       │   ├── Employees/
+│       │   ├── Inventory/
+│       │   ├── ImportInvoices/
+│       │   └── ExportInvoices/
+│       ├── Shared/
+│       │   ├── Controls/                   — AppLabel, custom controls
+│       │   ├── Converters/                 — BoolToVisibility, etc.
+│       │   └── AppStyles.xaml
+│       └── Themes/
+│           └── AppTypography.xaml
+└── tests/
+    └── DesktopLamour.Tests/
+        └── Features/
+            ├── Employees/
+            ├── Inventory/
+            └── ...
 ```
 
-**Layout: SnapKit ONLY** — no Interface Builder, no manual NSLayoutConstraint.
+---
 
-## RxSwift Patterns
+## Per-Module Structure
 
-**Input/Output in ViewModels:**
-```swift
-func transform(input: Input) -> Output {
-    let items = input.refreshTrigger
-        .flatMapLatest { [weak self] _ in
-            self?.loadItems() ?? .empty()
+Each feature module follows the same 5-layer layout:
+
+```
+Features/[Module]/
+├── Domain/
+│   ├── Models/
+│   │   └── [Entity].cs                     — record type, no dependencies
+│   └── UseCases/
+│       ├── I[Feature]UseCase.cs            — interface
+│       └── [Feature]UseCase.cs             — implementation, depends on IRepository
+├── Data/
+│   ├── Repositories/
+│   │   ├── I[Entity]Repository.cs          — interface
+│   │   └── [Entity]Repository.cs           — depends on IService, maps DTOs→Domain
+│   └── Services/
+│       ├── I[Entity]Service.cs             — interface
+│       ├── [Entity]Service.cs              — HttpClient calls
+│       └── DTOs/
+│           ├── [Entity]Dto.cs              — [JsonPropertyName] attributes
+│           └── Create[Entity]Request.cs
+├── ViewModels/
+│   └── [Name]ViewModel.cs                  — partial class : ObservableObject
+├── Views/
+│   ├── [Name]View.xaml                     — UserControl
+│   ├── [Name]View.xaml.cs
+│   ├── [Name]Window.xaml                   — Window (dialogs)
+│   └── [Name]Window.xaml.cs
+└── [Module]ServiceExtensions.cs            — DI registration
+```
+
+---
+
+## Module Summary
+
+| Module | Entity | Key Business Rules |
+|--------|--------|-------------------|
+| `Authentication` | — | Phone-based login; role = Admin / Thu ngân / Kho |
+| `Employees` | `Employee` | Admin-only create/delete; unique phone number |
+| `Inventory` | `Product` | Stock quantity never negative; unit of measure required |
+| `ImportInvoices` | `ImportInvoice` | Confirmed = immutable; stock increases on confirm |
+| `ExportInvoices` | `ExportInvoice` | Confirmed = immutable; stock decreases on confirm; reject if insufficient stock |
+
+---
+
+## MVVM Data Flow
+
+```
+View (XAML)
+  ↕ Binding (ObservableProperty, RelayCommand)
+ViewModel (partial class : ObservableObject)
+  ↓ ExecuteAsync()
+IUseCase (Domain)
+  ↓ Repository method
+IRepository (Data)
+  ↓ Service call
+IService (Data)
+  ↓ HttpClient
+REST API
+```
+
+---
+
+## Standard ViewModel Pattern
+
+```csharp
+// Features/[Module]/ViewModels/[Name]ViewModel.cs
+public partial class [Name]ViewModel : ObservableObject
+{
+    private readonly I[Feature]UseCase _useCase;
+
+    public [Name]ViewModel(I[Feature]UseCase useCase)
+        => _useCase = useCase;
+
+    // State
+    [ObservableProperty] private bool _isLoading;
+    [ObservableProperty] private string _errorMessage = string.Empty;
+    [ObservableProperty] private [Entity]? _selectedItem;
+
+    // List
+    public ObservableCollection<[Entity]> Items { get; } = [];
+
+    // Command — generated name: LoadAsyncCommand
+    [RelayCommand]
+    private async Task LoadAsync(CancellationToken ct = default)
+    {
+        IsLoading = true;
+        ErrorMessage = string.Empty;
+        try
+        {
+            var items = await _useCase.ExecuteAsync(ct);
+            Items.Clear();
+            foreach (var item in items) Items.Add(item);
         }
-        .share(replay: 1)
-
-    return Output(items: items, isLoading: activityIndicator.asObservable())
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { ErrorMessage = ex.Message; }
+        finally { IsLoading = false; }
+    }
 }
 ```
 
-**Memory management:**
-- Always use `DisposeBag` in ViewControllers and ViewModels
-- Use weak self in closures: `[weak self]`
-- Disposed by: `.disposed(by: disposeBag)`
+Key rules:
+- `partial class` — required for CommunityToolkit.Mvvm source generators
+- `_camelCase` field → binding uses generated `PascalCase` property name
+- `ObservableCollection<T>` not `List<T>`
+- `OperationCanceledException` always caught separately
+- `finally { IsLoading = false; }` always present
 
-## ECS & Enums
+---
 
-Use `MarketplaceECSHelper` for ECS enum mapping:
-```swift
-let categoryId = MarketplaceECSHelper.categoryId(from: ecsCode)
+## DI Registration Pattern
+
+```csharp
+// Features/[Module]/[Module]ServiceExtensions.cs
+public static class [Module]ServiceExtensions
+{
+    public static IServiceCollection Add[Module]Services(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        // Service — HttpClient
+        services.AddHttpClient<I[Entity]Service, [Entity]Service>(client =>
+            client.BaseAddress = new Uri(configuration["Api:BaseUrl"]!));
+
+        // Repository — Scoped
+        services.AddScoped<I[Entity]Repository, [Entity]Repository>();
+
+        // UseCases — Scoped
+        services.AddScoped<I[Feature]UseCase, [Feature]UseCase>();
+
+        // ViewModels — Transient (new instance per Window/View)
+        services.AddTransient<[Name]ViewModel>();
+
+        // Windows/Views — Transient
+        services.AddTransient<[Name]View>();
+        services.AddTransient<[Name]Window>();
+
+        return services;
+    }
+}
 ```
 
-Regenerate enums with: `python bin/gen_ecs_enum.py`
-
-## Common File Paths (CTInsertAd)
-
-- **Models**: `AppFeatures/CTInsertAd/CTInsertAd/Domain/Models/`
-- **UseCases**: `AppFeatures/CTInsertAd/CTInsertAd/Domain/UseCases/`
-- **ViewModels**: `AppFeatures/CTInsertAd/CTInsertAd/Presentation/ViewModels/`
-- **Services**: `AppFeatures/CTInsertAd/CTInsertAd/Data/Services/`
-- **Tests**: `AppFeatures/CTInsertAd/CTInsertAd/Tests/`
-
-## Localization Pattern
-
-**Don't use**: `ctLocalize(for: "key", tableName: "Table")`
-**Use instead**: `CTLocalize.module_specific_key()` from CTLocalize module
-
-## Logging
-
-Use `Logger.print()` from CTCommon instead of `print()`.
-
-## File Headers
-
-```swift
-//
-//  FileName.swift
-//  Created by Vinh Nguyen on [date].
-//  Copyright © 2024 Cho Tot. All rights reserved.
+Register in `App.xaml.cs`:
+```csharp
+services.AddEmployeesServices(configuration);
+services.AddInventoryServices(configuration);
+services.AddImportInvoicesServices(configuration);
+services.AddExportInvoicesServices(configuration);
 ```
 
-Use `time` MCP for the date, git config for your name.
+---
 
-## String Substitutions Supported
+## Generated Name Reference
 
-The skill can automatically detect and use:
-- `{selectedText}` — Code snippet for pattern analysis and architectural review
-- `{fileName}` — Current file name for module context detection
-- `{filePath}` — Full path for accurate module identification
+| Declaration | Binding path in XAML |
+|---|---|
+| `[ObservableProperty] private bool _isLoading;` | `{Binding IsLoading}` |
+| `[ObservableProperty] private string _errorMessage;` | `{Binding ErrorMessage}` |
+| `[ObservableProperty] private Employee? _selectedEmployee;` | `{Binding SelectedEmployee}` |
+| `[RelayCommand] private async Task LoadAsync()` | `{Binding LoadAsyncCommand}` |
+| `[RelayCommand] private void Delete(int id)` | `{Binding DeleteCommand}` |
+| `[RelayCommand] private async Task CreateAsync()` | `{Binding CreateAsyncCommand}` |
 
-## When You're Stuck
+---
 
-- Check project memory at `~/.claude/projects/[project-name]/memory/`
-- Refer to `AGENTS.md` for module-specific rules
-- Look at examples in `Libraries/CTDesignSystem/CTDesignSystemExampleApp/SampleApp`
-- Use ruler files in `.ruler/` for detailed guidance on architecture, code style, testing
+## Standard File Naming
+
+| What | Pattern | Example |
+|------|---------|---------|
+| Domain model | `[Entity].cs` | `Employee.cs` |
+| UseCase interface | `I[Feature]UseCase.cs` | `ICreateEmployeeUseCase.cs` |
+| UseCase implementation | `[Feature]UseCase.cs` | `CreateEmployeeUseCase.cs` |
+| Repository interface | `I[Entity]Repository.cs` | `IEmployeeRepository.cs` |
+| Repository implementation | `[Entity]Repository.cs` | `EmployeeRepository.cs` |
+| Service interface | `I[Entity]Service.cs` | `IEmployeeService.cs` |
+| Service implementation | `[Entity]Service.cs` | `EmployeeService.cs` |
+| Response DTO | `[Entity]Dto.cs` | `EmployeeDto.cs` |
+| Request DTO | `Create[Entity]Request.cs` | `CreateEmployeeRequest.cs` |
+| ViewModel | `[Name]ViewModel.cs` | `EmployeesViewModel.cs` |
+| List view | `[Name]View.xaml` | `EmployeesView.xaml` |
+| Dialog window | `[Name]Window.xaml` | `CreateEmployeeWindow.xaml` |
+| DI extensions | `[Module]ServiceExtensions.cs` | `EmployeesServiceExtensions.cs` |
+| xUnit test class | `[Feature]UseCaseTests.cs` | `CreateEmployeeUseCaseTests.cs` |
+
+---
+
+## Common Patterns Quick Reference
+
+### Open a dialog from ViewModel
+
+```csharp
+var dialog = _serviceProvider.GetRequiredService<CreateEmployeeWindow>();
+dialog.Owner = Application.Current.MainWindow;
+var result = dialog.ShowDialog();
+if (result == true)
+    await LoadAsyncCommand.ExecuteAsync(null);
+```
+
+### DataTemplate command binding (DataGrid row → parent ViewModel)
+
+```xml
+<Button Command="{Binding DataContext.DeleteCommand,
+                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
+        CommandParameter="{Binding Id}"/>
+```
+
+### Visibility converters (registered in App.xaml)
+
+```xml
+Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
+Visibility="{Binding IsLoading, Converter={StaticResource InverseBoolToVisibilityConverter}}"
+Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}"
+```
+
+See `docs/project-overview.md` for full business domain context.

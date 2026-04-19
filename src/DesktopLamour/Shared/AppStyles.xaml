@@ -14,6 +14,78 @@
         <Setter Property="BorderThickness"  Value="0"/>
         <Setter Property="HorizontalContentAlignment" Value="Left"/>
         <Setter Property="VerticalContentAlignment"   Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type controls:AppLabel}">
+                    <TextBlock Text="{TemplateBinding Content}"
+                               FontFamily="{TemplateBinding FontFamily}"
+                               FontSize="{TemplateBinding FontSize}"
+                               FontWeight="{TemplateBinding FontWeight}"
+                               FontStyle="{TemplateBinding FontStyle}"
+                               Foreground="{TemplateBinding Foreground}"
+                               Padding="{TemplateBinding Padding}"
+                               TextWrapping="Wrap"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ================================================ -->
+    <!--  AppLabel named typography styles                 -->
+    <!--  (BasedOn works here — same file as base style)  -->
+    <!-- ================================================ -->
+    <Style x:Key="AppTypography.DisplayPage" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
+        <Setter Property="FontSize"   Value="32"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+    </Style>
+    <Style x:Key="AppTypography.DisplaySection" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
+        <Setter Property="FontSize"   Value="24"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+    </Style>
+    <Style x:Key="AppTypography.HeaderPage" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
+        <Setter Property="FontSize"   Value="20"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style x:Key="AppTypography.HeaderSection" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
+        <Setter Property="FontSize"   Value="16"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style x:Key="AppTypography.LabelPage" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
+        <Setter Property="FontSize"   Value="16"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style x:Key="AppTypography.LabelSection" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
+        <Setter Property="FontSize"   Value="14"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style x:Key="AppTypography.LabelCaption" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
+        <Setter Property="FontSize"   Value="12"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style x:Key="AppTypography.BodySection" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
+        <Setter Property="FontSize"   Value="14"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+    </Style>
+    <Style x:Key="AppTypography.BodyCaption" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
+        <Setter Property="FontSize"   Value="12"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="Foreground" Value="{StaticResource AppColor.TextSecondary}"/>
+    </Style>
+    <Style x:Key="AppTypography.NoteSection" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
+        <Setter Property="FontSize"   Value="12"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="FontStyle"  Value="Italic"/>
+        <Setter Property="Foreground" Value="{StaticResource AppColor.TextSecondary}"/>
     </Style>
 
     <!-- ================================================ -->
@@ -36,9 +108,16 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="8">
-                        <ScrollViewer x:Name="PART_ContentHost"
-                                      Margin="{TemplateBinding Padding}"
-                                      VerticalAlignment="Center"/>
+                        <Grid Margin="{TemplateBinding Padding}">
+                            <TextBlock x:Name="PlaceholderText"
+                                       Text="{TemplateBinding Placeholder}"
+                                       Foreground="{StaticResource AppColor.TextDisabled}"
+                                       VerticalAlignment="Center"
+                                       IsHitTestVisible="False"
+                                       Visibility="Collapsed"/>
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          VerticalAlignment="Center"/>
+                        </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsFocused" Value="True">
@@ -48,6 +127,13 @@
                             <Setter Property="Foreground"   Value="{StaticResource AppColor.TextDisabled}"/>
                             <Setter Property="BorderBrush"  Value="{StaticResource AppColor.BorderThin}"/>
                         </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Text" Value=""/>
+                                <Condition Property="IsFocused" Value="False"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="PlaceholderText" Property="Visibility" Value="Visible"/>
+                        </MultiTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

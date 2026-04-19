@@ -1,197 +1,180 @@
 ---
 name: ct-theme
-description: Best practices for using the Cho Tot theme system (CMStaticThemeLoader, CMThemeChangeable, DS.TypoToken, DS.Button). Use when setting up theming in a ViewController, Cell, or custom view. Covers static theme access, dynamic theme switching, component styling, navigation bar theming, and anti-patterns to avoid.
+description: Guide for using AppStyles.xaml and AppTypography.xaml resource dictionaries in Desktop Lamour WPF. Lists available style keys for TextBlock, Button, TextBox, DataGrid, Border/Card. Rules — no hardcoded colors, no inline fonts, always use StaticResource. Use when styling any WPF control.
+model: haiku
+effort: low
 ---
 
-# Theme Best Practices for Cho Tot iOS
+# AppStyles & AppTypography Usage Guide for Desktop Lamour
 
-> **Anti-Hallucination:** Verify every symbol, token, path, and identifier against the codebase before generating code. See [ct-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
+> **Anti-Hallucination:** Verify every class name, interface, namespace, and file path against the codebase before generating code. See [lamour-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
 
-Guide for using the theme system consistently across UIKit components.
+## Overview
 
-## Theme Types
+All WPF styles in Desktop Lamour are defined in two resource dictionaries:
+- `src/DesktopLamour/Themes/AppTypography.xaml` — font styles, text block styles
+- `src/DesktopLamour/Shared/AppStyles.xaml` — button, input, card, data grid styles
 
-```swift
-// Available theme loaders
-private let theme = CMStaticThemeLoader.defaultTheme  // Default Cho Tot theme
-private let theme = CMStaticThemeLoader.jobTheme      // JOB module
-private let theme = CMStaticThemeLoader.ptyTheme      // Property module
+## Core Rule
+
+**NEVER use inline styles.** All styling must reference `StaticResource`.
+
+| Forbidden | Required |
+|---|---|
+| `FontSize="16"` | `Style="{StaticResource TextHeadingStyle}"` |
+| `FontWeight="Bold"` | Use a typography style key |
+| `Background="#FFFFFF"` | `Background="{StaticResource BackgroundPrimaryBrush}"` |
+| `Foreground="Red"` | `Foreground="{StaticResource ErrorForegroundBrush}"` |
+| `BorderBrush="#E0E0E0"` | `BorderBrush="{StaticResource BorderBrush}"` |
+
+---
+
+## Typography Style Keys (AppTypography.xaml)
+
+Verify these keys exist by reading `src/DesktopLamour/Themes/AppTypography.xaml` before use.
+
+### Text Styles
+
+```xml
+<!-- Headings -->
+<TextBlock Style="{StaticResource TextHeadingStyle}" Text="Page Title"/>
+<TextBlock Style="{StaticResource TextSubheadingStyle}" Text="Section Title"/>
+
+<!-- Body text -->
+<TextBlock Style="{StaticResource TextBodyStyle}" Text="Regular content"/>
+<TextBlock Style="{StaticResource TextCaptionStyle}" Text="Small label"/>
+
+<!-- Special states -->
+<TextBlock Style="{StaticResource TextErrorStyle}" Text="{Binding ErrorMessage}"/>
+<TextBlock Style="{StaticResource TextSuccessStyle}" Text="Saved successfully"/>
+<TextBlock Style="{StaticResource TextMutedStyle}" Text="Optional hint"/>
 ```
 
-## Pattern 1: Static Theme (Recommended for Most Cases)
+### AppLabel Control
 
-```swift
-import UIKit
-import CTCommon
-import CTDesignSystem
-import SnapKit
+Desktop Lamour has a custom `AppLabel` control in `src/DesktopLamour/Shared/Controls/AppLabel.cs`. Use it for text that needs additional behavior.
 
-class MyViewController: UIViewController {
-    private let theme = CMStaticThemeLoader.defaultTheme
+---
 
-    private func setupUI() {
-        titleLabel.setStyle(DS.TypoToken.Header.Section(color: theme.text.textPrimary.color))
-        view.backgroundColor = theme.background.backgroundPrimary.color
-    }
-}
+## Button Style Keys (AppStyles.xaml)
+
+Verify these keys exist before use:
+
+```xml
+<!-- Primary action (Xác nhận, Lưu) -->
+<Button Content="Lưu" Style="{StaticResource ButtonPrimaryStyle}"
+        Command="{Binding SaveCommand}"/>
+
+<!-- Secondary action (Huỷ) -->
+<Button Content="Huỷ" Style="{StaticResource ButtonSecondaryStyle}"
+        Command="{Binding CancelCommand}"/>
+
+<!-- Danger action (Xoá) -->
+<Button Content="Xoá" Style="{StaticResource ButtonDangerStyle}"
+        Command="{Binding DeleteCommand}"
+        CommandParameter="{Binding Id}"/>
+
+<!-- Ghost / text-only action -->
+<Button Content="Xem chi tiết" Style="{StaticResource ButtonGhostStyle}"/>
 ```
 
-## Pattern 2: Dynamic Theme with CMThemeChangeable
+---
 
-```swift
-import UIKit
-import CTCommon
-import CTDesignSystem
-import RxSwift
+## Input Style Keys
 
-class MyViewController: UIViewController, CMThemeChangeable {
-    private let disposeBag = DisposeBag()
+```xml
+<!-- Standard text input -->
+<TextBox Style="{StaticResource TextBoxStyle}"
+         Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
+         Width="200"/>
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        setupUI()
-        subscribeThemeChange().disposed(by: disposeBag)
-    }
+<!-- ALWAYS use UpdateSourceTrigger=PropertyChanged for two-way bindings -->
+<TextBox Style="{StaticResource TextBoxStyle}"
+         Text="{Binding EmployeeName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
-    // MARK: - CMThemeChangeable
-    func changeTheme(_ theme: CMTheme) {
-        UIView.animate(withDuration: 0.3) {
-            self.applyTheme(theme)
-        }
-    }
-
-    private func applyTheme(_ theme: CMTheme) {
-        titleLabel.setStyle(DS.TypoToken.Header.Section(color: theme.text.textPrimary.color))
-        view.backgroundColor = theme.background.backgroundPrimary.color
-    }
-}
+<!-- Password field -->
+<PasswordBox Style="{StaticResource PasswordBoxStyle}"/>
 ```
 
-## Pattern 3: Cell Theming
+---
 
-```swift
-class MyTableViewCell: UITableViewCell, CMThemeChangeable {
-    private let theme = CMStaticThemeLoader.defaultTheme
+## DataGrid Style Keys
 
-    override func awakeFromNib() {
-        super.awakeFromNib()
-        setupTheme()
-    }
-
-    func changeTheme(_ theme: CMTheme) {
-        setupTheme(theme)
-    }
-
-    private func setupTheme(_ theme: CMTheme? = nil) {
-        let currentTheme = theme ?? self.theme
-        titleLabel.setStyle(DS.TypoToken.Label.Section(color: currentTheme.text.textPrimary.color))
-        containerView.backgroundColor = currentTheme.background.backgroundSecondary.color
-    }
-}
+```xml
+<DataGrid Style="{StaticResource DataGridStyle}"
+          RowStyle="{StaticResource DataGridRowStyle}"
+          ColumnHeaderStyle="{StaticResource DataGridColumnHeaderStyle}"
+          ItemsSource="{Binding Employees}"
+          AutoGenerateColumns="False"
+          IsReadOnly="True">
+    <DataGrid.Columns>
+        <DataGridTextColumn Header="Họ tên"
+                            Binding="{Binding FullName}"
+                            Width="*"/>
+    </DataGrid.Columns>
+</DataGrid>
 ```
 
-## Component Theming Reference
+---
 
-### Typography (DSLabel)
-```swift
-// Headers
-titleLabel.setStyle(DS.TypoToken.Header.Page(color: theme.text.textPrimary.color))    // SemiBold 20px
-sectionLabel.setStyle(DS.TypoToken.Header.Section(color: theme.text.textPrimary.color)) // SemiBold 16px
+## Card / Border Style Keys
 
-// Body
-bodyLabel.setStyle(DS.TypoToken.Body.Section(color: theme.text.textSecondary.color))  // Regular 14px
-captionLabel.setStyle(DS.TypoToken.Body.Caption(color: theme.text.textSecondary.color))
+```xml
+<!-- Card container -->
+<Border Style="{StaticResource CardBorderStyle}" Margin="0,4">
+    <StackPanel Margin="12,8">
+        <TextBlock Text="{Binding Title}" Style="{StaticResource TextSubheadingStyle}"/>
+        <TextBlock Text="{Binding Description}" Style="{StaticResource TextBodyStyle}"/>
+    </StackPanel>
+</Border>
 
-// Labels
-labelText.setStyle(DS.TypoToken.Label.Page(color: theme.text.textPrimary.color))      // Bold 16px
-errorLabel.setStyle(DS.TypoToken.Body.Caption(color: theme.text.textError.color))
+<!-- Section separator -->
+<Separator Style="{StaticResource SeparatorStyle}"/>
 ```
 
-### Buttons (DSButton)
-```swift
-// Module-matched button styles
-primaryButton.setStyle(DS.Button.primary(size: .medium, themeType: theme.type))
-secondaryButton.setStyle(DS.Button.secondary(size: .medium, themeType: theme.type))
-tertiaryButton.setStyle(DS.Button.tertiary(size: .medium, themeType: theme.type))
+---
 
-// Direct theme type usage
-primaryButton.setStyle(DS.Button.primary(size: .medium, themeType: .default))
-primaryButton.setStyle(DS.Button.primary(size: .medium, themeType: .job))
-primaryButton.setStyle(DS.Button.primary(size: .medium, themeType: .pty))
+## Spacing / Margin Conventions
+
+Use consistent margin values:
+
+```xml
+<!-- Page padding -->
+<Grid Margin="16">
+
+<!-- Between sections -->
+<StackPanel Margin="0,0,0,16">
+
+<!-- Between items in a form -->
+<TextBox Margin="0,0,0,8"/>
+
+<!-- Button row spacing -->
+<StackPanel Orientation="Horizontal">
+    <Button Style="{StaticResource ButtonPrimaryStyle}" Content="Lưu" Margin="0,0,8,0"/>
+    <Button Style="{StaticResource ButtonSecondaryStyle}" Content="Huỷ"/>
+</StackPanel>
 ```
 
-### Backgrounds and Borders
-```swift
-// Backgrounds
-view.backgroundColor = theme.background.backgroundPrimary.color
-containerView.backgroundColor = theme.background.backgroundSecondary.color
-overlayView.backgroundColor = theme.background.backgroundOverlay.color
-warningBg.backgroundColor = theme.background.backgroundWarningLight.color
+---
 
-// Borders / Separators
-separatorView.backgroundColor = theme.border.borderThin.color
-cardView.layer.borderColor = theme.border.borderRegular.color.cgColor
+## Adding New Styles
+
+When adding a new style:
+
+1. Add to `AppStyles.xaml` (non-typography) or `AppTypography.xaml` (text/font related)
+2. Use a descriptive `x:Key` with consistent suffix (`Style`, `Brush`)
+3. Never add inline styles in individual XAML files
+4. Announce the new key in the PR description so other developers can use it
+
+---
+
+## Verifying a Style Key Exists
+
+Before using any `StaticResource` key:
+
+```
+Grep: pattern="x:Key=\"ButtonPrimaryStyle\"" path="src/DesktopLamour/Themes"
+Grep: pattern="x:Key=\"ButtonPrimaryStyle\"" path="src/DesktopLamour/Shared"
 ```
 
-### Text Colors
-```swift
-theme.text.textPrimary.color     // Main content
-theme.text.textSecondary.color   // Supporting content
-theme.text.textDisabled.color    // Disabled state
-theme.text.textError.color       // Error messages
-theme.text.textInverted.color    // On dark backgrounds
-```
-
-## Navigation Bar Theming
-
-```swift
-// Protocol-based (preferred)
-class MyViewController: UIViewController, CTNavigationBarVeritcalizable {
-    var ctNavigationBarData: CTNavigationBarData { .pty } // or .job, .gds, .chotot
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        applyNavigationBarData()
-    }
-}
-
-// Manual
-private func setupNavigationBar() {
-    navigationController?.navigationBar.barTintColor = theme.background.backgroundBrand.color
-    navigationController?.navigationBar.tintColor = theme.text.textPrimary.color
-}
-```
-
-## Module → Theme Mapping
-
-| Module | Theme Loader | Button ThemeType |
-|--------|-------------|-----------------|
-| Default / Generic | `CMStaticThemeLoader.defaultTheme` | `.default` |
-| CTJOB / Job | `CMStaticThemeLoader.jobTheme` | `.job` |
-| CTPTY / Property | `CMStaticThemeLoader.ptyTheme` | `.pty` |
-
-## Anti-Patterns
-
-```swift
-// ❌ Hardcoded colors
-titleLabel.textColor = UIColor.black
-view.backgroundColor = UIColor.white
-
-// ❌ Direct DefaultTheme access
-let theme = DefaultTheme.defaultTheme
-
-// ❌ Theme change without animation
-func changeTheme(_ theme: CMTheme) {
-    view.backgroundColor = theme.background.backgroundPrimary.color
-}
-
-// ✅ Always use CMStaticThemeLoader
-private let theme = CMStaticThemeLoader.defaultTheme
-
-// ✅ Animate theme changes
-func changeTheme(_ theme: CMTheme) {
-    UIView.animate(withDuration: 0.3) {
-        self.view.backgroundColor = theme.background.backgroundPrimary.color
-    }
-}
-```
+If the key is not found, either use an existing similar key or create a new one following the naming convention.

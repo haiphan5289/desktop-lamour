@@ -7,11 +7,9 @@
             <ResourceDictionary.MergedDictionaries>
                 <!-- 1. Theme colors -->
                 <ResourceDictionary Source="/DesktopLamour;component/Themes/DefaultTheme.xaml"/>
-                <!-- 2. Typography styles -->
-                <ResourceDictionary Source="/DesktopLamour;component/Themes/AppTypography.xaml"/>
-                <!-- 3. Value converters -->
+                <!-- 2. Value converters -->
                 <ResourceDictionary Source="/DesktopLamour;component/Shared/AppConverters.xaml"/>
-                <!-- 4. Component styles (AppButton, AppTextField, etc.) -->
+                <!-- 3. Component + typography styles -->
                 <ResourceDictionary Source="/DesktopLamour;component/Shared/AppStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>

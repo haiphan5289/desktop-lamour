@@ -1,92 +1,283 @@
 ---
 name: ct-swiftui-expert-skill
-description: "Expert guidance for SwiftUI development in ChoTot iOS app — building views with CDS components, typography, MVVM-Combine patterns, and design system compliance. Use when implementing SwiftUI features, creating custom components, optimizing performance, managing state with @Published/@ObservedObject, handling Combine subscriptions, validating design system adherence (CDSButton, CDSTextField, .cdsTextStyle), or debugging view recomputation issues. Requires understanding of MVVM-C architecture, PassthroughRelay input patterns, and CTDesignSystemSwiftUI tokens."
+description: Expert WPF XAML guidance for Desktop Lamour — DataTrigger, MultiTrigger, ControlTemplate customization, Converter implementations (BoolToVisibility, InverseBool, DecimalToString), value converter registration in App.xaml.
 model: sonnet
 effort: medium
-argument-hint: "[component or token type]"
 ---
 
-# CT SwiftUI Expert Skill
+# Expert WPF XAML Guidance for Desktop Lamour
 
-> **Anti-Hallucination:** Verify every symbol, token, path, and identifier against the codebase before generating code. See [ct-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
+> **Anti-Hallucination:** Verify every class name, interface, namespace, and file path against the codebase before generating code. See [lamour-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
 
-This skill is the definitive guide for SwiftUI development at ChoTot, grounded in the `CTDesignSystemSwiftUI` core package.
-
-## How to Use This Skill
-
-**With arguments:**
-```
-/ct-swiftui-expert-skill CDSButton
-/ct-swiftui-expert-skill state management in SwiftUI views
-/ct-swiftui-expert-skill create a custom component
-```
-
-**Supported argument patterns:**
-- **Component name**: `CDSButton`, `CDSTextField`, `CDSPopup`, etc.
-- **Typography tokens**: `displayPage`, `headerSection`, `bodySection`
-- **Feature/issue**: `state management`, `compose views`, `handle errors`, `optimize performance`
-- **File context**: When selected text is provided via `{selectedText}`, the skill analyzes the code directly
+Advanced WPF XAML patterns for Desktop Lamour — triggers, converters, control templates, and animations.
 
 ---
 
-**Your question:** $ARGUMENTS
+## Value Converters
 
-Provide expert guidance specifically for: **$ARGUMENTS** in the context of SwiftUI development at ChoTot.
+### BoolToVisibilityConverter
 
-## Core Mandates
+```csharp
+// src/DesktopLamour/Shared/Converters/BoolToVisibilityConverter.cs
+using System.Globalization;
+using System.Windows.Data;
 
-1.  **CDS Components Only**: Never use native `Button`, `TextField`, or `Text` without CDS styling.
-2.  **Semantic Typography**: Use `.cdsTextStyle(.bodySection)` instead of `.font(.system(...))`.
-3.  **Standardized Popups**: Use `.cdsPopup()` or `.cdsBottomSheet()` instead of native `alert()` or `sheet()`.
-4.  **MVVM-Combine**: View state MUST be managed by a `ViewModel` exposed via `AnyViewModel`.
+namespace DesktopLamour.Shared.Converters;
 
-## Key Component Mappings
+public class BoolToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        => value is true ? Visibility.Visible : Visibility.Collapsed;
 
-| Feature | CDS Usage | Modifiers / Notes |
-| :--- | :--- | :--- |
-| **Typography** | `Text("...").cdsTextStyle(.headerPage)` | See [Typography Reference](#typography) |
-| **Buttons** | `Button("...").cdsButtonStyle(.primary)` | `.cdsButtonLoading(true)` for loading |
-| **Input** | `CDSTextField(text: $t, placeholder: "...")` | `CDSTextView` for multiline |
-| **Popups** | `.cdsPopup(isPresented: $p, title: "...")` | Standard modal dialogs |
-| **Bottom Sheet**| `.cdsBottomSheet(isPresented: $p) { ... }` | Sliding panel from bottom |
-
-## Typography System
-
-ChoTot uses a semantic typography system based on `DS.TypoToken`.
-
-```swift
-// Common tokens:
-.cdsTextStyle(.displayPage)      // 32 Bold
-.cdsTextStyle(.headerSection)    // 16 SemiBold
-.cdsTextStyle(.labelPage)       // 16 SemiBold
-.cdsTextStyle(.bodySection)      // 14 Regular
-.cdsTextStyle(.noteSection)      // 12 Regular Italic
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => value is Visibility.Visible;
+}
 ```
 
-## ViewModel Pattern (PassthroughRelay)
+### InverseBoolToVisibilityConverter
 
-Always use `PassthroughRelay` for inputs to ensure a reactive, unidirectional flow.
+```csharp
+public class InverseBoolToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        => value is true ? Visibility.Collapsed : Visibility.Visible;
 
-```swift
-// In ViewModel
-private let fetchDataStream = PassthroughRelay<Void>()
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => value is not Visibility.Visible;
+}
+```
 
-func trigger(_ input: Input) {
-    switch input {
-    case .fetchData: fetchDataStream.accept()
+### StringToVisibilityConverter (hide when empty)
+
+```csharp
+public class StringToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        => string.IsNullOrEmpty(value as string) ? Visibility.Collapsed : Visibility.Visible;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+```
+
+### DecimalToStringConverter (for formatted currency display)
+
+```csharp
+public class DecimalToStringConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is decimal d)
+            return d.ToString("N0", new CultureInfo("vi-VN")); // e.g. 1.250.000
+        return string.Empty;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (decimal.TryParse(value?.ToString()?.Replace(".", "").Replace(",", ""),
+            out var result))
+            return result;
+        return 0m;
     }
 }
 ```
 
-## String Substitutions Supported
+---
 
-The skill can automatically detect and use:
-- `{selectedText}` — Code snippet you've selected for review or refactoring
-- `{fileName}` — Current file name for context-aware suggestions
-- `{filePath}` — Full file path for architecture recommendations
+## Registering Converters in App.xaml
 
-## Resources
+```xml
+<!-- src/DesktopLamour/App.xaml -->
+<Application.Resources>
+    <ResourceDictionary>
+        <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary Source="Themes/AppTypography.xaml"/>
+            <ResourceDictionary Source="Shared/AppStyles.xaml"/>
+        </ResourceDictionary.MergedDictionaries>
 
-- [references/architecture.md](references/architecture.md): MVVM + Combine deep dive.
-- [references/cds_components.md](references/cds_components.md): Comprehensive list of CDS SwiftUI components.
-- [references/components_api.md](references/components_api.md): Detailed API for BottomSheets, Popups, and Inputs.
+        <!-- Converters -->
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
+        <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
+        <converters:DecimalToStringConverter x:Key="DecimalToStringConverter"/>
+    </ResourceDictionary>
+</Application.Resources>
+```
+
+Add the namespace to App.xaml root:
+```xml
+xmlns:converters="clr-namespace:DesktopLamour.Shared.Converters"
+```
+
+---
+
+## DataTrigger Patterns
+
+### Change style based on boolean property
+
+```xml
+<Style x:Key="StockTextStyle" TargetType="TextBlock"
+       BasedOn="{StaticResource TextBodyStyle}">
+    <Style.Triggers>
+        <!-- Change foreground to red when IsLowStock is true -->
+        <DataTrigger Binding="{Binding IsLowStock}" Value="True">
+            <Setter Property="Foreground" Value="{StaticResource ErrorForegroundBrush}"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </DataTrigger>
+    </Style.Triggers>
+</Style>
+```
+
+### Change appearance based on string value
+
+```xml
+<Style x:Key="InvoiceStatusStyle" TargetType="TextBlock"
+       BasedOn="{StaticResource TextCaptionStyle}">
+    <Style.Triggers>
+        <DataTrigger Binding="{Binding Status}" Value="Confirmed">
+            <Setter Property="Foreground" Value="{StaticResource SuccessForegroundBrush}"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Status}" Value="Cancelled">
+            <Setter Property="Foreground" Value="{StaticResource ErrorForegroundBrush}"/>
+        </DataTrigger>
+    </Style.Triggers>
+</Style>
+```
+
+---
+
+## MultiTrigger — Multiple Conditions
+
+```xml
+<!-- Highlight row when selected AND confirmed -->
+<Style x:Key="InvoiceRowStyle" TargetType="DataGridRow"
+       BasedOn="{StaticResource DataGridRowStyle}">
+    <Style.Triggers>
+        <MultiDataTrigger>
+            <MultiDataTrigger.Conditions>
+                <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}"
+                           Value="True"/>
+                <Condition Binding="{Binding IsConfirmed}" Value="True"/>
+            </MultiDataTrigger.Conditions>
+            <Setter Property="Background" Value="{StaticResource SuccessBackgroundBrush}"/>
+        </MultiDataTrigger>
+    </Style.Triggers>
+</Style>
+```
+
+---
+
+## ControlTemplate Customization
+
+### Custom Button with loading state
+
+```xml
+<Style x:Key="ButtonLoadingStyle" TargetType="Button"
+       BasedOn="{StaticResource ButtonPrimaryStyle}">
+    <Style.Triggers>
+        <DataTrigger Binding="{Binding IsLoading}" Value="True">
+            <Setter Property="IsEnabled" Value="False"/>
+            <Setter Property="Content" Value="Đang xử lý..."/>
+        </DataTrigger>
+    </Style.Triggers>
+</Style>
+```
+
+Usage:
+```xml
+<Button Style="{StaticResource ButtonLoadingStyle}"
+        Content="Xác nhận"
+        Command="{Binding ConfirmCommand}"/>
+```
+
+---
+
+## CommandParameter with RelativeSource
+
+### Passing typed parameter from DataGrid row
+
+```xml
+<DataGridTemplateColumn Header="Hành động" Width="100">
+    <DataGridTemplateColumn.CellTemplate>
+        <DataTemplate>
+            <StackPanel Orientation="Horizontal">
+                <Button Content="Sửa"
+                        Style="{StaticResource ButtonGhostStyle}"
+                        Command="{Binding DataContext.EditCommand,
+                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                        CommandParameter="{Binding}"
+                        Margin="0,0,4,0"/>
+                <Button Content="Xoá"
+                        Style="{StaticResource ButtonDangerStyle}"
+                        Command="{Binding DataContext.DeleteCommand,
+                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                        CommandParameter="{Binding Id}"/>
+            </StackPanel>
+        </DataTemplate>
+    </DataGridTemplateColumn.CellTemplate>
+</DataGridTemplateColumn>
+```
+
+---
+
+## IMultiValueConverter for Combined Bindings
+
+```csharp
+// Show stock as "X / Y" (current / max)
+public class StockRatioConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (values.Length == 2 && values[0] is int current && values[1] is int max)
+            return $"{current} / {max}";
+        return "—";
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+```
+
+```xml
+<TextBlock>
+    <TextBlock.Text>
+        <MultiBinding Converter="{StaticResource StockRatioConverter}">
+            <Binding Path="CurrentStock"/>
+            <Binding Path="MaxStock"/>
+        </MultiBinding>
+    </TextBlock.Text>
+</TextBlock>
+```
+
+---
+
+## INotifyDataErrorInfo for Form Validation
+
+For forms with inline validation, implement `INotifyDataErrorInfo` in ViewModel:
+
+```csharp
+public partial class CreateEmployeeViewModel : ObservableValidator // inherits INotifyDataErrorInfo
+{
+    [ObservableProperty]
+    [Required(ErrorMessage = "Họ tên là bắt buộc")]
+    [MinLength(2, ErrorMessage = "Họ tên phải có ít nhất 2 ký tự")]
+    private string _fullName = string.Empty;
+
+    [RelayCommand]
+    private async Task SaveAsync(CancellationToken ct)
+    {
+        ValidateAllProperties();
+        if (HasErrors) return;
+        // proceed with save
+    }
+}
+```
+
+```xml
+<!-- Validation error template in XAML -->
+<TextBox Style="{StaticResource TextBoxStyle}"
+         Text="{Binding FullName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged,
+                ValidatesOnNotifyDataErrors=True}"/>
+```
+
+See `docs/project-overview.md` for business domain context.
