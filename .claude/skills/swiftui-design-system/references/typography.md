@@ -2,7 +2,7 @@
 
 **Last synced:** 2026-01-26
 
-Source: `${CT_DESIGN_SYSTEM_REPO}/Sources/AppDesignSystemSwiftUI/Sources/Typos/`
+Source: `${CT_DESIGN_SYSTEM_REPO}/Sources/CTDesignSystemSwiftUI/Sources/Typos/`
 
 ---
 

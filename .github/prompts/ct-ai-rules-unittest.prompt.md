@@ -1,318 +1,410 @@
 ---
-description: "Generate C#/.NET unit test structure using xUnit + FluentAssertions + Moq"
+description: "Generate iOS unit test structure using Quick and Nimble"
 mode: "agent"
 ---
 
-# WPF Unit Test Generator
+# iOS Unit Test Generator
 
-Generate unit test structure following xUnit + FluentAssertions + Moq patterns.
+Generate unit test structure following Quick and Nimble patterns with mock generation.
 
 ## Instructions
 
-Reference our C#/.NET WPF development guidelines: [WPF Guidelines](../instructions/wpf-general-instructions.instructions.md)
+Reference our iOS development guidelines: [iOS Guidelines](../instructions/ios-general-instructions.instructions.md)
 
 Generate unit test structure with:
 
--   xUnit testing framework (`[Fact]`, `[Theory]`)
--   Moq for mocking (`Mock<T>`, `.Setup()`, `.Verify()`)
--   FluentAssertions for assertions (`.Should().Be()`)
--   Given-When-Then test organization
--   Private `CreateSut()` factory pattern
+-   Quick and Nimble testing framework
+-   Mock classes for all dependencies
+-   Spec test structure with proper setup
+-   BDD-style test organization
+-   Proper imports and test configuration
 
-## Required NuGet Packages
+## Test Spec Template
 
-```xml
-<!-- In test .csproj -->
-<PackageReference Include="xunit" Version="2.*" />
-<PackageReference Include="xunit.runner.visualstudio" Version="2.*" />
-<PackageReference Include="FluentAssertions" Version="6.*" />
-<PackageReference Include="Moq" Version="4.*" />
-<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.*" />
-```
+```swift
+import Foundation
+import UIKit
+import CTDesignSystem
+import CTCommon
+import CTLocalize
+import CTComponent
+import CTAsset
+import RxSwift
+import Quick
+import Nimble
+import CTTracking
 
-## ViewModel Test Template
+@testable import [FeatureModule]
 
-```csharp
-using Xunit;
-using FluentAssertions;
-using Moq;
-using Microsoft.Extensions.Logging.Abstractions;
-using [FeatureModule].ViewModels;
-using [FeatureModule].Repositories;
-using [FeatureModule].Domain.Models;
+final class [TestClassName]Spec: QuickSpec {
+    override func spec() {
+        var sut: [ClassUnderTest]!
+        var mockPresenter: Mock[ClassUnderTest]Presentable!
+        var mockRepository: Mock[Repository]!
+        // TODO: Add other mock dependencies
+        // var mockRouter: Mock[Router]!
+        // var mockUseCase: Mock[UseCase]!
 
-namespace [FeatureModule].Tests.ViewModels;
+        beforeEach {
+            // TODO: Initialize mock dependencies
+            mockRepository = Mock[Repository]()
+            mockPresenter = Mock[ClassUnderTest]Presentable()
 
-public class [ClassName]ViewModelTests
-{
-    private readonly Mock<I[Repository]> _repositoryMock = new();
-    private readonly NullLogger<[ClassName]ViewModel> _logger = new();
+            // TODO: Initialize system under test with dependencies
+            sut = [ClassUnderTest](
+                // TODO: Add constructor parameters
+                // repository: mockRepository,
+                // useCase: mockUseCase
+            )
 
-    private [ClassName]ViewModel CreateSut() =>
-        new(_repositoryMock.Object, _logger);
+            // TODO: Setup mock presenter properties
+            mockPresenter.stubbedIsLoadingRelay = BehaviorRelay<Bool>(value: false)
+            mockPresenter.stubbedListener = sut
+            sut.presenter = mockPresenter
+            sut.didBecomeActive()
+        }
 
-    [Fact]
-    public void Constructor_ShouldInitialize_WithDefaults()
-    {
-        var sut = CreateSut();
+        describe("[ClassUnderTest]") {
+            context("when initialized") {
+                it("should set presenter's listener to the SUT") {
+                    expect(mockPresenter.stubbedListener).to(beIdenticalTo(sut))
+                }
 
-        sut.IsLoading.Should().BeFalse();
-        sut.Items.Should().BeEmpty();
-        sut.ErrorMessage.Should().BeNull();
-    }
+                it("should configure initial state") {
+                    // TODO: Add initialization tests
+                    expect(sut).toNot(beNil())
+                }
+            }
 
-    [Fact]
-    public async Task LoadCommand_ShouldPopulateItems_WhenRepositorySucceeds()
-    {
-        // Arrange
-        var expected = new List<ItemDto> { new() { Id = "1", Name = "Test Item" } };
-        _repositoryMock
-            .Setup(r => r.GetListAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expected);
-        var sut = CreateSut();
+            context("when didBecomeActive is called") {
+                it("should configure presenter and listener") {
+                    // TODO: Add didBecomeActive tests
+                    expect(mockPresenter.stubbedListener).to(beIdenticalTo(sut))
+                }
+            }
 
-        // Act
-        await sut.LoadCommand.ExecuteAsync(null);
-
-        // Assert
-        sut.Items.Should().HaveCount(1);
-        sut.Items.First().Name.Should().Be("Test Item");
-        sut.IsLoading.Should().BeFalse();
-        sut.ErrorMessage.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task LoadCommand_ShouldSetErrorMessage_WhenRepositoryThrows()
-    {
-        // Arrange
-        _repositoryMock
-            .Setup(r => r.GetListAsync(It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new HttpRequestException("Network error"));
-        var sut = CreateSut();
-
-        // Act
-        await sut.LoadCommand.ExecuteAsync(null);
-
-        // Assert
-        sut.ErrorMessage.Should().NotBeNull();
-        sut.IsLoading.Should().BeFalse();
-        sut.Items.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task LoadCommand_ShouldCallRepository_Once()
-    {
-        // Arrange
-        _repositoryMock
-            .Setup(r => r.GetListAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ItemDto>());
-        var sut = CreateSut();
-
-        // Act
-        await sut.LoadCommand.ExecuteAsync(null);
-
-        // Assert
-        _repositoryMock.Verify(r => r.GetListAsync(It.IsAny<CancellationToken>()), Times.Once);
+            // TODO: Add more test contexts for business logic
+            context("when [specific action] occurs") {
+                it("should [expected behavior]") {
+                    // TODO: Add specific test cases
+                    // Given
+                    // When
+                    // Then
+                }
+            }
+        }
     }
 }
 ```
 
-## Repository Test Template
+## Mock Repository Template
 
-```csharp
-using Xunit;
-using FluentAssertions;
-using Moq;
-using [FeatureModule].Data.Repositories;
-using [FeatureModule].Data.Services;
-using [FeatureModule].Domain.Models;
+```swift
+import Foundation
+import RxSwift
 
-namespace [FeatureModule].Tests.Repositories;
+@testable import [FeatureModule]
 
-public class [Name]RepositoryTests
-{
-    private readonly Mock<I[Name]Service> _serviceMock = new();
+final class Mock[RepositoryName]: [RepositoryName]Type {
 
-    private [Name]Repository CreateSut() =>
-        new(_serviceMock.Object);
+    // TODO: Add mock properties for each repository method
 
-    [Fact]
-    public async Task GetListAsync_ShouldReturnItems_WhenServiceSucceeds()
-    {
-        // Arrange
-        var items = new List<ItemDto> { new() { Id = "1" } };
-        _serviceMock
-            .Setup(s => s.FetchListAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(items);
-        var sut = CreateSut();
+    var invokedMethodName = false
+    var invokedMethodNameCount = 0
+    var invokedMethodNameParameters: ([ParameterType], [ParameterType])?
+    var invokedMethodNameParametersList = [([ParameterType], [ParameterType])]()
+    var stubbedMethodNameResult: Observable<[ReturnType]>!
 
-        // Act
-        var result = await sut.GetListAsync();
-
-        // Assert
-        result.Should().HaveCount(1);
+    func methodName(
+        parameter1: [ParameterType],
+        parameter2: [ParameterType]
+    ) -> Observable<[ReturnType]> {
+        invokedMethodName = true
+        invokedMethodNameCount += 1
+        invokedMethodNameParameters = (parameter1, parameter2)
+        invokedMethodNameParametersList.append((parameter1, parameter2))
+        return stubbedMethodNameResult
     }
 
-    [Fact]
-    public async Task GetListAsync_ShouldReturnEmpty_WhenServiceReturnsNull()
-    {
-        // Arrange
-        _serviceMock
-            .Setup(s => s.FetchListAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync((List<ItemDto>?)null);
-        var sut = CreateSut();
+    // TODO: Add more repository methods following the same pattern
+}
+```
 
-        // Act
-        var result = await sut.GetListAsync();
+## Mock Presentable Template
 
-        // Assert
-        result.Should().BeEmpty();
+```swift
+import Foundation
+import RxSwift
+import RxRelay
+
+@testable import [FeatureModule]
+
+final class Mock[PresentableName]: [PresentableName] {
+
+    // MARK: - Listener Property
+    var invokedListenerSetter = false
+    var invokedListenerSetterCount = 0
+    var invokedListener: [PresentableListener]?
+    var invokedListenerList = [[PresentableListener]?]()
+    var invokedListenerGetter = false
+    var invokedListenerGetterCount = 0
+    var stubbedListener: [PresentableListener]!
+
+    var listener: [PresentableListener]? {
+        set {
+            invokedListenerSetter = true
+            invokedListenerSetterCount += 1
+            invokedListener = newValue
+            invokedListenerList.append(newValue)
+        }
+        get {
+            invokedListenerGetter = true
+            invokedListenerGetterCount += 1
+            return stubbedListener
+        }
     }
 
-    [Fact]
-    public async Task GetByIdAsync_ShouldReturnNull_WhenNotFound()
-    {
-        // Arrange
-        _serviceMock
-            .Setup(s => s.FetchByIdAsync("missing", It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ItemDto?)null);
-        var sut = CreateSut();
+    // MARK: - BehaviorRelay Properties
 
-        // Act
-        var result = await sut.GetByIdAsync("missing");
+    // TODO: Add BehaviorRelay properties for data binding
+    var invokedDataSourceSetter = false
+    var invokedDataSourceSetterCount = 0
+    var invokedDataSource: BehaviorRelay<[DataModel]>?
+    var invokedDataSourceList = [BehaviorRelay<[DataModel]>]()
+    var invokedDataSourceGetter = false
+    var invokedDataSourceGetterCount = 0
+    var stubbedDataSource: BehaviorRelay<[DataModel]>!
 
-        // Assert
-        result.Should().BeNull();
+    var dataSource: BehaviorRelay<[DataModel]> {
+        set {
+            invokedDataSourceSetter = true
+            invokedDataSourceSetterCount += 1
+            invokedDataSource = newValue
+            invokedDataSourceList.append(newValue)
+        }
+        get {
+            invokedDataSourceGetter = true
+            invokedDataSourceGetterCount += 1
+            return stubbedDataSource
+        }
+    }
+
+    var invokedIsLoadingRelaySetter = false
+    var invokedIsLoadingRelaySetterCount = 0
+    var invokedIsLoadingRelay: BehaviorRelay<Bool>?
+    var invokedIsLoadingRelayList = [BehaviorRelay<Bool>]()
+    var invokedIsLoadingRelayGetter = false
+    var invokedIsLoadingRelayGetterCount = 0
+    var stubbedIsLoadingRelay: BehaviorRelay<Bool>!
+
+    var isLoadingRelay: BehaviorRelay<Bool> {
+        set {
+            invokedIsLoadingRelaySetter = true
+            invokedIsLoadingRelaySetterCount += 1
+            invokedIsLoadingRelay = newValue
+            invokedIsLoadingRelayList.append(newValue)
+        }
+        get {
+            invokedIsLoadingRelayGetter = true
+            invokedIsLoadingRelayGetterCount += 1
+            return stubbedIsLoadingRelay
+        }
+    }
+
+    var invokedErrorMessageSetter = false
+    var invokedErrorMessageSetterCount = 0
+    var invokedErrorMessage: BehaviorRelay<String?>?
+    var invokedErrorMessageList = [BehaviorRelay<String?>]()
+    var invokedErrorMessageGetter = false
+    var invokedErrorMessageGetterCount = 0
+    var stubbedErrorMessage: BehaviorRelay<String?>!
+
+    var errorMessage: BehaviorRelay<String?> {
+        set {
+            invokedErrorMessageSetter = true
+            invokedErrorMessageSetterCount += 1
+            invokedErrorMessage = newValue
+            invokedErrorMessageList.append(newValue)
+        }
+        get {
+            invokedErrorMessageGetter = true
+            invokedErrorMessageGetterCount += 1
+            return stubbedErrorMessage
+        }
+    }
+
+    // MARK: - PublishRelay Properties
+
+    // TODO: Add PublishRelay properties for triggers
+    var invokedTriggerActionSetter = false
+    var invokedTriggerActionSetterCount = 0
+    var invokedTriggerAction: PublishRelay<[TriggerType]>?
+    var invokedTriggerActionList = [PublishRelay<[TriggerType]>]()
+    var invokedTriggerActionGetter = false
+    var invokedTriggerActionGetterCount = 0
+    var stubbedTriggerAction: PublishRelay<[TriggerType]>!
+
+    var triggerAction: PublishRelay<[TriggerType]> {
+        set {
+            invokedTriggerActionSetter = true
+            invokedTriggerActionSetterCount += 1
+            invokedTriggerAction = newValue
+            invokedTriggerActionList.append(newValue)
+        }
+        get {
+            invokedTriggerActionGetter = true
+            invokedTriggerActionGetterCount += 1
+            return stubbedTriggerAction
+        }
+    }
+
+    // MARK: - Methods
+
+    // TODO: Add method mocks for presentable actions
+    var invokedMethodName = false
+    var invokedMethodNameCount = 0
+    var invokedMethodNameParameters: ([ParameterType], Void)?
+    var invokedMethodNameParametersList = [([ParameterType], Void)]()
+
+    func methodName(parameter: [ParameterType]) {
+        invokedMethodName = true
+        invokedMethodNameCount += 1
+        invokedMethodNameParameters = (parameter, ())
+        invokedMethodNameParametersList.append((parameter, ()))
     }
 }
 ```
 
-## UseCase Test Template
+## Mock UseCase Template
 
-```csharp
-using Xunit;
-using FluentAssertions;
-using Moq;
-using [FeatureModule].Domain.UseCases;
-using [FeatureModule].Data.Repositories;
-using [FeatureModule].Domain.Models;
+```swift
+import Foundation
+import RxSwift
+import Action
 
-namespace [FeatureModule].Tests.UseCases;
+@testable import [FeatureModule]
 
-public class [Name]UseCaseTests
-{
-    private readonly Mock<I[Name]Repository> _repositoryMock = new();
+final class Mock[UseCaseName]: [UseCaseName]Type {
 
-    private [Name]UseCase CreateSut() =>
-        new(_repositoryMock.Object);
+    // MARK: - Action UseCase Mock
+    var invokedActionSetter = false
+    var invokedActionSetterCount = 0
+    var invokedAction: Action<[InputType], [OutputType]>?
+    var invokedActionList = [Action<[InputType], [OutputType]>?]()
+    var invokedActionGetter = false
+    var invokedActionGetterCount = 0
+    var stubbedAction: Action<[InputType], [OutputType]>?
 
-    [Fact]
-    public async Task ExecuteAsync_ShouldReturnResult_WhenRepositorySucceeds()
-    {
-        // Arrange
-        var input = new [InputType] { Id = "123" };
-        var expected = new [OutputType] { Id = "123", Name = "Test" };
-        _repositoryMock
-            .Setup(r => r.GetByIdAsync("123", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expected);
-        var sut = CreateSut();
+    var action: Action<[InputType], [OutputType]>? {
+        set {
+            invokedActionSetter = true
+            invokedActionSetterCount += 1
+            invokedAction = newValue
+            invokedActionList.append(newValue)
+        }
+        get {
+            invokedActionGetter = true
+            invokedActionGetterCount += 1
+            return stubbedAction
+        }
+    }
 
-        // Act
-        var result = await sut.ExecuteAsync(input);
+    // MARK: - Standard UseCase Mock
+    var invokedRun = false
+    var invokedRunCount = 0
+    var invokedRunParameters: ([InputType], Void)?
+    var invokedRunParametersList = [([InputType], Void)]()
+    var stubbedRunResult: Observable<[OutputType]>!
 
-        // Assert
-        result.Should().BeEquivalentTo(expected);
+    func run(input: [InputType]) -> Observable<[OutputType]> {
+        invokedRun = true
+        invokedRunCount += 1
+        invokedRunParameters = (input, ())
+        invokedRunParametersList.append((input, ()))
+        return stubbedRunResult
     }
 }
 ```
 
-## Mock Patterns
+## Template Variables
 
-```csharp
-// Mock with ReturnsAsync
-_mock.Setup(x => x.MethodAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-     .ReturnsAsync(expectedValue);
+-   `${input:className}`: Class name being tested (e.g., "UserProfileViewModel")
+-   `${input:feature}`: Feature module (e.g., "CTUserManagement")
+-   `${input:testType}`: Test type: "viewModel", "useCase", "repository"
 
-// Mock throwing
-_mock.Setup(x => x.MethodAsync(It.IsAny<CancellationToken>()))
-     .ThrowsAsync(new HttpRequestException("error"));
+## Usage Examples
 
-// Verify call count
-_mock.Verify(x => x.MethodAsync(It.IsAny<CancellationToken>()), Times.Once);
-_mock.Verify(x => x.MethodAsync(It.IsAny<CancellationToken>()), Times.Never);
+-   `/ios-unittest className:UserProfileViewModel feature:CTUserManagement testType:viewModel`
+-   `/ios-unittest className:GetUserUseCase feature:CTUserManagement testType:useCase`
+-   `/ios-unittest className:UserRepository feature:CTUserManagement testType:repository`
 
-// Verify with exact parameter
-_mock.Verify(x => x.GetByIdAsync("exact-id", It.IsAny<CancellationToken>()), Times.Once);
-```
+## Test Organization Best Practices
 
-## Theory (Parameterized Tests)
+### 1. BDD Structure
 
-```csharp
-[Theory]
-[InlineData("", false)]
-[InlineData("  ", false)]
-[InlineData("valid@email.com", true)]
-public void ValidateEmail_ShouldReturn_ExpectedResult(string email, bool expected)
-{
-    var result = EmailValidator.Validate(email);
-    result.Should().Be(expected);
+```swift
+describe("UserProfileViewModel") {
+    context("when user data is loaded") {
+        it("should update the data source") {
+            // Test implementation
+        }
+
+        it("should stop loading state") {
+            // Test implementation
+        }
+    }
+
+    context("when error occurs") {
+        it("should display error message") {
+            // Test implementation
+        }
+    }
 }
 ```
 
-## FluentAssertions Reference
+### 2. Given-When-Then Pattern
 
-```csharp
-// Equality
-result.Should().Be(expected);
-result.Should().BeEquivalentTo(expected);   // deep/structural equality
+```swift
+it("should handle successful login") {
+    // Given
+    let expectedUser = UserModel.mock()
+    mockUseCase.stubbedRunResult = Observable.just(expectedUser)
 
-// Nullability
-result.Should().BeNull();
-result.Should().NotBeNull();
+    // When
+    sut.login(email: "test@example.com", password: "password")
 
-// Collections
-list.Should().BeEmpty();
-list.Should().HaveCount(3);
-list.Should().Contain(item => item.Id == "1");
-list.Should().ContainSingle(x => x.Name == "Test");
-
-// Strings
-str.Should().StartWith("prefix");
-str.Should().Contain("substring");
-
-// Booleans
-flag.Should().BeTrue();
-flag.Should().BeFalse();
-
-// Exceptions
-await sut.Invoking(x => x.LoadAsync()).Should().ThrowAsync<InvalidOperationException>();
+    // Then
+    expect(mockPresenter.stubbedDataSource.value).to(equal(expectedUser))
+    expect(mockPresenter.stubbedIsLoadingRelay.value).to(beFalse())
+}
 ```
 
-## Test Naming Convention
+### 3. Mock Verification
 
-```
-[MethodName]_Should[ExpectedBehavior]_When[Condition]
+```swift
+it("should call repository with correct parameters") {
+    // Given
+    let userID = "123"
 
-Examples:
-- LoadCommand_ShouldPopulateItems_WhenRepositorySucceeds
-- GetByIdAsync_ShouldReturnNull_WhenNotFound
-- ExecuteAsync_ShouldThrow_WhenRepositoryFails
-- Constructor_ShouldInitialize_WithDefaults
-```
+    // When
+    sut.loadUser(id: userID)
 
-## Run Tests
-
-```bash
-dotnet test
-dotnet test --filter "ClassName=[Name]Tests"
-dotnet test --collect:"XPlat Code Coverage"
+    // Then
+    expect(mockRepository.invokedGetUser).to(beTrue())
+    expect(mockRepository.invokedGetUserParameters?.userID).to(equal(userID))
+}
 ```
 
-## Rules
+## Output
 
-- All test classes are `public` with xUnit `[Fact]` / `[Theory]` attributes
-- Create mocks as private `readonly` fields, instantiate SUT via `CreateSut()` factory
-- Use `.Setup()` for stubs and `.Verify()` for interaction assertions
-- Use FluentAssertions — never `Assert.Equal()` directly
-- Never test implementation details — test observable behavior
-- Tests must be independent and order-agnostic
+Generate unit test with:
+
+1. Quick and Nimble test structure
+2. Mock classes for all dependencies
+3. Proper beforeEach setup
+4. BDD-style test organization
+5. TODO comments for test implementation
+6. Proper import statements
+7. Mock verification patterns
+
+Keep tests focused on behavior verification without business logic implementation.

@@ -9,7 +9,7 @@ Generate basic API Target following Requestable protocol patterns.
 
 ## Instructions
 
-Reference our C#/.NET WPF development guidelines: [iOS Guidelines](../instructions/ios-general-instructions.instructions.md)
+Reference our iOS development guidelines: [iOS Guidelines](../instructions/ios-general-instructions.instructions.md)
 
 Generate basic API Target structure with:
 
@@ -26,7 +26,7 @@ import Foundation
 import Action
 import Alamofire
 import ObjectMapper
-import AppCommon
+import CTCommon
 import CTApiClient
 
 struct [Name]Target {
@@ -80,7 +80,7 @@ import Foundation
 import Action
 import Alamofire
 import ObjectMapper
-import AppCommon
+import CTCommon
 import CTApiClient
 
 struct [Name]Target {
@@ -235,7 +235,7 @@ var params: Parameters {
 
 Generate basic API Target with:
 
-1. Proper imports (Foundation, Alamofire, ObjectMapper, AppCommon, CTApiClient)
+1. Proper imports (Foundation, Alamofire, ObjectMapper, CTCommon, CTApiClient)
 2. Requestable protocol conformance
 3. HTTP method and parameters configuration
 4. Endpoint definition

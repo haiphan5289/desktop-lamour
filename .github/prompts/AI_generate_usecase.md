@@ -77,7 +77,7 @@ For example, when you add a new UseCase for the checkout screen, this code will 
 ---
 
 ### Step 1: Add Endpoint to CRNetworkHelper
-**File Path:** `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/Features/CTCorePayment/CTCorePayment/NetworkHelper/CRNetworkHelper.cs`
+**File Path:** `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/AppFeatures/CTCorePayment/CTCorePayment/NetworkHelper/CRNetworkHelper.swift`
 
 Add the following to the `Api` extension:
 
@@ -93,7 +93,7 @@ extension Api {
 ---
 
 ### Step 2: Add Targets to CRCheckoutTargets
-**File Path:** `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/Features/CTCorePayment/CTCorePayment/Data/Services/Checkout/CRCheckoutTargets.cs`
+**File Path:** `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/AppFeatures/CTCorePayment/CTCorePayment/Data/Services/Checkout/CRCheckoutTargets.swift`
 
 Add the new target structure:
 
@@ -138,7 +138,7 @@ enum CRCheckoutTargets {
 ---
 
 ### Step 3: Add Service to CRCheckoutService
-**File Path:** `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/Features/CTCorePayment/CTCorePayment/Data/Services/Checkout/CRCheckoutService.cs`
+**File Path:** `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/AppFeatures/CTCorePayment/CTCorePayment/Data/Services/Checkout/CRCheckoutService.swift`
 
 Add the protocol method and implementation:
 
@@ -162,7 +162,7 @@ extension CRCheckoutService: CRCheckoutServiceType {
 ---
 
 ### Step 4: Add Function to CRCheckoutCartRepository
-**File Path:** `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/Features/CTCorePayment/CTCorePayment/Data/Repositories/Checkout/Cart/CRCheckoutCartRepository.cs`
+**File Path:** `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/AppFeatures/CTCorePayment/CTCorePayment/Data/Repositories/Checkout/Cart/CRCheckoutCartRepository.swift`
 
 Add the protocol method and implementation:
 
@@ -184,7 +184,7 @@ extension CRCheckoutCartRepository: CRCheckoutCartRepositoryType {
 ---
 
 ### Step 5: Add UseCase to CRCheckoutUseCase
-**File Path:** `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/Features/CTCorePayment/CTCorePayment/Domain/UseCases/Checkout/CRCheckoutUseCase.cs`
+**File Path:** `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/AppFeatures/CTCorePayment/CTCorePayment/Domain/UseCases/Checkout/CRCheckoutUseCase.swift`
 
 Add the new UseCase following the established pattern:
 
@@ -213,7 +213,7 @@ final class CRFetchCopilotUseCase: CTActionUseCaseType {
 ---
 
 ### Step 6: Call UseCase in CRCheckoutPageViewModel
-**File Path:** `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/Features/CTCorePayment/CTCorePayment/Features/CheckoutPage/CRCheckoutPageViewModel.cs`
+**File Path:** `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/AppFeatures/CTCorePayment/CTCorePayment/Features/CheckoutPage/CRCheckoutPageViewModel.swift`
 
 Add the UseCase integration following the existing patterns:
 
@@ -233,7 +233,7 @@ final class CRCheckoutPageViewModel: CRCheckoutPageViewModelType, CRCheckoutPage
                 self.handleCopilotResponse(result)
                 print("FetchCopilot result: \(result)")
             })
-            .using CancellationToken
+            .disposed(by: disposeBag)
         
         // Handle loading state
         fetchCopilotUseCase.action?.executing
@@ -241,7 +241,7 @@ final class CRCheckoutPageViewModel: CRCheckoutPageViewModelType, CRCheckoutPage
                 guard let self = self else { return }
                 self.presenter?.loading.accept(loading)
             })
-            .using CancellationToken
+            .disposed(by: disposeBag)
         
         // Handle errors
         fetchCopilotUseCase.action?.underlyingError
@@ -249,7 +249,7 @@ final class CRCheckoutPageViewModel: CRCheckoutPageViewModelType, CRCheckoutPage
                 guard let self = self else { return }
                 self.handleCopilotError(error)
             })
-            .using CancellationToken
+            .disposed(by: disposeBag)
         
         // Execute the UseCase
         fetchCopilotUseCase.action?.execute(input)
@@ -275,7 +275,7 @@ final class CRCheckoutPageViewModel: CRCheckoutPageViewModelType, CRCheckoutPage
 Don't forget to create the response model:
 
 ```swift
-// CRCopilotResponseModel.cs
+// CRCopilotResponseModel.swift
 import Foundation
 import ObjectMapper
 

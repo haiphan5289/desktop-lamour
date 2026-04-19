@@ -2,7 +2,7 @@
 
 **Last synced:** 2026-01-26
 
-Source: `${CT_DESIGN_SYSTEM_REPO}/Sources/AppDesignSystemSwiftUI/Sources/ColorThemes/`
+Source: `${CT_DESIGN_SYSTEM_REPO}/Sources/CTDesignSystemSwiftUI/Sources/ColorThemes/`
 
 ---
 
@@ -23,7 +23,7 @@ Source: `${CT_DESIGN_SYSTEM_REPO}/Sources/AppDesignSystemSwiftUI/Sources/ColorTh
 
 | Family | Based On | Brand |
 |--------|----------|-------|
-| Chotot | Yellow/Gold | App marketplace |
+| Chotot | Yellow/Gold | Cho Tot marketplace |
 | ViecLamTot | Blue | Job listings |
 | NhaTot | Orange-red | Property |
 | ChototXe | Yellow | Vehicle |
@@ -219,4 +219,4 @@ Image(systemName: "xmark").foregroundColor(theme.icon.iconError)
 
 - Dark mode: Not yet available. All themes currently light mode only.
 - Total properties: 82 across 6 sub-protocols
-- Source files: `CDSColorTheme*.cs` in ColorThemes/ directory
+- Source files: `CDSColorTheme*.swift` in ColorThemes/ directory

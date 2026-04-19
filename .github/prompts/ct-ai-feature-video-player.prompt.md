@@ -1,7 +1,7 @@
 ---
 agent: Create a UITableViewCell or UICollectionViewCell with integrated video player
-always: Use AppDesignSystem components, implement fallback URLs, proper memory management
-description: "Template for implementing video player cells with play/pause controls, loading states, error handling, and fallback URL support following App iOS architecture standards"
+always: Use CTDesignSystem components, implement fallback URLs, proper memory management
+description: "Template for implementing video player cells with play/pause controls, loading states, error handling, and fallback URL support following Cho Tot iOS architecture standards"
 ---
 
 # Video Player Cell Implementation Prompt
@@ -11,12 +11,12 @@ Create a UITableViewCell or UICollectionViewCell with integrated video player fu
 
 ## Requirements
 - Must follow MVVM + Clean Architecture patterns
-- Use AppDesignSystem components only (no WPF components)
-- Use XAML layout for all constraints
+- Use CTDesignSystem components only (no UIKit components)
+- Use SnapKit for all constraints
 - Include proper memory management and cleanup
 - Support fallback URLs for reliability
 - Implement loading and error states
-- Follow App iOS coding standards
+- Follow Cho Tot iOS coding standards
 
 ## Implementation Instructions
 
@@ -24,9 +24,9 @@ Create a UITableViewCell or UICollectionViewCell with integrated video player fu
 Include all necessary imports at the top of your file:
 
 ```swift
-import WPF
-import AppCommon
-import AppDesignSystem
+import UIKit
+import CTCommon
+import CTDesignSystem
 import CTComponent
 import CTAsset
 import AVFoundation
@@ -37,12 +37,12 @@ import AVKit
 Add these properties to your cell class:
 ```swift
 // Theme
-private let theme = AppThemeManager.defaultTheme
+private let theme = CMStaticThemeLoader.defaultTheme
 
 // Video Player Properties
 private var player: AVPlayer?
 private var playerLayer: AVPlayerLayer?
-private var playButton: AppButton?
+private var playButton: DSButton?
 private var loadingIndicator: UIActivityIndicatorView?
 
 // Container view để chứa video
@@ -99,7 +99,7 @@ private func setupLoadingIndicator() {
     containerVideoView.addSubview(loadingIndicator)
     
     loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
-    XAML code-behind layout.activate([
+    NSLayoutConstraint.activate([
         loadingIndicator.centerXAnchor.constraint(equalTo: containerVideoView.centerXAnchor),
         loadingIndicator.centerYAnchor.constraint(equalTo: containerVideoView.centerYAnchor)
     ])
@@ -109,7 +109,7 @@ private func setupLoadingIndicator() {
 #### Play button setup
 ```swift
 private func setupPlayButton() {
-    playButton = AppButton()
+    playButton = DSButton()
     guard let playButton = playButton else { return }
     
     playButton.setStyle(DS.Button.primary(size: .large, isIconButtonOnly: true))
@@ -121,7 +121,7 @@ private func setupPlayButton() {
     
     containerVideoView.addSubview(playButton)
     playButton.translatesAutoresizingMaskIntoConstraints = false
-    XAML code-behind layout.activate([
+    NSLayoutConstraint.activate([
         playButton.centerXAnchor.constraint(equalTo: containerVideoView.centerXAnchor),
         playButton.centerYAnchor.constraint(equalTo: containerVideoView.centerYAnchor),
         playButton.widthAnchor.constraint(equalToConstant: 60),
@@ -317,7 +317,7 @@ func playVideo() {
 ### Error Handling Strategy
 **MUST DO**: Implement robust error handling:
 - Use fallback URLs for improved reliability
-- Log errors using `ILogger<T>` from AppCommon
+- Log errors using `Logger.print()` from CTCommon
 - Handle network issues gracefully without crashes
 
 ### UI/UX Guidelines
@@ -325,7 +325,7 @@ func playVideo() {
 - Show loading indicator while video loads
 - Only show play button when video is ready or paused
 - Auto-hide play button during playback
-- Use AppDesignSystem components exclusively
+- Use CTDesignSystem components exclusively
 
 ### Performance Optimization
 **MUST DO**: Optimize for performance:
@@ -363,5 +363,5 @@ You should have a fully functional video player cell that:
 - ✅ Shows loading states and handles errors gracefully  
 - ✅ Provides intuitive play/pause controls
 - ✅ Manages memory properly for cell reuse
-- ✅ Follows App iOS architecture and design patterns
-- ✅ Uses only AppDesignSystem components
+- ✅ Follows Cho Tot iOS architecture and design patterns
+- ✅ Uses only CTDesignSystem components

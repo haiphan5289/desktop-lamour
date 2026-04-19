@@ -1,18 +1,18 @@
 ---
-agent: Semantically filter and clean PRD content for C#/.NET WPF development analysis
-always: Follow MVVM + Clean Architecture, use AppDesignSystem components, preserve technical requirements
+agent: Semantically filter and clean PRD content for iOS development analysis
+always: Follow MVVM + Clean Architecture, use CTDesignSystem components, preserve technical requirements
 description: "Template for filtering PRD content to extract iOS-relevant information while maintaining security and technical accuracy"
 ---
 
 ## Prompt Activation
 
-**You are an expert C#/.NET WPF developer following the Semantic Filter Pattern.**
+**You are an expert iOS developer following the Semantic Filter Pattern.**
 
 # 🔍 Semantic Filter Pattern Implementation Prompt
 
-You are an expert C#/.NET WPF developer specializing in **analyzing and filtering Product Requirements Documents (PRDs)** to extract **technically relevant information** for the **Chợ Tốt WPF applicationlication**.
+You are an expert iOS developer specializing in **analyzing and filtering Product Requirements Documents (PRDs)** to extract **technically relevant information** for the **Chợ Tốt iOS application**.
 
-We are going to **clean and semantically filter PRD content** together, removing sensitive information while **preserving all technical requirements** needed for C#/.NET WPF development.
+We are going to **clean and semantically filter PRD content** together, removing sensitive information while **preserving all technical requirements** needed for iOS development.
 
 ## Context Understanding
 
@@ -27,7 +27,7 @@ The **Semantic Filter Pattern** is designed to:
 
 All filtered content must preserve:
 - **Technical specifications** for MVVM + Clean Architecture implementation
-- **UI/UX requirements** for AppDesignSystem components
+- **UI/UX requirements** for CTDesignSystem components
 - **API specifications** and data models
 - **User flow descriptions** for ViewController navigation
 - **Validation rules** and business logic for Use Cases
@@ -64,7 +64,7 @@ When filtering, specifically preserve:
 - View layer requirements for UI components
 - Model definitions and data transformation needs
 
-#### **AppDesignSystem Integration**
+#### **CTDesignSystem Integration**
 - UI component specifications (buttons, text fields, labels)
 - Design system compliance requirements
 - Accessibility and theming needs
@@ -83,7 +83,7 @@ When filtering, specifically preserve:
 
 ---
 
-**🎯 START HERE:** Please provide the PRD content you would like me to semantically filter for C#/.NET WPF development analysis.
+**🎯 START HERE:** Please provide the PRD content you would like me to semantically filter for iOS development analysis.
 
 ## How to Use This Prompt
 
@@ -147,13 +147,13 @@ The filtered PRD will maintain the original structure but with:
 
 ### **Generic Template:**
 
-You are an expert C#/.NET WPF developer specializing in **PRD content filtering**.  
+You are an expert iOS developer specializing in **PRD content filtering**.  
 We are going to **semantically filter [PRD TITLE/FEATURE NAME]** together to extract iOS-relevant technical information.
 
 Follow the **Semantic Filter Pattern**:
 - **Remove sensitive information** while preserving technical requirements
 - **Maintain PRD structure** for easier subsequent analysis
-- **Focus on C#/.NET WPF development needs** (MVVM, AppDesignSystem, CommunityToolkit.Mvvm, etc.)
+- **Focus on iOS development needs** (MVVM, CTDesignSystem, RxSwift, etc.)
 - **Preserve user stories and functional specs** needed for implementation
 
 Provide the raw PRD content you want me to filter.

@@ -1,12 +1,14 @@
 ---
 name: ct-chotot-module-context
-description: "Quick reference for WPF application module architecture, MVVM patterns, AppDesignSystem usage, and DI setup. Use when working on any module—understanding directory structure, DI configuration, interface patterns ([Feature]ViewModel, IView), UseCase/Repository patterns, or module-specific conventions. Provides quick patterns, file paths, localization usage, and logging guidance."
+description: "Quick reference for Cho Tot module architecture, MVVM-C patterns, CTDesignSystem usage, and DI setup. Use when working on CTInsertAd, CTJOB, CTVEH, CTChat, or any module — understanding directory structure, Assembler/DI configuration, protocol patterns ([Feature]ViewModelType, [Feature]Presentable, [Feature]PresentableListener), UseCase/Repository patterns, ECS enum handling, or module-specific conventions. Provides quick patterns, file paths, localization usage, and logging guidance."
 model: sonnet
 effort: medium
 argument-hint: "[module name or architecture pattern]"
 ---
 
-# WPF Application Module Context
+# Cho Tot Module Context
+
+> **Anti-Hallucination:** Verify every symbol, token, path, and identifier against the codebase before generating code. See [ct-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
 
 This skill provides quick reference for patterns and architecture you use frequently.
 
@@ -14,15 +16,15 @@ This skill provides quick reference for patterns and architecture you use freque
 
 **With arguments:**
 ```
-/ct-chotot-module-context Features/InsertAd
-/ct-chotot-module-context MVVM architecture
+/ct-chotot-module-context CTInsertAd
+/ct-chotot-module-context MVVM-C architecture
 /ct-chotot-module-context UseCase pattern
 ```
 
 **Supported argument patterns:**
-- **Module names**: `Features/InsertAd`, `Features/Orders`, `Features/Chat`, `Features/Feed`, any module
-- **Architecture patterns**: `MVVM`, `NavigationService`, `UseCase`, `Repository`, `async/await`
-- **Specific components**: `ViewModel`, `View`, `IView`, `IUseCase`
+- **Module names**: `CTInsertAd`, `CTJOB`, `CTChat`, `CTFeed`, any AppFeature or Library
+- **Architecture patterns**: `MVVM-C`, `Coordinator`, `UseCase`, `Repository`, `RxSwift`
+- **Specific components**: `ViewModel`, `ViewController`, `Presenter`, `PresentableListener`
 - **File context**: When selected text is provided via `{selectedText}`, reviews code patterns directly
 
 ---
@@ -31,160 +33,121 @@ This skill provides quick reference for patterns and architecture you use freque
 
 Provide quick reference and guidance specifically for: **$ARGUMENTS**
 
-## MVVM Architecture
+## MVVM-C Architecture in Cho Tot
 
-**2-Interface Pattern** (per module):
+**3-Protocol Pattern** (per module):
 
-1. **`[Feature]ViewModel`** — ViewModel (inherits `ViewModelBase` from CommunityToolkit.Mvvm)
-2. **`IView`** — View interface exposing bindable state and navigation triggers
+1. **`[Feature]ViewModelType`** — ViewModel protocol (conforms to `CTViewModelType`)
+2. **`[Feature]Presentable`** — ViewController protocol exposing `BehaviorRelay`/`PublishRelay` state
+3. **`[Feature]PresentableListener`** — ViewController → ViewModel trigger relays (user interactions)
 
 **Data Flow:**
 ```
-View triggers → ViewModel ([RelayCommand] / ICommand invoked)
-             → UseCase (IUseCase<TIn, TOut>, await ExecuteAsync)
-             → Repository → Service → HttpClient
-             ← Task<TOut> result
-             ← [ObservableProperty] updated
-             ← WPF binding notifies View via INotifyPropertyChanged
+ViewController triggers → ViewModel (via PresentableListener relays)
+                       → UseCase (CTActionUseCaseType, action?.execute)
+                       → Repository → Service → API Target
+                       ← UseCase action?.elements
+                       ← Presenter relays (BehaviorRelay.accept)
+                       ← ViewController binds to UI
 ```
 
-**Navigation Pattern:**
-- Navigation is handled by `INavigationService`, not Views
-- Views don't reference other Views directly
-- `INavigationService` is injected into ViewModel
+**Coordinator Pattern:**
+- Navigation is handled by Coordinator, not ViewController
+- ViewControllers don't know about other ViewControllers
+- Coordinator is injected into ViewModel and triggered via listener
 
-## Module Structure (Example: Features/InsertAd)
+## CTInsertAd Module Structure
 
 ```
-Features/InsertAd/
-├── Views/                 ← UserControls (.xaml + .xaml.cs)
-├── ViewModels/            ← ViewModelBase subclasses
-├── Domain/
-│   ├── UseCases/
-│   └── Models/
-├── Data/
-│   ├── Repositories/
-│   └── Services/
-└── Tests/
+AppFeatures/CTInsertAd/
+├── CTInsertAd/
+│   ├── Presentation/
+│   │   ├── ViewControllers/
+│   │   ├── Views/
+│   │   └── ViewModels/
+│   ├── Domain/
+│   │   ├── UseCases/
+│   │   └── Models/
+│   ├── Data/
+│   │   ├── Repositories/
+│   │   └── Services/
+│   └── Assembler/
 ```
 
 Common modules you work on:
-- **CreateItem** — Item creation flow
-- **ReviewItem** — Item review/publish
+- **CreateAd** — Ad creation flow
+- **ReviewAd** — Ad review/publish
 - **Categories** — Category selection
 - **Location** — Location picker
 
-## AppDesignSystem Component Usage
+## CTDesignSystem Component Usage
 
-**ALWAYS use App components**, never raw WPF controls:
-- `AppLabel` instead of `TextBlock`
-- `AppButton` instead of `Button`
-- `AppTextField` instead of `TextBox`
-- `AppImage` instead of `Image`
+**ALWAYS use DS components**, never raw UIKit:
+- `DSLabel` instead of `UILabel`
+- `DSButton` instead of `UIButton`
+- `DSTextField` instead of `UITextField`
+- `DSImageView` instead of `UIImageView`
 
 **Styling Example:**
-```xml
-<local:AppLabel Text="{Binding Title}"
-                Style="{StaticResource AppTypography.HeaderSection}"/>
+```swift
+label.setStyle(DS.TypoToken.Header.Section(color: theme.text.textPrimary.color))
 ```
 
-**Layout: XAML ONLY** — no code-behind positioning, no manual `Canvas` coordinates.
+**Layout: SnapKit ONLY** — no Interface Builder, no manual NSLayoutConstraint.
 
-## CommunityToolkit.Mvvm Patterns
+## RxSwift Patterns
 
-**ViewModel with [ObservableProperty] and [RelayCommand]:**
-```csharp
-public sealed partial class ProductListViewModel : ViewModelBase
-{
-    private readonly IProductRepository _repository;
-
-    [ObservableProperty]
-    private ObservableCollection<ProductItemViewModel> _items = new();
-
-    [ObservableProperty]
-    private bool _isLoading;
-
-    [ObservableProperty]
-    private string? _errorMessage;
-
-    public ProductListViewModel(IProductRepository repository)
-        => _repository = repository;
-
-    [RelayCommand]
-    private async Task LoadAsync(CancellationToken ct)
-    {
-        IsLoading = true;
-        ErrorMessage = null;
-        try
-        {
-            var result = await _repository.GetProductsAsync(ct);
-            Items = new ObservableCollection<ProductItemViewModel>(
-                result.Select(ProductItemViewModel.From));
+**Input/Output in ViewModels:**
+```swift
+func transform(input: Input) -> Output {
+    let items = input.refreshTrigger
+        .flatMapLatest { [weak self] _ in
+            self?.loadItems() ?? .empty()
         }
-        catch (Exception ex)
-        {
-            ErrorMessage = "Could not load products.";
-            // ILogger injected separately
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
+        .share(replay: 1)
+
+    return Output(items: items, isLoading: activityIndicator.asObservable())
 }
 ```
 
-## DI Registration
+**Memory management:**
+- Always use `DisposeBag` in ViewControllers and ViewModels
+- Use weak self in closures: `[weak self]`
+- Disposed by: `.disposed(by: disposeBag)`
 
-```csharp
-// ServiceCollectionExtensions.cs
-public static IServiceCollection AddProductListModule(this IServiceCollection services)
-{
-    services.AddTransient<ProductListViewModel>();
-    services.AddScoped<IProductRepository, ProductRepository>();
-    services.AddHttpClient<IProductService, ProductService>(client =>
-    {
-        client.BaseAddress = new Uri("https://api.example.com");
-    });
-    return services;
-}
+## ECS & Enums
+
+Use `MarketplaceECSHelper` for ECS enum mapping:
+```swift
+let categoryId = MarketplaceECSHelper.categoryId(from: ecsCode)
 ```
 
-## Common File Paths (Features/InsertAd)
+Regenerate enums with: `python bin/gen_ecs_enum.py`
 
-- **Models**: `Features/InsertAd/Domain/Models/`
-- **UseCases**: `Features/InsertAd/Domain/UseCases/`
-- **ViewModels**: `Features/InsertAd/ViewModels/`
-- **Services**: `Features/InsertAd/Data/Services/`
-- **Tests**: `Features/InsertAd/Tests/`
+## Common File Paths (CTInsertAd)
+
+- **Models**: `AppFeatures/CTInsertAd/CTInsertAd/Domain/Models/`
+- **UseCases**: `AppFeatures/CTInsertAd/CTInsertAd/Domain/UseCases/`
+- **ViewModels**: `AppFeatures/CTInsertAd/CTInsertAd/Presentation/ViewModels/`
+- **Services**: `AppFeatures/CTInsertAd/CTInsertAd/Data/Services/`
+- **Tests**: `AppFeatures/CTInsertAd/CTInsertAd/Tests/`
 
 ## Localization Pattern
 
-**Use `.resx` resource files:**
-```csharp
-// Properties/Resources.resx
-var label = Properties.Resources.ProductList_Title;
-```
-
-```xml
-<!-- XAML -->
-<local:AppLabel Text="{x:Static properties:Resources.ProductList_Title}"/>
-```
+**Don't use**: `ctLocalize(for: "key", tableName: "Table")`
+**Use instead**: `CTLocalize.module_specific_key()` from CTLocalize module
 
 ## Logging
 
-Use `ILogger<T>` from `Microsoft.Extensions.Logging` — inject via constructor.
-```csharp
-_logger.LogInformation("Products loaded: {Count}", items.Count);
-_logger.LogError(ex, "Failed to load products");
-```
+Use `Logger.print()` from CTCommon instead of `print()`.
 
 ## File Headers
 
-```csharp
-// ProductListViewModel.cs
-// Created by [Name] on [Date].
-// Copyright © 2024 App. All rights reserved.
+```swift
+//
+//  FileName.swift
+//  Created by Vinh Nguyen on [date].
+//  Copyright © 2024 Cho Tot. All rights reserved.
 ```
 
 Use `time` MCP for the date, git config for your name.
@@ -200,5 +163,5 @@ The skill can automatically detect and use:
 
 - Check project memory at `~/.claude/projects/[project-name]/memory/`
 - Refer to `AGENTS.md` for module-specific rules
-- Look at examples in `Shared/AppDesignSystem/SampleApp`
+- Look at examples in `Libraries/CTDesignSystem/CTDesignSystemExampleApp/SampleApp`
 - Use ruler files in `.ruler/` for detailed guidance on architecture, code style, testing

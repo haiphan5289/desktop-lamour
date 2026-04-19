@@ -8,5 +8,5 @@ parameters:
     required: true
 ---
 
-Log the contents of the file: `/Users/hai.phan/Desktop/AI_Running_Book/ct-ios-app--v3/Features/CTCorePayment/CTCorePayment/Features/CheckoutPage/CreateUseCasePrompt/AI_generate_usecase_template.md`.
+Log the contents of the file: `/Users/hai.phan/Desktop/AI_Running_Book/ct-ios-app--v3/AppFeatures/CTCorePayment/CTCorePayment/Features/CheckoutPage/CreateUseCasePrompt/AI_generate_usecase_template.md`.
 

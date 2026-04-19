@@ -8,7 +8,7 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>DesktopLamour</RootNamespace>
     <AssemblyName>DesktopLamour</AssemblyName>
-    <Platforms>x64</Platforms>
+    <Platforms>x64;ARM64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

@@ -76,7 +76,7 @@ Replace these placeholders in ct_ai_generate_usecase_template.prompt.md:
 
 ```swift
 //
-//  {{outputParam}}.cs
+//  {{outputParam}}.swift
 //  CTPos
 //
 //  Created by AI Assistant on $(date)
@@ -84,7 +84,7 @@ Replace these placeholders in ct_ai_generate_usecase_template.prompt.md:
 
 import Foundation
 import ObjectMapper
-import AppCommon
+import CTCommon
 
 struct {{outputParam}}: Mappable {
     // TODO: Add properties based on JSON response structure
@@ -186,27 +186,27 @@ extension POSPremiumFeaturesViewModel {
                 guard let self = self, let result = result else { return }
                 print("{{usecaseName}} success: \(result)")
             })
-            .using CancellationToken
+            .disposed(by: disposeBag)
         
         self.{{usecaseName}}UseCase.action?.executing
             .bind(onNext: { [weak self] loading in
                 self?.presenter?.onLoadingPublisher.onNext(loading)
             })
-            .using CancellationToken
+            .disposed(by: disposeBag)
         
         self.{{usecaseName}}UseCase.action?.underlyingError
             .bind(onNext: { [weak self] error in 
                 guard let error = error else { return }
                 print("{{usecaseName}} error: \(error)")
             })
-            .using CancellationToken
+            .disposed(by: disposeBag)
         
         self.{{usecaseName}}UseCase.action?.execute(input)
     }
 }
 ```
 
-### Step 9: Update POSInternalNavigator.cs
+### Step 9: Update POSInternalNavigator.swift
 ```swift
 // Create UseCase
 let {{usecaseName}}UseCase = POS{{usecaseName}}UseCase(posRepository: repository)
@@ -215,7 +215,7 @@ let {{usecaseName}}UseCase = POS{{usecaseName}}UseCase(posRepository: repository
 {{usecaseName}}UseCase: {{usecaseName}}UseCase
 ```
 
-### Step 10: Update UseCasesAssembly.cs
+### Step 10: Update UseCasesAssembly.swift
 ```swift
 container.autoregister(POS{{usecaseName}}UseCase.self, initializer: POS{{usecaseName}}UseCase.init)
 ```
@@ -223,7 +223,7 @@ container.autoregister(POS{{usecaseName}}UseCase.self, initializer: POS{{usecase
 ## ⚠️ POS Module Specific Notes:
 
 **CRITICAL:** 
-- NO NetworkHelper+Api.cs - Use direct endpoint strings in POSUniTargets.cs
+- NO NetworkHelper+Api.swift - Use direct endpoint strings in POSUniTargets.swift
 - NO Generic Wrapper - Use direct models ({{responseModel}} = {{outputParam}})
 - Dependency Injection Pattern - POSPremiumFeaturesViewModel requires UseCase injection
 - POSInternalNavigator Integration - Must create UseCase and inject into ViewModel
@@ -231,32 +231,32 @@ container.autoregister(POS{{usecaseName}}UseCase.self, initializer: POS{{usecase
 ## 📁 File Creation Strategy:
 
 ### Add to Existing Files (For consolidation)
-- Add models to `POSQuantityModel.cs`
-- Add UseCase to `POSGetBundlesUseCase.cs`
+- Add models to `POSQuantityModel.swift`
+- Add UseCase to `POSGetBundlesUseCase.swift`
 
 ## 📋 File Structure After Implementation:
 ```
 CTPos/
 ├── Data/
 │   ├── Services/
-│   │   ├── POSUniTargets.cs ✏️ (Modified)
-│   │   ├── POSUniService.cs ✏️ (Modified)
-│   │   └── POSServiceType.cs ✏️ (Modified)
+│   │   ├── POSUniTargets.swift ✏️ (Modified)
+│   │   ├── POSUniService.swift ✏️ (Modified)
+│   │   └── POSServiceType.swift ✏️ (Modified)
 │   └── Repositories/
-│       ├── POSRepository.cs ✏️ (Modified)
-│       └── POSRepositoryType.cs ✏️ (Modified)
+│       ├── POSRepository.swift ✏️ (Modified)
+│       └── POSRepositoryType.swift ✏️ (Modified)
 ├── Domain/
 │   ├── Entities/
-│   │   └── POSQuantityModel.cs ✏️ (Modified - Added {{outputParam}} models)
+│   │   └── POSQuantityModel.swift ✏️ (Modified - Added {{outputParam}} models)
 │   └── UseCases/
-│       └── POSGetBundlesUseCase.cs ✏️ (Modified - Added POS{{usecaseName}}UseCase)
+│       └── POSGetBundlesUseCase.swift ✏️ (Modified - Added POS{{usecaseName}}UseCase)
 ├── Presentation/
 │   └── PremiumFeatures/
-│       └── POSPremiumFeaturesViewModel.cs ✏️ (Modified)
+│       └── POSPremiumFeaturesViewModel.swift ✏️ (Modified)
 ├── Navigator/
-│   └── POSInternalNavigator.cs ✏️ (Modified)
+│   └── POSInternalNavigator.swift ✏️ (Modified)
 └── DependencyInjection/
-    └── UseCasesAssembly.cs ✏️ (Modified)
+    └── UseCasesAssembly.swift ✏️ (Modified)
 ```
 
 ## 🔧 Troubleshooting:
@@ -268,10 +268,10 @@ CTPos/
 **Solution**: Check Step 8.1 and 8.2 are completed in POSPremiumFeaturesViewModel
 
 ## ✅ Verification Checklist:
-- [ ] Step 0: Added {{outputParam}} models and {{responseModel}} to POSQuantityModel.cs
+- [ ] Step 0: Added {{outputParam}} models and {{responseModel}} to POSQuantityModel.swift
 - [ ] Step 1-5: Updated all layers (Targets, Service, Repository, UseCase)
 - [ ] Step 8: Updated POSPremiumFeaturesViewModel (property, init, method)
 - [ ] Step 9: Updated POSInternalNavigator
 - [ ] Step 10: Updated UseCasesAssembly
-- [ ] Added POS{{usecaseName}}UseCase to POSGetBundlesUseCase.cs
+- [ ] Added POS{{usecaseName}}UseCase to POSGetBundlesUseCase.swift
 - [ ] Project builds successfully

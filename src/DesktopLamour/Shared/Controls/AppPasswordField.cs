@@ -8,10 +8,14 @@ namespace DesktopLamour.Shared.Controls;
 
 /// <summary>
 /// Design system password input with a bindable <see cref="BoundPassword"/> property.
-/// WPF PasswordBox.Password is not a DependencyProperty — use BoundPassword for MVVM binding.
+/// Extends Control (not PasswordBox — sealed in .NET 8) and expects a PasswordBox named
+/// PART_PasswordBox in its ControlTemplate (defined in AppStyles.xaml).
 /// </summary>
-public class AppPasswordField : PasswordBox
+[TemplatePart(Name = PartPasswordBox, Type = typeof(PasswordBox))]
+public class AppPasswordField : Control
 {
+    public const string PartPasswordBox = "PART_PasswordBox";
+
     public static readonly DependencyProperty BoundPasswordProperty =
         DependencyProperty.Register(
             nameof(BoundPassword),
@@ -22,6 +26,7 @@ public class AppPasswordField : PasswordBox
                 FrameworkPropertyMetadataOptions.BindsTwoWayByDefault,
                 OnBoundPasswordChanged));
 
+    private PasswordBox? _passwordBox;
     private bool _isUpdating;
 
     static AppPasswordField()
@@ -31,29 +36,35 @@ public class AppPasswordField : PasswordBox
             new FrameworkPropertyMetadata(typeof(AppPasswordField)));
     }
 
-    public AppPasswordField()
-    {
-        PasswordChanged += OnPasswordChanged;
-    }
-
     public string BoundPassword
     {
         get => (string)GetValue(BoundPasswordProperty);
         set => SetValue(BoundPasswordProperty, value);
     }
 
+    public override void OnApplyTemplate()
+    {
+        base.OnApplyTemplate();
+
+        if (_passwordBox != null)
+            _passwordBox.PasswordChanged -= OnPasswordChanged;
+
+        _passwordBox = GetTemplateChild(PartPasswordBox) as PasswordBox;
+
+        if (_passwordBox != null)
+            _passwordBox.PasswordChanged += OnPasswordChanged;
+    }
+
     private static void OnBoundPasswordChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is AppPasswordField field && !field._isUpdating)
-        {
-            field.Password = e.NewValue as string ?? string.Empty;
-        }
+        if (d is AppPasswordField field && !field._isUpdating && field._passwordBox != null)
+            field._passwordBox.Password = e.NewValue as string ?? string.Empty;
     }
 
     private void OnPasswordChanged(object sender, RoutedEventArgs e)
     {
         _isUpdating = true;
-        BoundPassword = Password;
+        BoundPassword = _passwordBox?.Password ?? string.Empty;
         _isUpdating = false;
     }
 }

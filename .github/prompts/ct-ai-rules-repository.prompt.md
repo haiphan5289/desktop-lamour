@@ -9,7 +9,7 @@ Generate basic Repository following Clean Architecture patterns.
 
 ## Instructions
 
-Reference our C#/.NET WPF development guidelines: [iOS Guidelines](../instructions/ios-general-instructions.instructions.md)
+Reference our iOS development guidelines: [iOS Guidelines](../instructions/ios-general-instructions.instructions.md)
 
 Generate basic Repository structure with:
 
@@ -23,8 +23,8 @@ Generate basic Repository structure with:
 
 ```swift
 import Foundation
-import CommunityToolkit.Mvvm
-import AppCommon
+import RxSwift
+import CTCommon
 
 protocol [Name]RepositoryType: AnyObject {
     // TODO: Define repository methods with Observable return types

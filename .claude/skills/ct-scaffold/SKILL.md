@@ -1,336 +1,340 @@
 ---
 name: ct-scaffold
-description: Scaffold basic barebone C#/.NET WPF files following MVVM + Clean Architecture. Use when creating a View (UserControl), ViewModel, UseCase, Repository, Service, Model, or DataTemplate from scratch. Generates proper region sections, using statements, interface structure, CommunityToolkit.Mvvm patterns, AppDesignSystem XAML, and TODO comments. Supports: View, ViewModel, UseCase, Repository, Service, Model, DataTemplate.
+description: Scaffold basic barebone iOS files following MVVM-C architecture. Use when creating a ViewController, ViewModel, UseCase, Repository, Service, Model, or Cell file from scratch. Generates proper MARK sections, imports, protocol structure, RxSwift patterns, CTDesignSystem usage, and TODO comments. Supports: ViewController, ViewModel, UseCase, Repository, Service, Model, TableViewCell, CollectionViewCell.
 ---
 
-# WPF Basic File Scaffolding
+# iOS Basic File Scaffolding
 
-Create basic barebone C#/.NET WPF files following MVVM + Clean Architecture and coding conventions.
+> **Anti-Hallucination:** Verify every symbol, token, path, and identifier against the codebase before generating code. See [ct-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
+
+Create basic barebone iOS files following MVVM-C architecture and coding conventions.
 
 ## Input Format
 
 ```
-FILE_TYPE: <View | ViewModel | UseCase | Repository | Service | Model | DataTemplate>
+FILE_TYPE: <ViewController | ViewModel | UseCase | Repository | Service | Model | TableViewCell | CollectionViewCell>
 NAME: <BaseName, e.g. "UserProfile">
-MODULE: <Module name, e.g. "Features/UserManagement">
+MODULE: <Module name, e.g. "CTUserManagement">
 ```
 
-## Required Usings
+## Required Imports
 
-```csharp
-// ViewModel
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.Logging;
-using System.Collections.ObjectModel;
-
-// Repository / Service
-using System.Net.Http.Json;
-using System.Text.Json.Serialization;
+```swift
+import UIKit
+import CTDesignSystem
+import CTCommon
+import CTLocalize
+import CTComponent
+import CTAsset
+import RxSwift
+import RxRelay
+import Swinject
+import CTTracking
+import SnapKit
 ```
 
-## View Template (UserControl)
+## ViewController Template
 
-```xml
-<!-- [Name]View.xaml -->
-<UserControl x:Class="App.[Module].Views.[Name]View"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:App.[Module].Views"
-             Loaded="OnLoaded">
+```swift
+import UIKit
+import CTDesignSystem
+import CTCommon
+import RxSwift
+import RxRelay
+import SnapKit
 
-    <UserControl.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/App;component/Shared/AppDesignSystem.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </UserControl.Resources>
+final class [Name]ViewController: UIViewController, [Name]Presentable {
 
-    <Grid Margin="16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    // MARK: - Properties
 
-        <!-- Loading indicator -->
-        <ProgressBar Grid.RowSpan="2"
-                     IsIndeterminate="True"
-                     VerticalAlignment="Top"
-                     Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"/>
-
-        <!-- TODO: Add AppLabel, AppButton, ListView etc. -->
-        <!-- <local:AppLabel Grid.Row="0"
-                            Text="{Binding Title}"
-                            Style="{StaticResource AppTypography.HeaderSection}"/> -->
-    </Grid>
-</UserControl>
-```
-
-```csharp
-// [Name]View.xaml.cs
-using System.Windows;
-using System.Windows.Controls;
-
-namespace App.[Module].Views;
-
-public partial class [Name]View : UserControl
-{
-    public [Name]View()
-    {
-        InitializeComponent();
+    enum Config {
+        // static let standardSize: CGFloat = 44
+        // static let padding: CGFloat = 16
     }
 
-    private void OnLoaded(object sender, RoutedEventArgs e)
-    {
-        // (DataContext as [Name]ViewModel)?.LoadCommand.Execute(null);
+    var viewModel: [Name]ViewModelType?
+    weak var listener: [Name]PresentableListener?
+
+    // var isLoadingRelay = BehaviorRelay<Bool>(value: false)
+    // var errorMessage = BehaviorRelay<String?>(value: nil)
+    // var triggerSomeAction = PublishRelay<Void>()
+
+    let disposeBag = DisposeBag()
+
+    // MARK: - UI Components
+
+    // private var themeType = ThemeType.default
+    // private var theme: CMTheme { DefaultTheme.themeWithType(type: themeType) }
+    //
+    // lazy var titleLabel: DSLabel = {
+    //     let label = DSLabel()
+    //     label.setStyle(DS.TypoToken.Label.Caption(color: theme.text.textPrimary.color))
+    //     return label
+    // }()
+
+    // MARK: - Life Cycle
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupViews()
+        setupActions()
+        configurePresenter()
+        configureViewModel()
     }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    // MARK: - Private Methods
+
+    private func setupViews() {
+        // view.addSubview(someView)
+        // someView.snp.makeConstraints { make in
+        //     make.edges.equalToSuperview()
+        // }
+    }
+
+    private func setupActions() { }
+
+    private func configurePresenter() { }
+
+    private func configureViewModel() { }
 }
 ```
 
 ## ViewModel Template
 
-```csharp
-// [Name]ViewModel.cs
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.Logging;
-using System.Collections.ObjectModel;
+```swift
+import RxSwift
+import RxRelay
+import Action
+import CTCommon
 
-namespace App.[Module].ViewModels;
-
-// Interfaces
-public interface I[Name]ViewModel
-{
-    bool IsLoading { get; }
-    string? ErrorMessage { get; }
+// MARK: - ViewModelType
+protocol [Name]ViewModelType: CTViewModelType {
+    var presenter: [Name]Presentable? { get set }
+    var router: [Name]Router? { get set }
+    var listener: [Name]PresentableListener? { get set }
 }
 
-public interface I[Name]NavigationService
-{
-    // void NavigateToDetail(string id);
+// MARK: - Presentable
+protocol [Name]Presentable: AnyObject {
+    var listener: [Name]PresentableListener? { get set }
+    // var isLoadingRelay: BehaviorRelay<Bool> { get set }
+    // var datasource: BehaviorRelay<[SomeModel]> { get set }
 }
 
-// ViewModel
-public sealed partial class [Name]ViewModel : ViewModelBase, I[Name]ViewModel
-{
-    // #region Dependencies
+// MARK: - PresentableListener
+protocol [Name]PresentableListener: AnyObject {
+    // var triggerSomeAction: PublishRelay<SomeInputType> { get }
+}
 
-    private readonly ILogger<[Name]ViewModel> _logger;
-    // private readonly I[Name]UseCase _[name]UseCase;
+// MARK: - Router
+protocol [Name]Router: AnyObject {
+    // func navigateToSomeScreen()
+}
 
-    // #region Properties
+final class [Name]ViewModel: [Name]ViewModelType, [Name]PresentableListener {
 
-    [ObservableProperty]
-    private bool _isLoading;
+    // MARK: - Properties
 
-    [ObservableProperty]
-    private string? _errorMessage;
+    weak var presenter: [Name]Presentable?
+    weak var router: [Name]Router?
+    weak var listener: [Name]PresentableListener?
 
-    // [ObservableProperty]
-    // private ObservableCollection<[Name]ItemViewModel> _items = new();
+    // private let someUseCase: SomeUseCaseType
+    let disposeBag = DisposeBag()
 
-    // [ObservableProperty]
-    // private string _title = string.Empty;
+    // MARK: - Initialization
 
-    // #region Initialization
-
-    public [Name]ViewModel(
-        ILogger<[Name]ViewModel> logger
-        // I[Name]UseCase [name]UseCase
-    )
-    {
-        _logger = logger;
-        // _[name]UseCase = [name]UseCase;
+    init(
+        // someUseCase: SomeUseCaseType
+    ) {
+        // self.someUseCase = someUseCase
     }
 
-    // #region Commands
+    // MARK: - Life Cycle
 
-    // [RelayCommand]
-    // private async Task LoadAsync(CancellationToken cancellationToken)
-    // {
-    //     IsLoading = true;
-    //     ErrorMessage = null;
-    //     try
-    //     {
-    //         var result = await _[name]UseCase.ExecuteAsync(cancellationToken);
-    //         Items = new ObservableCollection<[Name]ItemViewModel>(result.Select([Name]ItemViewModel.From));
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         _logger.LogError(ex, "Failed to load [Name]");
-    //         ErrorMessage = "Failed to load data. Please try again.";
-    //     }
-    //     finally { IsLoading = false; }
-    // }
+    func didBecomeActive() {
+        presenter?.listener = self
+        configureListener()
+        configurePresenter()
+    }
+
+    // MARK: - Private Methods
+
+    private func configureListener() {
+        // presenter?.triggerSomeAction.subscribeNext { [weak self] input in
+        //     self?.handleSomeAction(input)
+        // }.disposed(by: disposeBag)
+    }
+
+    private func configurePresenter() {
+        // someUseCase.action?.elements
+        //     .observe(on: MainScheduler.instance)
+        //     .subscribeNext { [weak self] result in
+        //         self?.presenter?.datasource.accept(result)
+        //     }.disposed(by: disposeBag)
+    }
 }
 ```
 
 ## UseCase Template
 
-```csharp
-// Domain/UseCases/I[Name]UseCase.cs
-namespace App.[Module].Domain.UseCases;
+```swift
+import RxSwift
+import Action
+import CTCommon
 
-public interface I[Name]UseCase
-{
-    Task<IReadOnlyList<[OutputType]>> ExecuteAsync(CancellationToken cancellationToken = default);
-    // Task<[OutputType]> ExecuteAsync([InputType] input, CancellationToken cancellationToken = default);
+protocol [Name]UseCaseType {
+    var action: Action<[InputType], [OutputType]>? { get set }
 }
 
-// Domain/UseCases/[Name]UseCase.cs
-using App.[Module].Domain.Repositories;
+final class [Name]UseCase: [Name]UseCaseType {
 
-namespace App.[Module].Domain.UseCases;
+    var action: Action<[InputType], [OutputType]>?
 
-public sealed class [Name]UseCase : I[Name]UseCase
-{
-    private readonly I[Name]Repository _repository;
+    private let repository: [Name]RepositoryType
 
-    public [Name]UseCase(I[Name]Repository repository)
-        => _repository = repository;
-
-    public async Task<IReadOnlyList<[OutputType]>> ExecuteAsync(CancellationToken cancellationToken = default)
-    {
-        // TODO: add business logic / validation / sorting
-        return await _repository.GetAllAsync(cancellationToken);
+    init(repository: [Name]RepositoryType) {
+        self.repository = repository
+        action = Action { [weak self] input in
+            guard let self = self else { return .empty() }
+            return self.repository.someMethod(input: input)
+        }
     }
 }
 ```
 
 ## Repository Template
 
-```csharp
-// Domain/Repositories/I[Name]Repository.cs
-namespace App.[Module].Domain.Repositories;
+```swift
+import Foundation
+import RxSwift
+import CTCommon
 
-public interface I[Name]Repository
-{
-    // Task<[Entity]?> GetByIdAsync(string id, CancellationToken cancellationToken = default);
-    // Task<IReadOnlyList<[Entity]>> GetAllAsync(CancellationToken cancellationToken = default);
+protocol [Name]RepositoryType: AnyObject {
+    // func getSomeData(parameter: String) -> Observable<SomeModel>
 }
 
-// Data/Repositories/[Name]Repository.cs
-using App.[Module].Domain.Repositories;
-using App.[Module].Data.Services;
-using Microsoft.Extensions.Logging;
+class [Name]Repository: NSObject, [Name]RepositoryType {
 
-namespace App.[Module].Data.Repositories;
+    // MARK: - Properties
 
-public sealed class [Name]Repository : I[Name]Repository
-{
-    private readonly I[Name]Service _service;
-    private readonly ILogger<[Name]Repository> _logger;
+    let service: [Name]ServiceType
 
-    public [Name]Repository(I[Name]Service service, ILogger<[Name]Repository> logger)
-    {
-        _service = service;
-        _logger = logger;
+    // MARK: - Initialization
+
+    init(service: [Name]ServiceType) {
+        self.service = service
     }
 
-    // public async Task<IReadOnlyList<[Entity]>> GetAllAsync(CancellationToken cancellationToken = default)
-    //     => (await _service.GetAllAsync(cancellationToken)).Select(MapToEntity).ToList();
-    //
-    // private static [Entity] MapToEntity([Entity]Dto dto) => new() { Id = dto.Id, Name = dto.Name };
+    // MARK: - [Name]RepositoryType
+
+    // func getSomeData(parameter: String) -> Observable<SomeModel> {
+    //     service.getSomeData(parameter: parameter)
+    //         .compactMap { $0 }
+    // }
 }
 ```
 
 ## Service Template
 
-```csharp
-// Data/Services/I[Name]Service.cs
-namespace App.[Module].Data.Services;
+```swift
+import Foundation
+import RxSwift
+import CTApiClient
 
-public interface I[Name]Service
-{
-    // Task<IReadOnlyList<[Entity]Dto>> GetAllAsync(CancellationToken cancellationToken = default);
+protocol [Name]ServiceType {
+    // func fetchSomeData(parameter: String) -> Observable<SomeModel?>
 }
 
-// Data/Services/[Name]Service.cs
-using System.Net.Http.Json;
-using Microsoft.Extensions.Logging;
+struct [Name]Service: [Name]ServiceType {
 
-namespace App.[Module].Data.Services;
+    // MARK: - [Name]ServiceType
 
-public sealed class [Name]Service : I[Name]Service
-{
-    private readonly HttpClient _httpClient;
-    private readonly ILogger<[Name]Service> _logger;
-
-    public [Name]Service(HttpClient httpClient, ILogger<[Name]Service> logger)
-    {
-        _httpClient = httpClient;
-        _logger = logger;
-    }
-
-    // public async Task<IReadOnlyList<[Entity]Dto>> GetAllAsync(CancellationToken cancellationToken = default)
-    // {
-    //     var result = await _httpClient.GetFromJsonAsync<List<[Entity]Dto>>("api/[entity]", cancellationToken);
-    //     return result ?? [];
+    // func fetchSomeData(parameter: String) -> Observable<SomeModel?> {
+    //     [Name]Targets.FetchData(parameter: parameter)
+    //         .execute()
+    //         .observe(on: MainScheduler.instance)
     // }
 }
 ```
 
-## Model Template
+## TableViewCell Template
 
-```csharp
-// Domain/Models/[Name]Model.cs (domain entity)
-namespace App.[Module].Domain.Models;
+```swift
+import UIKit
+import CTDesignSystem
+import CTCommon
+import SnapKit
 
-public sealed record [Name]Model
-{
-    public required string Id { get; init; }
-    public required string Name { get; init; }
-    // public string? Description { get; init; }
-    // public DateTimeOffset CreatedAt { get; init; }
+final class [Name]Cell: UITableViewCell {
+
+    // MARK: - Properties
+
+    enum Config {
+        // static let cornerRadius: CGFloat = 8
+        // static let padding: CGFloat = 16
+    }
+
+    // MARK: - UI Components
+
+    // private var theme = CMStaticThemeLoader.defaultTheme
+    //
+    // lazy var titleLabel: DSLabel = {
+    //     let label = DSLabel()
+    //     label.setStyle(DS.TypoToken.Label.Caption(color: theme.text.textPrimary.color))
+    //     return label
+    // }()
+
+    // MARK: - Lifecycle
+
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        setupUI()
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+    }
+
+    // MARK: - Configuration
+
+    func configure(with viewModel: [Name]CellViewModel) {
+        // titleLabel.text = viewModel.title
+    }
+
+    // MARK: - Private Methods
+
+    private func setupUI() {
+        // contentView.addSubview(titleLabel)
+        // titleLabel.snp.makeConstraints { make in
+        //     make.edges.equalToSuperview().inset(16)
+        // }
+    }
 }
-```
 
-```csharp
-// Data/Dtos/[Name]Dto.cs (API response DTO)
-using System.Text.Json.Serialization;
-
-namespace App.[Module].Data.Dtos;
-
-public sealed record [Name]Dto
-{
-    [JsonPropertyName("id")]
-    public string Id { get; init; } = string.Empty;
-
-    [JsonPropertyName("name")]
-    public string Name { get; init; } = string.Empty;
+struct [Name]CellViewModel {
+    // let title: String
+    // let subtitle: String?
 }
-```
-
-## DataTemplate (List Item)
-
-```xml
-<!-- [Name]DataTemplate.xaml -->
-<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:local="clr-namespace:App.[Module].Views">
-
-    <DataTemplate x:Key="[Name]DataTemplate">
-        <Border Padding="12,8"
-                BorderThickness="0,0,0,1"
-                BorderBrush="{StaticResource AppColor.BorderThin}">
-            <StackPanel>
-                <local:AppLabel Text="{Binding Title}"
-                                Style="{StaticResource AppTypography.LabelSection}"/>
-                <!-- <local:AppLabel Text="{Binding Subtitle}"
-                                    Style="{StaticResource AppTypography.BodyCaption}"/> -->
-            </StackPanel>
-        </Border>
-    </DataTemplate>
-
-</ResourceDictionary>
 ```
 
 ## Rules
 
-- **ALWAYS** use AppDesignSystem (`AppLabel`, `AppButton`, etc.) — never raw WPF `TextBlock`, `Button`
-- **ALWAYS** use XAML `Grid`/`StackPanel`/`DockPanel` for layout — no code-behind sizing
-- ViewModel class **MUST** be `partial` for `[ObservableProperty]` / `[RelayCommand]` source generators
-- All async methods accept `CancellationToken` and are named with `Async` suffix
-- Use `ILogger<T>` for all logging — never `Console.WriteLine`
-- Implement `IDisposable` and unsubscribe event handlers when using event subscription patterns
+- **ALWAYS** use CTDesignSystem (`DSLabel`, `DSButton`, etc.) — never raw UIKit
+- **ALWAYS** use SnapKit for layout constraints — never NSLayoutConstraint
+- Use `BehaviorRelay` for state, `PublishRelay` for events
+- Use `[weak self]` in all closures
+- Include `deinit` with `Logger.print("\(self) deallocated.")` in ViewControllers
+- Add `disposed(by: disposeBag)` for all RxSwift subscriptions

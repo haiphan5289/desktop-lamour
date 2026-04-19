@@ -206,9 +206,9 @@ extension {REPOSITORY_CLASS}: {REPOSITORY_CLASS}Type {
 ```
 > 📝 **Note:** Add the new repository method at the end of the {REPOSITORY_CLASS} class and {REPOSITORY_PROTOCOL} protocol.
 
-### Step 5: Add UseCase to {USECASE_CLASS}.cs 
+### Step 5: Add UseCase to {USECASE_CLASS}.swift 
 ```swift
-// Add to {USECASE_CLASS}.cs file
+// Add to {USECASE_CLASS}.swift file
 final class CR{USECASE_NAME}UseCase: CTActionUseCaseType {
     typealias Output = {RESPONSE_MODEL}?
     typealias Input = {INPUT_PARAM}
@@ -228,7 +228,7 @@ final class CR{USECASE_NAME}UseCase: CTActionUseCaseType {
     }
 }
 ```
-> 📝 **Note:** Add the new use case at the end of the {USECASE_CLASS}.cs class.
+> 📝 **Note:** Add the new use case at the end of the {USECASE_CLASS}.swift class.
 
 ### Step 6: Add Method to {VIEWMODEL_CLASS} (Existing File)
 ```swift
@@ -246,21 +246,21 @@ extension {VIEWMODEL_CLASS} {
                 guard let self = self, let result = result else { return }
                 // Success handling is auto-generated and complete
             })
-            .using CancellationToken
+            .disposed(by: disposeBag)
         
         // 🔒 MANDATORY: Handle loading
         useCase.action?.executing
             .bind(onNext: { [weak self] loading in
                 self?.presenter?.loading.accept(loading)
             })
-            .using CancellationToken
+            .disposed(by: disposeBag)
         
         // 🔒 MANDATORY: Handle errors - AUTO-GENERATED: No manual implementation needed
         useCase.action?.underlyingError
             .bind(onNext: { [weak self] error in 
                 // Error handling is auto-generated and complete
             })
-            .using CancellationToken
+            .disposed(by: disposeBag)
         
         // 🔒 MANDATORY: Execute
         useCase.action?.execute(input)
@@ -285,11 +285,11 @@ extension {VIEWMODEL_CLASS} {
 }
 ```
 
-### 4.2 Add to {MODEL_CLASS}.cs (Recommended)
-Add your response model at the bottom of the existing `{MODEL_CLASS}.cs` file:
+### 4.2 Add to {MODEL_CLASS}.swift (Recommended)
+Add your response model at the bottom of the existing `{MODEL_CLASS}.swift` file:
 
 ```swift
-// MARK: - {USECASE_NAME} Response Models (Add at bottom of {MODEL_CLASS}.cs)
+// MARK: - {USECASE_NAME} Response Models (Add at bottom of {MODEL_CLASS}.swift)
 
 // Define the actual data model first
 public struct {OUTPUT_PARAM}: Codable {
@@ -320,10 +320,10 @@ typealias {RESPONSE_MODEL} = {GENERIC_MODEL}<{OUTPUT_PARAM}>
 ```
 
 ### 4.3 Alternative: Create Separate File
-If you prefer to create a separate file, create `{RESPONSE_MODEL}.cs`:
+If you prefer to create a separate file, create `{RESPONSE_MODEL}.swift`:
 
 ```swift
-// {RESPONSE_MODEL}.cs
+// {RESPONSE_MODEL}.swift
 import Foundation
 
 // Define the actual data model first
@@ -453,7 +453,7 @@ var parameters: [String: Any]? {
 
 ### **Model Pattern with Auto-Detected {GENERIC_MODEL}:**
 ```swift
-// 1. Define data model (Add to {MODEL_CLASS}.cs)
+// 1. Define data model (Add to {MODEL_CLASS}.swift)
 public struct {OUTPUT_PARAM}: Codable {
     public let totalOrders: Int?
     // ... properties with CodingKeys for snake_case
@@ -465,9 +465,9 @@ public struct {OUTPUT_PARAM}: Codable {
 
 // 2. Auto-generated wrapper pattern:
 // 🔍 AUTO-DETECT based on module location:
-// - Features/CTCorePayment/* → CRModelCommon<{OUTPUT_PARAM}>
-// - Features/CTVEH/* → BaseResponseModel<{OUTPUT_PARAM}>
-// - Features/CTPos/* → Direct model (no wrapper)
+// - AppFeatures/CTCorePayment/* → CRModelCommon<{OUTPUT_PARAM}>
+// - AppFeatures/CTVEH/* → BaseResponseModel<{OUTPUT_PARAM}>
+// - AppFeatures/CTPos/* → Direct model (no wrapper)
 typealias {RESPONSE_MODEL} = {GENERIC_MODEL}<{OUTPUT_PARAM}>
 ```
 
@@ -519,7 +519,7 @@ Parameters: ["order_id": input, "include_details": true]
 - **Targets**: Add `{USECASE_NAME}Target` to `{TARGET_CLASS}`
 - **Services**: Add method to `{SERVICE_CLASS}`  
 - **Repositories**: Add method to Repository
-- **UseCases**: Add `CR{USECASE_NAME}UseCase` to `{USECASE_CLASS}.cs`
+- **UseCases**: Add `CR{USECASE_NAME}UseCase` to `{USECASE_CLASS}.swift`
 - **ViewModels**: Add `execute{USECASE_NAME}` method to `{VIEWMODEL_CLASS}`
 
 **🔒 Core Constraint**: Only modify existing files - never create new files

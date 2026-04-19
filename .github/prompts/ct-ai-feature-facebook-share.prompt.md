@@ -1,12 +1,12 @@
 Prompt instructions file:
 ---
 agent: Create comprehensive Facebook sharing functionality with analytics
-always: Use AppDesignSystem components, implement proper error handling, analytics tracking
-description: "Template for implementing Facebook sharing with ShareDialog, multiple content types, error handling, analytics tracking, and UI feedback following App iOS architecture standards"
+always: Use CTDesignSystem components, implement proper error handling, analytics tracking
+description: "Template for implementing Facebook sharing with ShareDialog, multiple content types, error handling, analytics tracking, and UI feedback following Cho Tot iOS architecture standards"
 ---
 
 ## Instructions
-Follow instructions in [ct-ai-feature-video-player.prompt.md](file:///Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/Features/CTCorePayment/CTCorePayment/Features/ct-ai-feature-video-player.prompt.md).
+Follow instructions in [ct-ai-feature-video-player.prompt.md](file:///Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/AppFeatures/CTCorePayment/CTCorePayment/Features/ct-ai-feature-video-player.prompt.md).
 
 # Facebook Share Implementation Prompt
 
@@ -15,24 +15,24 @@ Create comprehensive Facebook sharing functionality supporting multiple content 
 
 ## Requirements
 - Must follow MVVM + Clean Architecture patterns
-- Use AppDesignSystem components only (no WPF components)
+- Use CTDesignSystem components only (no UIKit components)
 - Support multiple content types (link, photo, video)
 - Include proper error handling and fallback to system share
 - Implement delegate pattern for callbacks
 - Add analytics tracking for all share events
-- Follow App iOS coding standards
+- Follow Cho Tot iOS coding standards
 
 ## Important Note: Facebook Ref Parameter
 **What is `ref: "chotot_ios_app"`?**
 The `ref` parameter in Facebook sharing serves as a tracking identifier with these purposes:
-- **Attribution Tracking**: Identifies shares coming from App WPF application vs other platforms (web, Android)
+- **Attribution Tracking**: Identifies shares coming from Cho Tot iOS app vs other platforms (web, Android)
 - **Analytics Segmentation**: Helps Facebook Analytics distinguish traffic sources
 - **Campaign Tracking**: Enables tracking of share performance by platform
 - **User Journey Mapping**: Allows tracking how users interact with shared content across platforms
 - **Business Intelligence**: Provides insights into which platform generates more engagement
 
 **Usage Examples**:
-- `"chotot_ios_app"` - for WPF application shares
+- `"chotot_ios_app"` - for iOS app shares
 - `"chotot_android_app"` - for Android app shares  
 - `"chotot_web"` - for website shares
 - `"chotot_ios_payment"` - for specific feature/module shares
@@ -43,15 +43,15 @@ The `ref` parameter in Facebook sharing serves as a tracking identifier with the
 Include all necessary imports at the top of your file:
 
 ```swift
-import WPF
+import UIKit
 import Foundation
-import AppCommon
-import AppDesignSystem
+import CTCommon
+import CTDesignSystem
 import CTComponent
 import CTAsset
 import CTTracking
 import FBSDKShareKit
-import CommunityToolkit.Mvvm
+import RxSwift
 import RxRelay
 ```
 
@@ -170,9 +170,9 @@ Define the main protocol for Facebook sharing functionality:
 ```swift
 // MARK: - Facebook Share Manager Protocol
 protocol FacebookShareManagerType: AnyObject {
-    var shareResult: [RelayCommand] // Trigger<FacebookShareResult> { get }
+    var shareResult: PublishRelay<FacebookShareResult> { get }
     
-    func shareToFacebook(config: FacebookShareConfig, from viewController: UserControl)
+    func shareToFacebook(config: FacebookShareConfig, from viewController: UIViewController)
     func canShowFacebookShare() -> Bool
     func validateShareConfig(_ config: FacebookShareConfig) -> Result<Void, FacebookShareError>
 }
@@ -193,17 +193,17 @@ Create the main manager class with full functionality:
 final class FacebookShareManager: NSObject {
     
     // MARK: - Properties
-    private let theme = AppThemeManager.defaultTheme
-    private private readonly CompositeDisposable _disposables = new();
+    private let theme = CMStaticThemeLoader.defaultTheme
+    private let disposeBag = DisposeBag()
     
-    // CommunityToolkit.Mvvm Relays
-    let shareResult = [RelayCommand] // Trigger<FacebookShareResult>()
+    // RxSwift Relays
+    let shareResult = PublishRelay<FacebookShareResult>()
     
     // Delegate
     weak var delegate: FacebookShareDelegate?
     
     // Current sharing context
-    private var currentViewController: UserControl?
+    private var currentViewController: UIViewController?
     private var currentConfig: FacebookShareConfig?
     
     // MARK: - Initializer
@@ -241,7 +241,7 @@ Add the main sharing functionality:
 // MARK: - FacebookShareManagerType Implementation
 extension FacebookShareManager: FacebookShareManagerType {
     
-    func shareToFacebook(config: FacebookShareConfig, from viewController: UserControl) {
+    func shareToFacebook(config: FacebookShareConfig, from viewController: UIViewController) {
         // Store current context
         currentViewController = viewController
         currentConfig = config
@@ -298,7 +298,7 @@ extension FacebookShareManager: FacebookShareManagerType {
         return .success(())
     }
     
-    private func performShare(config: FacebookShareConfig, from viewController: UserControl) {
+    private func performShare(config: FacebookShareConfig, from viewController: UIViewController) {
         Logger.print("Starting Facebook share with type: \(config.contentType)", level: .info)
         
         // Notify delegate
@@ -450,7 +450,7 @@ extension FacebookShareManager: SharingDelegate {
         // Track success
         trackShareSuccess(results: results)
         
-        // Notify via CommunityToolkit.Mvvm
+        // Notify via RxSwift
         shareResult.accept(.success(results))
         
         // Notify delegate
@@ -479,7 +479,7 @@ extension FacebookShareManager: SharingDelegate {
         // Track cancellation
         trackShareCancelled()
         
-        // Notify via CommunityToolkit.Mvvm
+        // Notify via RxSwift
         shareResult.accept(.cancelled)
         
         // Notify delegate
@@ -492,7 +492,7 @@ extension FacebookShareManager: SharingDelegate {
     private func handleShareError(_ error: FacebookShareError) {
         Logger.print("Handling Facebook share error: \(error.localizedDescription ?? "Unknown")", level: .error)
         
-        // Notify via CommunityToolkit.Mvvm
+        // Notify via RxSwift
         shareResult.accept(.failure(error))
         
         // Notify delegate
@@ -522,7 +522,7 @@ extension FacebookShareManager {
     private func showSuccessMessage() {
         guard let topVC = UIApplication.topViewController() else { return }
         
-        // Show success toast using AppDesignSystem
+        // Show success toast using CTDesignSystem
         let successView = DSToastView()
         successView.configure(
             message: "Đã chia sẻ lên Facebook thành công!",
@@ -563,7 +563,7 @@ extension FacebookShareManager {
         topVC.present(alertController, animated: true)
     }
     
-    private func fallbackToSystemShare(config: FacebookShareConfig, from viewController: UserControl) {
+    private func fallbackToSystemShare(config: FacebookShareConfig, from viewController: UIViewController) {
         var items: [Any] = [config.title]
         
         if let urlString = config.url, let url = URL(string: urlString) {
@@ -670,7 +670,7 @@ extension FacebookShareManager {
         url: String,
         title: String,
         description: String? = nil,
-        from viewController: UserControl
+        from viewController: UIViewController
     ) {
         let config = FacebookShareConfig.linkShare(
             url: url,
@@ -684,7 +684,7 @@ extension FacebookShareManager {
     func sharePhoto(
         image: UIImage,
         caption: String,
-        from viewController: UserControl
+        from viewController: UIViewController
     ) {
         let config = FacebookShareConfig.photoShare(
             image: image,
@@ -697,7 +697,7 @@ extension FacebookShareManager {
     func shareVideo(
         videoURL: URL,
         title: String,
-        from viewController: UserControl
+        from viewController: UIViewController
     ) {
         let config = FacebookShareConfig.videoShare(
             videoURL: videoURL,
@@ -707,8 +707,8 @@ extension FacebookShareManager {
         shareToFacebook(config: config, from: viewController)
     }
     
-    // Reactive sharing with CommunityToolkit.Mvvm
-    func shareToFacebookRx(config: FacebookShareConfig, from viewController: UserControl) -> Observable<FacebookShareResult> {
+    // Reactive sharing with RxSwift
+    func shareToFacebookRx(config: FacebookShareConfig, from viewController: UIViewController) -> Observable<FacebookShareResult> {
         return Observable.create { [weak self] observer in
             guard let self = self else {
                 observer.onError(FacebookShareError.unknownError("FacebookShareManager deallocated"))
@@ -739,12 +739,12 @@ class ShareViewModel {
     
     // MARK: - Properties
     private let facebookShareManager: FacebookShareManagerType
-    private private readonly CompositeDisposable _disposables = new();
+    private let disposeBag = DisposeBag()
     
     // Output Relays
-    let shareResult = [RelayCommand] // Trigger<FacebookShareResult>()
-    let isSharing = [ObservableProperty] private bool _isLoading;
-    let errorMessage = [RelayCommand] // Trigger<String>()
+    let shareResult = PublishRelay<FacebookShareResult>()
+    let isSharing = BehaviorRelay<Bool>(value: false)
+    let errorMessage = PublishRelay<String>()
     
     // MARK: - Initializer
     init(facebookShareManager: FacebookShareManagerType = FacebookShareManager()) {
@@ -753,7 +753,7 @@ class ShareViewModel {
     }
     
     // MARK: - Public Methods
-    func shareToFacebook(url: String, title: String, description: String?, from viewController: UserControl) {
+    func shareToFacebook(url: String, title: String, description: String?, from viewController: UIViewController) {
         isSharing.accept(true)
         
         let config = FacebookShareConfig.linkShare(
@@ -777,7 +777,7 @@ class ShareViewModel {
                     self?.errorMessage.accept(error.localizedDescription)
                 }
             })
-            .using CancellationToken
+            .disposed(by: disposeBag)
     }
 }
 ```
@@ -796,7 +796,7 @@ class ShareViewModel {
 - Validate all inputs before attempting to share
 - Provide meaningful error messages to users
 - Implement fallback to system share when Facebook sharing fails
-- Log all errors using `ILogger<T>` from AppCommon
+- Log all errors using `Logger.print()` from CTCommon
 
 ### Memory Management
 **MUST DO**: Proper resource cleanup:
@@ -816,16 +816,16 @@ class ShareViewModel {
 - Show loading states during share operations
 - Provide clear error messages with retry options
 - Offer fallback to system share when Facebook fails
-- Use AppDesignSystem components for all UI feedback
+- Use CTDesignSystem components for all UI feedback
 
 ## Complete Integration Example
 
 ```swift
 // In your ViewController or Module
-class PaymentViewController: UserControl {
+class PaymentViewController: UIViewController {
     
     private let facebookShareManager = FacebookShareManager()
-    private private readonly CompositeDisposable _disposables = new();
+    private let disposeBag = DisposeBag()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -839,7 +839,7 @@ class PaymentViewController: UserControl {
             .subscribe(onNext: { [weak self] result in
                 self?.handleShareResult(result)
             })
-            .using CancellationToken
+            .disposed(by: disposeBag)
     }
     
     @IBAction private func shareToFacebookTapped() {
@@ -885,7 +885,7 @@ You should have a comprehensive Facebook sharing system that:
 - ✅ Provides fallback to system share when Facebook fails
 - ✅ Tracks detailed analytics for all share events
 - ✅ Follows MVVM + Clean Architecture patterns
-- ✅ Uses only AppDesignSystem components
+- ✅ Uses only CTDesignSystem components
 - ✅ Implements proper memory management and cleanup
-- ✅ Provides both imperative and reactive (CommunityToolkit.Mvvm) APIs
+- ✅ Provides both imperative and reactive (RxSwift) APIs
 - ✅ Offers convenient methods for common use cases

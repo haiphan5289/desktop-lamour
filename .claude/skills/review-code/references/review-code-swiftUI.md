@@ -1,12 +1,12 @@
 ---
 agent: SwiftUI Code Review Specialist for CT Design System
 always: Provide detailed code reviews using Few-Shot examples to demonstrate proper SwiftUI + CT Design System patterns
-description: "Template for reviewing SwiftUI code with focus on CT Design System compliance, MVVM patterns, state management, color/typography/spacing tokens, and Roslyn analyzers rules"
+description: "Template for reviewing SwiftUI code with focus on CT Design System compliance, MVVM patterns, state management, color/typography/spacing tokens, and SwiftLint rules"
 ---
 
 # SwiftUI Code Review — Few-Shot Example Pattern
 
-You are a **senior iOS engineer** specializing in **SwiftUI code review** within the **Chợ Tốt WPF applicationlication**.
+You are a **senior iOS engineer** specializing in **SwiftUI code review** within the **Chợ Tốt iOS application**.
 
 Review SwiftUI code using **Few-Shot examples** to demonstrate **CT Design System compliance**, **MVVM patterns**, and **best practices**.
 
@@ -38,7 +38,7 @@ Divider()
 The **only** valid `CDS*` components are:
 
 **Buttons:** `CDSIconButton`, `CDSIconTextButton`
-**Inputs:** `CAppTextField`, `CDSTextView`, `CDSSearchInput`, `CDSDropdown`, `CDSRangeTextField`, `CDSInputGroup`
+**Inputs:** `CDSTextField`, `CDSTextView`, `CDSSearchInput`, `CDSDropdown`, `CDSRangeTextField`, `CDSInputGroup`
 **Selection:** via `.cdsToggleStyle(.switch)`, `.cdsToggleStyle(.checkbox(...))`, `.cdsToggleStyle(.radio())`
 **Navigation:** `CDSTabView`, `CDSTab`
 **Sliders:** `CDSSlider`, `CDSRangeSlider`
@@ -51,7 +51,7 @@ The **only** valid `CDS*` components are:
 
 **Modifier-only (no component name):** `.cdsButtonStyle(...)`, `.cdsTextStyle(...)`, `.cdsToggleStyle(...)`, `.cdsAnnouncerType(...)`, `.cdsSnackBar(...)`, `.cdsToast(...)`, `.cdsCardStyle()`
 
-> ⚠️ `CDSDivider`, `CAppLabel`, `CDSText`, `CDSImage`, `CDSStack` — **do NOT exist**. Use raw SwiftUI with CT tokens.
+> ⚠️ `CDSDivider`, `CDSLabel`, `CDSText`, `CDSImage`, `CDSStack` — **do NOT exist**. Use raw SwiftUI with CT tokens.
 
 ### Self-Check Before Every Review
 
@@ -66,7 +66,7 @@ Before writing a suggestion, ask:
 
 | Priority | Category | Focus |
 |----------|----------|-------|
-| 🚨 Critical | DS Component Compliance | `.cdsButtonStyle()`, `CAppTextField`, `.cdsTextStyle()` vs raw SwiftUI |
+| 🚨 Critical | DS Component Compliance | `.cdsButtonStyle()`, `CDSTextField`, `.cdsTextStyle()` vs raw SwiftUI |
 | 🚨 Critical | Color Token Usage | `theme.*.*` vs raw `Color.*` |
 | 🚨 Critical | Force Operations | No `as!`, `try!`, `!` |
 | ⚠️ High | Typography Tokens | `.cdsTextStyle()` vs `Font.system()` |
@@ -75,7 +75,7 @@ Before writing a suggestion, ask:
 | ⚠️ High | MVVM Architecture | Unidirectional data flow, ViewModel separation |
 | 🛠️ Medium | Memory Management | `[weak self]`, retain cycles in Combine/closures |
 | 🛠️ Medium | View Composition | Views < 50 lines body, single responsibility |
-| 📝 Low | Roslyn analyzers Compliance | Naming, length limits, code style |
+| 📝 Low | SwiftLint Compliance | Naming, length limits, code style |
 
 ---
 
@@ -92,9 +92,9 @@ Color(hex: "FF5733")      theme.text.textError  (match via color-mapping.yaml)
 .padding(.horizontal, 20) .padding(.horizontal, DS.Padding.paddingLarge)
 VStack(spacing: 8)        VStack(spacing: DS.Gap.gapxSmall)
 .cornerRadius(12)         .cornerRadius(DS.BorderRadius.radiusCard.value())
-TextField(...)            CAppTextField(...)
+TextField(...)            CDSTextField(...)
 .overlay(stroke: 1)       .overlay(...stroke(lineWidth: .strokeDivide))
-UILabel / UIButton        AppLabel / AppButton (WPF only)
+UILabel / UIButton        DSLabel / DSButton (UIKit only)
 theme.textPrimary         theme.text.textPrimary  (sub-protocol required)
 ```
 
@@ -684,7 +684,7 @@ private struct OrderHeaderView: View {  // ✅ focused, single responsibility
 
 ---
 
-### Example 7: 📝 Low — Roslyn analyzers + Style Violations in SwiftUI
+### Example 7: 📝 Low — SwiftLint + Style Violations in SwiftUI
 
 **Input:**
 ```swift
@@ -710,12 +710,12 @@ struct productCard: View {  // ❌ type_name: should be UpperCamelCase
 ```
 
 **Output:**
-- ❌ **Roslyn analyzers: duplicate_imports** — `import SwiftUI` twice, remove duplicate
-- ❌ **Roslyn analyzers: type_name** — `productCard` → `ProductCard` (UpperCamelCase)
-- ❌ **Roslyn analyzers: empty_count** — `items.count == 0` → `items.isEmpty`
-- ❌ **Roslyn analyzers: toggle_bool** — `!isVisible` → `isVisible.toggle()` (if mutating)
-- ❌ **Roslyn analyzers: first_where** — `items.filter { }.first` → `items.first { $0.isFeatured }`
-- ❌ **Roslyn analyzers: contains_over_first_not_nil** — `.first { } != nil` → `.contains { $0.hasPromo }`
+- ❌ **SwiftLint: duplicate_imports** — `import SwiftUI` twice, remove duplicate
+- ❌ **SwiftLint: type_name** — `productCard` → `ProductCard` (UpperCamelCase)
+- ❌ **SwiftLint: empty_count** — `items.count == 0` → `items.isEmpty`
+- ❌ **SwiftLint: toggle_bool** — `!isVisible` → `isVisible.toggle()` (if mutating)
+- ❌ **SwiftLint: first_where** — `items.filter { }.first` → `items.first { $0.isFeatured }`
+- ❌ **SwiftLint: contains_over_first_not_nil** — `.first { } != nil` → `.contains { $0.hasPromo }`
 - ❌ **Missing** — `@Environment(\.colorTheme) private var theme` — don't pass theme as parameter
 
 **Fixed:**
@@ -747,7 +747,7 @@ struct ProductCard: View {                              // ✅ UpperCamelCase
 
 **Input:**
 ```swift
-import AppDesignSystemSwiftUI
+import CTDesignSystemSwiftUI
 
 struct ShopBannerView: View {
     @Environment(\.colorTheme) private var theme
@@ -797,7 +797,7 @@ struct ShopBannerView: View {
 - ✅ **View composition** — body split into `bannerHeader`, `bannerContent`, `bannerAction` subviews
 - ✅ **MVVM correct** — `@ObservedObject` injected ViewModel, no business logic in View
 - ✅ **State injection** — `@Environment(\.colorTheme)` properly declared
-- ✅ **Roslyn analyzers compliant** — UpperCamelCase type, `.isEmpty` pattern, no force operations
+- ✅ **SwiftLint compliant** — UpperCamelCase type, `.isEmpty` pattern, no force operations
 
 ---
 
@@ -900,9 +900,9 @@ struct CRMyScreen: View {
 ```swift
 import Foundation        // ❌ redundant with SwiftUI
 import SwiftUI
-import AppCommon
+import CTCommon
 import SwiftUI           // ❌ duplicate
-import AppDesignSystemSwiftUI
+import CTDesignSystemSwiftUI
 
 struct CRSummaryScreen: View {
     @Environment(\.colorTheme) private var colorTheme
@@ -935,8 +935,8 @@ struct CRSummaryScreen: View {
 **Fixed:**
 ```swift
 import SwiftUI
-import AppCommon
-import AppDesignSystemSwiftUI
+import CTCommon
+import CTDesignSystemSwiftUI
 
 struct CRSummaryScreen: View {
     @Environment(\.colorTheme) private var colorTheme
@@ -963,14 +963,14 @@ struct CRSummaryScreen: View {
 
 ---
 
-## Roslyn analyzers Rules
+## SwiftLint Rules
 
-**Source:** `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/.cslint.yml`
+**Source:** `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/.swiftlint.yml`
 **Active:** 32 opt-in rules + 5 analyzer rules + default rules
 **Linted modules:** CTCorePayment, CTFeed, CTPTY, CTShop, and more (see `included:` in yml)
 
 > ⚠️ **Apply ALL rules below when reviewing. Do NOT skip any category.**
-> `Roslyn analyzers All` focus area = every rule in this document checked without exception.
+> `SwiftLint All` focus area = every rule in this document checked without exception.
 
 ---
 
@@ -1205,7 +1205,7 @@ items.joined()
 - **operator_usage_whitespace** — `a = b` not `a=b`
 - **collection_alignment** — Align array/dictionary elements
 
-#### WPF-specific (applies to WPF files)
+#### UIKit-specific (applies to UIKit files)
 - **private_outlet** — `@IBOutlet` must be `private`
 - **private_action** — `@IBAction` must be `private`
 - **overridden_super_call** — Call `super` in overridden lifecycle methods
@@ -1229,7 +1229,7 @@ Run with `swiftlint analyze` (slower, requires build logs):
 
 ---
 
-### ✅ Roslyn analyzers Checklist — ALL Rules (no skipping)
+### ✅ SwiftLint Checklist — ALL Rules (no skipping)
 
 **🚨 Critical (CI fails)**
 - [ ] No `as!` — use `as?` with guard
@@ -1317,7 +1317,7 @@ FOCUS_AREAS: [See options below]
 
 | Area | What Is Checked |
 |------|----------------|
-| `DS Components` | CAppButton, CAppTextField, CDSText, CDSCard, etc. usage |
+| `DS Components` | CDSButton, CDSTextField, CDSText, CDSCard, etc. usage |
 | `Color Tokens` | `theme.*.*` sub-protocol access, no raw `Color.*` |
 | `Typography` | `.cdsTextStyle()`, no `Font.system()` |
 | `Spacing Tokens` | `DS.Gap.*`, `DS.Padding.*`, `DS.BorderRadius.*`, no hardcoded values |
@@ -1325,12 +1325,12 @@ FOCUS_AREAS: [See options below]
 | `MVVM` | No business logic in View, proper ViewModel separation |
 | `Memory Management` | `[weak self]`, retain cycles in Combine/closures |
 | `View Composition` | Body < 50 lines, single responsibility subviews |
-| `Roslyn analyzers Critical` | Force operations (`as!`, `try!`, `!`), memory safety |
-| `Roslyn analyzers Length` | File/function/line length limits, parameter counts |
-| `Roslyn analyzers Quality` | Collection operators, boolean logic, closure patterns |
-| `Roslyn analyzers Style` | Import management, formatting, naming conventions |
-| `Roslyn analyzers All` | All 32 active opt-in + 5 analyzer rules |
-| `Full Review` | DS compliance + MVVM + Memory + Roslyn analyzers All |
+| `SwiftLint Critical` | Force operations (`as!`, `try!`, `!`), memory safety |
+| `SwiftLint Length` | File/function/line length limits, parameter counts |
+| `SwiftLint Quality` | Collection operators, boolean logic, closure patterns |
+| `SwiftLint Style` | Import management, formatting, naming conventions |
+| `SwiftLint All` | All 32 active opt-in + 5 analyzer rules |
+| `Full Review` | DS compliance + MVVM + Memory + SwiftLint All |
 
 ---
 
@@ -1343,7 +1343,7 @@ FOCUS_AREAS: [See options below]
 - [ ] All colors via `theme.<sub-protocol>.<property>` (e.g. `theme.text.textPrimary`)
 - [ ] `@Environment(\.colorTheme) private var theme` declared in every View using colors
 - [ ] No `as!`, `try!`, `!` force operations
-- [ ] No `TextField` — use `CAppTextField` or `CDSSearchInput`
+- [ ] No `TextField` — use `CDSTextField` or `CDSSearchInput`
 
 ### ⚠️ High Priority
 - [ ] No `.padding(N)` with raw numbers — use `DS.Padding.*`
@@ -1413,7 +1413,7 @@ FOCUS_AREAS: [See options below]
 | All 47 UI components | [components.md](./components.md) |
 | Hex→token conversion | [color-mapping.yaml](./color-mapping.yaml) |
 | Skill overview & forbidden patterns | [../SKILL.md](../SKILL.md) |
-| Roslyn analyzers rules reference | [../../../../.github/prompts/ct-ai-few-show-example-pattern.prompt.md](../../../../.github/prompts/ct-ai-few-show-example-pattern.prompt.md) |
+| SwiftLint rules reference | [../../../../.github/prompts/ct-ai-few-show-example-pattern.prompt.md](../../../../.github/prompts/ct-ai-few-show-example-pattern.prompt.md) |
 
 ### CT Design System SwiftUI Package (authoritative source)
 

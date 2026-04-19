@@ -1,340 +1,357 @@
 ---
-description: "Generate a complete C#/.NET WPF MVVM module with View (UserControl), ViewModel, and DI registration"
+description: "Generate basic MVVM-C module structure"
 mode: "agent"
 ---
 
-# WPF Complete Module Generator
+# iOS Basic Module Generator
 
-Generate a complete MVVM module following Clean Architecture patterns.
+Generate basic MVVM-C module with barebone structure following production patterns.
 
 ## Instructions
 
-Reference our C#/.NET WPF development guidelines:
+Reference our iOS development guidelines:
 
--   **Primary**: [WPF Guidelines](../instructions/wpf-general-instructions.instructions.md)
+-   **Primary**: [iOS Guidelines](../instructions/ios-general-instructions.instructions.md)
 -   **Fallback**: [AI Agent Context](../../AGENTS.md) (if primary unavailable)
 
-Generate all module files with:
+Generate complete module structure with:
 
--   XAML UserControl + code-behind pair
--   ViewModel with CommunityToolkit.Mvvm patterns
--   DI registration in `ServiceCollectionExtensions.cs`
--   Interface definitions per layer
+-   ViewController implementing Presentable protocol
+-   ViewModel implementing ViewModelType and PresentableListener
+-   Proper protocol definitions
+-   CTDesignSystem usage
+-   RxSwift patterns
+
+## Template Variables
+
+-   `${input:moduleName}`: Module name (e.g., "UserProfile")
+-   `${input:featureName}`: Feature name (e.g., "CTUserManagement")
+
+## Output Files
+
+1. **[ModuleName]ViewController.swift** - UI layer with CTDesignSystem
+2. **[ModuleName]ViewModel.swift** - Business logic with UseCase dependencies
+3. **[ModuleName]Builder.swift** - Dependency injection setup
+
+Each file follows production patterns with:
+
+-   Required imports (CTDesignSystem, CTCommon, etc.)
+-   Config enum for constants
+-   Proper protocol structure
+-   RxSwift patterns
 -   TODO comments for implementation
 
 ## Generated Structure
 
-```
-Features/[ModuleName]/
-├── Views/
-│   ├── [ModuleName]View.xaml
-│   └── [ModuleName]View.xaml.cs
-├── ViewModels/
-│   └── [ModuleName]ViewModel.cs
-├── Domain/
-│   ├── UseCases/
-│   │   ├── I[ModuleName]UseCase.cs
-│   │   └── [ModuleName]UseCase.cs
-│   └── Models/
-│       └── [ModuleName]Dto.cs
-├── Data/
-│   ├── Repositories/
-│   │   ├── I[ModuleName]Repository.cs
-│   │   └── [ModuleName]Repository.cs
-│   └── Services/
-│       ├── I[ModuleName]Service.cs
-│       └── [ModuleName]Service.cs
-└── ServiceCollectionExtensions.cs
-```
+### ViewController Structure
 
-## View.xaml
+```swift
+import UIKit
+import CTDesignSystem
+import CTCommon
+import CTLocalize
+import CTComponent
+import CTAsset
+import RxSwift
+import RxRelay
+import Swinject
+import CTTracking
+import SnapKit
+import CTAsset
+import RxSwift
+import RxRelay
+import Swinject
+import CTTracking
 
-```xml
-<!-- [ModuleName]View.xaml -->
-<UserControl x:Class="App.Features.[ModuleName].Views.[ModuleName]View"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:App.Features.[ModuleName].ViewModels"
-             Loaded="OnLoaded">
+final class [ModuleName]ViewController: UIViewController, [ModuleName]Presentable {
 
-    <UserControl.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/App;component/Shared/AppDesignSystem.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </UserControl.Resources>
+    // MARK: - Properties
 
-    <Grid Margin="16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-
-        <!-- Loading overlay -->
-        <ProgressBar Grid.RowSpan="3"
-                     IsIndeterminate="True"
-                     VerticalAlignment="Top"
-                     Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"/>
-
-        <!-- Error state -->
-        <local:AppLabel Grid.Row="0"
-                        Text="{Binding ErrorMessage}"
-                        Style="{StaticResource AppTypography.BodyCaption}"
-                        Foreground="{StaticResource AppColor.TextError}"
-                        Visibility="{Binding ErrorMessage, Converter={StaticResource NullToCollapsedConverter}}"/>
-
-        <!-- TODO: Main content -->
-        <!-- <local:AppLabel Grid.Row="1"
-                            Text="Content here"
-                            Style="{StaticResource AppTypography.BodySection}"/> -->
-
-        <!-- TODO: Action button -->
-        <!-- <local:AppButton Grid.Row="2"
-                             Content="Load Data"
-                             Style="{StaticResource AppButton.Primary.Medium}"
-                             Command="{Binding LoadCommand}"/> -->
-    </Grid>
-</UserControl>
-```
-
-## View.xaml.cs
-
-```csharp
-// [ModuleName]View.xaml.cs
-using System.Windows;
-using System.Windows.Controls;
-using App.Features.[ModuleName].ViewModels;
-
-namespace App.Features.[ModuleName].Views;
-
-public partial class [ModuleName]View : UserControl
-{
-    public [ModuleName]View()
-    {
-        InitializeComponent();
+    enum Config {
+        // TODO: Add configuration constants
+        // static let standardSize: CGFloat = 44
+        // static let padding: CGFloat = 16
     }
 
-    private void OnLoaded(object sender, RoutedEventArgs e)
-    {
-        // TODO: Trigger initialization
-        // (DataContext as [ModuleName]ViewModel)?.InitializeCommand.Execute(null);
-    }
-}
-```
+    var viewModel: [ModuleName]ViewModelType?
+    weak var listener: [ModuleName]PresentableListener?
 
-## ViewModel.cs
+    // TODO: Add BehaviorRelay and PublishRelay properties
+    // var isLoadingRelay = BehaviorRelay<Bool>(value: false)
+    // var errorMessage = BehaviorRelay<String?>(value: nil)
 
-```csharp
-// [ModuleName]ViewModel.cs
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.Logging;
-using System.Collections.ObjectModel;
-using App.Features.[ModuleName].Domain.UseCases;
-using App.Features.[ModuleName].Domain.Models;
+    let disposeBag = DisposeBag()
 
-namespace App.Features.[ModuleName].ViewModels;
+    // MARK: - UI Components
 
-public partial class [ModuleName]ViewModel : ObservableObject
-{
-    // #region Fields
-    private readonly I[ModuleName]UseCase _useCase;
-    private readonly ILogger<[ModuleName]ViewModel> _logger;
-    // #endregion
+    // TODO: Add lazy var UI components using CTDesignSystem
+    // Example:
+    // private var themeType = ThemeType.default
+    // private var theme: CMTheme { DefaultTheme.themeWithType(type: themeType) }
+    //
+    // lazy var titleLabel: DSLabel = {
+    //     let label = DSLabel()
+    //     label.setStyle(DS.TypoToken.Label.Caption(color: theme.text.textPrimary.color))
+    //     label.text = "Hello"
+    //     return label
+    // }()
+    //
+    // lazy var subtitleLabel: DSLabel = {
+    //     let label = DSLabel()
+    //     label.setStyle(DS.TypoToken.Body.Caption(color: theme.text.textPrimary.color))
+    //     label.text = "World"
+    //     return label
+    // }()
 
-    // #region Observable Properties
-    [ObservableProperty]
-    private bool _isLoading;
+    // MARK: - Life Cycle
 
-    [ObservableProperty]
-    private string? _errorMessage;
-
-    [ObservableProperty]
-    private ObservableCollection<[ModuleName]Dto> _items = new();
-
-    // TODO: Add more [ObservableProperty] fields as needed
-    // [ObservableProperty]
-    // private string _title = string.Empty;
-    // #endregion
-
-    public [ModuleName]ViewModel(I[ModuleName]UseCase useCase, ILogger<[ModuleName]ViewModel> logger)
-    {
-        _useCase = useCase;
-        _logger = logger;
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupViews()
+        setupActions()
+        configurePresenter()
+        configureViewModel()
     }
 
-    // #region Commands
-    [RelayCommand]
-    private async Task LoadAsync(CancellationToken ct)
-    {
-        IsLoading = true;
-        ErrorMessage = null;
-        try
-        {
-            var result = await _useCase.ExecuteAsync(ct);
-            Items = new ObservableCollection<[ModuleName]Dto>(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to load [ModuleName]");
-            ErrorMessage = ex.Message;
-        }
-        finally
-        {
-            IsLoading = false;
-        }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // TODO: Add viewWillAppear logic
     }
 
-    // TODO: Add more [RelayCommand] methods
-    // [RelayCommand]
-    // private async Task SubmitAsync(CancellationToken ct) { }
-    // #endregion
-}
-```
-
-## UseCase.cs
-
-```csharp
-// I[ModuleName]UseCase.cs
-namespace App.Features.[ModuleName].Domain.UseCases;
-
-public interface I[ModuleName]UseCase
-{
-    Task<List<[ModuleName]Dto>> ExecuteAsync(CancellationToken ct = default);
-}
-
-// [ModuleName]UseCase.cs
-public sealed class [ModuleName]UseCase : I[ModuleName]UseCase
-{
-    private readonly I[ModuleName]Repository _repository;
-
-    public [ModuleName]UseCase(I[ModuleName]Repository repository)
-    {
-        _repository = repository;
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        // TODO: Add viewWillDisappear logic
     }
 
-    public async Task<List<[ModuleName]Dto>> ExecuteAsync(CancellationToken ct = default)
-    {
-        // TODO: Implement business logic
-        return await _repository.GetListAsync(ct);
+    deinit {
+        // TODO: Add cleanup if needed
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    // MARK: - Private Methods
+
+    private func setupViews() {
+        // TODO: Setup UI hierarchy and constraints with SnapKit
+        // Example:
+        // view.addSubview(someView)
+        // someView.snp.makeConstraints { make in
+        //     make.edges.equalToSuperview()
+        // }
+    }
+
+    private func setupActions() {
+        // TODO: Setup button targets and gesture recognizers
+    }
+
+    private func configurePresenter() {
+        // TODO: Bind presenter relays to UI updates
+    }
+
+    private func configureViewModel() {
+        // TODO: Configure viewModel and call didBecomeActive
     }
 }
 ```
 
-## Repository.cs
+### ViewModel Structure
 
-```csharp
-// I[ModuleName]Repository.cs
-namespace App.Features.[ModuleName].Data.Repositories;
+```swift
+import RxSwift
+import RxRelay
+import Action
+import CTCommon
 
-public interface I[ModuleName]Repository
-{
-    Task<List<[ModuleName]Dto>> GetListAsync(CancellationToken ct = default);
+// MARK: - ViewModelType
+protocol [ModuleName]ViewModelType: CTViewModelType {
+    var presenter: [ModuleName]Presentable? { get set }
+    var router: [ModuleName]Router? { get set }
+    var listener: [ModuleName]PresentableListener? { get set }
 }
 
-// [ModuleName]Repository.cs
-public sealed class [ModuleName]Repository : I[ModuleName]Repository
-{
-    private readonly I[ModuleName]Service _service;
+// MARK: - Presentable
+protocol [ModuleName]Presentable: AnyObject {
+    var listener: [ModuleName]PresentableListener? { get set }
+    // TODO: Add BehaviorRelay and PublishRelay properties
+    // var isLoadingRelay: BehaviorRelay<Bool> { get set }
+    // var errorMessage: BehaviorRelay<String?> { get set }
+}
 
-    public [ModuleName]Repository(I[ModuleName]Service service)
-    {
-        _service = service;
+// MARK: - PresentableListener
+protocol [ModuleName]PresentableListener: AnyObject {
+    // TODO: Add PublishRelay properties for triggers
+    // var triggerSomeAction: PublishRelay<SomeInputType> { get }
+}
+
+// MARK: - Router
+protocol [ModuleName]Router: AnyObject {
+    // TODO: Add navigation methods
+}
+
+final class [ModuleName]ViewModel: [ModuleName]ViewModelType, [ModuleName]PresentableListener {
+
+    // MARK: - Properties
+
+    weak var presenter: [ModuleName]Presentable?
+    weak var router: [ModuleName]Router?
+    weak var listener: [ModuleName]PresentableListener?
+
+    // TODO: Add UseCase dependencies
+    // private let someUseCase: SomeUseCaseType
+
+    let disposeBag = DisposeBag()
+
+    // MARK: - Initialization
+
+    init(
+        // TODO: Add UseCase dependencies
+        // someUseCase: SomeUseCaseType
+    ) {
+        // TODO: Initialize dependencies
+        // self.someUseCase = someUseCase
     }
 
-    public async Task<List<[ModuleName]Dto>> GetListAsync(CancellationToken ct = default)
-        => await _service.FetchListAsync(ct) ?? new();
-}
-```
+    // MARK: - Life Cycle
 
-## Service.cs
-
-```csharp
-// I[ModuleName]Service.cs
-namespace App.Features.[ModuleName].Data.Services;
-
-public interface I[ModuleName]Service
-{
-    Task<List<[ModuleName]Dto>?> FetchListAsync(CancellationToken ct = default);
-}
-
-// [ModuleName]Service.cs
-public sealed class [ModuleName]Service : I[ModuleName]Service
-{
-    private readonly HttpClient _http;
-
-    public [ModuleName]Service(HttpClient http)
-    {
-        _http = http;
+    func didBecomeActive() {
+        presenter?.listener = self
+        configureListener()
+        configurePresenter()
     }
 
-    public async Task<List<[ModuleName]Dto>?> FetchListAsync(CancellationToken ct = default)
-        => await _http.GetFromJsonAsync<List<[ModuleName]Dto>>("/api/[module-endpoint]", ct);
-}
-```
+    // MARK: - Private Methods
 
-## DI Registration
+    private func configureListener() {
+        // TODO: Subscribe to triggers from presenter/UI
+    }
 
-```csharp
-// ServiceCollectionExtensions.cs
-using Microsoft.Extensions.DependencyInjection;
-using App.Features.[ModuleName].ViewModels;
-using App.Features.[ModuleName].Domain.UseCases;
-using App.Features.[ModuleName].Data.Repositories;
-using App.Features.[ModuleName].Data.Services;
-
-namespace App.Features.[ModuleName];
-
-public static class ServiceCollectionExtensions
-{
-    public static IServiceCollection Add[ModuleName](this IServiceCollection services)
-    {
-        services.AddTransient<[ModuleName]ViewModel>();
-        services.AddTransient<I[ModuleName]UseCase, [ModuleName]UseCase>();
-        services.AddTransient<I[ModuleName]Repository, [ModuleName]Repository>();
-        services.AddHttpClient<I[ModuleName]Service, [ModuleName]Service>(client =>
-        {
-            // TODO: Configure base address if different from global
-        });
-        return services;
+    private func configurePresenter() {
+        // TODO: Subscribe to UseCase responses and update presenter
     }
 }
 ```
 
-## File Types to Generate
+### Builder Structure
 
-### View (UserControl)
-- XAML + code-behind pair using AppDesignSystem only
-- Loaded event to trigger initialization command
+```swift
+import Swinject
 
-### ViewModel
-- `partial class` inheriting `ObservableObject`
-- `[ObservableProperty]` for state, `[RelayCommand]` for async actions
-- Constructor injection: UseCase + `ILogger<T>`
+final class [ModuleName]Builder {
 
-### UseCase
-- Interface + sealed implementation
-- Orchestrates repository, contains business logic
+    // MARK: - Properties
 
-### Repository
-- Interface + sealed implementation
-- Delegates to Service, null-safe returns
+    private let container: Container
 
-### Service
-- Interface + sealed implementation
-- Typed `HttpClient` with `System.Net.Http.Json`
+    // MARK: - Initialization
 
-### DI (ServiceCollectionExtensions)
-- Extension method `Add[ModuleName]` on `IServiceCollection`
-- Register all types as `Transient`
+    init(container: Container) {
+        self.container = container
+    }
 
-## Rules
+    // MARK: - Build
 
-- All 3 core files (View, ViewModel, DI) must be created together
-- `ViewModel` is `partial class` for source generator support
-- Use `ILogger<T>` for logging — never `Console.WriteLine`
-- All async methods accept `CancellationToken`
-- Never use raw WPF components — only `AppLabel`, `AppButton`, etc.
-- XAML layout only — no programmatic layout in code-behind
+    func build() -> [ModuleName]ViewController {
+        let viewController = [ModuleName]ViewController()
+        let viewModel = [ModuleName]ViewModel(
+            // TODO: Resolve UseCase dependencies from container
+            // someUseCase: container.resolve(SomeUseCaseType.self)!
+        )
+
+        viewController.viewModel = viewModel
+        viewModel.presenter = viewController
+
+        return viewController
+    }
+}
+import RxSwift
+import RxCocoa
+
+// MARK: - ViewModelType
+protocol [ModuleName]ViewModelType: CTViewModelType {
+    var presenter: [ModuleName]Presentable? { get set }
+    var router: [ModuleName]Router? { get set }
+    var listener: [ModuleName]PresentableListener? { get set }
+}
+
+// MARK: - Presentable
+protocol [ModuleName]Presentable: AnyObject {
+    var listener: [ModuleName]PresentableListener? { get set }
+    // TODO: Add BehaviorRelay and PublishRelay properties
+}
+
+// MARK: - PresentableListener
+protocol [ModuleName]PresentableListener: AnyObject {
+    // TODO: Add PublishRelay properties for triggers
+}
+
+// MARK: - Router
+protocol [ModuleName]Router: AnyObject {
+    // TODO: Add navigation methods
+}
+
+final class [ModuleName]ViewModel: [ModuleName]ViewModelType, [ModuleName]PresentableListener {
+
+    // MARK: - Properties
+
+    weak var presenter: [ModuleName]Presentable?
+    weak var router: [ModuleName]Router?
+    weak var listener: [ModuleName]PresentableListener?
+
+    // TODO: Add UseCase dependencies
+    let disposeBag = DisposeBag()
+
+    // MARK: - Initialization
+
+    init(
+        // TODO: Add UseCase dependencies
+    ) {
+        // TODO: Initialize dependencies
+    }
+
+    // MARK: - Life Cycle
+
+    func didBecomeActive() {
+        presenter?.listener = self
+        configureListener()
+        configurePresenter()
+    }
+
+    // MARK: - Private Methods
+
+    private func configureListener() {
+        // TODO: Configure listener bindings
+    }
+
+    private func configurePresenter() {
+        // TODO: Configure presenter bindings
+    }
+}
+```
+
+### Builder Structure
+
+```swift
+import UIKit
+
+final class [ModuleName]Builder {
+
+    // MARK: - Build
+
+    static func build(listener: [ModuleName]PresentableListener? = nil) -> UIViewController {
+        let viewModel = [ModuleName]ViewModel(
+            // TODO: Add UseCase dependencies
+        )
+        let viewController = [ModuleName]ViewController()
+        let router = [ModuleName]Router(viewController: viewController)
+
+        // Setup dependencies
+        viewModel.presenter = viewController
+        viewModel.router = router
+        viewModel.listener = listener
+        viewController.viewModel = viewModel
+
+        return viewController
+    }
+}
+```
+
+Keep all implementations minimal with clear TODO guidance.

@@ -9,13 +9,13 @@ Generate basic Service following Clean Architecture patterns and API integration
 
 ## Instructions
 
-Reference our C#/.NET WPF development guidelines: [iOS Guidelines](../instructions/ct-ai-rules-general-instructions.instructions.md)
+Reference our iOS development guidelines: [iOS Guidelines](../instructions/ct-ai-rules-general-instructions.instructions.md)
 
 Generate basic Service structure with:
 
 -   Protocol and implementation
 -   API Target integration using CTApiClient
--   CommunityToolkit.Mvvm Observable return types
+-   RxSwift Observable return types
 -   Main thread observation
 -   Proper error handling
 -   TODO comments for implementation
@@ -25,7 +25,7 @@ Generate basic Service structure with:
 
 ```swift
 import Foundation
-import CommunityToolkit.Mvvm
+import RxSwift
 import CTApiClient
 
 protocol [Name]ServiceType {
@@ -73,9 +73,9 @@ struct [Name]Service: [Name]ServiceType {
 
 ```swift
 import Foundation
-import CommunityToolkit.Mvvm
+import RxSwift
 import CTApiClient
-import AppCommon
+import CTCommon
 
 protocol [Name]ServiceType {
     // TODO: Define service methods
@@ -119,7 +119,7 @@ struct [Name]Service: [Name]ServiceType {
 
 ```swift
 import Foundation
-import CommunityToolkit.Mvvm
+import RxSwift
 import CTApiClient
 
 protocol [Name]ServiceType {
@@ -166,7 +166,7 @@ struct [Name]Service: [Name]ServiceType {
 ### Required Patterns
 
 1. **Protocol Definition**: Always define a protocol for your service
-2. **Observable Return Types**: All methods must return CommunityToolkit.Mvvm Observable
+2. **Observable Return Types**: All methods must return RxSwift Observable
 3. **Main Thread Observation**: Use `.observe(on: MainScheduler.instance)` for UI updates
 4. **Target Integration**: Use API Targets with `.execute()` method
 5. **Error Handling**: Implement proper error mapping when needed
@@ -181,9 +181,9 @@ struct [Name]Service: [Name]ServiceType {
 
 ```swift
 import Foundation
-import CommunityToolkit.Mvvm
+import RxSwift
 import CTApiClient
-// Optional: import AppCommon for error handling
+// Optional: import CTCommon for error handling
 ```
 
 ### Error Handling Patterns
@@ -223,7 +223,7 @@ Generate basic Service with:
 
 1. Protocol definition with method signatures
 2. Service implementation with Target integration
-3. Proper CommunityToolkit.Mvvm Observable patterns
+3. Proper RxSwift Observable patterns
 4. Main thread observation
 5. TODO comments for implementation
 6. Proper MARK sections

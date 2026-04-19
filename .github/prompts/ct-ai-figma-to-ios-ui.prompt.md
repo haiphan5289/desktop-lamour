@@ -1,12 +1,12 @@
 ---
 agent: ct-figma-design-implementer
-description: "Render UI from a Figma link into iOS WPF code (ViewController + Storyboard). Use when: implementing a new screen or component from Figma design, need to convert Figma design to WPF storyboard, want to create a ViewController with storyboard layout from a Figma node URL."
+description: "Render UI from a Figma link into iOS UIKit code (ViewController + Storyboard). Use when: implementing a new screen or component from Figma design, need to convert Figma design to UIKit storyboard, want to create a ViewController with storyboard layout from a Figma node URL."
 argument-hint: "FIGMA_URL: <url> MODULE_PATH: <path> COMPONENT_TYPE: <type>"
 ---
 
 ## Prompt Activation
 
-**You are an expert C#/.NET WPF developer translating Figma designs into production-ready iOS WPF code.**
+**You are an expert iOS developer translating Figma designs into production-ready iOS UIKit code.**
 
 # Figma → iOS UI Implementation Pattern
 
@@ -76,7 +76,7 @@ Text content of overridden nodes does **NOT** appear in the parent `get_design_c
 
 **Apply extracted strings as defaults in both output files:**
 - `.storyboard` XML: `text="..."` attribute on `<label>`, `title="..."` on `<state key="normal">` of `<button>`
-- `configureUI()` in `.cs`: `label.text = property ?? "extracted text"` and `button.setTitle(property ?? "extracted text", for: .normal)`
+- `configureUI()` in `.swift`: `label.text = property ?? "extracted text"` and `button.setTitle(property ?? "extracted text", for: .normal)`
 
 > If no `"characters"` overrides exist, use the `characters` value already visible in the structure output from Step 1.
 
@@ -107,21 +107,21 @@ If yes, search for existing components that visually match the Figma design. Thi
 **Run these searches:**
 ```
 # Same COMPONENT_TYPE in module
-grep -r "DSBottomSheetLayout" MODULE_PATH --include="*.cs" -l
+grep -r "DSBottomSheetLayout" MODULE_PATH --include="*.swift" -l
 
 # Two-button footer pattern
-grep -r "secondaryButton\|primaryButton" MODULE_PATH --include="*.cs" -l
+grep -r "secondaryButton\|primaryButton" MODULE_PATH --include="*.swift" -l
 
 # Warning/notice-style cross-module
-grep -r "warningFill\|noticeShare\|warningMessage" AppFeatures --include="*.cs" -l
+grep -r "warningFill\|noticeShare\|warningMessage" AppFeatures --include="*.swift" -l
 ```
 
 **If matches found, present to user:**
 
 ```
 Found similar existing UI:
-  • CRNoticeShareAdViewController.cs (CTCorePayment) — bottom sheet, close + 2-button footer
-  • JBWarningViewController.cs (CTJOB) — icon + title + description + primary button
+  • CRNoticeShareAdViewController.swift (CTCorePayment) — bottom sheet, close + 2-button footer
+  • JBWarningViewController.swift (CTJOB) — icon + title + description + primary button
 
 → Do you want to:
   [A] Reuse / extend one of these components
@@ -145,41 +145,41 @@ Do NOT ask about design tokens, spacing, or colors — extract those from Figma.
 Before writing code, **search the module** for:
 - Existing ViewControllers that use `DSBottomSheetLayout` (for bottom sheets)
 - How `configureUI()` applies design system tokens (`DS.TypoToken`, `DS.Button`)
-- How `AppThemeManager` theme is used (`.jobTheme`, `.defaultTheme`, etc.)
-- Whether XAML layout or XAML code-behind layout is used (always use XAML layout)
+- How `CMStaticThemeLoader` theme is used (`.jobTheme`, `.defaultTheme`, etc.)
+- Whether SnapKit or NSLayoutConstraint is used (always use SnapKit)
 - A reference storyboard using StackView layout:
   - **`bottom_sheet`** → use `CRNoticeShareAd.storyboard` (`CTCorePayment/Features/CheckoutPage/NoticeShareAd/`) as the canonical reference
-  - **`tableview_onesection`** → read `CRHighValuePackageViewController.cs` + `CRHighValuePackage.storyboard` at `Features/CTCorePayment/CTCorePayment/Features/DongTot/TopupDongtot/HighValuePackage/` as the canonical reference for UITableView with a single section
-  - **`tableview_multisection`** → read `PTSubscriptionSKViewController.cs` + `PTSubscriptionSK.storyboard` at `Features/CTPTY/CTPTY/Features/Subscription/SubscriptionSK/` as the canonical reference for UITableView with multiple sections, section headers, and cell registration patterns
+  - **`tableview_onesection`** → read `CRHighValuePackageViewController.swift` + `CRHighValuePackage.storyboard` at `AppFeatures/CTCorePayment/CTCorePayment/Features/DongTot/TopupDongtot/HighValuePackage/` as the canonical reference for UITableView with a single section
+  - **`tableview_multisection`** → read `PTSubscriptionSKViewController.swift` + `PTSubscriptionSK.storyboard` at `AppFeatures/CTPTY/CTPTY/Features/Subscription/SubscriptionSK/` as the canonical reference for UITableView with multiple sections, section headers, and cell registration patterns
   - **`full_screen` / `modal`** → search for a sibling storyboard in the same module
 
-### Step 4 — Create ViewController (.cs)
+### Step 4 — Create ViewController (.swift)
 
 Follow **exactly** this structure:
 
 ```swift
 //
-//  <Name>ViewController.cs
+//  <Name>ViewController.swift
 //  ChoTot
 //
 //  Created by <git config user.name> on <current date from mcp_time>.
-//  Copyright © 2024 App. All rights reserved.
+//  Copyright © 2024 Cho Tot. All rights reserved.
 //
 
-import WPF
-import XAML layout
-import AppDesignSystem
-import AppCommon
+import UIKit
+import SnapKit
+import CTDesignSystem
+import CTCommon
 import CTAsset
 
-final class <Name>ViewController: UserControl, DSBottomSheetLayout {
+final class <Name>ViewController: UIViewController, DSBottomSheetLayout {
 
     // MARK: - Outlets
     @IBOutlet private weak var <outlet>: <DSType>!
 
     // MARK: - Properties
     var on<Action>: (() -> Void)?
-    private let theme = AppThemeManager.<moduleTheme>
+    private let theme = CMStaticThemeLoader.<moduleTheme>
 
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -201,11 +201,11 @@ final class <Name>ViewController: UserControl, DSBottomSheetLayout {
 ```
 
 **Rules:**
-- Use `AppLabel`, `AppButton` (never `UILabel`, `UIButton` directly in style calls)
+- Use `DSLabel`, `DSButton` (never `UILabel`, `UIButton` directly in style calls)
 - Use `DS.TypoToken.Header.Section` / `DS.TypoToken.Body.Section` / etc. matching Figma typography tokens
 - Use `DS.Button.primary` / `.secondary` / `.tertiary` matching Figma button style
 - Use `CTAssetSystemIcon.*` for icon images
-- Use XAML layout for any programmatic constraints (never `XAML code-behind layout`)
+- Use SnapKit for any programmatic constraints (never `NSLayoutConstraint`)
 - Dismiss pattern: `dismiss(animated: true) { self.on<Action>?() }`
 
 ### Step 5 — Create Storyboard (.storyboard)
@@ -214,9 +214,9 @@ final class <Name>ViewController: UserControl, DSBottomSheetLayout {
 > Never use manual leading/top/trailing/bottom constraints between sections.
 > Section ordering is controlled by StackView, not anchor chains.
 > **Reference by `COMPONENT_TYPE`**:
-> - **`bottom_sheet`** → Read `CRNoticeShareAd.storyboard` at `Features/CTCorePayment/CTCorePayment/Features/CheckoutPage/NoticeShareAd/CRNoticeShareAd.storyboard` and replicate its StackView structure exactly before writing the new storyboard.
-> - **`tableview_onesection`** → Read `CRHighValuePackageViewController.cs` + `CRHighValuePackage.storyboard` at `Features/CTCorePayment/CTCorePayment/Features/DongTot/TopupDongtot/HighValuePackage/` and replicate its single-section UITableView pattern (cell registration, `numberOfRowsInSection`, `cellForRowAt`, footer/header if any) before writing the new files.
-> - **`tableview_multisection`** → Read `PTSubscriptionSKViewController.cs` + `PTSubscriptionSK.storyboard` at `Features/CTPTY/CTPTY/Features/Subscription/SubscriptionSK/` and replicate its UITableView multi-section pattern (section enum, cell registration, `numberOfSections`, `cellForRowAt`, section header views) before writing the new files.
+> - **`bottom_sheet`** → Read `CRNoticeShareAd.storyboard` at `AppFeatures/CTCorePayment/CTCorePayment/Features/CheckoutPage/NoticeShareAd/CRNoticeShareAd.storyboard` and replicate its StackView structure exactly before writing the new storyboard.
+> - **`tableview_onesection`** → Read `CRHighValuePackageViewController.swift` + `CRHighValuePackage.storyboard` at `AppFeatures/CTCorePayment/CTCorePayment/Features/DongTot/TopupDongtot/HighValuePackage/` and replicate its single-section UITableView pattern (cell registration, `numberOfRowsInSection`, `cellForRowAt`, footer/header if any) before writing the new files.
+> - **`tableview_multisection`** → Read `PTSubscriptionSKViewController.swift` + `PTSubscriptionSK.storyboard` at `AppFeatures/CTPTY/CTPTY/Features/Subscription/SubscriptionSK/` and replicate its UITableView multi-section pattern (section enum, cell registration, `numberOfSections`, `cellForRowAt`, section header views) before writing the new files.
 
 **StackView-based layout structure** (same pattern as `CRNoticeShareAd.storyboard`):
 
@@ -224,7 +224,7 @@ final class <Name>ViewController: UserControl, DSBottomSheetLayout {
 Root View
 └── mainStackView (vertical, spacing=0) → pinned to safeArea (top/leading/trailing, bottom>=)
     ├── Header (UIView, fixed height, internal constraints)
-    │    ├── Title (AppLabel, leading=16, trailing to closeButton-8, centerY)
+    │    ├── Title (DSLabel, leading=16, trailing to closeButton-8, centerY)
     │    ├── Close Button (UIButton, trailing=16, centerY, 24x24)
     │    └── Separator (UIView, height=1, bottom=0, full width)
     ├── Body Container (UIView) — plain UIView, NOT a StackView
@@ -251,7 +251,7 @@ Root View
 **Storyboard rules:**
 - Use `toolsVersion="23504"` and `plugIn version="23506"`
 - Add `<freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>` for bottom sheets
-- Use `AppLabel` / `AppButton` as `customClass` with `customModule="AppDesignSystem"`
+- Use `DSLabel` / `DSButton` as `customClass` with `customModule="CTDesignSystem"`
 - ViewController `customModule` matches the Xcode target (e.g. `"ChoTot"`) — verify against sibling storyboards
 - All outlets must be wired in `<connections>` at ViewController level
 - `storyboardIdentifier` must match the ViewController class name exactly
@@ -262,9 +262,9 @@ Add **5 entries** to `ChoTot.xcodeproj/project.pbxproj`:
 
 | Section | Entry |
 |---|---|
-| `PBXBuildFile` | `<UUID> /* <Name>.cs in Sources */` |
+| `PBXBuildFile` | `<UUID> /* <Name>.swift in Sources */` |
 | `PBXBuildFile` | `<UUID> /* <Name>.storyboard in Resources */` |
-| `PBXFileReference` | Swift file ref (`lastKnownFileType = sourcecode.cs`) |
+| `PBXFileReference` | Swift file ref (`lastKnownFileType = sourcecode.swift`) |
 | `PBXFileReference` | Storyboard file ref (`lastKnownFileType = file.storyboard`) |
 | `PBXGroup` (target folder) | Both file refs listed under the group |
 | Sources build phase | Swift build file entry |
@@ -276,7 +276,7 @@ Find the correct group by searching for a **sibling file** already in the same t
 
 ---
 
-## Design Token Mapping (Figma → AppDesignSystem)
+## Design Token Mapping (Figma → CTDesignSystem)
 
 | Figma Token | Swift |
 |---|---|
@@ -299,7 +299,7 @@ Before finishing, verify:
 - [ ] ViewController outlets match storyboard connections exactly
 - [ ] All `@IBAction` selectors match storyboard action connections
 - [ ] `storyboardIdentifier` matches class name
-- [ ] XAML layout used everywhere (no `XAML code-behind layout`)
+- [ ] SnapKit used everywhere (no `NSLayoutConstraint`)
 - [ ] Storyboard root is a vertical StackView (not individual views with anchor chains)
 - [ ] Sections (header/body/footer) are StackView children — not manually top/bottom chained
 - [ ] Button rows use `distribution=fillEqually` StackView (not equal-width constraints)

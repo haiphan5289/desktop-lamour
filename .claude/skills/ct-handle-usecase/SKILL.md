@@ -1,9 +1,11 @@
 ---
 name: ct-handle-usecase
-description: Add a UseCase execution method to an existing ViewModel following MVVM + Clean Architecture. Generates an async command method with success, loading (IsLoading), and error handling. Use when wiring a new IUseCase into an existing ViewModel with CommunityToolkit.Mvvm.
+description: Add a UseCase execution method to an existing ViewModel following MVVM + Clean Architecture. Generates the execute{UseCaseName}() method with elements (success), executing (loading), and underlyingError (error) bindings. Use when wiring a new UseCase into an existing ViewModel. Critical: never use .observe(on:) for underlyingError, never use .bind(onNext:).
 ---
 
 # ViewModel UseCase Execution Guide
+
+> **Anti-Hallucination:** Verify every symbol, token, path, and identifier against the codebase before generating code. See [ct-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
 
 Add a UseCase execution method to an existing ViewModel, following the MVVM + Clean Architecture pattern.
 
@@ -11,149 +13,106 @@ Add a UseCase execution method to an existing ViewModel, following the MVVM + Cl
 
 ```
 USECASE_NAME: <UseCaseName, e.g. "FetchUserProfile">
-INPUT_TYPE: <Input type, e.g. "string" or "UserRequest">
-OUTPUT_TYPE: <Output type, e.g. "UserModel" or "IReadOnlyList<OrderModel>">
-VIEWMODEL_CLASS: <ViewModel class name, e.g. "CheckoutViewModel">
-REPO_PROPERTY_NAME: <Repository property in the ViewModel, e.g. "_checkoutRepository">
+INPUT_PARAM: <Input type, e.g. "String" or "UserRequest">
+VIEWMODEL_CLASS: <ViewModel class name, e.g. "CRCheckoutPageViewModel">
+REPO_PROPERTY_NAME: <Repository property in the ViewModel, e.g. "checkoutRepo">
 ```
 
 ## Generated Method Template
 
-```csharp
-// Add to existing partial ViewModel class
-public sealed partial class [ViewModelClass] : ViewModelBase
-{
-    private readonly I[UseCaseName]UseCase _[useCaseName]UseCase;
+```swift
+// Add to existing ViewModel class via extension
+extension [ViewModelClass] {
+    func execute[UseCaseName](input: [InputParam]) {
+        let useCase = CR[UseCaseName]UseCase(repository: self.[repoPropertyName])
 
-    // Inject via constructor
-    public [ViewModelClass](I[UseCaseName]UseCase [useCaseName]UseCase /*, other deps */)
-    {
-        _[useCaseName]UseCase = [useCaseName]UseCase;
-    }
+        // Success — observe on MainScheduler for UI updates
+        useCase.action?.elements
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] result in
+                // TODO: Handle success result
+                // self?.presenter?.data.accept(result)
+            })
+            .disposed(by: disposeBag)
 
-    [RelayCommand]
-    private async Task Execute[UseCaseName]Async([InputType] input, CancellationToken cancellationToken = default)
-    {
-        IsLoading = true;
-        ErrorMessage = null;
+        // Loading state
+        useCase.action?.executing
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] isLoading in
+                self?.presenter?.loading.accept(isLoading)
+            })
+            .disposed(by: disposeBag)
 
-        try
-        {
-            var result = await _[useCaseName]UseCase.ExecuteAsync(input, cancellationToken);
-            // TODO: handle success
-            // Items = new ObservableCollection<ItemViewModel>(result.Select(ItemViewModel.From));
-        }
-        catch (OperationCanceledException)
-        {
-            // Cancelled — no user-facing error needed
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to execute [UseCaseName]");
-            ErrorMessage = "An error occurred. Please try again.";
-        }
-        finally
-        {
-            IsLoading = false;
-        }
+        // Error handling — minimal, NO observe(on:) needed
+        useCase.action?.underlyingError
+            .subscribe(onNext: { [weak self] error in
+                guard let self = self else { return }
+                // Minimal error handling
+            })
+            .disposed(by: disposeBag)
+
+        // Execute
+        useCase.action?.execute(input)
     }
 }
 ```
 
-## UseCase Interface
+## Common Repository Property Names
 
-```csharp
-// Domain/UseCases/I[UseCaseName]UseCase.cs
-public interface I[UseCaseName]UseCase
-{
-    Task<[OutputType]> ExecuteAsync([InputType] input, CancellationToken cancellationToken = default);
-}
-
-// Domain/UseCases/[UseCaseName]UseCase.cs
-public sealed class [UseCaseName]UseCase : I[UseCaseName]UseCase
-{
-    private readonly I[Name]Repository _repository;
-
-    public [UseCaseName]UseCase(I[Name]Repository repository)
-        => _repository = repository;
-
-    public async Task<[OutputType]> ExecuteAsync([InputType] input, CancellationToken cancellationToken = default)
-        => await _repository.Get[Entity]Async(input, cancellationToken);
-}
-```
-
-## ViewModel Properties Required
-
-```csharp
-public sealed partial class [ViewModelClass] : ViewModelBase
-{
-    [ObservableProperty]
-    private bool _isLoading;
-
-    [ObservableProperty]
-    private string? _errorMessage;
-
-    [ObservableProperty]
-    private ObservableCollection<[ItemViewModel]> _items = new();
-}
-```
+| ViewModel | Repository Property |
+|-----------|-------------------|
+| `CRCheckoutPageViewModel` | `checkoutRepo` |
+| `CRTopupDongtotViewModel` | `dongtotRespository` |
+| `POSViewModel` | `posRepo` |
+| `VEHViewModel` | `vehRepo` |
 
 ## Critical Rules
 
 ### ❌ NEVER DO THESE:
 
-```csharp
-// ❌ WRONG: async void outside event handlers
-private async void Execute[UseCaseName]() { }  // Exceptions are swallowed!
+```swift
+// ❌ WRONG: observe(on:) for underlyingError
+useCase.action?.underlyingError
+    .observe(on: MainScheduler.instance)  // NOT needed
+    .subscribe(...)
 
-// ❌ WRONG: .Result or .GetAwaiter().GetResult() on async methods
-var result = _useCase.ExecuteAsync(input).Result;  // Deadlock risk!
+// ❌ WRONG: bind(onNext:) — always use subscribe(onNext:)
+useCase.action?.elements
+    .bind(onNext: { result in ... })  // Use subscribe instead
 
-// ❌ WRONG: UI updates on non-UI thread without Dispatcher
-await Task.Run(() => Items.Add(item));  // CrossThreadException!
+// ❌ WRONG: complex error unwrapping
+useCase.action?.underlyingError
+    .subscribe(onNext: { [weak self] error in
+        if let err = error as? CustomError {  // Keep it minimal
+            ...
+        }
+    })
 ```
 
 ### ✅ CORRECT PATTERNS:
 
-```csharp
-// ✅ Correct: [RelayCommand] + async Task — toolkit wires CancellationToken automatically
-[RelayCommand]
-private async Task Execute[UseCaseName]Async([InputType] input, CancellationToken cancellationToken)
-{
-    IsLoading = true;
-    try
-    {
-        var result = await _useCase.ExecuteAsync(input, cancellationToken);
-        Items = new ObservableCollection<ItemViewModel>(result.Select(ItemViewModel.From));
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "...");
-        ErrorMessage = "User-friendly message";
-    }
-    finally { IsLoading = false; }
-}
+```swift
+// ✅ Correct: elements with MainScheduler + subscribe
+useCase.action?.elements
+    .observe(on: MainScheduler.instance)
+    .subscribe(onNext: { [weak self] result in
+        self?.presenter?.data.accept(result)
+    })
+    .disposed(by: disposeBag)
 
-// ✅ Correct: ObservableCollection from background thread via Dispatcher
-await Application.Current.Dispatcher.InvokeAsync(() =>
-{
-    Items.Add(newItem);
-});
-```
-
-## DI Registration
-
-```csharp
-// In ServiceCollectionExtensions or Program.cs
-services.AddTransient<I[UseCaseName]UseCase, [UseCaseName]UseCase>();
-services.AddTransient<[ViewModelClass]>();
+// ✅ Correct: underlyingError — no observe(on:), minimal handling
+useCase.action?.underlyingError
+    .subscribe(onNext: { [weak self] error in
+        guard let self = self else { return }
+    })
+    .disposed(by: disposeBag)
 ```
 
 ## Architecture Notes
 
-- UseCase is injected through the ViewModel constructor (not created inline)
-- Use `[RelayCommand]` attribute — CommunityToolkit.Mvvm auto-generates the `ICommand`
-- `[RelayCommand]` on `async Task` methods automatically supports `CancellationToken`
-- `IsLoading` and `ErrorMessage` are `[ObservableProperty]` on the ViewModel
-- ViewModel class must be `partial` for source generators to work
-- UseCase naming convention: `{UseCaseName}UseCase`, interface: `I{UseCaseName}UseCase`
+- UseCase is created inside the execution method (not stored as property)
+- Repository is injected from the ViewModel's own repository property
+- Use `[weak self]` in all closures to prevent retain cycles
+- `disposed(by: disposeBag)` on every subscription
+- Add method as an `extension` on the ViewModel class for organization
+- The UseCase naming convention is `CR{UseCaseName}UseCase`

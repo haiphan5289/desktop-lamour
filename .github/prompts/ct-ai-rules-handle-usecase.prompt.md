@@ -1,12 +1,12 @@
 ---
 mode: agent
-description: Generate ViewModel UseCase execution methods following MVVM + Clean Architecture pattern for WPF applicationlication
+description: Generate ViewModel UseCase execution methods following MVVM + Clean Architecture pattern for iOS application
 ---
 
 # ViewModel UseCase Execution Guide
 
 ## Overview
-This guide provides instructions for adding UseCase execution methods to ViewModels in the WPF applicationlication following the MVVM + Clean Architecture pattern.
+This guide provides instructions for adding UseCase execution methods to ViewModels in the iOS application following the MVVM + Clean Architecture pattern.
 
 ## Task Definition
 Define the task to achieve ViewModel UseCase execution integration, including specific requirements, constraints, and success criteria.
@@ -39,7 +39,7 @@ extension {VIEWMODEL_CLASS} {
                 // TODO: Handle success result based on specific UseCase requirements
                 // Example: self?.presenter?.data.accept(result)
             })
-            .using CancellationToken
+            .disposed(by: disposeBag)
         
         // 🔒 MANDATORY: Handle loading state
         useCase.action?.executing
@@ -47,7 +47,7 @@ extension {VIEWMODEL_CLASS} {
             .subscribe(onNext: { [weak self] isLoading in
                 self?.presenter?.loading.accept(isLoading)
             })
-            .using CancellationToken
+            .disposed(by: disposeBag)
         
         // 🔒 MANDATORY: Handle errors - Only guard let self, no additional processing
         useCase.action?.underlyingError
@@ -55,7 +55,7 @@ extension {VIEWMODEL_CLASS} {
                 guard let self = self else { return }
                 // Error handling - minimal implementation
             })
-            .using CancellationToken
+            .disposed(by: disposeBag)
         
         // 🔒 MANDATORY: Execute
         useCase.action?.execute(input)
@@ -88,7 +88,7 @@ useCase.action?.underlyingError
         guard let self = self else { return }
         // Error handling - minimal implementation
     })
-    .using CancellationToken
+    .disposed(by: disposeBag)
 
 // ✅ Correct success handling - with MainScheduler for UI updates
 useCase.action?.elements
@@ -97,7 +97,7 @@ useCase.action?.elements
         // result is already the expected type, handle as needed
         self?.presenter?.data.accept(result)
     })
-    .using CancellationToken
+    .disposed(by: disposeBag)
 ```
 
 ## Repository Property Discovery

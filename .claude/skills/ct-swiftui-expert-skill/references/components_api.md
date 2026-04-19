@@ -2,7 +2,7 @@
 
 ## Buttons
 
-### Styles (`CAppButtonStyle`)
+### Styles (`CDSButtonStyle`)
 - `.primary`: Brand color background.
 - `.primarySuccess`: Success color.
 - `.primaryBlack`: Dark theme.
@@ -21,9 +21,9 @@ Button("Submit") { action() }
 
 ## Inputs
 
-### CAppTextField
+### CDSTextField
 ```swift
-CAppTextField(
+CDSTextField(
     text: $viewModel.state.name,
     placeholder: "Full Name",
     isError: $viewModel.state.hasError,
@@ -69,8 +69,8 @@ Bottom sheets slide up from the bottom.
 ```
 
 ## Colors
-Colors are accessed via `CTColor`. In SwiftUI, always use the `.csUIColor` extension.
+Colors are accessed via `CTColor`. In SwiftUI, always use the `.swiftUIColor` extension.
 
 ```swift
-.background(CTColor.gray50.csUIColor)
+.background(CTColor.gray50.swiftUIColor)
 ```

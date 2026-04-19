@@ -1,15 +1,15 @@
 ---
-description: "Generate basic iOS Cell structure with AppDesignSystem"
+description: "Generate basic iOS Cell structure with CTDesignSystem"
 mode: "agent"
 ---
 
 # iOS Basic Cell Generator
 
-Generate basic TableViewCell/CollectionViewCell using AppDesignSystem.
+Generate basic TableViewCell/CollectionViewCell using CTDesignSystem.
 
 ## Instructions
 
-Reference our C#/.NET WPF development guidelines:
+Reference our iOS development guidelines:
 
 -   **Primary**: [iOS Guidelines](../instructions/ios-general-instructions.instructions.md)
 -   **Fallback**: [AI Agent Context](../../AGENTS.md) (if primary unavailable)
@@ -20,19 +20,19 @@ Generate basic Cell structure with:
 -   Basic IBOutlets placeholders
 -   Configure method with ViewModel
 -   Basic setup methods
--   AppDesignSystem usage
+-   CTDesignSystem usage
 -   TODO comments for implementation
 
 ## Cell Template
 
 ```swift
-import WPF
-import AppDesignSystem
-import AppCommon
-import Properties.Resources
+import UIKit
+import CTDesignSystem
+import CTCommon
+import CTLocalize
 import CTComponent
 import CTAsset
-import XAML layout
+import SnapKit
 
 final class [Name]Cell: UITableViewCell {
 
@@ -47,18 +47,18 @@ final class [Name]Cell: UITableViewCell {
 
     // MARK: - UI Components
 
-    // TODO: Add lazy var UI components using AppDesignSystem DS* components
+    // TODO: Add lazy var UI components using CTDesignSystem DS* components
     // private var themeType = ThemeType.default
     // private var theme: CMTheme { DefaultTheme.themeWithType(type: themeType) }
     //
-    // lazy var titleLabel: AppLabel = {
-    //     let label = AppLabel()
+    // lazy var titleLabel: DSLabel = {
+    //     let label = DSLabel()
     //     label.setStyle(DS.TypoToken.Label.Caption(color: theme.text.textPrimary.color))
     //     return label
     // }()
     //
-    // lazy var subtitleLabel: AppLabel = {
-    //     let label = AppLabel()
+    // lazy var subtitleLabel: DSLabel = {
+    //     let label = DSLabel()
     //     label.setStyle(DS.TypoToken.Body.Caption(color: theme.text.textSecondary.color))
     //     return label
     // }()
@@ -86,7 +86,7 @@ final class [Name]Cell: UITableViewCell {
     // MARK: - Private Methods
 
     private func setupUI() {
-        // TODO: Setup UI hierarchy and constraints using AppDesignSystem and XAML layout
+        // TODO: Setup UI hierarchy and constraints using CTDesignSystem and SnapKit
         // Example:
         // contentView.addSubview(titleLabel)
         // titleLabel.snp.makeConstraints { make in
@@ -136,13 +136,13 @@ struct [Name]CellViewModel {
 ## CollectionViewCell Template
 
 ```swift
-import WPF
-import AppDesignSystem
-import AppCommon
-import Properties.Resources
+import UIKit
+import CTDesignSystem
+import CTCommon
+import CTLocalize
 import CTComponent
 import CTAsset
-import XAML layout
+import SnapKit
 
 final class [Name]CollectionViewCell: UICollectionViewCell {
 
@@ -157,12 +157,12 @@ final class [Name]CollectionViewCell: UICollectionViewCell {
 
     // MARK: - UI Components
 
-    // TODO: Add lazy var UI components using AppDesignSystem DS* components
+    // TODO: Add lazy var UI components using CTDesignSystem DS* components
     // private var themeType = ThemeType.default
     // private var theme: CMTheme { DefaultTheme.themeWithType(type: themeType) }
     //
-    // lazy var titleLabel: AppLabel = {
-    //     let label = AppLabel()
+    // lazy var titleLabel: DSLabel = {
+    //     let label = DSLabel()
     //     label.setStyle(DS.TypoToken.Label.Caption(color: theme.text.textPrimary.color))
     //     return label
     // }()
@@ -189,7 +189,7 @@ final class [Name]CollectionViewCell: UICollectionViewCell {
     // MARK: - Private Methods
 
     private func setupUI() {
-        // TODO: Setup UI hierarchy and constraints using AppDesignSystem and XAML layout
+        // TODO: Setup UI hierarchy and constraints using CTDesignSystem and SnapKit
         // Example:
         // contentView.addSubview(titleLabel)
         // titleLabel.snp.makeConstraints { make in
@@ -216,9 +216,9 @@ final class [Name]CollectionViewCell: UICollectionViewCell {
 
 Generate basic Cell with:
 
-1. AppDesignSystem imports and usage
+1. CTDesignSystem imports and usage
 2. Config enum for constants
-3. Lazy var UI components with AppDesignSystem
+3. Lazy var UI components with CTDesignSystem
 4. Configure method with ViewModel parameter
 5. CellViewModel struct with computed properties
 6. Reusable protocol conformance

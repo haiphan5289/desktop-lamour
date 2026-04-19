@@ -72,7 +72,7 @@ After the list is generated, when the command `work api usecase [ticket-id]` is 
 >    - **LOG FILES**: Display which files are being read for deeplink implementation
 >    - Fetch CPPF parent description
 >    - Generate instruction block following `deeplink_common_prompt.md` format
->    - **APPLY CODE CHANGES** to all relevant files (RevenueDeeplinkParser.cs, RevenueDeeplinkHandler.cs, etc.)
+>    - **APPLY CODE CHANGES** to all relevant files (RevenueDeeplinkParser.swift, RevenueDeeplinkHandler.swift, etc.)
 >    - **NEVER** just show code blocks - must use file editing tools to make actual changes
 > 5. When you enter `work api usecase [ticket-id]`, the system will automatically:
 >    - **LOG FILES**: Display which files are being read for API UseCase implementation
@@ -120,5 +120,5 @@ After the list is generated, when the command `work api usecase [ticket-id]` is 
 9. **API UseCase Automation**: The `work api usecase [ticket-id]` command should trigger `usecasse_get_description_cppf.md` automatically with file logging
 10. **FILE LOGGING**: Always display which prompt files are being read before execution
 11. **CRITICAL**: **MUST APPLY CODE TO FILES** - Never just show code blocks, always use file editing tools
-12. **File Changes**: All deeplink implementations must modify actual C# and XAML files using `replace_string_in_file`
-13. **UseCase Changes**: All API UseCase implementations must modify actual C# and XAML files using `replace_string_in_file`
+12. **File Changes**: All deeplink implementations must modify actual Swift files using `replace_string_in_file`
+13. **UseCase Changes**: All API UseCase implementations must modify actual Swift files using `replace_string_in_file`

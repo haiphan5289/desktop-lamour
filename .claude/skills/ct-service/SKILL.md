@@ -1,162 +1,13 @@
 ---
 name: ct-service
-description: Generate a C#/.NET Service (interface + implementation) following Clean Architecture patterns. Services use typed HttpClient to call REST APIs and return Task<T>. Use when adding a new service layer for network API calls. Named I[Name]Service (interface) and [Name]Service (sealed class).
+description: Generate a basic iOS Service (protocol + implementation) following Clean Architecture patterns. Services call API Targets with .execute() and return RxSwift Observables. Use when adding a new service layer for network API calls. Named [Name]ServiceType (protocol) and [Name]Service (struct).
 ---
 
-# WPF Basic Service Generator
+# iOS Basic Service Generator
 
-Generate Service interface and implementation following Clean Architecture and REST API integration patterns.
+> **Anti-Hallucination:** Verify every symbol, token, path, and identifier against the codebase before generating code. See [ct-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
 
-## Input Format
-
-```
-SERVICE_NAME: <ServiceName, e.g. "Product">
-FEATURE: <Module, e.g. "Features/Products">
-OPERATIONS: <comma-separated, e.g. "get,create,update,delete">
-ENTITY: <DTO type, e.g. "ProductDto">
-```
-
-## Service Template
-
-```csharp
-// Data layer — I[Name]Service.cs
-namespace App.[Feature].Data.Services;
-
-public interface I[Name]Service
-{
-    // Task<[Entity]Dto?> GetByIdAsync(string id, CancellationToken cancellationToken = default);
-    // Task<IReadOnlyList<[Entity]Dto>> GetAllAsync(CancellationToken cancellationToken = default);
-    // Task<[Entity]Dto> CreateAsync([Entity]CreateDto request, CancellationToken cancellationToken = default);
-    // Task<[Entity]Dto> UpdateAsync(string id, [Entity]UpdateDto request, CancellationToken cancellationToken = default);
-    // Task DeleteAsync(string id, CancellationToken cancellationToken = default);
-}
-```
-
-```csharp
-// Data layer — [Name]Service.cs
-using System.Net.Http.Json;
-using System.Text.Json;
-using Microsoft.Extensions.Logging;
-
-namespace App.[Feature].Data.Services;
-
-public sealed class [Name]Service : I[Name]Service
-{
-    private readonly HttpClient _httpClient;
-    private readonly ILogger<[Name]Service> _logger;
-
-    private static readonly JsonSerializerOptions _jsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
-
-    public [Name]Service(HttpClient httpClient, ILogger<[Name]Service> logger)
-    {
-        _httpClient = httpClient;
-        _logger = logger;
-    }
-
-    // public async Task<[Entity]Dto?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
-    // {
-    //     var response = await _httpClient.GetAsync($"api/[entity]/{id}", cancellationToken);
-    //     response.EnsureSuccessStatusCode();
-    //     return await response.Content.ReadFromJsonAsync<[Entity]Dto>(_jsonOptions, cancellationToken);
-    // }
-
-    // public async Task<IReadOnlyList<[Entity]Dto>> GetAllAsync(CancellationToken cancellationToken = default)
-    // {
-    //     var result = await _httpClient.GetFromJsonAsync<List<[Entity]Dto>>("api/[entity]", _jsonOptions, cancellationToken);
-    //     return result ?? [];
-    // }
-
-    // public async Task<[Entity]Dto> CreateAsync([Entity]CreateDto request, CancellationToken cancellationToken = default)
-    // {
-    //     var response = await _httpClient.PostAsJsonAsync("api/[entity]", request, cancellationToken);
-    //     response.EnsureSuccessStatusCode();
-    //     return (await response.Content.ReadFromJsonAsync<[Entity]Dto>(_jsonOptions, cancellationToken))!;
-    // }
-
-    // public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
-    // {
-    //     var response = await _httpClient.DeleteAsync($"api/[entity]/{id}", cancellationToken);
-    //     response.EnsureSuccessStatusCode();
-    // }
-}
-```
-
-## DTO Model
-
-```csharp
-// Data/Dtos/[Entity]Dto.cs
-using System.Text.Json.Serialization;
-
-namespace App.[Feature].Data.Dtos;
-
-public sealed record [Entity]Dto
-{
-    [JsonPropertyName("id")]
-    public string Id { get; init; } = string.Empty;
-
-    [JsonPropertyName("name")]
-    public string Name { get; init; } = string.Empty;
-
-    // [JsonPropertyName("description")]
-    // public string? Description { get; init; }
-}
-```
-
-## DI Registration
-
-```csharp
-// In ServiceCollectionExtensions.cs
-services.AddHttpClient<I[Name]Service, [Name]Service>(client =>
-{
-    client.BaseAddress = new Uri("https://api.example.com/");
-    client.DefaultRequestHeaders.Add("Accept", "application/json");
-});
-```
-
-## Error Handling Patterns
-
-```csharp
-// Re-throw with context
-try
-{
-    var response = await _httpClient.GetAsync(url, cancellationToken);
-    response.EnsureSuccessStatusCode();
-    return await response.Content.ReadFromJsonAsync<TDto>(_jsonOptions, cancellationToken);
-}
-catch (HttpRequestException ex)
-{
-    _logger.LogError(ex, "HTTP error fetching {Url}", url);
-    throw; // Let Repository/UseCase handle
-}
-
-// Default fallback
-catch (Exception ex)
-{
-    _logger.LogError(ex, "Failed to fetch entity");
-    return default;
-}
-```
-
-## Rules
-
-1. Always define an interface `I[Name]Service` — never inject the concrete class
-2. All methods MUST return `Task<T>` (never `void`)
-3. All methods MUST accept `CancellationToken`
-4. Use `System.Net.Http.Json` extension methods (`GetFromJsonAsync`, `PostAsJsonAsync`)
-5. Implementation is a `sealed class`, never abstract
-6. Use `[JsonPropertyName]` on all DTO properties for explicit JSON mapping
-7. Never add business logic to services — only HTTP calls and DTO deserialization
-8. Services work with DTOs — domain model mapping belongs in the Repository layer
-
-## Naming Conventions
-
-- **Interface**: `I[Name]Service`
-- **Implementation**: `[Name]Service`
-- **DTOs**: `[Entity]Dto`, `[Entity]CreateDto`, `[Entity]UpdateDto`
-- **Methods**: `GetByIdAsync`, `GetAllAsync`, `CreateAsync`, `UpdateAsync`, `DeleteAsync`
+Generate Service protocol and implementation following Clean Architecture and API integration patterns.
 
 ## Input Format
 
@@ -171,7 +22,7 @@ ENTITY: <entity type, e.g. "Category">
 
 ```swift
 import Foundation
-import CommunityToolkit.Mvvm
+import RxSwift
 import CTApiClient
 
 protocol [Name]ServiceType {
@@ -217,9 +68,9 @@ struct [Name]Service: [Name]ServiceType {
 
 ```swift
 import Foundation
-import CommunityToolkit.Mvvm
+import RxSwift
 import CTApiClient
-import AppCommon
+import CTCommon
 
 protocol [Name]ServiceType {
     // func fetchConfiguredData(categoryId: String, type: String) -> Observable<ConfigModel>
@@ -251,9 +102,9 @@ struct [Name]Service: [Name]ServiceType {
 
 ```swift
 import Foundation
-import CommunityToolkit.Mvvm
+import RxSwift
 import CTApiClient
-// Optional: import AppCommon for error handling
+// Optional: import CTCommon for error handling
 ```
 
 ## Error Handling Patterns
@@ -277,7 +128,7 @@ import CTApiClient
 ## Rules
 
 1. Always define a protocol `[Name]ServiceType` — never a concrete-only service
-2. All methods MUST return `Observable<T>` (CommunityToolkit.Mvvm)
+2. All methods MUST return `Observable<T>` (RxSwift)
 3. Always add `.observe(on: MainScheduler.instance)` at the end of each chain
 4. Use Target's `.execute()` method for API calls
 5. Implementation is a `struct`, not a `class`

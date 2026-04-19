@@ -4,6 +4,7 @@
 using DesktopLamour.Features.Authentication.Data.Services.Dtos;
 using DesktopLamour.Features.Authentication.Domain.Models;
 using Microsoft.Extensions.Logging;
+using System.Net.Http;
 using System.Net.Http.Json;
 
 namespace DesktopLamour.Features.Authentication.Data.Services;

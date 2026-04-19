@@ -46,14 +46,14 @@ make serena-generate-tests CLASS=CreateUserViewModel
 
 - **6-Layer Architecture**: NetworkHelper → Targets → Services → Repositories → UseCases → ViewModels
 - **Input/Output Models**: Type-safe domain entities in Domain layer
-- **Repository Abstraction**: Protocol-based DI with Microsoft.Extensions.DependencyInjection
-- **CommunityToolkit.Mvvm Integration**: Observable streams with proper error handling
-- **AppDesignSystem**: Use DS* components throughout UI layer
-- **XAML layout Layout**: Mandatory constraint management
+- **Repository Abstraction**: Protocol-based DI with Swinject
+- **RxSwift Integration**: Observable streams with proper error handling
+- **CTDesignSystem**: Use DS* components throughout UI layer
+- **SnapKit Layout**: Mandatory constraint management
 
 ### Testing & Quality
 
-- **Unit Tests**: xUnit + FluentAssertions + Moq with Given-When-Then pattern
+- **Unit Tests**: Quick/Nimble with Given-When-Then pattern
 - **Mock Generation**: Automatic mock creation for dependencies
 - **Architecture Compliance**: Automatic pattern validation
 - **Code Coverage**: Minimum 80% target with automated checks
@@ -90,7 +90,7 @@ make serena-generate-tests CLASS=CreateUserViewModel
 - **Service Layer**: Concrete implementations with error handling
 - **Repository Layer**: Abstraction with protocol-based design
 - **Use Case Layer**: Business logic with CTActionUseCaseType
-- **ViewModel Layer**: UI presentation logic with CommunityToolkit.Mvvm integration
+- **ViewModel Layer**: UI presentation logic with RxSwift integration
 - **Test Layer**: Comprehensive unit tests with mocks
 
 ### 2. Quality Assurance
@@ -102,7 +102,7 @@ make serena-generate-tests CLASS=CreateUserViewModel
 
 ### 3. Integration Ready
 
-- **Dependency Injection**: Pre-configured Microsoft.Extensions.DependencyInjection setup
+- **Dependency Injection**: Pre-configured Swinject setup
 - **Error Handling**: User-friendly error messages and recovery
 - **Logging**: Proper technical logging for debugging
 - **Accessibility**: Screen reader support and keyboard navigation

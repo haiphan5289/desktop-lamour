@@ -1,15 +1,17 @@
 ---
 name: ct-bugfix-skill
-description: Debug and fix C#/.NET WPF bugs with precision. Use WHENEVER you encounter crashes, memory leaks, state not updating, UI styling mismatches, threading errors, INotifyPropertyChanged issues, or View not rendering. This skill identifies root causes by verifying MVVM data flow, checking event handler leaks, validating AppDesignSystem component usage, and confirming Dispatcher correctness. Use even if you're just suspicious about state management, binding logic, or component styling.
+description: Debug and fix iOS bugs in Cho Tot with precision. Use WHENEVER you encounter crashes, memory leaks, state not updating, UI styling mismatches, threading errors, RxSwift disposal issues, or view not rendering. This skill identifies root causes by verifying MVVM-C data flow, checking RxSwift subscriptions and retain cycles, validating CTDesignSystem component usage, and confirming scheduler correctness. Essential for CTInsertAd, CTJOB, CTVEH, CTChat, and CTAuthentication. Use even if you're just suspicious about state management, subscribe logic, or component styling.
 model: sonnet
 effort: high
 ---
 
-# WPF Bug Fix Skill
+# iOS Bug Fix Skill
+
+> **Anti-Hallucination:** Verify every symbol, token, path, and identifier against the codebase before generating code. See [ct-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
 
 ## Overview
 
-This skill provides a structured debugging workflow for identifying and fixing C#/.NET WPF bugs. It covers both general WPF debugging patterns (MVVM bindings, threading, memory, state management) and application-specific issues (MVVM architecture, AppDesignSystem, module patterns).
+This skill provides a structured debugging workflow for identifying and fixing iOS bugs in the Cho Tot project. It covers both general iOS debugging patterns (RxSwift, memory, state management, threading) and Cho Tot-specific issues (MVVM-C architecture, CTDesignSystem, module patterns, ECS enums).
 
 ## When to Use This Skill
 
@@ -17,10 +19,10 @@ This skill provides a structured debugging workflow for identifying and fixing C
 - Debugging crashes, memory leaks, or unexpected behavior
 - Investigating UI glitches or state synchronization issues
 - Fixing test failures or race conditions
-- Troubleshooting data binding or `INotifyPropertyChanged` issues
-- Verifying MVVM data flow in features
-- Validating AppDesignSystem component usage
-- Debugging `ObservableCollection<T>` or `[ObservableProperty]` update issues
+- Troubleshooting RxSwift subscription issues
+- Verifying MVVM-C data flow in features
+- Validating CTDesignSystem component usage
+- Debugging ECS enum issues or state consistency problems
 
 ## Core Debugging Workflow
 
@@ -29,7 +31,7 @@ This skill provides a structured debugging workflow for identifying and fixing C
 Only read the specific files the user mentions. Never explore broadly.
 
 **Good scope:**
-- View (.xaml + .xaml.cs) that exhibits the issue
+- ViewController that exhibits the issue
 - Associated ViewModel
 - Related UseCase or Repository
 
@@ -43,52 +45,53 @@ Only read the specific files the user mentions. Never explore broadly.
 State the root cause clearly and concisely. Ask yourself:
 
 **For UI bugs:**
-- Is the data binding correct? (`{Binding PropertyName, Mode=TwoWay}` pointing to correct property?)
-- Are UI components using AppDesignSystem? (not raw WPF primitives like `TextBlock` without style)
-- Is the XAML layout correct? (`Grid`, `StackPanel` — no code-behind manual sizing)
-- Is there a threading issue? (UI updates on `Application.Current.Dispatcher.Invoke`?)
-- Is the View lifecycle correct? (`OnLoaded` → `OnNavigatedTo` → `DataContext` set)?
+- Is the state binding correct? (BehaviorRelay → Observable → bind(to:))
+- Are UI components using CTDesignSystem? (not raw UIKit)
+- Is SnapKit layout correct? (no NSLayoutConstraint, XIB, or frame-based)
+- Is there a threading issue? (UI updates on MainScheduler?)
+- Is the view lifecycle correct? (viewDidLoad → viewWillAppear → viewDidAppear)?
 
 **For state/data bugs:**
-- Is the MVVM data flow correct? (View → ViewModel → UseCase → Repository)
-- Are `[ObservableProperty]` properties notifying correctly? (partial class for source generators?)
-- Is there an event handler leak? (`-=` unsubscription, `IDisposable` implemented?)
-- Are `ObservableCollection<T>` updates on the UI thread? (use `Dispatcher` for background updates)
-- Is the ViewModel's `DataContext` set correctly?
+- Is the MVVM-C data flow correct? (ViewController → ViewModel → UseCase → Repository)
+- Are RxSwift subscriptions properly disposed? (DisposeBag in use?)
+- Is there a retain cycle? (weak references where needed?)
+- Are relays/subjects properly typed? (BehaviorRelay vs PublishSubject?)
+- Is the presenter relaying the right data?
 
-**For async/await bugs:**
-- Is `CancellationToken` propagated through the call chain?
-- Are UI updates after `await` running on the UI thread? (may need `.ConfigureAwait(false)` or explicit Dispatcher)
-- Is `async void` used only for event handlers? (use `async Task` everywhere else)
-- Are exceptions from `Task` being swallowed? (missing `await` or `.GetAwaiter().GetResult()`)
+**For RxSwift bugs:**
+- Is the observable on the correct scheduler? (background work on `subscribeOn`, UI updates on `observeOn(MainScheduler.instance)`)
+- Are operations chained correctly? (flatMap vs map vs compactMap?)
+- Is the subscription disposed in the correct DisposeBag?
+- Are error cases handled? (catchError, onError, trackError?)
 
 **For memory bugs:**
-- Are event handlers unsubscribed? (`-=` in `IDisposable.Dispose`)
-- Are `WeakReference` / `WeakEventManager` used where appropriate?
-- Is there a circular DI dependency? (check `AddTransient` vs. `AddSingleton` lifetimes)
-- Are large collections cleared on close/navigation?
+- Are closures capturing `self` weakly? (`[weak self]` in Observable handlers)
+- Are listeners/delegates being deallocated? (weak reference storage?)
+- Is there a circular dependency in DI? (Assembler cycle?)
+- Are timers/subscriptions cancelled on dealloc?
 
-**For AppDesignSystem bugs:**
-- Is the component from AppDesignSystem? (`AppLabel`, `AppButton`, not raw `TextBlock`, `Button`)
-- Is the `Style` applied correctly? (`Style="{StaticResource AppTypography.HeaderSection}"` with correct ResourceDictionary merge)
-- Are colors using theme tokens? (not `Brushes.Red` directly, reference `ResourceDictionary` entry)
-- Is  XAML layout using `Grid`/`StackPanel`? (not code-behind positioning)
+**For CTDesignSystem bugs:**
+- Is the component from CTDesignSystem? (DSLabel, DSButton, not UILabel, UIButton)
+- Is the styling applied correctly? (setStyle(DS.TypoToken...) with correct theme?)
+- Are colors using theme tokens? (not UIColor directly, not hardcoded hex)
+- Is layout using SnapKit? (not Auto Layout, Interface Builder, or frame-based)
 
-**For WPF module bugs:**
-- Are dependencies injected via constructor? (not `ServiceLocator` anti-pattern)
-- Is the module's DI registration correct? (`AddTransient`, `AddScoped`, `AddSingleton` as appropriate)
-- Is the feature following MVVM structure? (separate Views/ViewModels/Domain/Data layers)
+**For Cho Tot module bugs:**
+- Are protocol dependencies injected? (not force-unwrapped, not singleton)
+- Is the module's Assembler/DI setup correct?
+- Are ECS enums properly generated? (run `python bin/gen_ecs_enum.py`)
+- Is the feature following MVVM-C structure? (separate Presentation/Domain/Data layers)
 
 ### Step 3: Apply Minimal Fix
 
 Only fix the root cause. Don't refactor surrounding code.
 
 **Good fixes:**
-- Add `partial` keyword to ViewModel class for `[ObservableProperty]` source generators
-- Fix `Dispatcher.InvokeAsync` for UI thread update
-- Change raw `TextBlock` to `AppLabel` with correct style
-- Add `IDisposable` and event unsubscription
-- Fix XAML `Binding` path to match property name
+- Add missing `.disposed(by: disposeBag)`
+- Fix scheduler with `.observe(on: MainScheduler.instance)`
+- Change `UILabel` to `DSLabel` with correct styling
+- Add `[weak self]` to closure
+- Wire presenter relay correctly
 
 **Avoid:**
 - Rewriting the entire ViewModel
@@ -100,24 +103,22 @@ Only fix the root cause. Don't refactor surrounding code.
 
 Trace the fix end-to-end:
 
-1. **User interaction** → View event / command binding
-2. **View** → ViewModel `[RelayCommand]` invoked
-3. **ViewModel** → UseCase `ExecuteAsync(input)`
+1. **User interaction** → ViewController trigger (via listener)
+2. **ViewController** → ViewModel input relay
+3. **ViewModel** → UseCase execution
 4. **UseCase** → Repository call
-5. **Repository** → Service / HTTP client
+5. **Repository** → Service/API
 6. **Response** → UseCase output
-7. **ViewModel** → `[ObservableProperty]` updated
-8. **Binding** → WPF `INotifyPropertyChanged` notifies View
-9. **View** → UI re-renders
+7. **ViewModel** → Presenter relay (BehaviorRelay.accept)
+8. **Presenter** → ViewController binding
+9. **ViewController** → UI update
 
-Each arrow should be verified: is data flowing correctly? Are updates on the UI thread? Are errors handled?
+Each arrow should be verified: is data flowing correctly? Are schedulers correct? Are errors handled?
 
-### Step 5: Run Analyzers
+### Step 5: Run SwiftLint
 
 ```bash
-dotnet build --warnaserror
-# or run StyleCop / Roslyn analyzer checks
-dotnet format --verify-no-changes
+swiftlint lint --path <changed-files> --config .swiftlint.yml --strict
 ```
 
 Fix any violations in the changed code. Don't modify unchanged files.
@@ -125,7 +126,7 @@ Fix any violations in the changed code. Don't modify unchanged files.
 ### Step 6: Verify the Fix
 
 Run the specific scenario that triggers the bug:
-- Open the affected View
+- Open the affected screen
 - Perform the action
 - Verify the expected behavior
 - Check for crashes, memory leaks, or state issues
@@ -141,157 +142,162 @@ Explain:
 
 ## Common Patterns & Solutions
 
-### Pattern 1: Missing `partial` Keyword for Source Generators
+### Pattern 1: Missing or Incorrect RxSwift Disposal
 
-**Symptom:** `[ObservableProperty]` or `[RelayCommand]` not generating, undefined property
-
-**Check:**
-```csharp
-// Good
-public sealed partial class UserViewModel : ViewModelBase
-{
-    [ObservableProperty]
-    private string _name = string.Empty;
-}
-
-// Bad — source generators won't work
-public sealed class UserViewModel : ViewModelBase // Missing partial!
-{
-    [ObservableProperty]
-    private string _name = string.Empty;
-}
-```
-
-**Fix:** Add `partial` keyword to ViewModel class
-
-### Pattern 2: UI Update on Background Thread
-
-**Symptom:** `InvalidOperationException: The calling thread cannot access this object because a different thread owns it`
+**Symptom:** Memory leak, deinit not called, subscription continues after viewDidDisappear
 
 **Check:**
-```csharp
+```swift
 // Good
-Application.Current.Dispatcher.InvokeAsync(() =>
-{
-    Items.Add(newItem); // ObservableCollection updated on UI thread
-});
+let disposeBag = DisposeBag()
+observable.subscribe { /* ... */ }.disposed(by: disposeBag)
 
 // Bad
-await Task.Run(() =>
-{
-    Items.Add(newItem); // Wrong thread!
-});
+observable.subscribe { /* ... */ } // No disposal!
 ```
 
-**Fix:** Wrap `ObservableCollection` mutations in `Dispatcher.InvokeAsync` when called from background threads
+**Fix:** Add `DisposeBag` property and `.disposed(by: disposeBag)` to all subscriptions
 
-### Pattern 3: Binding Not Updating
+### Pattern 2: Threading Issue (UI Update on Background Thread)
 
-**Symptom:** Property changes but UI doesn't update
-
-**Check:**
-```csharp
-// Good — CommunityToolkit.Mvvm generates OnXxxChanged notification
-public sealed partial class UserViewModel : ViewModelBase
-{
-    [ObservableProperty]
-    private string _title = string.Empty; // generates Title property with INPC
-}
-
-// Bad — manual property without notification
-public sealed class UserViewModel
-{
-    public string Title { get; set; } = string.Empty; // No INPC!
-}
-```
-
-**Fix:** Use `[ObservableProperty]` on a `partial` class, or manually call `OnPropertyChanged(nameof(Title))`
-
-### Pattern 4: AppDesignSystem Component Missing
-
-**Symptom:** Inconsistent styling, hardcoded colors, layout issues
+**Symptom:** UILabel not updating, crash with "UIKitCore... main thread"
 
 **Check:**
-```xml
-<!-- Good -->
-<local:AppLabel Text="{Binding Title}"
-                Style="{StaticResource AppTypography.HeaderSection}" />
-
-<!-- Bad -->
-<TextBlock Text="{Binding Title}"
-           FontSize="16"
-           Foreground="Black" />  <!--Hardcoded styling!-->
-```
-
-**Fix:** Replace raw WPF controls with AppDesignSystem equivalents and apply correct `Style` from `ResourceDictionary`
-
-### Pattern 5: Event Handler Memory Leak
-
-**Symptom:** ViewModel not collected by GC, memory grows over time
-
-**Check:**
-```csharp
-// Good — unsubscribe in Dispose
-public sealed class UserViewModel : ViewModelBase, IDisposable
-{
-    public UserViewModel(IEventBus eventBus)
-    {
-        eventBus.SomeEvent += OnSomeEvent;
-        _eventBus = eventBus;
-    }
-
-    public void Dispose()
-    {
-        _eventBus.SomeEvent -= OnSomeEvent; // Unsubscribe!
-    }
-}
-
-// Bad
-public sealed class UserViewModel : ViewModelBase
-{
-    public UserViewModel(IEventBus eventBus)
-    {
-        eventBus.SomeEvent += OnSomeEvent; // Leak — never unsubscribed
-    }
-}
-```
-
-**Fix:** Implement `IDisposable` and unsubscribe all event handlers
-
-### Pattern 6: async void Outside Event Handlers
-
-**Symptom:** Exceptions from async operations silently swallowed
-
-**Check:**
-```csharp
+```swift
 // Good
-[RelayCommand]
-private async Task LoadAsync(CancellationToken ct)
-{
-    await _repository.GetItemsAsync(ct);
-}
+useCase.action?.elements
+    .observe(on: MainScheduler.instance) // ← Required before UI binding
+    .bind(to: presenter.datasource)
+    .disposed(by: disposeBag)
 
 // Bad
-private async void Load() // async void outside event handler!
-{
-    await _repository.GetItemsAsync(); // Exception swallowed!
+useCase.action?.elements
+    .bind(to: presenter.datasource) // Still on background scheduler!
+    .disposed(by: disposeBag)
+```
+
+**Fix:** Add `.observe(on: MainScheduler.instance)` before any UI binding
+
+### Pattern 3: Incorrect View Lifecycle Binding
+
+**Symptom:** State not updating, ViewModel not receiving user input
+
+**Check:**
+```swift
+// Good (in viewDidLoad)
+override func viewDidLoad() {
+    super.viewDidLoad()
+    configurePresenter()
+    configureViewModel()
+}
+
+private func configurePresenter() {
+    presenter?.listener = self // Set listener
+}
+
+private func configureViewModel() {
+    // Subscribe to presenter relays
+    presenter?.datasource
+        .subscribe(onNext: { [weak self] data in
+            self?.updateUI(data)
+        })
+        .disposed(by: disposeBag)
+}
+
+// Bad (missing listener setup)
+override func viewDidLoad() {
+    super.viewDidLoad()
+    configureViewModel() // But presenter.listener = nil!
 }
 ```
 
-**Fix:** Use `async Task` + `[RelayCommand]` so the toolkit wires the command properly and exceptions surface
+**Fix:** Ensure presenter.listener is set, all relays are subscribed in correct order
+
+### Pattern 4: CTDesignSystem Component Missing
+
+**Symptom:** Inconsistent styling, colors not matching design system, layout issues
+
+**Check:**
+```swift
+// Good
+let label = DSLabel()
+label.setStyle(DS.TypoToken.Label.Caption(color: theme.text.textPrimary.color))
+
+// Bad
+let label = UILabel() // Wrong component!
+label.textColor = UIColor(hex: 0xFF5733) // Hardcoded color!
+```
+
+**Fix:** Replace UIKit components with CTDesignSystem equivalents (DSLabel, DSButton, DSTextField, etc.)
+
+### Pattern 5: Layout Constraint Issues
+
+**Symptom:** View disappears, overlaps, or has unexpected size
+
+**Check:**
+```swift
+// Good (SnapKit)
+label.snp.makeConstraints { make in
+    make.top.equalTo(containerView.snp.top).offset(16)
+    make.leading.trailing.equalTo(containerView).inset(20)
+}
+
+// Bad (NSLayoutConstraint, Interface Builder, or frame-based)
+label.translatesAutoresizingMaskIntoConstraints = false
+NSLayoutConstraint(...).isActive = true // Manual constraints!
+```
+
+**Fix:** Use SnapKit for all Auto Layout. Never use NSLayoutConstraint or Interface Builder.
+
+### Pattern 6: Retain Cycle (Weak Self Missing)
+
+**Symptom:** ViewController not deallocating, memory leak
+
+**Check:**
+```swift
+// Good
+observable.subscribe(onNext: { [weak self] value in
+    self?.handleValue(value) // Safe unwrap after weak capture
+}).disposed(by: disposeBag)
+
+// Bad
+observable.subscribe(onNext: { [self] value in
+    self.handleValue(value) // Strong capture! Retain cycle!
+}).disposed(by: disposeBag)
+```
+
+**Fix:** Use `[weak self]` in closures unless you intentionally want strong capture
+
+### Pattern 7: ECS Enum Not Generated
+
+**Symptom:** Type mismatch, ECS property not recognized, build error
+
+**Check:** Has `gen_ecs_enum.py` been run recently?
+```bash
+python bin/gen_ecs_enum.py
+```
+
+**Fix:** Run the generator, commit the changes, rebuild
 
 ## Module-Specific Debugging Tips
 
-### Features/ProductList, Features/OrderManagement
+### CTInsertAd, CTJOB, CTVEH
 
-- Verify `[ObservableProperty]` is on `partial` ViewModel class
-- Check `ObservableCollection<T>` is only modified on UI thread
-- Verify DI registration in `ServiceCollectionExtensions`
+- Verify `MarketplaceECSHelper` usage for ECS enum interactions
+- Check component builder patterns (getComponents(for:) not self.components)
+- Verify module DI: check Assembler for correct registration
+- Check post vs put lifecycle in edit flows
 
-### Features/Authentication
+### CTChat, CTAIChat
 
-- Check token storage (use `ProtectedData` or OS credential store — never plain text)
-- Verify redirect after login (`INavigationService.NavigateTo`)
+- Verify WebSocket state machine (connection → sending → receiving)
+- Check message queuing and retry logic
+- Verify notification subscriptions (listener setup in viewDidLoad)
+
+### CTAuthentication, CTLogin
+
+- Check token storage and refresh logic
+- Verify redirect after login (router navigation)
 - Check session invalidation on logout
 
 ## Debugging Checklist
@@ -302,10 +308,10 @@ Before marking a fix complete:
 - [ ] Root cause stated clearly (one sentence)
 - [ ] Fix is minimal (only the root cause addressed)
 - [ ] Full path traced (trigger → logic → UI)
-- [ ] Roslyn analyzers passes on changed files
+- [ ] SwiftLint passes on changed files
 - [ ] Fix verified in app
 - [ ] Unit tests pass (if applicable)
 - [ ] No retain cycles introduced
 - [ ] No new threading issues
-- [ ] AppDesignSystem components used (not WPF)
-- [ ] XAML layout layout used (not XAML code-behind layout)
+- [ ] CTDesignSystem components used (not UIKit)
+- [ ] SnapKit layout used (not NSLayoutConstraint)

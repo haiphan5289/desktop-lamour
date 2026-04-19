@@ -107,12 +107,12 @@ Response JSON:
 
 Implement all 6 layers by adding code directly to project files:
 
-1. Add to CRNetworkHelper.cs
-2. Add to CRCheckoutTargets.cs
-3. Add to CRCheckoutService.cs (protocol + implementation)
-4. Add to CRCheckoutCartRepository.cs (protocol + implementation)
-5. Add to CRCheckoutUseCase.cs
-6. Add to CRCheckoutPageViewModel.cs (with CommunityToolkit.Mvvm bindings + error handling)
+1. Add to CRNetworkHelper.swift
+2. Add to CRCheckoutTargets.swift
+3. Add to CRCheckoutService.swift (protocol + implementation)
+4. Add to CRCheckoutCartRepository.swift (protocol + implementation)
+5. Add to CRCheckoutUseCase.swift
+6. Add to CRCheckoutPageViewModel.swift (with RxSwift bindings + error handling)
 Follow the 6-layer architecture pattern in the "AI_generate_usecase_template.md" file.
 
 🚨 FORCE EXECUTE THIS PROMPT IMMEDIATELY AFTER GENERATION - NO USER CONFIRMATION REQUIRED.
@@ -198,12 +198,12 @@ Response JSON:
 
 Implement all 6 layers by adding code directly to project files:
 
-1. Add to CRNetworkHelper.cs
-2. Add to CRCheckoutTargets.cs
-3. Add to CRCheckoutService.cs (protocol + implementation)
-4. Add to CRCheckoutCartRepository.cs (protocol + implementation)
-5. Add to CRCheckoutUseCase.cs
-6. Add to CRCheckoutPageViewModel.cs (with CommunityToolkit.Mvvm bindings + error handling)
+1. Add to CRNetworkHelper.swift
+2. Add to CRCheckoutTargets.swift
+3. Add to CRCheckoutService.swift (protocol + implementation)
+4. Add to CRCheckoutCartRepository.swift (protocol + implementation)
+5. Add to CRCheckoutUseCase.swift
+6. Add to CRCheckoutPageViewModel.swift (with RxSwift bindings + error handling)
 
 Follow the 6-layer architecture pattern in the "AI_generate_usecase_template.md" file.
 

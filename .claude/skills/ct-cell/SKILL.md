@@ -1,136 +1,205 @@
 ---
 name: ct-cell
-description: Generate a WPF DataTemplate for ListView/ItemsControl items using AppDesignSystem. Creates the XAML DataTemplate with AppDesignSystem controls (AppLabel, AppButton), ViewModel item class, and proper data binding. Use when creating a new reusable list item template.
+description: Generate a basic iOS TableViewCell or CollectionViewCell using CTDesignSystem. Creates the cell class with Config enum, CTDesignSystem UI components (DSLabel, DSButton), configure(with:) method, CellViewModel struct, and SnapKit constraints. Use when creating a new reusable cell.
 ---
 
-# WPF Basic List Item DataTemplate Generator
+# iOS Basic Cell Generator
 
-Generate `DataTemplate` for `ListView` / `ItemsControl` using AppDesignSystem.
+> **Anti-Hallucination:** Verify every symbol, token, path, and identifier against the codebase before generating code. See [ct-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
+
+Generate TableViewCell or CollectionViewCell using CTDesignSystem.
 
 ## Input Format
 
 ```
-ITEM_NAME: <Name, e.g. "UserProfile">
-FEATURE: <Module, e.g. "Features/UserManagement">
-DATA_MODEL: <Data model type, e.g. "UserModel">
+CELL_NAME: <Name, e.g. "UserProfile">
+CELL_TYPE: <TableViewCell | CollectionViewCell>
+FEATURE: <Module, e.g. "CTUserManagement">
+DATA_MODEL: <Data model type, e.g. "User">
 ```
 
-## ListView DataTemplate
+## TableViewCell Template
 
-```xml
-<!-- [Name]DataTemplate.xaml (as a ResourceDictionary resource) -->
-<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:local="clr-namespace:App.Features.[Feature].Views">
+```swift
+import UIKit
+import CTDesignSystem
+import CTCommon
+import SnapKit
 
-    <DataTemplate x:Key="[Name]DataTemplate" DataType="{x:Type local:[Name]ItemViewModel}">
-        <Border Padding="16,8"
-                BorderThickness="0,0,0,1"
-                BorderBrush="{StaticResource AppColor.BorderThin}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+final class [Name]Cell: UITableViewCell {
 
-                <StackPanel Grid.Column="0" Spacing="4">
-                    <local:AppLabel Text="{Binding Title}"
-                                    Style="{StaticResource AppTypography.LabelSection}"/>
-                    <local:AppLabel Text="{Binding Subtitle}"
-                                    Style="{StaticResource AppTypography.BodyCaption}"
-                                    Foreground="{StaticResource AppColor.TextSecondary}"/>
-                </StackPanel>
+    // MARK: - Properties
 
-                <local:AppButton Grid.Column="1"
-                                 Content="Action"
-                                 Style="{StaticResource AppButton.Secondary.Small}"
-                                 Command="{Binding ActionCommand}"
-                                 Visibility="{Binding ShowAction, Converter={StaticResource BoolToVisibilityConverter}}"/>
-            </Grid>
-        </Border>
-    </DataTemplate>
-
-</ResourceDictionary>
-```
-
-## ItemViewModel Class
-
-```csharp
-// [Name]ItemViewModel.cs
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-
-namespace App.Features.[Feature].ViewModels;
-
-public sealed partial class [Name]ItemViewModel : ObservableObject
-{
-    // #region Properties
-
-    [ObservableProperty]
-    private string _title = string.Empty;
-
-    [ObservableProperty]
-    private string? _subtitle;
-
-    [ObservableProperty]
-    private bool _showAction;
-
-    // #region Commands
-
-    [RelayCommand]
-    private void Action()
-    {
-        // TODO: Handle item action
+    enum Config {
+        // static let cornerRadius: CGFloat = 8
+        // static let padding: CGFloat = 16
+        // static let imageSize: CGFloat = 40
     }
 
-    // #region Factory
+    // MARK: - UI Components
 
-    public static [Name]ItemViewModel From([DataModel] model)
-        => new()
-        {
-            Title = model.Name,
-            Subtitle = model.Description,
-            ShowAction = model.IsActive
-        };
+    private var theme = CMStaticThemeLoader.defaultTheme
+
+    lazy var titleLabel: DSLabel = {
+        let label = DSLabel()
+        label.setStyle(DS.TypoToken.Label.Section(color: theme.text.textPrimary.color))
+        return label
+    }()
+
+    lazy var subtitleLabel: DSLabel = {
+        let label = DSLabel()
+        label.setStyle(DS.TypoToken.Body.Caption(color: theme.text.textSecondary.color))
+        return label
+    }()
+
+    // MARK: - Lifecycle
+
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        setupUI()
+    }
+
+    // For programmatic cells (no XIB):
+    // override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+    //     super.init(style: style, reuseIdentifier: reuseIdentifier)
+    //     setupUI()
+    // }
+    //
+    // required init?(coder: NSCoder) {
+    //     super.init(coder: coder)
+    // }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        titleLabel.text = nil
+        subtitleLabel.text = nil
+    }
+
+    // MARK: - Configuration
+
+    func configure(with viewModel: [Name]CellViewModel) {
+        titleLabel.text = viewModel.title
+        subtitleLabel.text = viewModel.subtitle
+    }
+
+    // MARK: - Private Methods
+
+    private func setupUI() {
+        selectionStyle = .none
+        contentView.addSubview(titleLabel)
+        contentView.addSubview(subtitleLabel)
+
+        titleLabel.snp.makeConstraints { make in
+            make.top.leading.trailing.equalToSuperview().inset(16)
+        }
+
+        subtitleLabel.snp.makeConstraints { make in
+            make.top.equalTo(titleLabel.snp.bottom).offset(4)
+            make.leading.trailing.bottom.equalToSuperview().inset(16)
+        }
+    }
+}
+
+// MARK: - CellViewModel
+struct [Name]CellViewModel {
+
+    let title: String
+    let subtitle: String?
+
+    init(title: String, subtitle: String? = nil) {
+        self.title = title
+        self.subtitle = subtitle
+    }
 }
 ```
 
-## Using the DataTemplate in a View
+## CollectionViewCell Template
 
-```xml
-<!-- [Name]ListView.xaml -->
-<UserControl x:Class="App.Features.[Feature].Views.[Name]ListView"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+```swift
+import UIKit
+import CTDesignSystem
+import CTCommon
+import SnapKit
 
-    <UserControl.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/App;component/Features/[Feature]/Views/[Name]DataTemplate.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </UserControl.Resources>
+final class [Name]CollectionViewCell: UICollectionViewCell {
 
-    <ListView ItemsSource="{Binding Items}"
-              ItemTemplate="{StaticResource [Name]DataTemplate}"
-              VirtualizingPanel.IsVirtualizing="True"
-              VirtualizingPanel.VirtualizationMode="Recycling">
-        <ListView.ItemContainerStyle>
-            <Style TargetType="ListViewItem">
-                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                <Setter Property="Padding" Value="0"/>
-                <Setter Property="BorderThickness" Value="0"/>
-            </Style>
-        </ListView.ItemContainerStyle>
-    </ListView>
-</UserControl>
+    // MARK: - Properties
+
+    enum Config {
+        // static let cornerRadius: CGFloat = 8
+        // static let padding: CGFloat = 16
+    }
+
+    static let reuseIdentifier = "[Name]CollectionViewCell"
+
+    // MARK: - UI Components
+
+    private var theme = CMStaticThemeLoader.defaultTheme
+
+    lazy var titleLabel: DSLabel = {
+        let label = DSLabel()
+        label.setStyle(DS.TypoToken.Label.Section(color: theme.text.textPrimary.color))
+        return label
+    }()
+
+    // MARK: - Lifecycle
+
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        setupUI()
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        titleLabel.text = nil
+    }
+
+    // MARK: - Configuration
+
+    func configure(with viewModel: [Name]CellViewModel) {
+        titleLabel.text = viewModel.title
+    }
+
+    // MARK: - Private Methods
+
+    private func setupUI() {
+        contentView.addSubview(titleLabel)
+
+        titleLabel.snp.makeConstraints { make in
+            make.center.equalToSuperview()
+            make.edges.equalToSuperview().inset(8)
+        }
+
+        backgroundColor = .clear
+    }
+}
+
+// MARK: - CellViewModel
+struct [Name]CellViewModel {
+    let title: String
+}
+```
+
+## Theme Selection by Module
+
+```swift
+// Default (generic)
+private var theme = CMStaticThemeLoader.defaultTheme
+
+// Job module
+private var theme = CMStaticThemeLoader.jobTheme
+
+// Property module
+private var theme = CMStaticThemeLoader.ptyTheme
 ```
 
 ## Rules
 
-- **ALWAYS** use `AppLabel`, `AppButton`, `AppImage` — never raw `TextBlock`, `Button`
-- **ALWAYS** use XAML `Grid`/`StackPanel` for layout — no code-behind sizing
-- Use `x:Key` on `DataTemplate` and reference it via `ItemTemplate="{StaticResource ...}"`
-- Enable `VirtualizingPanel.IsVirtualizing="True"` for large lists
-- `[Name]ItemViewModel` is a separate `ObservableObject` class in the same module's `ViewModels/` folder
-- Reset / clear item state in the ViewModel when reusing (set properties to default in `From()` factory)
+- **ALWAYS** use `DSLabel`, `DSButton`, `DSImageView` — never `UILabel`, `UIButton`
+- **ALWAYS** use SnapKit for constraints
+- Use `Config` enum for layout constants
+- Use `selectionStyle = .none` for TableViewCells (unless selection is needed)
+- Reset all configurable content in `prepareForReuse`
+- CollectionViewCells need a static `reuseIdentifier`
+- `CellViewModel` is a struct in the same file
+- Match theme loader to module type (`defaultTheme`, `jobTheme`, `ptyTheme`)

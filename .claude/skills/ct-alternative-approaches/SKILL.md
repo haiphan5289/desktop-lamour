@@ -1,15 +1,17 @@
 ---
 name: ct-alternative-approaches
-description: Generate 3–5 alternative solutions for C#/.NET WPF development problems with pros/cons analysis, code examples, comparison matrix, and decision framework. Use when you need to evaluate trade-offs between different architectural or implementation strategies before committing to one approach.
+description: Generate 3–5 alternative solutions for iOS development problems in Cho Tot with pros/cons analysis, code examples, comparison matrix, and decision framework. Use when you need to evaluate trade-offs between different architectural or implementation strategies before committing to one approach.
 model: sonnet
 effort: high
 ---
 
-# WPF Alternative Approaches - Multiple Solution Analysis
+# iOS Alternative Approaches - Multiple Solution Analysis
+
+> **Anti-Hallucination:** Verify every symbol, token, path, and identifier against the codebase before generating code. See [ct-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
 
 ## Overview
 
-This skill generates **3–5 alternative solutions** for C#/.NET WPF development problems, with comprehensive pros/cons analysis, C# code examples, a comparison matrix, and a decision framework. It helps evaluate trade-offs before committing to an implementation strategy.
+This skill generates **3–5 alternative solutions** for iOS development problems in the Chợ Tốt app, with comprehensive pros/cons analysis, Swift code examples, a comparison matrix, and a decision framework. It helps evaluate trade-offs before committing to an implementation strategy.
 
 ## When to Use This Skill
 
@@ -23,8 +25,8 @@ This skill generates **3–5 alternative solutions** for C#/.NET WPF development
 ## Input Format
 
 ```
-PROBLEM: [C#/.NET WPF development problem or feature to solve]
-CONTEXT: [Module and feature context in the application]
+PROBLEM: [iOS development problem or feature to solve]
+CONTEXT: [Module and feature context in Cho Tot app]
 COMPLEXITY_LEVEL: [Simple / Medium / Complex]
 FOCUS_AREAS: [Aspects to focus on, optional]
 SOLUTION_COUNT: [Number of alternatives: 3-5, optional]
@@ -41,7 +43,7 @@ When the user provides input, generate multiple solutions following this structu
 - Identify key technical challenges
 - Consider performance, scale, and complexity factors
 - Define success criteria for solutions
-- Note Windows desktop application-specific requirements
+- Note Vietnamese marketplace-specific requirements
 
 ### 2. 🔄 Solution Generation (3–5 Alternatives)
 - Generate multiple viable approaches using different methodologies
@@ -65,10 +67,12 @@ Brief description of the fundamental approach and methodology.
 Detailed explanation of how this solution works.
 
 ### Code Example
-```csharp
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.Logging;
+```swift
+import UIKit
+import CTDesignSystem
+import CTCommon
+import RxSwift
+import SnapKit
 
 // Implementation example
 ```
@@ -128,12 +132,12 @@ Provide a decision tree or framework to help choose between solutions:
 ### 5. ✅ Code Quality Standards for Every Solution
 
 Every solution must address:
-- Error handling with `ILogger<T>` (never `Console.WriteLine` without logging)
-- Memory management and `IDisposable` cleanup for event handlers
-- Unit test examples using xUnit + FluentAssertions + Moq
-- Roslyn / StyleCop.Analyzers compliance
-- Accessibility support where applicable (AutomationProperties)
-- Performance optimization considerations (UI thread dispatch, virtualization)
+- Error handling with `Logger.print()` (never `print()`)
+- Memory management and RxSwift `DisposeBag` cleanup
+- Unit test examples using Quick/Nimble
+- SwiftLint compliance
+- Accessibility support where applicable
+- Performance optimization considerations
 
 ---
 
@@ -141,10 +145,10 @@ Every solution must address:
 
 All solutions must follow:
 - **MVVM + Clean Architecture** (Presentation → Domain → Data layers)
-- **AppDesignSystem** components (`AppLabel`, `AppButton`, `AppTextField`, `AppImage`)
-- **XAML** for all UI layout (`Grid`, `StackPanel`, `DockPanel`, `Border`)
-- **CommunityToolkit.Mvvm** for data binding
-- **Microsoft.Extensions.DependencyInjection** for dependency injection
+- **CTDesignSystem** components (DSLabel, DSButton, DSTextField, DSImageView)
+- **SnapKit** for all Auto Layout constraints
+- **RxSwift** for reactive programming patterns
+- **Swinject / CCDefaultAssembler** for dependency injection
 
 ## Customization Options
 
@@ -162,8 +166,8 @@ All solutions must follow:
 ### Sample Input
 
 ```
-PROBLEM: Implement efficient data caching for a list view with thousands of items
-CONTEXT: Features/ProductListing module - product listing with high data volume
+PROBLEM: Implement efficient image caching for a feed with thousands of images
+CONTEXT: CTFeed module - product listing feed with high image volume
 COMPLEXITY_LEVEL: Medium
 FOCUS_AREAS: Performance optimization, memory management
 SOLUTION_COUNT: 3
@@ -171,149 +175,127 @@ SOLUTION_COUNT: 3
 
 ### Context Analysis
 
-- Performance: High (smooth scrolling via VirtualizingStackPanel)
-- Scale: Large (10K+ items)
+- Performance: High (smooth scrolling required)
+- Scale: Large (10K+ images)
 - Complexity: Moderate
 - Timeline: 2 weeks
 
 ---
 
-### Solution 1: MemoryCache (Microsoft.Extensions.Caching.Memory)
+### Solution 1: NSCache + URLCache Hybrid
 
-**Core Concept**: Use `IMemoryCache` from Microsoft.Extensions.Caching — in-process, fast, configurable with size/expiry — no extra NuGet dependency.
+**Core Concept**: Use native iOS caching layers — NSCache for in-memory and URLCache for disk-level caching — without any third-party dependency.
 
-```csharp
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
+```swift
+import UIKit
+import CTCommon
 
-public sealed class ProductCache
-{
-    private readonly IMemoryCache _cache;
-    private readonly ILogger<ProductCache> _logger;
+final class HybridImageCache {
+    static let shared = HybridImageCache()
+    private let memoryCache = NSCache<NSString, UIImage>()
 
-    public ProductCache(IMemoryCache cache, ILogger<ProductCache> logger)
-    {
-        _cache = cache;
-        _logger = logger;
+    private init() {
+        memoryCache.countLimit = 100
+        memoryCache.totalCostLimit = 50 * 1024 * 1024 // 50MB
     }
 
-    public void Set(string key, ProductModel product)
-    {
-        var options = new MemoryCacheEntryOptions
-        {
-            SlidingExpiration = TimeSpan.FromMinutes(10),
-            Size = 1
-        };
-        _cache.Set(key, product, options);
+    func setImage(_ image: UIImage, forKey key: String) {
+        memoryCache.setObject(image, forKey: key as NSString)
     }
 
-    public bool TryGet(string key, out ProductModel? product)
-        => _cache.TryGetValue(key, out product);
+    func image(forKey key: String) -> UIImage? {
+        return memoryCache.object(forKey: key as NSString)
+    }
 }
 ```
 
-- ✅ No extra dependency (part of .NET), automatic memory pressure eviction via GC
-- ✅ Thread-safe, configurable expiry, simple API
-- ❌ In-process only (lost on app restart), no distributed caching
-- **Best for**: Standard caching needs, quick implementation, simple lists
+- ✅ Native iOS, no extra dependency, automatic memory pressure handling
+- ✅ URLCache provides disk persistence automatically
+- ❌ Limited customization, no placeholder/transition support
+- **Best for**: Standard caching needs, quick implementation, simple feeds
 
-**Performance**: Memory Low · CPU Low · Network Medium  
+**Performance**: Memory Low · CPU Low · Network Medium · Battery Low  
 **Complexity**: Dev Short · Learning Easy · Testing Simple · Maintenance Low
 
 ---
 
-### Solution 2: SQLite / Entity Framework Core Local Cache
+### Solution 2: Custom CoreData Image Cache
 
-**Core Concept**: Persist data locally with EF Core + SQLite — supports complex queries, offline-first, and cross-session caching.
+**Core Concept**: Full control over caching with CoreData — supports complex metadata queries, expiration policies, and offline-first behavior.
 
-```csharp
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+```swift
+import CoreData
+import CTCommon
 
-public sealed class ProductDbContext : DbContext
-{
-    public DbSet<ProductEntity> Products => Set<ProductEntity>();
+final class CoreDataImageCache {
+    lazy var persistentContainer: NSPersistentContainer = {
+        let container = NSPersistentContainer(name: "ImageCache")
+        container.loadPersistentStores { _, error in
+            if let error = error {
+                Logger.print("CoreData load error: \(error)")
+            }
+        }
+        return container
+    }()
 
-    protected override void OnConfiguring(DbContextOptionsBuilder options)
-        => options.UseSqlite("Data Source=products.db");
-}
-
-public sealed class LocalProductRepository : IProductRepository
-{
-    private readonly ProductDbContext _db;
-    private readonly ILogger<LocalProductRepository> _logger;
-
-    public LocalProductRepository(ProductDbContext db, ILogger<LocalProductRepository> logger)
-    {
-        _db = db;
-        _logger = logger;
+    func saveImage(_ data: Data, forURL url: String) {
+        let context = persistentContainer.viewContext
+        // Save image data with metadata
     }
-
-    public async Task<IReadOnlyList<ProductModel>> GetAllAsync(CancellationToken ct)
-        => await _db.Products.AsNoTracking()
-            .Select(e => new ProductModel { Id = e.Id, Name = e.Name })
-            .ToListAsync(ct);
 }
 ```
 
-- ✅ Full control, complex queries, offline support, persistent across sessions
-- ❌ Higher implementation complexity, schema migrations needed
-- **Best for**: Offline-first apps, complex data invalidation requirements
+- ✅ Full control, complex queries, offline support, expiration policies
+- ❌ High implementation complexity, performance overhead for simple cases
+- **Best for**: Offline-first apps, complex cache invalidation requirements
 
-**Performance**: Memory Medium · CPU Medium · Network High  
+**Performance**: Memory Medium · CPU High · Network High · Battery Medium  
 **Complexity**: Dev Long · Learning Steep · Testing Complex · Maintenance High
 
 ---
 
-### Solution 3: Distributed Cache (StackExchange.Redis / IDistributedCache)
+### Solution 3: Third-Party Library (Kingfisher)
 
-**Core Concept**: Use `IDistributedCache` backed by Redis or SQL Server — suitable for multi-instance deployments and shared state.
+**Core Concept**: Leverage Kingfisher — a battle-tested, feature-rich image loading library with built-in caching, transitions, and placeholder support.
 
-```csharp
-using Microsoft.Extensions.Caching.Distributed;
-using System.Text.Json;
+```swift
+import Kingfisher
+import CTDesignSystem
 
-public sealed class DistributedProductCache
-{
-    private readonly IDistributedCache _cache;
-
-    public DistributedProductCache(IDistributedCache cache) => _cache = cache;
-
-    public async Task SetAsync(string key, ProductModel product, CancellationToken ct)
-    {
-        var json = JsonSerializer.SerializeToUtf8Bytes(product);
-        await _cache.SetAsync(key, json,
-            new DistributedCacheEntryOptions { SlidingExpiration = TimeSpan.FromMinutes(30) }, ct);
-    }
-
-    public async Task<ProductModel?> GetAsync(string key, CancellationToken ct)
-    {
-        var bytes = await _cache.GetAsync(key, ct);
-        return bytes is null ? null : JsonSerializer.Deserialize<ProductModel>(bytes);
+final class FeedImageLoader {
+    func loadImage(into imageView: DSImageView, from url: URL?) {
+        imageView.kf.setImage(
+            with: url,
+            placeholder: R.image.placeholder(),
+            options: [
+                .transition(.fade(0.2)),
+                .cacheOriginalImage
+            ]
+        )
     }
 }
 ```
 
-- ✅ Works across multiple instances, battle-tested, abstracted behind `IDistributedCache`
-- ❌ External Redis dependency, higher latency than in-process, added infrastructure
-- **Best for**: Multi-instance deployments, microservice architectures
+- ✅ Feature-rich, battle-tested, community support, minimal boilerplate
+- ❌ External dependency, adds binary size, upgrade risk
+- **Best for**: Feature-rich requirements, teams familiar with Kingfisher
 
-**Performance**: Memory Low · CPU Low · Network High  
+**Performance**: Memory Medium · CPU Low · Network High · Battery Low  
 **Complexity**: Dev Short · Learning Moderate · Testing Simple · Maintenance Medium
 
 ---
 
 ### Comparison Matrix
 
-| Criteria | Solution 1: MemoryCache | Solution 2: EF Core SQLite | Solution 3: Distributed |
+| Criteria | Solution 1: Hybrid | Solution 2: CoreData | Solution 3: Kingfisher |
 |---|---|---|---|
 | Development Time | Short | Long | Short |
 | Complexity | Low | High | Low |
-| Performance | High | Medium | Medium |
+| Performance | Medium | Medium | High |
 | Maintainability | High | Low | High |
 | Scalability | Low | High | High |
 | Team Learning Curve | Easy | Steep | Moderate |
-| **Recommended For** | Quick MVPs | Offline-first apps | Multi-instance apps |
+| **Recommended For** | Quick MVPs | Offline-first apps | Feature-rich feeds |
 
 ### Decision Framework
 

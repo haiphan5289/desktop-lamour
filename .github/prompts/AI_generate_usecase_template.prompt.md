@@ -25,11 +25,11 @@ parameters:
 
 ## Prompt Activation
 
-**You are an expert C#/.NET WPF developer following the UseCase Template Generation Pattern.**
+**You are an expert iOS developer following the UseCase Template Generation Pattern.**
 
 # iOS UseCase Auto-Generation - 6-Layer Architecture Template Implementation Prompt
 
-You are an expert C#/.NET WPF developer specializing in **UseCase template generation and MVVM + Clean Architecture implementation** within the **Chợ Tốt WPF applicationlication**.
+You are an expert iOS developer specializing in **UseCase template generation and MVVM + Clean Architecture implementation** within the **Chợ Tốt iOS application**.
 
 We are going to **auto-generate a complete UseCase** through the **6-layer architecture template** pattern: **NetworkHelper** → **Targets** → **Services** → **Repositories** → **UseCases** → **ViewModels**.
 
@@ -39,7 +39,7 @@ The **UseCase Template Generation Pattern** handles:
 - Complete end-to-end UseCase template implementation across all architectural layers
 - MVVM + Clean Architecture compliance
 - CorePayment module integration
-- Reactive programming with CommunityToolkit.Mvvm
+- Reactive programming with RxSwift
 - Proper error handling and loading states
 - Type-safe API integration
 
@@ -63,7 +63,7 @@ After generating code for all 6 layers, the system will automatically insert the
 - ❌ **DO NOT create** usage example files
 - ❌ **DO NOT create** implementation summary files
 - ❌ **DO NOT create** documentation files
-- ❌ **DO NOT create** any new C# and XAML files
+- ❌ **DO NOT create** any new Swift files
 - ❌ **DO NOT create** any new markdown files
 
 **✅ ALLOWED: Only Modify Existing Files**
@@ -71,9 +71,9 @@ After generating code for all 6 layers, the system will automatically insert the
 - ✅ **ONLY ADD CODE** to existing files
 
 **Important Notes:** 
-- **UseCases**: Added to existing `CRCheckoutUseCase.cs` file (never create new files)
+- **UseCases**: Added to existing `CRCheckoutUseCase.swift` file (never create new files)
 - **ViewModels**: Added as method to existing `CRCheckoutPageViewModel` class (never create new class)
-- **Models**: Added to existing `CRCheckOutModel.cs` file (recommended)
+- **Models**: Added to existing `CRCheckOutModel.swift` file (recommended)
 
 ### 🚫 AI Point Summary - FILE CREATION FORBIDDEN
 Auto-generates CorePayment UseCase through 6 layers: **NetworkHelper** → **Targets** → **Services** → **Repositories** → **UseCases** (add to existing file) → **ViewModels** (add method to existing class).
@@ -84,8 +84,8 @@ Auto-generates CorePayment UseCase through 6 layers: **NetworkHelper** → **Tar
 
 All generated UseCases using the template must consider:
 - **MVVM + Clean Architecture** (Presentation → Domain → Data layers)
-- **AppDesignSystem** components for UI (AppButton, AppTextField, AppLabel)
-- **CommunityToolkit.Mvvm** for reactive programming and asynchronous operations
+- **CTDesignSystem** components for UI (DSButton, DSTextField, DSLabel)
+- **RxSwift** for reactive programming and asynchronous operations
 - **CorePayment module** integration patterns
 - **Type-safe API integration** with proper error handling
 - **Memory management** with proper dispose bag usage
@@ -186,11 +186,11 @@ extension CRCheckoutCartRepository: CRCheckoutCartRepositoryType {
 }
 ```
 
-### Step 5: Add UseCase to CRCheckoutUseCase.cs 
-Add the new UseCase class to the existing `CRCheckoutUseCase.cs` file:
+### Step 5: Add UseCase to CRCheckoutUseCase.swift 
+Add the new UseCase class to the existing `CRCheckoutUseCase.swift` file:
 
 ```swift
-// Add to CRCheckoutUseCase.cs file
+// Add to CRCheckoutUseCase.swift file
 final class CR{USECASE_NAME}UseCase: CTActionUseCaseType {
     typealias Output = {RESPONSE_MODEL}?
     typealias Input = {INPUT_PARAM}
@@ -234,21 +234,21 @@ extension CRCheckoutPageViewModel {
                 guard let self = self, let result = result else { return }
                 // Success handling is auto-generated and complete
             })
-            .using CancellationToken
+            .disposed(by: disposeBag)
         
         // 🔒 MANDATORY: Handle loading
         useCase.action?.executing
             .bind(onNext: { [weak self] loading in
                 self?.presenter?.loading.accept(loading)
             })
-            .using CancellationToken
+            .disposed(by: disposeBag)
         
         // 🔒 MANDATORY: Handle errors - AUTO-GENERATED: No manual implementation needed
         useCase.action?.underlyingError
             .bind(onNext: { [weak self] error in 
                 // Error handling is auto-generated and complete
             })
-            .using CancellationToken
+            .disposed(by: disposeBag)
         
         // 🔒 MANDATORY: Execute
         useCase.action?.execute(input)
@@ -276,11 +276,11 @@ extension CRCheckoutPageViewModel {
 }
 ```
 
-### Add to CRCheckOutModel.cs (Recommended)
-Add your response model at the bottom of the existing `CRCheckOutModel.cs` file:
+### Add to CRCheckOutModel.swift (Recommended)
+Add your response model at the bottom of the existing `CRCheckOutModel.swift` file:
 
 ```swift
-// MARK: - {USECASE_NAME} Response Models (Add at bottom of CRCheckOutModel.cs)
+// MARK: - {USECASE_NAME} Response Models (Add at bottom of CRCheckOutModel.swift)
 
 // Define the actual data model first
 public struct {OUTPUT_PARAM}: Codable {
@@ -311,10 +311,10 @@ typealias {RESPONSE_MODEL} = CRModelCommon<{OUTPUT_PARAM}>
 ```
 
 ### Alternative: Create Separate File
-If you prefer to create a separate file, create `{RESPONSE_MODEL}.cs`:
+If you prefer to create a separate file, create `{RESPONSE_MODEL}.swift`:
 
 ```swift
-// {RESPONSE_MODEL}.cs
+// {RESPONSE_MODEL}.swift
 import Foundation
 
 // Define the actual data model first
@@ -494,8 +494,8 @@ var parameters: [String: Any]? {
 ```
 
 **Generated Files for each example:**
-1. **Data Model** - Add to `CRCheckOutModel.cs` (recommended)
-2. **UseCase** - Add to existing `CRCheckoutUseCase.cs` file
+1. **Data Model** - Add to `CRCheckOutModel.swift` (recommended)
+2. **UseCase** - Add to existing `CRCheckoutUseCase.swift` file
 3. **API Integration** - Complete 6-layer implementation in existing files
 
 ### Complete Prompt Example
@@ -527,13 +527,13 @@ Response JSON:
     "message": "Statistics fetched successfully"
 }
 
-Add models to CRCheckOutModel.cs using CRModelCommon<OrderStatistics> pattern.
+Add models to CRCheckOutModel.swift using CRModelCommon<OrderStatistics> pattern.
 Follow the 6-layer architecture pattern in the template.
 ```
 
 ### Model Template Implementation Example
 ```swift
-// Add at bottom of CRCheckOutModel.cs
+// Add at bottom of CRCheckOutModel.swift
 // MARK: - FetchOrderStatistics Response Models
 
 public struct OrderStatistics: Codable {
@@ -604,7 +604,7 @@ RESPONSE_MODEL: UserProfileResponseModel
 
 ### **Generic Template:**
 
-You are an expert C#/.NET WPF developer specializing in UseCase template generation for MVVM + Clean Architecture.  
+You are an expert iOS developer specializing in UseCase template generation for MVVM + Clean Architecture.  
 We are going to auto-generate the UseCase "[USECASE_NAME]" through the 6-layer architecture template pattern.
 
 Generate complete template implementation for:

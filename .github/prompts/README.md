@@ -21,7 +21,7 @@ Generate repositories with service layer integration.
 Generate API targets following Requestable protocol patterns.
 
 ### 6. **ios-cell.prompt.md** - Cell Generation
-Generate TableView/CollectionView cells with AppDesignSystem.
+Generate TableView/CollectionView cells with CTDesignSystem.
 
 ### 7. **ios-unittest.prompt.md** - Unit Test Generation
 Generate unit tests using Quick and Nimble with mock classes.
@@ -52,7 +52,7 @@ Ask Copilot to generate code using natural language:
 "Generate a UseCase for getting user profile data"
 "Create a repository for UserProfile with service integration"
 "Generate API targets for UserProfile CRUD operations"
-"Create a UserProfile table view cell with AppDesignSystem"
+"Create a UserProfile table view cell with CTDesignSystem"
 "Generate unit tests for UserProfileViewModel with Quick and Nimble"
 ```
 
@@ -123,27 +123,27 @@ All prompts support these variables:
 Generated files should be organized in your project like this:
 
 ```
-Features/
+AppFeatures/
   CTUserManagement/
     UserProfile/
-      UserProfileViewController.cs
-      UserProfileViewModel.cs
-      UserProfileBuilder.cs
+      UserProfileViewController.swift
+      UserProfileViewModel.swift
+      UserProfileBuilder.swift
     UseCase/
-      GetUserProfileUseCase.cs
-      UpdateUserProfileUseCase.cs
+      GetUserProfileUseCase.swift
+      UpdateUserProfileUseCase.swift
     Repository/
-      UserProfileRepository.cs
+      UserProfileRepository.swift
     Target/
-      UserProfileTarget.cs
+      UserProfileTarget.swift
     Cell/
-      UserProfileItemCell.cs
-      UserProfileItemCellViewModel.cs
+      UserProfileItemCell.swift
+      UserProfileItemCellViewModel.swift
 ChoTotTests/
   CTUserManagement/
-    UserProfileViewModelSpec.cs
-    GetUserProfileUseCaseSpec.cs
-    UserProfileRepositorySpec.cs
+    UserProfileViewModelSpec.swift
+    GetUserProfileUseCaseSpec.swift
+    UserProfileRepositorySpec.swift
 ```
 
 ## Best Practices
@@ -167,10 +167,10 @@ ChoTotTests/
 - Implement business logic in marked sections
 - Add proper imports based on your needs
 
-### 4. **Use AppDesignSystem**
-- Always use AppDesignSystem for UI components
+### 4. **Use CTDesignSystem**
+- Always use CTDesignSystem for UI components
 - Follow the examples in generated templates
-- Don't use WPF components directly
+- Don't use UIKit components directly
 
 ## Common Commands Reference
 
@@ -213,14 +213,14 @@ ChoTotTests/
 
 3. **Build errors**: Replace placeholder types with actual models from your project
 
-4. **Design system not found**: Ensure AppDesignSystem is properly imported in your project
+4. **Design system not found**: Ensure CTDesignSystem is properly imported in your project
 
 ### Getting Help
 
 - Reference the iOS general instructions: `.github/instructions/ios-general-instructions.instructions.md`
 - Check existing code in your feature modules for patterns
 - Follow the TODO comments in generated code
-- Use AppDesignSystem documentation for UI components
+- Use CTDesignSystem documentation for UI components
 
 ## Tips
 

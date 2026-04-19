@@ -88,12 +88,12 @@ Method: get
 
 Implement all 6 layers by adding code directly to project files:
 
-1. Add Api.FetchDongtotProfile = "v1/dongtot/profile" to CRNetworkHelper.cs
-2. Add FetchDongtotProfileTarget struct to CRCheckoutTargets.cs
-3. Add FetchDongtotProfile method to CRCheckoutService.cs (protocol + implementation)
-4. Add FetchDongtotProfile method to CRCheckoutCartRepository.cs (protocol + implementation)
-5. Add CRFetchDongtotProfileUseCase class to CRCheckoutUseCase.cs
-6. Add executeFetchDongtotProfile method to CRCheckoutPageViewModel.cs (with CommunityToolkit.Mvvm bindings + error handling)
+1. Add Api.FetchDongtotProfile = "v1/dongtot/profile" to CRNetworkHelper.swift
+2. Add FetchDongtotProfileTarget struct to CRCheckoutTargets.swift
+3. Add FetchDongtotProfile method to CRCheckoutService.swift (protocol + implementation)
+4. Add FetchDongtotProfile method to CRCheckoutCartRepository.swift (protocol + implementation)
+5. Add CRFetchDongtotProfileUseCase class to CRCheckoutUseCase.swift
+6. Add executeFetchDongtotProfile method to CRCheckoutPageViewModel.swift (with RxSwift bindings + error handling)
 ```
 
 **Customize the prompt by changing:**
@@ -154,28 +154,28 @@ Think of ordering food from a restaurant app:
 ### Understanding the File Structure
 ```
 ct-ios-app--v3/
-└── Features/
+└── AppFeatures/
     └── CTCorePayment/
         └── CTCorePayment/
             ├── NetworkHelper/
-            │   ├── CRNetworkHelper.cs          ← Layer 1: API endpoints
+            │   ├── CRNetworkHelper.swift          ← Layer 1: API endpoints
             │   └── ...
             ├── Data/
             │   ├── Services/
             │   │   └── Checkout/
-            │   │       ├── CRCheckoutTargets.cs ← Layer 2: API targets
-            │   │       └── CRCheckoutService.cs ← Layer 3: Service methods
+            │   │       ├── CRCheckoutTargets.swift ← Layer 2: API targets
+            │   │       └── CRCheckoutService.swift ← Layer 3: Service methods
             │   └── Repositories/
             │       └── Checkout/
             │           └── Cart/
-            │               └── CRCheckoutCartRepository.cs ← Layer 4: Repository
+            │               └── CRCheckoutCartRepository.swift ← Layer 4: Repository
             ├── Domain/
             │   └── UseCases/
             │       └── Checkout/
-            │           └── CRCheckoutUseCase.cs ← Layer 5: Business logic
+            │           └── CRCheckoutUseCase.swift ← Layer 5: Business logic
             └── Features/
                 └── CheckoutPage/
-                    └── CRCheckoutPageViewModel.cs ← Layer 6: Presentation logic
+                    └── CRCheckoutPageViewModel.swift ← Layer 6: Presentation logic
 ```
 
 ### File Naming Conventions:
@@ -208,7 +208,7 @@ Stores all API endpoint URLs in one place for easy management.
 1. **Open the file:**
    ```bash
    # In VS Code, press Cmd+P and type:
-   CRNetworkHelper.cs
+   CRNetworkHelper.swift
    ```
 
 2. **Find the Api extension:**
@@ -246,7 +246,7 @@ Defines how to make specific API requests (method, parameters, response handling
 1. **Open the file:**
    ```bash
    # In VS Code, press Cmd+P and type:
-   CRCheckoutTargets.cs
+   CRCheckoutTargets.swift
    ```
 
 2. **Find the CRCheckoutTargets enum:**
@@ -307,7 +307,7 @@ Makes the actual network calls and handles responses.
 1. **Open the file:**
    ```bash
    # In VS Code, press Cmd+P and type:
-   CRCheckoutService.cs
+   CRCheckoutService.swift
    ```
 
 2. **Add method to protocol:**
@@ -336,7 +336,7 @@ Makes the actual network calls and handles responses.
    ```
 
 #### 🧠 Understanding the Code:
-- **`Observable<CRAdProfileResponseModel?>`** = Returns data asynchronously using CommunityToolkit.Mvvm
+- **`Observable<CRAdProfileResponseModel?>`** = Returns data asynchronously using RxSwift
 - **`FetchAdProfileTarget(input: input)`** = Creates our API request from Layer 2
 - **`.execute()`** = Actually makes the network call
 - **`.observe(on: resultScheduler)`** = Ensures response comes back on the correct thread
@@ -357,7 +357,7 @@ Coordinates data access - could combine network, database, cache, etc.
 1. **Open the file:**
    ```bash
    # In VS Code, press Cmd+P and type:
-   CRCheckoutCartRepository.cs
+   CRCheckoutCartRepository.swift
    ```
 
 2. **Add method to protocol:**
@@ -403,7 +403,7 @@ Contains the business rules and logic for specific user actions.
 1. **Open the file:**
    ```bash
    # In VS Code, press Cmd+P and type:
-   CRCheckoutUseCase.cs
+   CRCheckoutUseCase.swift
    ```
 
 2. **Add your UseCase class:**
@@ -431,7 +431,7 @@ Contains the business rules and logic for specific user actions.
 
 #### 🧠 Understanding the Code:
 - **`CTActionUseCaseType`** = Our app's base UseCase protocol
-- **`Action<Input, Output>`** = CommunityToolkit.Mvvm pattern for handling async operations
+- **`Action<Input, Output>`** = RxSwift pattern for handling async operations
 - **`[unowned self]`** = Memory management to prevent retain cycles
 - **`repository.FetchAdProfile`** = Uses our repository from Layer 4
 
@@ -450,7 +450,7 @@ Handles UI state, user interactions, and coordinates with UseCases.
 1. **Open the file:**
    ```bash
    # In VS Code, press Cmd+P and type:
-   CRCheckoutPageViewModel.cs
+   CRCheckoutPageViewModel.swift
    ```
 
 2. **Add the main execution method:**
@@ -465,21 +465,21 @@ Handles UI state, user interactions, and coordinates with UseCases.
                guard let self = self, let result = result else { return }
                self.handleFetchAdProfileSuccess(result)
            })
-           .using CancellationToken
+           .disposed(by: disposeBag)
        
        // Handle loading
        useCase.action?.executing
            .bind(onNext: { [weak self] loading in
                self?.presenter?.loading.accept(loading)
            })
-           .using CancellationToken
+           .disposed(by: disposeBag)
        
        // Handle errors
        useCase.action?.underlyingError
            .bind(onNext: { [weak self] error in
                self?.handleFetchAdProfileError(error)
            })
-           .using CancellationToken
+           .disposed(by: disposeBag)
        
        // Execute
        useCase.action?.execute(input)
@@ -506,9 +506,9 @@ Handles UI state, user interactions, and coordinates with UseCases.
    ```
 
 #### 🧠 Understanding the Code:
-- **`.bind(onNext:)`** = CommunityToolkit.Mvvm way to handle async responses
+- **`.bind(onNext:)`** = RxSwift way to handle async responses
 - **`[weak self]`** = Prevents memory leaks by avoiding strong reference cycles
-- **`.using CancellationToken`** = Automatic cleanup when ViewModel is destroyed
+- **`.disposed(by: disposeBag)`** = Automatic cleanup when ViewModel is destroyed
 - **`useCase.action?.execute(input)`** = Triggers the entire chain from Layer 5 → 1
 
 #### ✅ Verification:
@@ -526,7 +526,7 @@ Defines the data structures for API responses.
 
 1. **Create CRAdProfileResponseModel:**
    ```swift
-   // 🆕 Create new file: CRAdProfileResponseModel.cs
+   // 🆕 Create new file: CRAdProfileResponseModel.swift
    import Foundation
    import ObjectMapper
 
@@ -549,7 +549,7 @@ Defines the data structures for API responses.
 
 2. **Create AdProfile model:**
    ```swift
-   // 🆕 Create new file: AdProfile.cs
+   // 🆕 Create new file: AdProfile.swift
    import Foundation
    import ObjectMapper
 

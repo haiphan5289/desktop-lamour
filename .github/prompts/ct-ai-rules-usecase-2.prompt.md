@@ -1,12 +1,12 @@
 ---
 mode: agent
-description: Generate UseCase classes following MVVM + Clean Architecture pattern for WPF applicationlication
+description: Generate UseCase classes following MVVM + Clean Architecture pattern for iOS application
 ---
 
 # UseCase Generation Guide
 
 ## Overview
-This guide provides instructions for adding UseCase classes to the WPF applicationlication following the MVVM + Clean Architecture pattern.
+This guide provides instructions for adding UseCase classes to the iOS application following the MVVM + Clean Architecture pattern.
 
 ## Task Definition
 Define the task to achieve UseCase generation, including specific requirements, constraints, and success criteria.
@@ -23,10 +23,10 @@ When generating a UseCase, you need to provide the following parameters:
 
 ## Add UseCase Implementation
 
-Add the following UseCase implementation to {USECASE_CLASS}.cs file:
+Add the following UseCase implementation to {USECASE_CLASS}.swift file:
 
 ```swift
-// Add to {USECASE_CLASS}.cs file
+// Add to {USECASE_CLASS}.swift file
 final class CR{USECASE_NAME}UseCase: CTActionUseCaseType {
     typealias Output = {RESPONSE_MODEL}?
     typealias Input = {INPUT_PARAM}

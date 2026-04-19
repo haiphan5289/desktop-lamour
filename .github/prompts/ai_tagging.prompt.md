@@ -21,8 +21,8 @@ python3 gen_ecs_enum.py --feature-name {featureName}
 Specific requirements:
 - The script must complete successfully (exit code 0).
 - The following files should be generated or updated:
-	- ECSCodeGen/ECSEventsCodeGen/{FeatureName}Tracker.cs
-	- ECSCodeGen/ECSEventsCodeGen/{FeatureName}EventType.cs
+	- ECSCodeGen/ECSEventsCodeGen/{FeatureName}Tracker.swift
+	- ECSCodeGen/ECSEventsCodeGen/{FeatureName}EventType.swift
 
 Constraints:
 - Only overwrite existing files if necessary and confirmed.
@@ -38,9 +38,9 @@ Constraints:
 	python3 gen_ecs_enum.py --feature-name {featureName}
 	```
 3. The following files will be generated or updated:
-	- `ECSCodeGen/ECSEventsCodeGen/{FeatureName}Tracker.cs`
-	- `ECSCodeGen/ECSEventsCodeGen/{FeatureName}EventType.cs`
-4. The process will confirm success and check the output files for expected C# code.
+	- `ECSCodeGen/ECSEventsCodeGen/{FeatureName}Tracker.swift`
+	- `ECSCodeGen/ECSEventsCodeGen/{FeatureName}EventType.swift`
+4. The process will confirm success and check the output files for expected Swift code.
 
 ## Example
 

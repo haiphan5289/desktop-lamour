@@ -2,7 +2,7 @@
 
 **Last synced:** 2026-01-26
 
-Source: `${CT_DESIGN_SYSTEM_REPO}/AppDesignSystemSwiftUIApp/`
+Source: `${CT_DESIGN_SYSTEM_REPO}/CTDesignSystemSwiftUIApp/`
 
 ---
 
@@ -52,7 +52,7 @@ Button("Tag") { }
     .cdsButtonPilled(true)
 ```
 
-Demo: `${CT_DESIGN_SYSTEM_REPO}/AppDesignSystemSwiftUIApp/Button/ButtonStylesExampleView.cs`
+Demo: `${CT_DESIGN_SYSTEM_REPO}/CTDesignSystemSwiftUIApp/Button/ButtonStylesExampleView.swift`
 
 ---
 
@@ -73,7 +73,7 @@ CDSIconButton(icon: .system("plus")) { }
 CDSIconTextButton(icon: .system("star"), title: "Favorite") { }
 ```
 
-Demo: `${CT_DESIGN_SYSTEM_REPO}/AppDesignSystemSwiftUIApp/Button/IconButtonExampleView.cs`
+Demo: `${CT_DESIGN_SYSTEM_REPO}/CTDesignSystemSwiftUIApp/Button/IconButtonExampleView.swift`
 
 ---
 
@@ -81,7 +81,7 @@ Demo: `${CT_DESIGN_SYSTEM_REPO}/AppDesignSystemSwiftUIApp/Button/IconButtonExamp
 
 | Component | Usage |
 |-----------|-------|
-| `CAppTextField` | Single-line input |
+| `CDSTextField` | Single-line input |
 | `CDSTextView` | Multi-line input |
 | `CDSSearchInput` | Search field |
 | `CDSDropdown` | Dropdown selector |
@@ -100,7 +100,7 @@ Demo: `${CT_DESIGN_SYSTEM_REPO}/AppDesignSystemSwiftUIApp/Button/IconButtonExamp
 ### Example
 ```swift
 // Text field with validation
-CAppTextField("Email", placeholder: "user@example.com", text: $email)
+CDSTextField("Email", placeholder: "user@example.com", text: $email)
     .fieldRequired(true)
     .fieldValid(isEmailValid)
     .fieldCharacterLimit(100)
@@ -120,7 +120,7 @@ CDSDropdown(selection: $selected, options: options) { item in
 }
 ```
 
-Demo: `${CT_DESIGN_SYSTEM_REPO}/AppDesignSystemSwiftUIApp/Input/TextFieldView.cs`
+Demo: `${CT_DESIGN_SYSTEM_REPO}/CTDesignSystemSwiftUIApp/Input/TextFieldView.swift`
 
 ---
 
@@ -159,7 +159,7 @@ Toggle("Option A", isOn: $optionA)
     .cdsToggleStyle(.radio())
 ```
 
-Demo: `${CT_DESIGN_SYSTEM_REPO}/AppDesignSystemSwiftUIApp/Selection/CheckboxDemoView.cs`
+Demo: `${CT_DESIGN_SYSTEM_REPO}/CTDesignSystemSwiftUIApp/Selection/CheckboxDemoView.swift`
 
 ---
 
@@ -259,7 +259,7 @@ VStack {
 .cornerRadius(DS.BorderRadius.radiusCard.value())
 ```
 
-Demo: `${CT_DESIGN_SYSTEM_REPO}/AppDesignSystemSwiftUIApp/Container/BottomSheetDemoView.cs`
+Demo: `${CT_DESIGN_SYSTEM_REPO}/CTDesignSystemSwiftUIApp/Container/BottomSheetDemoView.swift`
 
 ---
 
@@ -293,7 +293,7 @@ CDSPopupButton("Options") {
 }
 ```
 
-Demo: `${CT_DESIGN_SYSTEM_REPO}/AppDesignSystemSwiftUIApp/Container/PopupExampleView.cs`
+Demo: `${CT_DESIGN_SYSTEM_REPO}/CTDesignSystemSwiftUIApp/Container/PopupExampleView.swift`
 
 ---
 
@@ -339,7 +339,7 @@ CDSAnnouncerView(
 .cdsToast(isPresented: $showToast, message: "Copied!")
 ```
 
-Demo: `${CT_DESIGN_SYSTEM_REPO}/AppDesignSystemSwiftUIApp/Feedback/SnackBarDemoView.cs`
+Demo: `${CT_DESIGN_SYSTEM_REPO}/CTDesignSystemSwiftUIApp/Feedback/SnackBarDemoView.swift`
 
 ---
 
@@ -378,7 +378,7 @@ HStack(spacing: DS.Gap.gapSmall) {
 }
 ```
 
-Demo: `${CT_DESIGN_SYSTEM_REPO}/AppDesignSystemSwiftUIApp/Badge/BadgeExampleView.cs`
+Demo: `${CT_DESIGN_SYSTEM_REPO}/CTDesignSystemSwiftUIApp/Badge/BadgeExampleView.swift`
 
 ---
 
@@ -413,7 +413,7 @@ CDSAsyncImage(url: imageURL) {
 | Outlined button | `Button(...).cdsButtonStyle(.secondary)` |
 | Text-only button | `Button(...).cdsButtonStyle(.ghost)` |
 | Card with shadow | `VStack { }.background(theme.background.backgroundSecondary).shadow(radius: 2).cornerRadius(DS.BorderRadius.radiusCard.value())` |
-| Single-line input | `CAppTextField(...)` |
+| Single-line input | `CDSTextField(...)` |
 | Multi-line input | `CDSTextView(...)` |
 | Search field | `CDSSearchInput(...)` |
 | Toggle switch | `Toggle(...).cdsToggleStyle(.switch)` |
@@ -428,6 +428,6 @@ CDSAsyncImage(url: imageURL) {
 ## Notes
 
 - All components support theme injection via `.environment(\.colorTheme, ...)`
-- Most components have corresponding demo views in AppDesignSystemSwiftUIApp
+- Most components have corresponding demo views in CTDesignSystemSwiftUIApp
 - Prefer modifier-based APIs (e.g., `.cdsButtonStyle()`) over initializer parameters
 - Total: 47 components across 13 categories

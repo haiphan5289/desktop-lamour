@@ -64,9 +64,9 @@ Create deeplink for {path} in {workgroup_name} to {targetScreen}
 - ✅ AI MUST show all file paths and line numbers for modifications
 
 **MANDATORY DEEPLINK FILE READING:**
-- ✅ AI MUST read "{WorkGroup}DeeplinkParser.cs" before any generation
-- ✅ AI MUST read "{WorkGroup}DeeplinkHandler.cs" before any generation
-- ✅ AI MUST scan "Features/CTCorePayment/CTCorePayment/PaymentManager/" (revenue only)
+- ✅ AI MUST read "{WorkGroup}DeeplinkParser.swift" before any generation
+- ✅ AI MUST read "{WorkGroup}DeeplinkHandler.swift" before any generation
+- ✅ AI MUST scan "AppFeatures/CTCorePayment/CTCorePayment/PaymentManager/" (revenue only)
 - ✅ AI MUST scan "Features/CorePayment/PaymentManager/" (revenue only)
 - ✅ AI MUST list_dir and read ALL Navigator files with read_file tool
 - ✅ AI MUST search for existing navigation functions with grep_search
@@ -77,8 +77,8 @@ Create deeplink for {path} in {workgroup_name} to {targetScreen}
 
 **POS FEATURE MANDATORY READING:**
 - ✅ If feature is POS, AI MUST read both files before any generation:
-    - `ChoTot/Features/Pos/PosManager.cs` ([link](ChoTot/Features/Pos/PosManager.cs))
-    - `Features/CTPos/CTPos/POSModule.cs` ([link](Features/CTPos/CTPos/POSModule.cs))
+    - `ChoTot/Features/Pos/PosManager.swift` ([link](ChoTot/Features/Pos/PosManager.swift))
+    - `AppFeatures/CTPos/CTPos/POSModule.swift` ([link](AppFeatures/CTPos/CTPos/POSModule.swift))
 
 **POST-IMPLEMENTATION VERIFICATION:**
 - ✅ AI MUST verify all changes were applied correctly by reading modified files
@@ -90,9 +90,9 @@ Create deeplink for {path} in {workgroup_name} to {targetScreen}
 
 #### **Step 1: Add Path Enum Case** 
 📁 File: 
-- If `workgroup_name == revenue` => `RevenueDeeplinkParser.cs`
-- If `workgroup_name == ecommerce` => `EcommerceDeeplinkParser.cs`
-- If `workgroup_name == goods` => `GoodsDeeplinkParser.cs`
+- If `workgroup_name == revenue` => `RevenueDeeplinkParser.swift`
+- If `workgroup_name == ecommerce` => `EcommerceDeeplinkParser.swift`
+- If `workgroup_name == goods` => `GoodsDeeplinkParser.swift`
 ```swift
 // In Path{WorkGroup}DeepLinkType enum (around line 25-55)
 case {featureName} = "/{path}"
@@ -120,9 +120,9 @@ case .{featureName}:
 
 #### **Step 4: Add Handler Logic**
 📁 File: 
-- If `workgroup_name == revenue` => `RevenueDeeplinkHandler.cs`
-- If `workgroup_name == ecommerce` => `EcommerceDeeplinkHandler.cs`
-- If `workgroup_name == goods` => `GoodsDeeplinkHandler.cs`
+- If `workgroup_name == revenue` => `RevenueDeeplinkHandler.swift`
+- If `workgroup_name == ecommerce` => `EcommerceDeeplinkHandler.swift`
+- If `workgroup_name == goods` => `GoodsDeeplinkHandler.swift`
 
 **🔴 CRITICAL RULE: ALL LOGIC MUST BE PUT INTO NAVIGATION METHOD FUNCTIONS**
 
@@ -217,10 +217,10 @@ case .goto{FeatureName}({parameters}):
 
 | Workgroup | Parser File | Handler File | Navigator Pattern | Example Path |
 |-----------|------------|--------------|------------------|--------------|
-| `revenue` | `RevenueDeeplinkParser.cs` | `RevenueDeeplinkHandler.cs` | `CRNavigator+Extension.cs` | `/uu-dai/*`, `/revenue/*` |
-| `ecommerce` | `EcommerceDeeplinkParser.cs` | `EcommerceDeeplinkHandler.cs` | - | `/mua-ban/*`, `/shop/*` |
-| `goods` | `GoodsDeeplinkParser.cs` | `GoodsDeeplinkHandler.cs` | - | `/tin-dang/*`, `/ad/*` |
-| `chat` | `ChatDeeplinkParser.cs` | `ChatDeeplinkHandler.cs` | - | `/chat/*`, `/message/*` |
+| `revenue` | `RevenueDeeplinkParser.swift` | `RevenueDeeplinkHandler.swift` | `CRNavigator+Extension.swift` | `/uu-dai/*`, `/revenue/*` |
+| `ecommerce` | `EcommerceDeeplinkParser.swift` | `EcommerceDeeplinkHandler.swift` | - | `/mua-ban/*`, `/shop/*` |
+| `goods` | `GoodsDeeplinkParser.swift` | `GoodsDeeplinkHandler.swift` | - | `/tin-dang/*`, `/ad/*` |
+| `chat` | `ChatDeeplinkParser.swift` | `ChatDeeplinkHandler.swift` | - | `/chat/*`, `/message/*` |
 
 ### **Example Usage:**
 

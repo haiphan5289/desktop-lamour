@@ -1,15 +1,17 @@
 ---
 name: ct-flipped-interaction
-description: Ask clarifying questions before implementing any C#/.NET WPF feature. Use when the user provides a vague or incomplete feature request and you need to gather full requirements — scope, API contracts, UX expectations, business rules, and performance constraints — before writing any code.
+description: Ask clarifying questions before implementing any iOS feature in Cho Tot. Use when the user provides a vague or incomplete feature request and you need to gather full requirements — scope, API contracts, UX expectations, business rules, and performance constraints — before writing any code.
 model: sonnet
 effort: medium
 ---
 
-# WPF Flipped Interaction - Ask Before Implementing
+# iOS Flipped Interaction - Ask Before Implementing
+
+> **Anti-Hallucination:** Verify every symbol, token, path, and identifier against the codebase before generating code. See [ct-anti-hallucination](.claude/skills/ct-anti-hallucination/SKILL.md).
 
 ## Overview
 
-This skill implements the **Flipped Interaction Pattern** for C#/.NET WPF development. Instead of immediately proposing solutions, the AI asks systematic clarifying questions first to fully understand the requirements before writing any code.
+This skill implements the **Flipped Interaction Pattern** for iOS development in the Chợ Tốt app. Instead of immediately proposing solutions, the AI asks systematic clarifying questions first to fully understand the requirements before writing any code.
 
 ## When to Use This Skill
 
@@ -45,6 +47,7 @@ The **PRIORITY** field shapes how the AI asks questions and proposes solutions:
 2. **DO NOT assume** requirements not explicitly stated
 3. **DO NOT provide code** until all requirements are crystal clear
 4. **DO NOT start implementation** until confirmed understanding is 100%
+5. **Always consider Vietnamese marketplace context** when relevant
 
 ## Information Categories to Gather
 
@@ -66,8 +69,8 @@ Systematically ask about these areas before implementing:
 - What accessibility considerations are needed?
 
 ### 4. Business Context
-- How does this feature relate to the application's core business domain?
-- Are there localization requirements (`.resx` resource files)?
+- How does this feature relate to Chợ Tốt's marketplace business?
+- Are there Vietnamese localization requirements?
 - What are the business rules and validation logic?
 
 ### 5. Performance & Constraints
@@ -86,11 +89,11 @@ Systematically ask about these areas before implementing:
 
 Once requirements are confirmed, all implementations must follow:
 - **MVVM + Clean Architecture** (Presentation → Domain → Data layers)
-- **AppDesignSystem** components (`AppLabel`, `AppButton`, `AppTextField`, `AppImage`)
-- **XAML** for all UI layout (`Grid`, `StackPanel`, `DockPanel`, `Border`)
-- **CommunityToolkit.Mvvm** for reactive binding (`[ObservableProperty]`, `[RelayCommand]`)
-- **Microsoft.Extensions.DependencyInjection** for dependency injection
-- **`ILogger<T>`** for all logging (never `Console.WriteLine` directly)
+- **CTDesignSystem** components (DSLabel, DSButton, DSTextField, DSImageView)
+- **SnapKit** for all UI layout constraints
+- **RxSwift** for reactive programming (BehaviorRelay, PublishRelay, DisposeBag)
+- **Swinject / CCDefaultAssembler** for dependency injection
+- **Logger.print()** for logging (never `print()`)
 
 ❗️ **Important:** Do not provide any code or architecture proposal until the user confirms all requirements are understood.
 
@@ -101,8 +104,8 @@ Once requirements are confirmed, all implementations must follow:
 ### Sample Input
 
 ```
-FEATURE_REQUEST: Add a bookmarks list for records
-CONTEXT: Users want to save interesting items for later review
+FEATURE_REQUEST: Add a favorites list for products
+CONTEXT: Users want to save interesting items for later
 PRIORITY: Low
 ```
 
@@ -114,50 +117,50 @@ PRIORITY: Low
 
 > Before I propose anything, I want to make sure I understand the full scope.
 >
-> When a user "bookmarks" a record, should that list be:
-> - Stored **locally only** (using `IMemoryCache` or SQLite), or
-> - **Synced to a backend** REST API so it persists across machines/sessions?
+> When a user "favorites" a product, should that list be:
+> - Stored **locally only** (disappears if the app is reinstalled), or
+> - **Synced to a backend** so it persists across devices?
 >
-> This determines whether we need a new API call or just local-only persistence.
+> This will determine whether we need a new API endpoint or just local persistence.
 
 ---
 
-**User answers:** "Synced to backend — we have an existing bookmarks API."
+**User answers:** "Synced to backend, we have an existing wishlist API."
 
 ---
 
 **Question 2 — API Contract:**
 
-> A few questions about the API:
-> - What is the endpoint and HTTP method for adding/removing a bookmark? (e.g. `POST /api/v1/bookmarks`)
-> - Does the fetch endpoint return full record objects or just IDs (requiring a second fetch)?
-> - Is there a maximum limit on bookmarks per user?
+> Great. A few questions about the API:
+> - What is the endpoint and HTTP method for adding/removing a favorite? (e.g. `POST /api/v1/wishlist`)
+> - Does the fetch endpoint return full product objects or just product IDs (requiring a second fetch)?
+> - Is there a maximum limit on favorites per user?
 
 ---
 
-**User answers:** `POST /api/v1/bookmarks/add`, `DELETE /api/v1/bookmarks/remove/{id}`, fetch returns full objects, no limit.
+**User answers:** `POST /api/v1/wishlist/add`, `DELETE /api/v1/wishlist/remove/{id}`, fetch returns full objects, no limit.
 
 ---
 
 **Question 3 — UX & Entry Points:**
 
-> Where can the user add a record to bookmarks?
-> - Only from the record detail view, or
-> - Also from list items (inline bookmark button in a `DataTemplate`)?
+> Where can the user add a product to favorites?
+> - Only from the product detail screen, or
+> - Also from feed/listing cards (inline heart button)?
 >
-> And should the bookmarks list be a separate navigation page, or accessible from a sidebar/account section?
+> And should the favorites list have its own tab/screen, or is it accessible from the profile/account section?
 
 ---
 
-**User answers:** "Bookmark button on list items AND detail view. Accessible from the sidebar."
+**User answers:** "Heart button on feed cards AND detail screen. Accessible from profile tab."
 
 ---
 
 **Question 4 — Offline & Sync:**
 
-> When the user clicks the bookmark button with no network connection:
-> - Should it **optimistically update** the UI and sync when connectivity is restored, or
-> - Show an error dialog requiring network connectivity?
+> When the user taps the heart button offline:
+> - Should it **optimistically update** the UI and sync when back online, or
+> - Show an error and require network connectivity?
 
 ---
 
@@ -169,12 +172,11 @@ PRIORITY: Low
 
 > Let me confirm what I'll implement:
 >
-> - Bookmark button in list `DataTemplate` + record detail `UserControl` — clicks call `POST /api/v1/bookmarks/add` or `DELETE /api/v1/bookmarks/remove/{id}`
-> - Optimistic UI update on click; sync error silently retried with background `Task`
-> - Bookmarks page accessible from sidebar, displaying full record objects in a `ListView`
-> - `BookmarksRepository` with `IMemoryCache` + API sync; `BookmarksUseCase` for add/remove/fetch logic
-> - AppDesignSystem: `AppButton` for bookmark toggle, `AppLabel` for list items
-> - xUnit + Moq unit tests for `BookmarksViewModel` and `BookmarksUseCase`
+> - Heart button on feed cards + product detail screen — taps call `POST /api/v1/wishlist/add` or `DELETE /api/v1/wishlist/remove/{id}`
+> - Optimistic UI update on tap; sync error silently retried
+> - Favorites list screen accessible from Profile tab, showing full product objects
+> - `FavoritesRepository` with local cache + API sync; `FavoritesUseCase` for add/remove/fetch logic
+> - CTDesignSystem components (DSButton for heart, DSTableView for list)
 >
 > Does this match your expectations? Shall I start implementation?
 

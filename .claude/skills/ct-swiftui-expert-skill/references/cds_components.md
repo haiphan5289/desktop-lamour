@@ -22,10 +22,10 @@ Button(action: {}) {
 ```
 
 ## Text Fields
-Use `CAppTextField` for standard input forms.
+Use `CDSTextField` for standard input forms.
 
 ```swift
-CAppTextField(
+CDSTextField(
     text: $text,
     placeholder: "Enter name",
     isError: $isError
@@ -38,9 +38,9 @@ CAppTextField(
 - `RoundedSection`: A container with rounded corners and standard padding.
 
 ## Colors
-Access colors via `CTColor`. In SwiftUI, use `.csUIColor`.
+Access colors via `CTColor`. In SwiftUI, use `.swiftUIColor`.
 
 ```swift
 Text("Hello")
-    .foregroundColor(CTColor.gray900.csUIColor)
+    .foregroundColor(CTColor.gray900.swiftUIColor)
 ```

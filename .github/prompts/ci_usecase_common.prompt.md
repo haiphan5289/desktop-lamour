@@ -105,7 +105,7 @@ self.{{usecaseName}}UseCase = {{usecaseName}}UseCase
 
 **Module-Specific Implementation:**
 - **For {{moduleType}} Module**: 
-  - **CTPOS**: Refer to `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/Features/CTPos`
+  - **CTPOS**: Refer to `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/AppFeatures/CTPos`
   - **Other Modules**: Use standard implementation pattern
 
 ```swift
@@ -121,13 +121,13 @@ extension {{viewModelClass}} {
                 // For other modules: Customize as needed
                 self.handle{{usecaseName}}Success(result)
             })
-            .using CancellationToken
+            .disposed(by: disposeBag)
         
         self.{{usecaseName}}UseCase.action?.executing
             .bind(onNext: { [weak self] loading in
                 self?.presenter?.onLoadingPublisher.onNext(loading)
             })
-            .using CancellationToken
+            .disposed(by: disposeBag)
         
         self.{{usecaseName}}UseCase.action?.underlyingError
             .bind(onNext: { [weak self] error in 
@@ -139,7 +139,7 @@ extension {{viewModelClass}} {
                 // For other modules: Customize as needed
                 self.handle{{usecaseName}}Error(error)
             })
-            .using CancellationToken
+            .disposed(by: disposeBag)
         
         self.{{usecaseName}}UseCase.action?.execute(input)
     }
@@ -160,7 +160,7 @@ extension {{viewModelClass}} {
 ```
 
 **📁 Module Reference Paths:**
-- **CTPOS Module**: `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/Features/CTPos`
+- **CTPOS Module**: `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/AppFeatures/CTPos`
 - **Other Modules**: Follow similar patterns in respective AppFeatures directories
 
 ### Step 9: Update Navigator (Parameter - must specify which Navigator)
@@ -172,7 +172,7 @@ let {{usecaseName}}UseCase = {{usecaseName}}UseCase(repository: repository)
 {{usecaseName}}UseCase: {{usecaseName}}UseCase
 ```
 
-### Step 10: Update UseCasesAssembly.cs (Parameter)
+### Step 10: Update UseCasesAssembly.swift (Parameter)
 ```swift
 container.autoregister({{usecaseName}}UseCase.self, initializer: {{usecaseName}}UseCase.init)
 ```
@@ -189,31 +189,31 @@ container.autoregister({{usecaseName}}UseCase.self, initializer: {{usecaseName}}
 ## 📁 File Creation Strategy:
 
 ### Add to Existing Files (For consolidation)
-- Add models to `ForceUpdatePosModel.cs`
-- Add UseCase to `GetForceUpdatePosUseCase.cs`
+- Add models to `ForceUpdatePosModel.swift`
+- Add UseCase to `GetForceUpdatePosUseCase.swift`
 
 ## 📋 File Structure After Implementation:
 ```
 CTUseCaseCommon/
 ├── Data/
 │   ├── Services/
-│   │   ├── CTUseCaseCommonTargets.cs ✏️ (Modified)
-│   │   ├── CTUseCaseCommonServices.cs ✏️ (Modified)
-│   │   └── CTUseCaseCommonServiceType.cs ✏️ (Modified)
+│   │   ├── CTUseCaseCommonTargets.swift ✏️ (Modified)
+│   │   ├── CTUseCaseCommonServices.swift ✏️ (Modified)
+│   │   └── CTUseCaseCommonServiceType.swift ✏️ (Modified)
 │   └── Repositories/
-│       ├── CTUseCaseCommonRepository.cs ✏️ (Modified)
-│       └── CTUseCaseCommonRepositoryType.cs ✏️ (Modified)
+│       ├── CTUseCaseCommonRepository.swift ✏️ (Modified)
+│       └── CTUseCaseCommonRepositoryType.swift ✏️ (Modified)
 ├── Domain/
 │   ├── Entities/
-│   │   └── ForceUpdatePosModel.cs ✏️ (Modified - Added {{outputParam}} models)
+│   │   └── ForceUpdatePosModel.swift ✏️ (Modified - Added {{outputParam}} models)
 │   └── UseCases/
-│       └── GetForceUpdatePosUseCase.cs ✏️ (Modified - Added {{usecaseName}}UseCase)
+│       └── GetForceUpdatePosUseCase.swift ✏️ (Modified - Added {{usecaseName}}UseCase)
 ├── Presentation/
-│   └── {{viewModelClass}}.cs ✏️ (Modified - Parameter)
+│   └── {{viewModelClass}}.swift ✏️ (Modified - Parameter)
 ├── Navigator/
-│   └── [Navigator].cs ✏️ (Modified - Parameter)
+│   └── [Navigator].swift ✏️ (Modified - Parameter)
 └── DependencyInjection/
-    └── UseCasesAssembly.cs ✏️ (Modified)
+    └── UseCasesAssembly.swift ✏️ (Modified)
 ```
 
 ## 🔧 Troubleshooting:
@@ -228,12 +228,12 @@ CTUseCaseCommon/
 **Solution**: Ensure UseCaseCommon<T> generic model is imported and available
 
 ## ✅ Verification Checklist:
-- [ ] Step 0: Added {{outputParam}} models and {{responseModel}} to ForceUpdatePosModel.cs (using Codable)
+- [ ] Step 0: Added {{outputParam}} models and {{responseModel}} to ForceUpdatePosModel.swift (using Codable)
 - [ ] Step 1-5: Updated all layers (Targets, Service, Repository, UseCase) with JSONDecoder
 - [ ] Step 8: Updated {{viewModelClass}} (property, init, method)
 - [ ] Step 9: Updated specified Navigator
 - [ ] Step 10: Updated UseCasesAssembly
-- [ ] Added {{usecaseName}}UseCase to GetForceUpdatePosUseCase.cs
+- [ ] Added {{usecaseName}}UseCase to GetForceUpdatePosUseCase.swift
 - [ ] Project builds successfully
 - [ ] UseCaseCommon<{{responseModel}}> wrapper used correctly
 
@@ -244,7 +244,7 @@ CTUseCaseCommon/
 
 ```swift
 //
-//  {{outputParam}}.cs
+//  {{outputParam}}.swift
 //  CTUseCaseCommon
 //
 //  Created by AI Assistant on $(date)
@@ -306,4 +306,4 @@ moduleType: CTPOS
 - Uses JSONDecoder with Codable (not ObjectMapper)
 - Uses UseCaseCommon<T> wrapper
 - ViewModel and Navigator are parameterized
-- Module-specific handling with special references (e.g., CTPOS → `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/Features/CTPos`)
+- Module-specific handling with special references (e.g., CTPOS → `/Users/hai.phan/Desktop/haiphan/ct-ios-app--v3/AppFeatures/CTPos`)
