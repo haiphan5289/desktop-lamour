@@ -1,0 +1,45 @@
+<UserControl x:Class="DesktopLamour.Features.HomePage.Views.SupplierListView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+             Background="{StaticResource AppColor.BackgroundSecondary}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Header -->
+            <RowDefinition Height="*"/>     <!-- Content -->
+        </Grid.RowDefinitions>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Header                                        -->
+        <!-- ══════════════════════════════════════════════ -->
+        <StackPanel Grid.Row="0" Margin="24,32,24,0">
+            <controls:AppButton Content="← Quay lại"
+                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                Command="{Binding GoBackCommand}"
+                                HorizontalAlignment="Left"
+                                Margin="0,0,0,8"/>
+            <controls:AppLabel Text="Nhà cung cấp"
+                               Style="{StaticResource AppTypography.DisplayPage}"/>
+        </StackPanel>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Content placeholder                           -->
+        <!-- ══════════════════════════════════════════════ -->
+        <StackPanel Grid.Row="1"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+            <TextBlock Text="🏪"
+                       FontSize="64"
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center"/>
+            <controls:AppLabel Text="Đang phát triển..."
+                               Style="{StaticResource AppTypography.BodySection}"
+                               Foreground="{StaticResource AppColor.TextSecondary}"
+                               Margin="0,16,0,0"
+                               HorizontalAlignment="Center"/>
+        </StackPanel>
+
+    </Grid>
+
+</UserControl>

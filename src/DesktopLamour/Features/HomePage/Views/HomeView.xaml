@@ -1,0 +1,86 @@
+<UserControl x:Class="DesktopLamour.Features.HomePage.Views.HomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+             Background="{StaticResource AppColor.BackgroundSecondary}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Header -->
+            <RowDefinition Height="*"/>     <!-- Nav items -->
+        </Grid.RowDefinitions>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Header                                        -->
+        <!-- ══════════════════════════════════════════════ -->
+        <StackPanel Grid.Row="0" Margin="24,32,24,0">
+            <controls:AppLabel Text="Tổng quan"
+                               Style="{StaticResource AppTypography.DisplayPage}"/>
+            <controls:AppLabel Text="Chọn mục để bắt đầu quản lý"
+                               Style="{StaticResource AppTypography.BodyCaption}"
+                               Foreground="{StaticResource AppColor.TextSecondary}"
+                               Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Navigation items                              -->
+        <!-- ══════════════════════════════════════════════ -->
+        <UniformGrid Grid.Row="1"
+                     Columns="2"
+                     Margin="24,32,24,24"
+                     VerticalAlignment="Top">
+
+            <!-- ── Sản phẩm card ──────────────────────── -->
+            <Border Background="{StaticResource AppColor.BackgroundPrimary}"
+                    BorderBrush="{StaticResource AppColor.BorderThin}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource AppRadius.Large}"
+                    Margin="0,0,12,0"
+                    Cursor="Hand">
+                <Border.InputBindings>
+                    <MouseBinding MouseAction="LeftClick"
+                                  Command="{Binding NavigateToProductsCommand}"/>
+                </Border.InputBindings>
+                <StackPanel HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Margin="0,32,0,32">
+                    <TextBlock Text="📦"
+                               FontSize="48"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"/>
+                    <controls:AppLabel Text="Sản phẩm"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Margin="0,16,0,0"
+                                       HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ── Nhà cung cấp card ──────────────────── -->
+            <Border Background="{StaticResource AppColor.BackgroundPrimary}"
+                    BorderBrush="{StaticResource AppColor.BorderThin}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource AppRadius.Large}"
+                    Margin="12,0,0,0"
+                    Cursor="Hand">
+                <Border.InputBindings>
+                    <MouseBinding MouseAction="LeftClick"
+                                  Command="{Binding NavigateToSuppliersCommand}"/>
+                </Border.InputBindings>
+                <StackPanel HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Margin="0,32,0,32">
+                    <TextBlock Text="🏪"
+                               FontSize="48"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"/>
+                    <controls:AppLabel Text="Nhà cung cấp"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Margin="0,16,0,0"
+                                       HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+        </UniformGrid>
+    </Grid>
+
+</UserControl>

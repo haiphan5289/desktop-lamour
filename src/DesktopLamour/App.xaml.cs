@@ -4,6 +4,7 @@
 using DesktopLamour.Core.Navigation;
 using DesktopLamour.Core.Storage;
 using DesktopLamour.Features.Authentication;
+using DesktopLamour.Features.HomePage;
 using DesktopLamour.MainWindow;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -42,5 +43,6 @@ public partial class App : Application
 
         // Feature modules
         services.AddAuthenticationModule();
+        services.AddHomeModule();
     }
 }

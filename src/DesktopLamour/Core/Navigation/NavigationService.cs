@@ -64,7 +64,10 @@ public class NavigationService : INavigationService
         // Extend this switch as new views are added
         return viewName switch
         {
-            NavigationRoutes.Register => _serviceProvider.GetService(typeof(Features.Authentication.Views.RegisterView)),
+            NavigationRoutes.Home         => _serviceProvider.GetService(typeof(Features.HomePage.Views.HomeView)),
+            NavigationRoutes.ProductList  => _serviceProvider.GetService(typeof(Features.HomePage.Views.ProductListView)),
+            NavigationRoutes.SupplierList => _serviceProvider.GetService(typeof(Features.HomePage.Views.SupplierListView)),
+            NavigationRoutes.Register     => _serviceProvider.GetService(typeof(Features.Authentication.Views.RegisterView)),
             _ => null
         };
     }
