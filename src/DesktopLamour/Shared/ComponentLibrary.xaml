@@ -1,0 +1,21 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        ComponentLibrary.xaml
+        ─────────────────────
+        Single entry-point for all design system component styles.
+        App.xaml merges this file only — never individual Styles/*.xaml directly.
+
+        To add a new component:
+          1. Create Shared/Styles/App[Name]Styles.xaml
+          2. Add one MergedDictionary entry below
+    -->
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/DesktopLamour;component/Shared/Styles/AppLabelStyles.xaml"/>
+        <ResourceDictionary Source="/DesktopLamour;component/Shared/Styles/AppButtonStyles.xaml"/>
+        <ResourceDictionary Source="/DesktopLamour;component/Shared/Styles/AppTextFieldStyles.xaml"/>
+        <ResourceDictionary Source="/DesktopLamour;component/Shared/Styles/AppPasswordFieldStyles.xaml"/>
+    </ResourceDictionary.MergedDictionaries>
+
+</ResourceDictionary>

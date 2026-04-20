@@ -1,6 +1,6 @@
 ---
 name: ct-alternative-approaches
-description: Generate 3–5 alternative solutions for C#/.NET WPF problems in Desktop Lamour. Pros/cons, C#/XAML code examples, comparison matrix, decision framework. Use before committing to architecture or implementation strategy.
+description: Generate 3–4 alternative solutions for C#/.NET WPF problems in Desktop Lamour. Pros/cons, C#/XAML code examples, comparison matrix, decision framework. Use before committing to architecture or implementation strategy.
 model: sonnet
 effort: high
 ---
@@ -28,7 +28,7 @@ Generates 3–5 alternative solutions for C#/WPF development problems in Desktop
 PROBLEM: <WPF/C# problem or design decision>
 CONTEXT: <Module name, feature description>
 COMPLEXITY_LEVEL: <Simple | Medium | Complex>
-FOCUS_AREAS: <optional — e.g. performance, testability, XAML simplicity>
+FOCUS_AREAS: <optional — e.g. performance, XAML simplicity>
 SOLUTION_COUNT: <3-5, optional>
 ```
 
@@ -37,10 +37,10 @@ SOLUTION_COUNT: <3-5, optional>
 ### 1. Problem Analysis
 
 - Describe the core constraint or trade-off
-- List the evaluation criteria (testability, performance, XAML verbosity, DI compatibility, maintainability)
+- List the evaluation criteria (performance, XAML verbosity, DI compatibility, maintainability)
 - Note Desktop Lamour-specific constraints (WPF .NET 8, CommunityToolkit.Mvvm 8.3.2, MVVM + Clean Architecture)
 
-### 2. Solutions (3–5 Alternatives)
+### 2. Solutions (3–4 Alternatives)
 
 Each solution includes:
 
@@ -66,7 +66,6 @@ Brief description of the approach.
 
 ### Complexity Score
 - Dev time: Short / Medium / Long
-- Testability: Easy / Moderate / Hard
 - XAML complexity: Low / Medium / High
 ```
 
@@ -75,7 +74,6 @@ Brief description of the approach.
 | Criteria | Solution A | Solution B | Solution C |
 |---|---|---|---|
 | Development Time | ... | ... | ... |
-| Testability | ... | ... | ... |
 | XAML Complexity | ... | ... | ... |
 | DI Compatibility | ... | ... | ... |
 | Maintainability | ... | ... | ... |
@@ -84,9 +82,9 @@ Brief description of the approach.
 ### 4. Decision Framework
 
 ```
-If testability is top priority → Solution X
-If XAML simplicity is required → Solution Y
-If performance for large lists → Solution Z
+If XAML simplicity is required → Solution X
+If performance for large lists → Solution Y
+If DI compatibility is critical → Solution Z
 ```
 
 ---
@@ -99,7 +97,7 @@ If performance for large lists → Solution Z
 PROBLEM: How to handle navigation between modules (Authentication, Employees, Inventory, etc.)
 CONTEXT: MainWindow shell
 COMPLEXITY_LEVEL: Medium
-FOCUS_AREAS: Testability, XAML simplicity, DI compatibility
+FOCUS_AREAS: XAML simplicity, DI compatibility
 ```
 
 ### Solution 1: Frame + Page Navigation

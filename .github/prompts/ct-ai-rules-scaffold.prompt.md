@@ -1,313 +1,196 @@
 ---
-description: "Scaffold basic iOS files following MVVM-C architecture patterns"
+description: "Scaffold barebone C# and XAML files for Desktop Lamour following MVVM + Clean Architecture."
 mode: "agent"
 ---
 
-# iOS Basic File Scaffolding
+# WPF File Scaffolding — Desktop Lamour
 
-Create basic barebone iOS files following our MVVM-C architecture and coding conventions.
+Generate barebone files following MVVM + Clean Architecture for Desktop Lamour.
 
-## Instructions
+## Input
 
-Reference our iOS development guidelines:
-
--   **Primary**: [iOS Guidelines](../instructions/ios-general-instructions.instructions.md)
--   **Fallback**: [AI Agent Context](../../AGENTS.md) (if primary unavailable)
-
-Generate basic scaffold files with:
-
--   Proper MARK sections and imports
--   MVVM+C protocol structure
--   CTDesignSystem components
--   RxSwift patterns
--   TODO comments for implementation
-
-## Required Imports
-
-```swift
-import UIKit
-import CTDesignSystem
-import CTCommon
-import CTLocalize
-import CTComponent
-import CTAsset
-import RxSwift
-import RxRelay
-import Swinject
-import CTTracking
-import SnapKit
 ```
-
-## ViewController Template
-
-```swift
-import UIKit
-import CTDesignSystem
-import CTCommon
-import CTLocalize
-import CTComponent
-import CTAsset
-import RxSwift
-import RxRelay
-import Swinject
-import CTTracking
-import SnapKit
-
-final class [Name]ViewController: UIViewController, [Name]Presentable {
-
-    // MARK: - Properties
-
-    enum Config {
-        // TODO: Add configuration constants like sizes, offsets, durations
-        // static let standardSize: CGFloat = 44
-        // static let padding: CGFloat = 16
-    }
-
-    var viewModel: [Name]ViewModelType?
-    weak var listener: [Name]PresentableListener?
-
-    // TODO: Add BehaviorRelay and PublishRelay properties based on your needs
-    // var isLoadingRelay = BehaviorRelay<Bool>(value: false)
-    // var errorMessage = BehaviorRelay<String?>(value: nil)
-    // var triggerSomeAction = PublishRelay<Void>()
-
-    let disposeBag = DisposeBag()
-
-    // MARK: - UI Components
-
-    // TODO: Add lazy var UI components using CTDesignSystem
-    // Example:
-    // private var themeType = ThemeType.default
-    // private var theme: CMTheme { DefaultTheme.themeWithType(type: themeType) }
-    //
-    // lazy var titleLabel: DSLabel = {
-    //     let label = DSLabel()
-    //     label.setStyle(DS.TypoToken.Label.Caption(color: theme.text.textPrimary.color))
-    //     label.text = "Hello"
-    //     return label
-    // }()
-    //
-    // lazy var subtitleLabel: DSLabel = {
-    //     let label = DSLabel()
-    //     label.setStyle(DS.TypoToken.Body.Caption(color: theme.text.textPrimary.color))
-    //     label.text = "World"
-    //     return label
-    // }()
-
-    // MARK: - Life Cycle
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        setupViews()
-        setupActions()
-        configurePresenter()
-        configureViewModel()
-    }
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        // TODO: Add viewWillAppear logic
-    }
-
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        // TODO: Add viewWillDisappear logic
-    }
-
-    deinit {
-        // TODO: Add cleanup if needed
-        NotificationCenter.default.removeObserver(self)
-    }
-
-    // MARK: - Private Methods
-
-    private func setupViews() {
-        // TODO: Setup UI hierarchy and constraints with SnapKit
-        // Example:
-        // view.addSubview(someView)
-        // someView.snp.makeConstraints { make in
-        //     make.edges.equalToSuperview()
-        // }
-    }
-
-    private func setupActions() {
-        // TODO: Setup button targets and gesture recognizers
-    }
-
-    private func configurePresenter() {
-        // TODO: Bind presenter relays to UI updates
-    }
-
-    private func configureViewModel() {
-        // TODO: Configure viewModel and call didBecomeActive
-    }
-}
+MODULE:    <Authentication | Employees | Inventory | ImportInvoices | ExportInvoices>
+FILE_TYPE: <ViewModel | UseCase | Repository | Service | View | Model | All>
+NAME:      <e.g. EmployeeList>
 ```
 
 ## ViewModel Template
 
-```swift
-import RxSwift
-import RxRelay
-import Action
-import CTCommon
+```csharp
+// Features/[Module]/ViewModels/[Name]ViewModel.cs
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using DesktopLamour.Core.ViewModels;
+using DesktopLamour.Features.[Module].Domain.UseCases;
 
-// MARK: - ViewModelType
-protocol [Name]ViewModelType: CTViewModelType {
-    var presenter: [Name]Presentable? { get set }
-    var router: [Name]Router? { get set }
-    var listener: [Name]PresentableListener? { get set }
-}
+namespace DesktopLamour.Features.[Module].ViewModels;
 
-// MARK: - Presentable
-protocol [Name]Presentable: AnyObject {
-    var listener: [Name]PresentableListener? { get set }
-    // TODO: Add BehaviorRelay and PublishRelay properties based on your UI needs
-    // var isLoadingRelay: BehaviorRelay<Bool> { get set }
-    // var errorMessage: BehaviorRelay<String?> { get set }
-    // var datasource: BehaviorRelay<[SomeModel]> { get set }
-    // var triggerSomeAction: PublishRelay<SomeInputType> { get set }
-}
+public partial class [Name]ViewModel : ViewModelBase
+{
+    private readonly I[Name]UseCase _useCase;
 
-// MARK: - PresentableListener
-protocol [Name]PresentableListener: AnyObject {
-    // TODO: Add PublishRelay properties for triggers from ViewController to ViewModel
-    // var triggerSomeAction: PublishRelay<SomeInputType> { get }
-    // func handleSomeEvent()
-}
+    [ObservableProperty]
+    private bool _isLoading;
 
-// MARK: - Router
-protocol [Name]Router: AnyObject {
-    // TODO: Add navigation methods
-    // func navigateToSomeScreen()
-}
+    [ObservableProperty]
+    private string _errorMessage = string.Empty;
 
-final class [Name]ViewModel: [Name]ViewModelType, [Name]PresentableListener {
-
-    // MARK: - Properties
-
-    weak var presenter: [Name]Presentable?
-    weak var router: [Name]Router?
-    weak var listener: [Name]PresentableListener?
-
-    // TODO: Add UseCase dependencies
-    // private let someUseCase: SomeUseCaseType
-
-    let disposeBag = DisposeBag()
-
-    // MARK: - Initialization
-
-    init(
-        // TODO: Add UseCase dependencies
-        // someUseCase: SomeUseCaseType
-    ) {
-        // TODO: Initialize dependencies
-        // self.someUseCase = someUseCase
+    public [Name]ViewModel(I[Name]UseCase useCase)
+    {
+        _useCase = useCase;
     }
 
-    // MARK: - Life Cycle
-
-    func didBecomeActive() {
-        presenter?.listener = self
-        configureListener()
-        configurePresenter()
+    [RelayCommand]
+    private async Task Load[Name]Async(CancellationToken ct = default)
+    {
+        IsLoading = true;
+        ErrorMessage = string.Empty;
+        try
+        {
+            // TODO: call _useCase.ExecuteAsync(ct)
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
-
-    // MARK: - Private Methods
-
-    private func configureListener() {
-        // TODO: Subscribe to triggers from presenter/UI
-        // presenter?.triggerSomeAction.subscribeNext { [weak self] input in
-        //     self?.handleSomeAction(input)
-        // }.disposed(by: disposeBag)
-    }
-
-    private func configurePresenter() {
-        // TODO: Subscribe to UseCase responses and update presenter
-        // someUseCase.action?.elements
-        //     .observe(on: MainScheduler.instance)
-        //     .subscribeNext { [weak self] result in
-        //         self?.presenter?.datasource.accept(result)
-        //     }.disposed(by: disposeBag)
-    }
-
-    // MARK: - [Name]PresentableListener
-
-    // TODO: Implement methods from PresentableListener protocol
 }
 ```
 
-## File Types to Generate
+## UseCase Template
 
-Based on the file type requested, generate the appropriate files:
+```csharp
+// Features/[Module]/Domain/UseCases/I[Name]UseCase.cs
+namespace DesktopLamour.Features.[Module].Domain.UseCases;
 
-### ViewController (${input:fileName})
+public interface I[Name]UseCase
+{
+    Task<[OutputType]> ExecuteAsync([InputType] input, CancellationToken ct = default);
+}
 
--   Create ViewController with proper MARK organization
--   Include proper imports and lifecycle methods
--   Follow naming conventions with "ViewController" suffix
--   Include protocol conformance structure
--   Use CTDesignSystem for UI components
+// Features/[Module]/Domain/UseCases/[Name]UseCase.cs
+public class [Name]UseCase : I[Name]UseCase
+{
+    private readonly I[Name]Repository _repository;
 
-### ViewModel (${input:fileName})
+    public [Name]UseCase(I[Name]Repository repository)
+    {
+        _repository = repository;
+    }
 
--   Create ViewModel implementing CTViewModelType
--   Include Presenter, PresenterListener, Router, and Listener protocols
--   Use proper RxSwift patterns with BehaviorRelay and PublishRelay
--   Include proper initialization and dependency injection
+    public async Task<[OutputType]> ExecuteAsync([InputType] input, CancellationToken ct = default)
+    {
+        // TODO: business logic
+        throw new NotImplementedException();
+    }
+}
+```
 
-### UseCase (${input:fileName})
+## Repository Template
 
--   Create UseCase following CTUseCaseType or CTActionUseCaseType
--   Include proper Input/Output typealias
--   Implement repository pattern integration
--   Include proper error handling
+```csharp
+// Features/[Module]/Data/Repositories/I[Name]Repository.cs
+namespace DesktopLamour.Features.[Module].Data.Repositories;
 
-### Repository (${input:fileName})
+public interface I[Name]Repository
+{
+    Task<[OutputType]> [Action]Async([InputType] input, CancellationToken ct = default);
+}
 
--   Create Repository protocol and implementation
--   Include proper service layer integration
--   Follow dependency injection patterns
--   Include proper Observable return types
+// Features/[Module]/Data/Repositories/[Name]Repository.cs
+public class [Name]Repository : I[Name]Repository
+{
+    private readonly I[Name]Service _service;
 
-### Service (${input:fileName})
+    public [Name]Repository(I[Name]Service service)
+    {
+        _service = service;
+    }
 
--   Create Service protocol and implementation
--   Include proper API target integration
--   Follow Requestable pattern for network calls
--   Include proper error handling and mapping
+    public async Task<[OutputType]> [Action]Async([InputType] input, CancellationToken ct = default)
+    {
+        var dto = await _service.[Action]Async(input, ct);
+        // TODO: map DTO → domain model
+        throw new NotImplementedException();
+    }
+}
+```
 
-### Model (${input:fileName})
+## Service Template
 
--   Create model with proper property definitions
--   Include Codable conformance when needed
--   Follow proper naming conventions
--   Include proper documentation
+```csharp
+// Features/[Module]/Data/Services/I[Name]Service.cs
+namespace DesktopLamour.Features.[Module].Data.Services;
 
-### TableViewCell/CollectionViewCell (${input:fileName})
+public interface I[Name]Service
+{
+    Task<[ResponseDto]?> [Action]Async([RequestDto] request, CancellationToken ct = default);
+}
 
--   Create cell with proper XIB structure
--   Include ViewModel for cell configuration
--   Follow reusable cell patterns
--   Include proper constraint setup
--   Use CTDesignSystem for UI components
+// Features/[Module]/Data/Services/[Name]Service.cs
+public class [Name]Service : I[Name]Service
+{
+    private readonly HttpClient _http;
 
-## Template Variables
+    public [Name]Service(HttpClient http)
+    {
+        _http = http;
+    }
 
--   `${input:fileName}`: The base name (e.g., "UserProfile")
--   `${input:module}`: The module name (e.g., "CTUserManagement")
--   `${input:fileType}`: The file type (ViewController, ViewModel, UseCase, etc.)
+    public async Task<[ResponseDto]?> [Action]Async([RequestDto] request, CancellationToken ct = default)
+    {
+        return await _http.PostAsJsonAsync<[RequestDto], [ResponseDto]>(
+            "/api/endpoint", request, ct);
+    }
+}
+```
 
-## Output
+## View (UserControl) Template
 
-Generate basic scaffolding with:
+```xml
+<!-- Features/[Module]/Views/[Name]View.xaml -->
+<UserControl x:Class="DesktopLamour.Features.[Module].Views.[Name]View"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+             Background="{StaticResource AppColor.BackgroundPrimary}">
+    <Grid>
+        <!-- Loading overlay -->
+        <Grid Panel.ZIndex="100"
+              Background="{StaticResource AppColor.BackgroundOverlay}"
+              Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
+            <ProgressBar IsIndeterminate="True" Width="48" Height="48"
+                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Grid>
 
-1. Required imports including CTDesignSystem
-2. Proper MARK sections
-3. MVVM+C protocol structure
-4. RxSwift patterns with BehaviorRelay/PublishRelay
-5. Config enum for constants
-6. Lazy var pattern for UI components
-7. TODO comments for implementation
+        <!-- Content -->
+        <StackPanel Margin="24">
+            <controls:AppLabel Text="[Title]"
+                               Style="{StaticResource AppTypography.HeaderPage}"/>
+            <!-- TODO: add content -->
+        </StackPanel>
+    </Grid>
+</UserControl>
+```
 
-Keep implementations minimal with TODO guidance for developers.
+## DI Registration
+
+```csharp
+// Features/[Module]/[Module]ServiceCollectionExtensions.cs
+public static IServiceCollection Add[Module](this IServiceCollection services)
+{
+    services.AddHttpClient<I[Name]Service, [Name]Service>(c =>
+        c.BaseAddress = new Uri("https://api.example.com"));
+
+    services.AddScoped<I[Name]Repository, [Name]Repository>();
+    services.AddScoped<I[Name]UseCase, [Name]UseCase>();
+    services.AddTransient<[Name]ViewModel>();
+
+    return services;
+}
+```

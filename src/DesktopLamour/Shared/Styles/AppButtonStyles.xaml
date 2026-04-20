@@ -1,0 +1,105 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls">
+
+    <!-- ================================================ -->
+    <!--  AppButton base style                             -->
+    <!-- ================================================ -->
+    <Style TargetType="{x:Type controls:AppButton}">
+        <Setter Property="FontFamily"      Value="Segoe UI"/>
+        <Setter Property="FontSize"        Value="14"/>
+        <Setter Property="FontWeight"      Value="SemiBold"/>
+        <Setter Property="Foreground"      Value="{StaticResource AppColor.TextInverted}"/>
+        <Setter Property="Background"      Value="{StaticResource AppColor.ButtonPrimary}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Cursor"          Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type controls:AppButton}">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="8"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background"
+                                    Value="{StaticResource AppColor.ButtonPrimaryHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="border" Property="Background"
+                                    Value="{StaticResource AppColor.ButtonPrimaryDisabled}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="border" Property="Opacity" Value="0.85"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ================================================ -->
+    <!--  Primary variants                                 -->
+    <!-- ================================================ -->
+    <Style x:Key="AppButton.Primary.Small" TargetType="{x:Type controls:AppButton}"
+           BasedOn="{StaticResource {x:Type controls:AppButton}}">
+        <Setter Property="Height"   Value="32"/>
+        <Setter Property="Padding"  Value="12,0"/>
+        <Setter Property="FontSize" Value="12"/>
+    </Style>
+
+    <Style x:Key="AppButton.Primary.Medium" TargetType="{x:Type controls:AppButton}"
+           BasedOn="{StaticResource {x:Type controls:AppButton}}">
+        <Setter Property="Height"  Value="40"/>
+        <Setter Property="Padding" Value="16,0"/>
+    </Style>
+
+    <Style x:Key="AppButton.Primary.Large" TargetType="{x:Type controls:AppButton}"
+           BasedOn="{StaticResource {x:Type controls:AppButton}}">
+        <Setter Property="Height"              Value="52"/>
+        <Setter Property="Padding"             Value="16,0"/>
+        <Setter Property="FontSize"            Value="16"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+    </Style>
+
+    <!-- ================================================ -->
+    <!--  Secondary variant                                -->
+    <!-- ================================================ -->
+    <Style x:Key="AppButton.Secondary.Medium" TargetType="{x:Type controls:AppButton}"
+           BasedOn="{StaticResource {x:Type controls:AppButton}}">
+        <Setter Property="Height"          Value="40"/>
+        <Setter Property="Padding"         Value="16,0"/>
+        <Setter Property="Background"      Value="{StaticResource AppColor.ButtonSecondary}"/>
+        <Setter Property="Foreground"      Value="{StaticResource AppColor.TextBrand}"/>
+        <Setter Property="BorderBrush"     Value="{StaticResource AppColor.BorderBrand}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <!-- ================================================ -->
+    <!--  Tertiary variant                                 -->
+    <!-- ================================================ -->
+    <Style x:Key="AppButton.Tertiary.Medium" TargetType="{x:Type controls:AppButton}"
+           BasedOn="{StaticResource {x:Type controls:AppButton}}">
+        <Setter Property="Height"          Value="40"/>
+        <Setter Property="Padding"         Value="8,0"/>
+        <Setter Property="Background"      Value="Transparent"/>
+        <Setter Property="Foreground"      Value="{StaticResource AppColor.TextBrand}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+
+    <!-- ================================================ -->
+    <!--  Destructive variant                              -->
+    <!-- ================================================ -->
+    <Style x:Key="AppButton.Destructive.Medium" TargetType="{x:Type controls:AppButton}"
+           BasedOn="{StaticResource {x:Type controls:AppButton}}">
+        <Setter Property="Height"     Value="40"/>
+        <Setter Property="Padding"    Value="16,0"/>
+        <Setter Property="Background" Value="{StaticResource AppColor.ButtonDestructive}"/>
+    </Style>
+
+</ResourceDictionary>

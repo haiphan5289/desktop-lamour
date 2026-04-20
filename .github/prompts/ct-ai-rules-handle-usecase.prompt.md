@@ -1,109 +1,52 @@
 ---
-mode: agent
-description: Generate ViewModel UseCase execution methods following MVVM + Clean Architecture pattern for iOS application
+description: "Add a UseCase execution method to an existing ViewModel in Desktop Lamour."
+mode: "agent"
 ---
 
-# ViewModel UseCase Execution Guide
+# Handle UseCase in ViewModel — Desktop Lamour
 
-## Overview
-This guide provides instructions for adding UseCase execution methods to ViewModels in the iOS application following the MVVM + Clean Architecture pattern.
+## Input
 
-## Task Definition
-Define the task to achieve ViewModel UseCase execution integration, including specific requirements, constraints, and success criteria.
+```
+VIEWMODEL:   <[Name]ViewModel>
+USECASE:     <I[Feature]UseCase>
+INPUT_TYPE:  <[Feature]Input>
+OUTPUT_TYPE: <[Feature]Output>
+ON_SUCCESS:  <update ObservableCollection | navigate | show message>
+```
 
-## Required Parameters
+## Template
 
-When generating a ViewModel UseCase execution method, you need to provide the following parameters:
-
-- `{USECASE_NAME}`: The name of the UseCase (e.g., FetchUserProfile, UpdateSettings)
-- `{INPUT_PARAM}`: The input parameter type for the UseCase (e.g., String, UserRequest)
-- `{VIEWMODEL_CLASS}`: The ViewModel class name where the execution method will be added
-- `{REPO_PROPERTY_NAME}`: The repository property name in the ViewModel (e.g., checkoutRepo, dongtotRespository, posRepo, vehRepo)
-
-## Add ViewModel UseCase Execution Method
-
-Add the following UseCase execution method to {VIEWMODEL_CLASS} file:
-
-```swift
-// ⚠️ ADD THIS METHOD TO EXISTING {VIEWMODEL_CLASS} CLASS ⚠️
-extension {VIEWMODEL_CLASS} {
-    func execute{USECASE_NAME}(input: {INPUT_PARAM}) {
-        // 🔍 FIND: Repository property name in {VIEWMODEL_CLASS}
-        // Common names: checkoutRepo, dongtotRespository, posRepo, vehRepo
-        let useCase = CR{USECASE_NAME}UseCase(repository: self.{REPO_PROPERTY_NAME})
-        
-        // 🔒 MANDATORY: Handle success - DO NOT add additional logic
-        useCase.action?.elements
-            .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] result in
-                // TODO: Handle success result based on specific UseCase requirements
-                // Example: self?.presenter?.data.accept(result)
-            })
-            .disposed(by: disposeBag)
-        
-        // 🔒 MANDATORY: Handle loading state
-        useCase.action?.executing
-            .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] isLoading in
-                self?.presenter?.loading.accept(isLoading)
-            })
-            .disposed(by: disposeBag)
-        
-        // 🔒 MANDATORY: Handle errors - Only guard let self, no additional processing
-        useCase.action?.underlyingError
-            .subscribe(onNext: { [weak self] error in
-                guard let self = self else { return }
-                // Error handling - minimal implementation
-            })
-            .disposed(by: disposeBag)
-        
-        // 🔒 MANDATORY: Execute
-        useCase.action?.execute(input)
+```csharp
+[RelayCommand]
+private async Task [Execute][Feature]Async([InputType] input, CancellationToken ct = default)
+{
+    IsLoading = true;
+    ErrorMessage = string.Empty;
+    try
+    {
+        var result = await _[feature]UseCase.ExecuteAsync(input, ct);
+        // TODO: update state e.g. Items = new ObservableCollection<T>(result)
+    }
+    catch (ValidationException ex)
+    {
+        ErrorMessage = ex.Message;
+    }
+    catch (Exception)
+    {
+        ErrorMessage = "An unexpected error occurred. Please try again.";
+    }
+    finally
+    {
+        IsLoading = false;
     }
 }
 ```
 
-## Architecture Compliance
+## Rules
 
-This ViewModel UseCase execution implementation follows the MVVM + Clean Architecture pattern by:
-- Creating UseCase instances with dependency injection for repositories
-- Handling reactive streams with proper memory management using disposeBag
-- Following the separation of concerns between ViewModel and UseCase layers
-- Providing proper error handling and loading state management
-- Using weak self references to prevent retain cycles
-
-## Important Implementation Rules
-
-### ❌ DO NOT DO THESE:
-1. **NEVER add `.observe(on: MainScheduler.instance)` for error handling** - not needed for underlyingError
-2. **NEVER use `.bind(onNext:)`** - always use `.subscribe(onNext:)` 
-3. **NEVER add complex error unwrapping** - keep error handling minimal
-4. **NEVER implement complex logic** - keep handlers simple
-
-### ✅ CORRECT PATTERNS:
-```swift
-// ✅ Correct error handling - minimal with only guard let self
-useCase.action?.underlyingError
-    .subscribe(onNext: { [weak self] error in
-        guard let self = self else { return }
-        // Error handling - minimal implementation
-    })
-    .disposed(by: disposeBag)
-
-// ✅ Correct success handling - with MainScheduler for UI updates
-useCase.action?.elements
-    .observe(on: MainScheduler.instance)
-    .subscribe(onNext: { [weak self] result in
-        // result is already the expected type, handle as needed
-        self?.presenter?.data.accept(result)
-    })
-    .disposed(by: disposeBag)
-```
-
-## Repository Property Discovery
-
-Common repository property names in ViewModels:
-- **CRCheckoutPageViewModel**: `checkoutRepo`
-- **CRTopupDongtotViewModel**: `dongtotRespository`
-- **POSViewModel**: `posRepo`
-- **VEHViewModel**: `vehRepo`
+- IsLoading = true at start, IsLoading = false in finally — always
+- ErrorMessage = string.Empty at start to clear previous errors
+- Catch ValidationException separately for user-friendly messages
+- Never expose raw exception messages to UI
+- CancellationToken must be passed through to UseCase

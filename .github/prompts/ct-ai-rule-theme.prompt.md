@@ -1,421 +1,135 @@
-# Theme Best Practices for iOS Swift UIKit - Chợ Tốt
+---
+description: "Design system usage guide for Desktop Lamour — AppStyles, AppTypography, AppColor tokens."
+mode: "agent"
+---
 
-## Overview
+# Design System Guide — Desktop Lamour
 
-Hướng dẫn best practices cho việc sử dụng theme system trong iOS Swift UIKit dựa trên chuẩn mới nhất và architecture của Chợ Tốt app.
+All WPF controls MUST use design system components and resource keys. Never use raw `TextBlock`, `Button`, `TextBox`, or inline styling.
 
-## Core Theme Architecture
+## Component Mapping
 
-### 1. Theme System Structure
+| Raw WPF (FORBIDDEN) | Design System (USE THIS) |
+|---|---|
+| `TextBlock` | `controls:AppLabel` |
+| `Button` | `controls:AppButton` |
+| `TextBox` | `controls:AppTextField` |
+| `PasswordBox` | `controls:AppPasswordField` |
 
-```swift
-// Theme hierarchy trong project
-CTDesignSystem/
-├── Theme/
-│   ├── CMDefaultTheme.swift      // Định nghĩa các theme types
-│   ├── CMTheme.swift             // Theme protocol và structure
-│   └── ThemeType.swift           // Enum các loại theme
+## AppLabel — Typography Keys
 
-CTCommon/
-├── Theme/
-│   ├── CMStaticThemeLoader.swift // Static theme loader
-│   ├── CMThemeChangeable.swift   // Theme changeable protocol
-│   ├── CMThemeData.swift         // Theme data management
-│   └── NavigationBar/            // Navigation bar theming
+```xml
+xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+
+<!-- Display -->
+<controls:AppLabel Text="Page Title"    Style="{StaticResource AppTypography.DisplayPage}"/>
+<controls:AppLabel Text="Section"       Style="{StaticResource AppTypography.DisplaySection}"/>
+
+<!-- Header -->
+<controls:AppLabel Text="Page Header"   Style="{StaticResource AppTypography.HeaderPage}"/>
+<controls:AppLabel Text="Section Header" Style="{StaticResource AppTypography.HeaderSection}"/>
+
+<!-- Label -->
+<controls:AppLabel Text="Field Label"   Style="{StaticResource AppTypography.LabelPage}"/>
+<controls:AppLabel Text="Field Label"   Style="{StaticResource AppTypography.LabelSection}"/>
+<controls:AppLabel Text="Caption"       Style="{StaticResource AppTypography.LabelCaption}"/>
+
+<!-- Body -->
+<controls:AppLabel Text="Body text"     Style="{StaticResource AppTypography.BodySection}"/>
+<controls:AppLabel Text="Caption text"  Style="{StaticResource AppTypography.BodyCaption}"/>
+<controls:AppLabel Text="Note"          Style="{StaticResource AppTypography.NoteSection}"/>
 ```
 
-### 2. Theme Types Available
+## AppButton — Style Keys
 
-```swift
-// Các theme types hiện có
-public enum ThemeType {
-    case `default`  // Theme chính của Chợ Tốt
-    case job        // Theme cho JOB module
-    case pty        // Theme cho Property module
-}
+```xml
+<!-- Primary -->
+<controls:AppButton Content="Save"   Style="{StaticResource AppButton.Primary.Large}"   Command="{Binding SaveCommand}"/>
+<controls:AppButton Content="Save"   Style="{StaticResource AppButton.Primary.Medium}"  Command="{Binding SaveCommand}"/>
+<controls:AppButton Content="Save"   Style="{StaticResource AppButton.Primary.Small}"   Command="{Binding SaveCommand}"/>
+
+<!-- Secondary (outlined) -->
+<controls:AppButton Content="Cancel" Style="{StaticResource AppButton.Secondary.Medium}" Command="{Binding CancelCommand}"/>
+
+<!-- Tertiary (text-only) -->
+<controls:AppButton Content="← Back" Style="{StaticResource AppButton.Tertiary.Medium}"  Command="{Binding GoBackCommand}"/>
+
+<!-- Destructive -->
+<controls:AppButton Content="Delete" Style="{StaticResource AppButton.Destructive.Medium}" Command="{Binding DeleteCommand}"/>
 ```
 
-## Essential Patterns
+## AppTextField
 
-### 1. Static Theme Access (Recommended)
+```xml
+<controls:AppTextField Text="{Binding PhoneNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                       Placeholder="e.g. 0912345678"/>
 
-```swift
-// ✅ PREFERRED - Sử dụng static theme loader
-import UIKit
-import CTCommon
-import CTDesignSystem
-import SnapKit
-
-class MyViewController: UIViewController {
-    private let theme = CMStaticThemeLoader.defaultTheme
-    // private let theme = CMStaticThemeLoader.jobTheme
-    // private let theme = CMStaticThemeLoader.ptyTheme
-    
-    private func setupUI() {
-        titleLabel.setStyle(DS.TypoToken.Label.Section(color: theme.text.textPrimary.color))
-        backgroundColor = theme.background.backgroundPrimary.color
-    }
-}
+<!-- Error state -->
+<controls:AppTextField Style="{StaticResource AppTextField.Error}"
+                       Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 ```
 
-### 2. Dynamic Theme Support với CMThemeChangeable
+## AppPasswordField
 
-```swift
-// ✅ Cho ViewControllers cần dynamic theme switching
-import UIKit
-import CTCommon
-import CTDesignSystem
-import RxSwift
-import SnapKit
-
-class MyViewController: UIViewController, CMThemeChangeable {
-    private let disposeBag = DisposeBag()
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        setupUI()
-        
-        // Subscribe to theme changes
-        subscribeThemeChange()
-            .disposed(by: disposeBag)
-    }
-    
-    // MARK: - CMThemeChangeable
-    func changeTheme(_ theme: CMTheme) {
-        setupTheme(theme)
-    }
-    
-    private func setupTheme(_ theme: CMTheme) {
-        titleLabel.setStyle(DS.TypoToken.Label.Section(color: theme.text.textPrimary.color))
-        subtitleLabel.setStyle(DS.TypoToken.Body.Caption(color: theme.text.textSecondary.color))
-        view.backgroundColor = theme.background.backgroundPrimary.color
-    }
-}
+```xml
+<controls:AppPasswordField BoundPassword="{Binding Password, Mode=TwoWay}"/>
 ```
 
-### 3. Cell/Custom View Theming
+## Color Tokens (use only via StaticResource)
 
-```swift
-// ✅ Theme setup cho custom cells
-import CTCommon
-import CTDesignSystem
+```xml
+<!-- Text -->
+Foreground="{StaticResource AppColor.TextPrimary}"
+Foreground="{StaticResource AppColor.TextSecondary}"
+Foreground="{StaticResource AppColor.TextDisabled}"
+Foreground="{StaticResource AppColor.TextError}"
+Foreground="{StaticResource AppColor.TextBrand}"
+Foreground="{StaticResource AppColor.TextInverted}"
+Foreground="{StaticResource AppColor.TextSuccess}"
 
-class MyTableViewCell: UITableViewCell, CMThemeChangeable {
-    private let theme = CMStaticThemeLoader.defaultTheme
-    
-    override func awakeFromNib() {
-        super.awakeFromNib()
-        setupTheme()
-    }
-    
-    // MARK: - CMThemeChangeable
-    func changeTheme(_ theme: CMTheme) {
-        setupTheme(theme)
-    }
-    
-    private func setupTheme(_ theme: CMTheme? = nil) {
-        let currentTheme = theme ?? self.theme
-        
-        titleLabel.setStyle(DS.TypoToken.Label.Section(color: currentTheme.text.textPrimary.color))
-        descriptionLabel.setStyle(DS.TypoToken.Body.Caption(color: currentTheme.text.textSecondary.color))
-        containerView.backgroundColor = currentTheme.background.backgroundSecondary.color
-    }
-}
+<!-- Background -->
+Background="{StaticResource AppColor.BackgroundPrimary}"
+Background="{StaticResource AppColor.BackgroundSecondary}"
+Background="{StaticResource AppColor.BackgroundErrorLight}"
+Background="{StaticResource AppColor.BackgroundOverlay}"
 ```
 
-### 4. Module-Specific Theme Usage
+## Spacing Tokens
 
-```swift
-// ✅ Theme specific cho module PTY
-class PropertyViewController: UIViewController {
-    private let theme = CMStaticThemeLoader.ptyTheme
-    
-    private func setupUI() {
-        // Sử dụng PTY theme colors
-        navigationController?.navigationBar.barTintColor = theme.background.backgroundBrand.color
-        titleLabel.setStyle(DS.TypoToken.Label.Page(color: theme.text.textPrimary.color))
-    }
-}
-
-// ✅ Theme specific cho module JOB
-class JobViewController: UIViewController {
-    private let theme = CMStaticThemeLoader.jobTheme
-    
-    private func setupUI() {
-        // Sử dụng Job theme colors
-        primaryButton.setStyle(DS.Button.primary(themeType: .job))
-        titleLabel.setStyle(DS.TypoToken.Label.Page(color: theme.text.textPrimary.color))
-    }
-}
+```xml
+Margin="{StaticResource AppSpacing.XSmall}"   <!-- 4 -->
+Margin="{StaticResource AppSpacing.Small}"    <!-- 8 -->
+Margin="{StaticResource AppSpacing.Medium}"   <!-- 12 -->
+Margin="{StaticResource AppSpacing.Large}"    <!-- 16 -->
+Margin="{StaticResource AppSpacing.XLarge}"   <!-- 20 -->
+Margin="{StaticResource AppSpacing.XXLarge}"  <!-- 24 -->
 ```
 
-## Component Theming Best Practices
+## Loading Overlay Pattern
 
-### 1. DSButton với Theme Support
-
-```swift
-// ✅ Button theming với theme type
-primaryButton.setStyle(DS.Button.primary(size: .medium, themeType: .default))
-secondaryButton.setStyle(DS.Button.secondary(size: .medium, themeType: .pty))
-
-// ✅ Custom button colors từ theme
-customButton.backgroundColor = theme.button.buttonPrimary.color
-customButton.setTitleColor(theme.text.textInverted.color, for: .normal)
+```xml
+<Grid>
+    <Grid Panel.ZIndex="100"
+          Background="{StaticResource AppColor.BackgroundOverlay}"
+          Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
+        <ProgressBar IsIndeterminate="True" Width="48" Height="48"
+                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    </Grid>
+    <!-- main content below -->
+</Grid>
 ```
 
-### 2. DSLabel/DSTextField với Theme Colors
+## Error Message Pattern
 
-```swift
-// ✅ Typography với theme colors
-titleLabel.setStyle(DS.TypoToken.Label.Page(color: theme.text.textPrimary.color))
-bodyLabel.setStyle(DS.TypoToken.Body.Section(color: theme.text.textSecondary.color))
-errorLabel.setStyle(DS.TypoToken.Body.Caption(color: theme.text.textError.color))
-
-// ✅ Input fields
-textField.textColor = theme.text.textPrimary.color
-textField.backgroundColor = theme.background.backgroundSecondary.color
-textField.layer.borderColor = theme.border.borderRegular.color.cgColor
+```xml
+<controls:AppLabel Text="{Binding ErrorMessage}"
+                   Style="{StaticResource AppTypography.BodyCaption}"
+                   Foreground="{StaticResource AppColor.TextError}"
+                   Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}"/>
 ```
 
-### 3. Background và Border Colors
+## Adding a New Component
 
-```swift
-// ✅ Background theming
-view.backgroundColor = theme.background.backgroundPrimary.color
-containerView.backgroundColor = theme.background.backgroundSecondary.color
-overlayView.backgroundColor = theme.background.backgroundOverlay.color
-
-// ✅ Border theming
-separatorView.backgroundColor = theme.border.borderThin.color
-cardView.layer.borderColor = theme.border.borderRegular.color.cgColor
-```
-
-## Navigation Bar Theming
-
-### 1. CTNavigationBarVeritcalizable Protocol
-
-```swift
-// ✅ Navigation bar theming
-class MyViewController: UIViewController, CTNavigationBarVeritcalizable {
-    
-    // Default implementation returns .chotot
-    // Override for different themes:
-    var ctNavigationBarData: CTNavigationBarData {
-        return .pty  // hoặc .gds, .job
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        applyNavigationBarData()
-    }
-}
-```
-
-### 2. Custom Navigation Bar Styling
-
-```swift
-// ✅ Manual navigation bar theming
-private func setupNavigationBar() {
-    navigationController?.navigationBar.barTintColor = theme.background.backgroundBrand.color
-    navigationController?.navigationBar.tintColor = theme.text.textPrimary.color
-    navigationController?.navigationBar.titleTextAttributes = [
-        .foregroundColor: theme.text.textPrimary.color,
-        .font: DS.TypoToken.Label.Page().font
-    ]
-}
-```
-
-## Advanced Theme Patterns
-
-### 1. Theme Subscription Management
-
-```swift
-// ✅ Proper theme subscription management
-class MyViewController: UIViewController, CMThemeChangeable {
-    private let disposeBag = DisposeBag()
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        setupThemeSubscription()
-    }
-    
-    private func setupThemeSubscription() {
-        // Subscribe to theme changes
-        subscribeThemeChange()
-            .disposed(by: disposeBag)
-        
-        // Or subscribe to specific theme
-        subscribeTheme(theme: CMStaticThemeLoader.ptyTheme)
-            .disposed(by: disposeBag)
-    }
-    
-    func changeTheme(_ theme: CMTheme) {
-        UIView.animate(withDuration: 0.3) {
-            self.applyTheme(theme)
-        }
-    }
-}
-```
-
-### 2. Theme-Aware Custom Components
-
-```swift
-// ✅ Custom component với theme support
-class ThemedCardView: UIView, CMThemeChangeable {
-    private var currentTheme: CMTheme = CMStaticThemeLoader.defaultTheme
-    
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        setupUI()
-        setupTheme(currentTheme)
-    }
-    
-    func changeTheme(_ theme: CMTheme) {
-        currentTheme = theme
-        setupTheme(theme)
-    }
-    
-    private func setupTheme(_ theme: CMTheme) {
-        backgroundColor = theme.background.backgroundSecondary.color
-        layer.borderColor = theme.border.borderRegular.color.cgColor
-        
-        // Update child views
-        titleLabel.setStyle(DS.TypoToken.Label.Section(color: theme.text.textPrimary.color))
-        subtitleLabel.setStyle(DS.TypoToken.Body.Caption(color: theme.text.textSecondary.color))
-    }
-}
-```
-
-### 3. Theme Context Passing
-
-```swift
-// ✅ Pass theme context to child components
-class ParentViewController: UIViewController {
-    private let theme = CMStaticThemeLoader.defaultTheme
-    
-    private func setupChildViewController() {
-        let childVC = ChildViewController(theme: theme)
-        addChild(childVC)
-        view.addSubview(childVC.view)
-        childVC.didMove(toParent: self)
-    }
-}
-
-class ChildViewController: UIViewController {
-    private let theme: CMTheme
-    
-    init(theme: CMTheme) {
-        self.theme = theme
-        super.init(nibName: nil, bundle: nil)
-    }
-}
-```
-
-## Common Anti-Patterns
-
-### ❌ Avoid Hardcoded Colors
-
-```swift
-// ❌ BAD - Hardcoded colors
-titleLabel.textColor = UIColor.black
-backgroundColor = UIColor.white
-button.backgroundColor = UIColor.blue
-
-// ✅ GOOD - Theme colors
-titleLabel.setStyle(DS.TypoToken.Label.Section(color: theme.text.textPrimary.color))
-backgroundColor = theme.background.backgroundPrimary.color
-button.backgroundColor = theme.button.buttonPrimary.color
-```
-
-### ❌ Avoid Direct Theme Access Without Context
-
-```swift
-// ❌ BAD - Accessing theme without proper context
-let theme = DefaultTheme.defaultTheme // Direct access
-
-// ✅ GOOD - Use static loader
-let theme = CMStaticThemeLoader.defaultTheme
-```
-
-### ❌ Avoid Theme Switching Without Animation
-
-```swift
-// ❌ BAD - Abrupt theme change
-func changeTheme(_ theme: CMTheme) {
-    view.backgroundColor = theme.background.backgroundPrimary.color
-}
-
-// ✅ GOOD - Animated theme change
-func changeTheme(_ theme: CMTheme) {
-    UIView.animate(withDuration: 0.3) {
-        self.view.backgroundColor = theme.background.backgroundPrimary.color
-    }
-}
-```
-
-## Testing Theme Implementation
-
-### 1. Theme Testing Pattern
-
-```swift
-// ✅ Unit testing với themes
-class MyViewControllerTests: XCTestCase {
-    
-    func testThemeApplication() {
-        let sut = MyViewController()
-        let testTheme = CMStaticThemeLoader.ptyTheme
-        
-        sut.changeTheme(testTheme)
-        
-        XCTAssertEqual(sut.view.backgroundColor, testTheme.background.backgroundPrimary.color)
-    }
-    
-    func testThemeSubscription() {
-        let sut = MyViewController()
-        let expectation = XCTestExpectation(description: "Theme changed")
-        
-        // Test theme subscription
-        CMThemeData.shared.updateTheme(themeType: .pty)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 1.0)
-    }
-}
-```
-
-## Performance Considerations
-
-### 1. Theme Caching
-
-```swift
-// ✅ Cache theme objects
-class ThemeCacheManager {
-    private static var cachedThemes: [ThemeType: CMTheme] = [:]
-    
-    static func theme(for type: ThemeType) -> CMTheme {
-        if let cached = cachedThemes[type] {
-            return cached
-        }
-        
-        let theme = DefaultTheme.themeWithType(type: type)
-        cachedThemes[type] = theme
-        return theme
-    }
-}
-```
-
-## Summary
-
-1. **Always use `CMStaticThemeLoader`** cho static theme access
-2. **Implement `CMThemeChangeable`** cho dynamic theme support  
-3. **Use proper theme types** (.default, .job, .pty) based on module
-4. **Leverage CTDesignSystem components** với theme support
-5. **Animate theme transitions** for better UX
-6. **Test theme implementations** thoroughly
-7. **Avoid hardcoded colors** - always use theme properties
-8. **Cache themes** for performance optimization
-
-Tuân thủ những best practices này sẽ đảm bảo theme system được sử dụng một cách consistent và maintainable trong toàn bộ iOS app.
+1. Create `Shared/Controls/App[Name].cs`
+2. Create `Shared/Styles/App[Name]Styles.xaml`
+3. Add one line to `Shared/ComponentLibrary.xaml`

@@ -21,6 +21,16 @@ Before writing any C# or XAML code for Desktop Lamour, ask the user a focused se
 - Business rules around stock, pricing, or roles are unclear
 - UI layout is not described
 
+## Input Format
+
+```
+FEATURE:  <one-sentence description of what the user wants to build>
+MODULE:   <Authentication | Employees | Inventory | ImportInvoices | ExportInvoices | Unknown>
+CONTEXT:  <any known details — endpoint, existing class name, rough UI sketch>
+```
+
+If `MODULE` or `FEATURE` is missing, infer from conversation context before asking questions.
+
 ## Clarifying Questions Template
 
 Ask ALL relevant questions as a single grouped message. Do NOT ask one question at a time.
@@ -112,3 +122,40 @@ TESTS_NEEDED:    <Yes — UseCase + ViewModel>
 Then proceed to implementation following Clean Architecture: Domain → Data → Presentation → DI registration.
 
 See `docs/project-overview.md` for full project context.
+
+---
+
+## Example
+
+### Sample Input
+
+```
+FEATURE: List all employees with search by name
+MODULE:  Employees
+CONTEXT: Roughly GET /api/employees, show in a DataGrid
+```
+
+### Questions Asked (condensed)
+
+- Which layers? → All layers
+- Exact endpoint / params? → `GET /api/employees?search=&page=1&pageSize=20`
+- Response shape? → `{ items: Employee[], total: int }`
+- Business rules? → Admin only; active employees only
+- UI layout? → DataGrid, search TextBox, pagination
+- On error? → Show ErrorMessage label, keep IsLoading = false
+- Tests? → UseCase + ViewModel
+
+### Summary Before Implementation
+
+```
+MODULE:          Employees
+LAYERS:          Domain + Data + Presentation
+API_ENDPOINT:    GET /api/employees
+HTTP_METHOD:     GET
+INPUT_TYPE:      GetEmployeesRequest (search, page, pageSize)
+OUTPUT_TYPE:     PagedResult<Employee>
+BUSINESS_RULES:  Admin only; active employees only
+UI_LAYOUT:       DataGrid with search bar and pagination
+ERROR_HANDLING:  Show ErrorMessage label, IsLoading = false
+TESTS_NEEDED:    Yes — UseCase + ViewModel
+```

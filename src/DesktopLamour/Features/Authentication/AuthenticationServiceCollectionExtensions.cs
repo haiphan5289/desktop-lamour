@@ -25,7 +25,7 @@ public static class AuthenticationServiceCollectionExtensions
         services.AddTransient<ISignUpWithPhoneUseCase, SignUpWithPhoneUseCase>();
 
         // ── Data: Repository ─────────────────────────────────────────────────
-        services.AddScoped<IAuthenticationRepository, AuthenticationRepository>();
+        services.AddTransient<IAuthenticationRepository, AuthenticationRepository>();
 
         // ── Data: Service + typed HttpClient ─────────────────────────────────
         services.AddHttpClient<IAuthenticationService, AuthenticationService>(client =>

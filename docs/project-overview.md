@@ -93,6 +93,22 @@ Domain (Models + UseCase interfaces)
 
 ---
 
+## Mô hình hoạt động
+
+Desktop Lamour hoạt động theo mô hình **Client–Server**:
+
+- **Backend (BE)** là nguồn dữ liệu duy nhất — xử lý business logic, lưu trữ, xác thực.
+- **App (WPF)** là client — hiển thị dữ liệu do BE trả về, người dùng thao tác trực tiếp trên App.
+- Mọi thao tác (đăng nhập, tạo hoá đơn, cập nhật kho...) đều gửi request lên BE và render response về UI.
+
+```
+BE (API Server)
+  ↕ HTTP/JSON
+App (Desktop WPF) ← User thao tác
+```
+
+---
+
 ## Luồng dữ liệu
 
 ```
@@ -131,6 +147,67 @@ dotnet publish -c Release -r win-x64 --self-contained
 
 ---
 
+## Workflow phát triển trên Windows VM (UTM)
+
+Desktop Lamour chạy trong Windows VM (UTM) trên Mac Apple Silicon. Code được chỉnh sửa trên Mac, sau đó sync sang VM để build và chạy.
+
+> **Lý do không chạy trực tiếp từ Z:\ (shared folder):**
+> MSBuild không thể glob `**/*.xaml` qua network drive → lỗi BG1002/BG1003.
+> Phải copy toàn bộ project sang ổ C:\ local trước khi chạy.
+
+### Script: `sync.ps1` — Đồng bộ code từ Mac → VM
+
+```powershell
+robocopy Z:\ C:\projects\desktop-lamour\ /MIR /IS /XD bin obj .git .vs .claude node_modules /XF *.user /NFL /NDL /NJH
+Write-Host "Synced! dotnet watch will auto-reload the app." -ForegroundColor Green
+```
+
+| Flag | Ý nghĩa |
+|---|---|
+| `/MIR` | Mirror — xoá file trên đích nếu đã bị xoá trên nguồn |
+| `/IS` | Include Same — copy lại kể cả file không đổi (đảm bảo mới nhất) |
+| `/XD bin obj .git ...` | Bỏ qua các thư mục build artifact và metadata |
+| `/XF *.user` | Bỏ qua file cấu hình cá nhân của VS |
+| `/NFL /NDL /NJH` | Tắt log chi tiết — chỉ hiện thông báo lỗi |
+
+**Khi nào chạy:** Mỗi khi thêm file mới trên Mac (`.xaml`, `.cs`, thư mục mới). Với file đã có, `dotnet watch` tự reload qua shared folder.
+
+### Script: `start-watch.ps1` — Khởi động hot-reload
+
+```powershell
+cd C:\projects\desktop-lamour
+dotnet watch run --project src\DesktopLamour\DesktopLamour.csproj
+```
+
+Chạy `dotnet watch` từ thư mục local C:\. Khi file `.cs` hoặc `.xaml` thay đổi (qua sync), app tự rebuild và reload mà không cần restart thủ công.
+
+### Workflow hàng ngày — 2 terminal song song
+
+`start-watch.ps1` chạy liên tục (blocking), nên cần **2 terminal riêng** trong VM:
+
+```
+Terminal 1 (giữ mở suốt)       Terminal 2 (dùng khi cần sync)
+──────────────────────────      ──────────────────────────────
+.\start-watch.ps1               .\sync.ps1
+  │                               │
+  │  dotnet watch đang chờ...     │  robocopy Z:\ → C:\  (vài giây)
+  │                               │  "Synced!" ✓
+  └── tự reload khi file đổi ←───┘  dotnet watch bắt file mới
+```
+
+**Khi nào dùng Terminal 2:**
+
+| Tình huống | Cần sync? |
+|---|---|
+| Sửa file `.cs` / `.xaml` đã có, Cmd+S trên Mac | Không — dotnet watch tự nhận qua Z:\ |
+| Thêm file mới (`.cs`, `.xaml`, thư mục) | **Có** — chạy `.\sync.ps1` |
+| Xoá file trên Mac | **Có** — `/MIR` sẽ xoá tương ứng trên C:\ |
+
+**Lưu ý:** `sync.ps1` phải chạy lại khi có file mới. Với file đã tồn tại, chỉ cần save trên Mac là đủ.
+
+---
+
 ## Tài liệu liên quan
 
 - [Setup Windows VM với UTM](setup-windows-vm-utm.md)
+- [UTM Run Workflow](utm-run-workflow.md)

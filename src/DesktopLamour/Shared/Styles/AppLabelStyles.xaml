@@ -1,0 +1,111 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls">
+
+    <!-- ================================================ -->
+    <!--  AppLabel base style                              -->
+    <!-- ================================================ -->
+    <Style TargetType="{x:Type controls:AppLabel}">
+        <Setter Property="FontFamily"       Value="Segoe UI"/>
+        <Setter Property="FontSize"         Value="14"/>
+        <Setter Property="Foreground"       Value="{StaticResource AppColor.TextPrimary}"/>
+        <Setter Property="Padding"          Value="0"/>
+        <Setter Property="Background"       Value="Transparent"/>
+        <Setter Property="BorderThickness"  Value="0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="VerticalContentAlignment"   Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type controls:AppLabel}">
+                    <TextBlock Text="{TemplateBinding Content}"
+                               FontFamily="{TemplateBinding FontFamily}"
+                               FontSize="{TemplateBinding FontSize}"
+                               FontWeight="{TemplateBinding FontWeight}"
+                               FontStyle="{TemplateBinding FontStyle}"
+                               Foreground="{TemplateBinding Foreground}"
+                               Padding="{TemplateBinding Padding}"
+                               TextWrapping="Wrap"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ================================================ -->
+    <!--  Display                                          -->
+    <!-- ================================================ -->
+    <Style x:Key="AppTypography.DisplayPage" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
+        <Setter Property="FontSize"   Value="32"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+    </Style>
+
+    <Style x:Key="AppTypography.DisplaySection" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
+        <Setter Property="FontSize"   Value="24"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+    </Style>
+
+    <!-- ================================================ -->
+    <!--  Header                                           -->
+    <!-- ================================================ -->
+    <Style x:Key="AppTypography.HeaderPage" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
+        <Setter Property="FontSize"   Value="20"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="AppTypography.HeaderSection" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
+        <Setter Property="FontSize"   Value="16"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <!-- ================================================ -->
+    <!--  Label                                            -->
+    <!-- ================================================ -->
+    <Style x:Key="AppTypography.LabelPage" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
+        <Setter Property="FontSize"   Value="16"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="AppTypography.LabelSection" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
+        <Setter Property="FontSize"   Value="14"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <Style x:Key="AppTypography.LabelCaption" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
+        <Setter Property="FontSize"   Value="12"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <!-- ================================================ -->
+    <!--  Body                                             -->
+    <!-- ================================================ -->
+    <Style x:Key="AppTypography.BodySection" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
+        <Setter Property="FontSize"   Value="14"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+    </Style>
+
+    <Style x:Key="AppTypography.BodyCaption" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
+        <Setter Property="FontSize"   Value="12"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="Foreground" Value="{StaticResource AppColor.TextSecondary}"/>
+    </Style>
+
+    <!-- ================================================ -->
+    <!--  Note                                             -->
+    <!-- ================================================ -->
+    <Style x:Key="AppTypography.NoteSection" TargetType="{x:Type controls:AppLabel}"
+           BasedOn="{StaticResource {x:Type controls:AppLabel}}">
+        <Setter Property="FontSize"   Value="12"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="FontStyle"  Value="Italic"/>
+        <Setter Property="Foreground" Value="{StaticResource AppColor.TextSecondary}"/>
+    </Style>
+
+</ResourceDictionary>

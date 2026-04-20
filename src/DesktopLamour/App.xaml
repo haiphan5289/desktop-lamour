@@ -9,8 +9,8 @@
                 <ResourceDictionary Source="/DesktopLamour;component/Themes/DefaultTheme.xaml"/>
                 <!-- 2. Value converters -->
                 <ResourceDictionary Source="/DesktopLamour;component/Shared/AppConverters.xaml"/>
-                <!-- 3. Component + typography styles -->
-                <ResourceDictionary Source="/DesktopLamour;component/Shared/AppStyles.xaml"/>
+                <!-- 3. Design system component styles -->
+                <ResourceDictionary Source="/DesktopLamour;component/Shared/ComponentLibrary.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>
