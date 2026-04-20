@@ -1,0 +1,176 @@
+<Window x:Class="DesktopLamour.Features.HomePage.Views.SupplierFormWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+        Title="{Binding WindowTitle}"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="NoResize"
+        Width="500"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Row 0: Decorative header -->
+            <RowDefinition Height="Auto"/>  <!-- Row 1: Form content -->
+            <RowDefinition Height="Auto"/>  <!-- Row 2: Action buttons -->
+        </Grid.RowDefinitions>
+
+        <!-- Loading overlay -->
+        <Grid Grid.RowSpan="3"
+              Panel.ZIndex="100"
+              Background="{StaticResource AppColor.BackgroundOverlay}"
+              Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
+            <ProgressBar IsIndeterminate="True"
+                         Width="40" Height="40"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"/>
+        </Grid>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Row 0: Decorative header strip                -->
+        <!-- ══════════════════════════════════════════════ -->
+        <Border Grid.Row="0"
+                Background="{StaticResource AppColor.BackgroundBrand}"
+                Padding="24,20">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🌸"
+                           FontSize="28"
+                           VerticalAlignment="Center"
+                           Margin="0,0,12,0"/>
+                <StackPanel VerticalAlignment="Center">
+                    <controls:AppLabel Text="{Binding WindowTitle}"
+                                       Style="{StaticResource AppTypography.DisplaySection}"
+                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                    <controls:AppLabel Text="Thông tin nhà cung cấp"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       Foreground="{StaticResource AppColor.TextSecondary}"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Row 1: Form content                           -->
+        <!-- ══════════════════════════════════════════════ -->
+        <StackPanel Grid.Row="1" Margin="24,20,24,8">
+
+            <!-- Mã nhà cung cấp (required, read-only when editing) -->
+            <StackPanel Margin="0,0,0,16">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                    <controls:AppLabel Text="Mã nhà cung cấp"
+                                       Style="{StaticResource AppTypography.LabelSection}"/>
+                    <controls:AppLabel Text=" *"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                </StackPanel>
+                <controls:AppTextField Text="{Binding Code, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                       Placeholder="VD: COSMO"
+                                       IsEnabled="{Binding IsAddMode}"/>
+            </StackPanel>
+
+            <!-- Tên nhà cung cấp (required) -->
+            <StackPanel Margin="0,0,0,16">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                    <controls:AppLabel Text="Tên nhà cung cấp"
+                                       Style="{StaticResource AppTypography.LabelSection}"/>
+                    <controls:AppLabel Text=" *"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                </StackPanel>
+                <controls:AppTextField Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                       Placeholder="VD: COSMO C&amp;T CO.LTD"/>
+            </StackPanel>
+
+            <!-- Điện thoại (optional) -->
+            <StackPanel Margin="0,0,0,16">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                    <controls:AppLabel Text="Điện thoại"
+                                       Style="{StaticResource AppTypography.LabelSection}"/>
+                </StackPanel>
+                <controls:AppTextField Text="{Binding Phone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                       Placeholder="VD: 0912345678"/>
+            </StackPanel>
+
+            <!-- Địa chỉ (optional) -->
+            <StackPanel Margin="0,0,0,16">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                    <controls:AppLabel Text="Địa chỉ"
+                                       Style="{StaticResource AppTypography.LabelSection}"/>
+                </StackPanel>
+                <controls:AppTextField Text="{Binding Address, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                       Placeholder="VD: 103 Đường ABC, Quận 1, TP.HCM"/>
+            </StackPanel>
+
+            <!-- Two-column row: Nhóm KH, NCC + Mã số thuế -->
+            <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Nhóm KH, NCC -->
+                <StackPanel Grid.Column="0">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <controls:AppLabel Text="Nhóm KH, NCC"
+                                           Style="{StaticResource AppTypography.LabelSection}"/>
+                    </StackPanel>
+                    <controls:AppTextField Text="{Binding Group, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                           Placeholder="VD: Mỹ phẩm"/>
+                </StackPanel>
+
+                <!-- Mã số thuế -->
+                <StackPanel Grid.Column="2">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <controls:AppLabel Text="Mã số thuế"
+                                           Style="{StaticResource AppTypography.LabelSection}"/>
+                    </StackPanel>
+                    <controls:AppTextField Text="{Binding TaxCode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                           Placeholder="VD: 0123456789"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Ngừng theo dõi -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                <CheckBox IsChecked="{Binding IsStopTracking, Mode=TwoWay}"
+                          VerticalAlignment="Center"
+                          Margin="0,0,8,0"/>
+                <controls:AppLabel Text="Ngừng theo dõi nhà cung cấp"
+                                   Style="{StaticResource AppTypography.BodySection}"/>
+            </StackPanel>
+
+            <!-- Error message -->
+            <Border Background="{StaticResource AppColor.BackgroundErrorLight}"
+                    CornerRadius="8"
+                    Padding="12,10"
+                    Margin="0,0,0,8"
+                    Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}">
+                <controls:AppLabel Text="{Binding ErrorMessage}"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   Foreground="{StaticResource AppColor.TextError}"/>
+            </Border>
+
+        </StackPanel>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Row 2: Action buttons                         -->
+        <!-- ══════════════════════════════════════════════ -->
+        <Border Grid.Row="2"
+                BorderBrush="{StaticResource AppColor.BorderThin}"
+                BorderThickness="0,1,0,0"
+                Padding="24,16">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <controls:AppButton Content="Hủy"
+                                    Style="{StaticResource AppButton.Tertiary.Medium}"
+                                    Command="{Binding CancelCommand}"
+                                    Margin="0,0,12,0"/>
+                <controls:AppButton Content="💾 Lưu"
+                                    Style="{StaticResource AppButton.Primary.Large}"
+                                    Command="{Binding SaveCommand}"
+                                    Width="140"/>
+            </StackPanel>
+        </Border>
+
+    </Grid>
+
+</Window>
