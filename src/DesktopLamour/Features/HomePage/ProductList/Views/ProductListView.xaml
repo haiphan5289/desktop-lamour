@@ -6,12 +6,22 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>  <!-- Header -->
-            <RowDefinition Height="*"/>     <!-- Content -->
+            <RowDefinition Height="Auto"/>   <!-- Page header -->
+            <RowDefinition Height="Auto"/>   <!-- Section 1: Toolbar -->
+            <RowDefinition Height="*"/>      <!-- Section 2: DataGrid -->
         </Grid.RowDefinitions>
 
+        <!-- Loading overlay -->
+        <Grid Grid.RowSpan="3"
+              Panel.ZIndex="100"
+              Background="{StaticResource AppColor.BackgroundOverlay}"
+              Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
+            <ProgressBar IsIndeterminate="True" Width="48" Height="48"
+                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Grid>
+
         <!-- ══════════════════════════════════════════════ -->
-        <!--  Header                                        -->
+        <!--  Page header                                   -->
         <!-- ══════════════════════════════════════════════ -->
         <StackPanel Grid.Row="0" Margin="24,32,24,0">
             <controls:AppButton Content="← Quay lại"
@@ -24,21 +34,95 @@
         </StackPanel>
 
         <!-- ══════════════════════════════════════════════ -->
-        <!--  Content placeholder                           -->
+        <!--  Section 1: Toolbar actions                    -->
         <!-- ══════════════════════════════════════════════ -->
-        <StackPanel Grid.Row="1"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center">
-            <TextBlock Text="📦"
-                       FontSize="64"
-                       HorizontalAlignment="Center"
-                       TextAlignment="Center"/>
-            <controls:AppLabel Text="Đang phát triển..."
-                               Style="{StaticResource AppTypography.BodySection}"
-                               Foreground="{StaticResource AppColor.TextSecondary}"
-                               Margin="0,16,0,0"
-                               HorizontalAlignment="Center"/>
-        </StackPanel>
+        <Border Grid.Row="1"
+                Margin="24,16,24,0"
+                Padding="16,12"
+                Background="{StaticResource AppColor.BackgroundPrimary}"
+                BorderBrush="{StaticResource AppColor.BorderThin}"
+                BorderThickness="1"
+                CornerRadius="8">
+            <StackPanel Orientation="Horizontal">
+
+                <controls:AppButton Content="➕ Thêm"
+                                    Style="{StaticResource AppButton.Primary.Medium}"
+                                    Command="{Binding AddProductCommand}"
+                                    Margin="0,0,8,0"/>
+
+                <controls:AppButton Content="📋 Nhân bản"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding DuplicateProductCommand}"
+                                    Margin="0,0,8,0"/>
+
+                <controls:AppButton Content="✏️ Sửa"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding EditProductCommand}"
+                                    Margin="0,0,8,0"/>
+
+                <controls:AppButton Content="🗑️ Xóa"
+                                    Style="{StaticResource AppButton.Destructive.Medium}"
+                                    Command="{Binding DeleteProductCommand}"/>
+
+            </StackPanel>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Section 2: Product DataGrid                   -->
+        <!-- ══════════════════════════════════════════════ -->
+        <Grid Grid.Row="2" Margin="24,12,24,24">
+
+            <!-- Error banner -->
+            <Border Background="{StaticResource AppColor.BackgroundErrorLight}"
+                    CornerRadius="8"
+                    Padding="12,10"
+                    Margin="0,0,0,12"
+                    VerticalAlignment="Top"
+                    Visibility="{Binding HasError, Converter={StaticResource BoolToVisibilityConverter}}">
+                <controls:AppLabel Text="{Binding ErrorMessage}"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   Foreground="{StaticResource AppColor.TextError}"/>
+            </Border>
+
+            <!-- DataGrid -->
+            <DataGrid ItemsSource="{Binding Products}"
+                      SelectedItem="{Binding SelectedProduct, Mode=TwoWay}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      SelectionMode="Single"
+                      GridLinesVisibility="Horizontal"
+                      BorderBrush="{StaticResource AppColor.BorderThin}"
+                      BorderThickness="1"
+                      RowBackground="{StaticResource AppColor.BackgroundPrimary}"
+                      AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                      Visibility="{Binding HasProducts, Converter={StaticResource BoolToVisibilityConverter}}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Mã sản phẩm"  Binding="{Binding Code}"          Width="130"/>
+                    <DataGridTextColumn Header="Tên sản phẩm" Binding="{Binding Name}"          Width="*"/>
+                    <DataGridTextColumn Header="Danh mục"     Binding="{Binding Category}"      Width="130"/>
+                    <DataGridTextColumn Header="Đơn vị"       Binding="{Binding Unit}"          Width="80"/>
+                    <DataGridTextColumn Header="Giá nhập"     Binding="{Binding CostPrice, StringFormat=\{0:N0\}}"    Width="110"/>
+                    <DataGridTextColumn Header="Giá bán"      Binding="{Binding SellingPrice, StringFormat=\{0:N0\}}" Width="110"/>
+                    <DataGridTextColumn Header="Tồn kho"      Binding="{Binding StockQuantity}" Width="80"/>
+                    <DataGridCheckBoxColumn Header="Hoạt động" Binding="{Binding IsActive}"     Width="80" IsReadOnly="True"/>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- Empty state -->
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding HasProducts, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                <TextBlock Text="📦" FontSize="48" HorizontalAlignment="Center" TextAlignment="Center"/>
+                <controls:AppLabel Text="Chưa có sản phẩm nào."
+                                   Style="{StaticResource AppTypography.BodySection}"
+                                   Foreground="{StaticResource AppColor.TextSecondary}"
+                                   Margin="0,12,0,0"
+                                   HorizontalAlignment="Center"/>
+            </StackPanel>
+
+        </Grid>
 
     </Grid>
 

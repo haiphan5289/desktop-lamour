@@ -3,6 +3,9 @@
 
 using DesktopLamour.Features.HomePage.Home.ViewModels;
 using DesktopLamour.Features.HomePage.Home.Views;
+using DesktopLamour.Features.HomePage.ProductList.Data.Repositories;
+using DesktopLamour.Features.HomePage.ProductList.Data.Services;
+using DesktopLamour.Features.HomePage.ProductList.Domain.UseCases;
 using DesktopLamour.Features.HomePage.ProductList.ViewModels;
 using DesktopLamour.Features.HomePage.ProductList.Views;
 using DesktopLamour.Features.HomePage.Suppliers.Data.Repositories;
@@ -22,9 +25,29 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<HomeView>();
         services.AddTransient<HomeViewModel>();
 
-        // ── ProductList ──────────────────────────────────────────────────────
+        // ── ProductList: Views + ViewModels ─────────────────────────────────
         services.AddTransient<ProductListView>();
         services.AddTransient<ProductListViewModel>();
+        services.AddTransient<ProductFormWindow>();
+        services.AddTransient<ProductFormViewModel>();
+
+        // ── ProductList: UseCases ────────────────────────────────────────────
+        services.AddTransient<IGetProductsUseCase, GetProductsUseCase>();
+        services.AddTransient<ICreateProductUseCase, CreateProductUseCase>();
+        services.AddTransient<IUpdateProductUseCase, UpdateProductUseCase>();
+        services.AddTransient<IDeleteProductUseCase, DeleteProductUseCase>();
+        services.AddTransient<IDuplicateProductUseCase, DuplicateProductUseCase>();
+
+        // ── ProductList: Repository ──────────────────────────────────────────
+        services.AddTransient<IProductRepository, ProductRepository>();
+
+        // ── ProductList: Service + typed HttpClient ──────────────────────────
+        services.AddHttpClient<IProductService, ProductService>(client =>
+        {
+            client.BaseAddress = new Uri("http://192.168.64.1:5282");
+            client.Timeout     = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
 
         // ── Suppliers: Views + ViewModels ────────────────────────────────────
         services.AddTransient<SupplierListView>();
@@ -50,6 +73,9 @@ public static class HomeServiceCollectionExtensions
             client.Timeout     = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
+
+        // ── ProductList: Window factory ──────────────────────────────────────
+        services.AddTransient<Func<ProductFormWindow>>(sp => () => sp.GetRequiredService<ProductFormWindow>());
 
         // ── Suppliers: Window factory ────────────────────────────────────────
         services.AddTransient<Func<SupplierFormWindow>>(sp => () => sp.GetRequiredService<SupplierFormWindow>());

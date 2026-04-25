@@ -1,6 +1,4 @@
-// ProductListView.xaml.cs
 // Copyright © 2026 DesktopLamour. All rights reserved.
-
 using DesktopLamour.Features.HomePage.ProductList.ViewModels;
 using System.Windows.Controls;
 
@@ -12,5 +10,6 @@ public partial class ProductListView : UserControl
     {
         InitializeComponent();
         DataContext = viewModel;
+        Loaded += async (_, _) => await viewModel.LoadProductsCommand.ExecuteAsync(null);
     }
 }
