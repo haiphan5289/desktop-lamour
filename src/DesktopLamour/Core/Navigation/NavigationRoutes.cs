@@ -5,7 +5,21 @@ namespace DesktopLamour.Core.Navigation;
 
 public static class NavigationRoutes
 {
-    public const string Home         = "HomeView";
+    public static class Home
+    {
+        public const string Dashboard = "HomeView";
+    }
+
+    public static class Products
+    {
+        public const string List = "ProductListView";
+    }
+
+    public static class Suppliers
+    {
+        public const string List = "SupplierListView";
+    }
+
     public const string ProductList  = "ProductListView";
     public const string SupplierList = "SupplierListView";
     public const string Register     = "RegisterView";

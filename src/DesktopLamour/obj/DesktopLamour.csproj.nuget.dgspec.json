@@ -1,25 +1,26 @@
 {
   "format": 1,
   "restore": {
-    "Z:\\src\\DesktopLamour\\DesktopLamour.csproj": {}
+    "/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/DesktopLamour.csproj": {}
   },
   "projects": {
-    "Z:\\src\\DesktopLamour\\DesktopLamour.csproj": {
+    "/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/DesktopLamour.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "Z:\\src\\DesktopLamour\\DesktopLamour.csproj",
+        "projectUniqueName": "/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/DesktopLamour.csproj",
         "projectName": "DesktopLamour",
-        "projectPath": "Z:\\src\\DesktopLamour\\DesktopLamour.csproj",
-        "packagesPath": "C:\\Users\\Hai Phan\\.nuget\\packages\\",
-        "outputPath": "Z:\\src\\DesktopLamour\\obj\\",
+        "projectPath": "/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/DesktopLamour.csproj",
+        "packagesPath": "/Users/hai.phan/.nuget/packages/",
+        "outputPath": "/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\Hai Phan\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "/Users/hai.phan/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0-windows"
         ],
         "sources": {
+          "/opt/homebrew/Cellar/dotnet/10.0.107/libexec/library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -37,7 +38,8 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        }
+        },
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net8.0-windows7.0": {
@@ -75,6 +77,24 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.26, 8.0.26]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.osx-arm64",
+              "version": "[8.0.26, 8.0.26]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.26, 8.0.26]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[8.0.26, 8.0.26]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
@@ -83,7 +103,7 @@
               "privateAssets": "none"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.420/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/opt/homebrew/Cellar/dotnet/10.0.107/libexec/sdk/10.0.107/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

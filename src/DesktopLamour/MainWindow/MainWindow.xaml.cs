@@ -23,6 +23,6 @@ public partial class MainWindow : System.Windows.Window
         ((NavigationService)_navigationService).Initialize(_viewModel);
 
         // Boot directly into Home
-        _navigationService.NavigateTo(NavigationRoutes.Home);
+        _navigationService.NavigateTo(NavigationRoutes.Home.Dashboard);
     }
 }
