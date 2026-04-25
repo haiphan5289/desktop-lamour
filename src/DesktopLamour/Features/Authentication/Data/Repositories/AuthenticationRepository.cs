@@ -18,4 +18,7 @@ public class AuthenticationRepository : IAuthenticationRepository
 
     public Task<UserInfo> SignUpAsync(RegisterInput input, CancellationToken cancellationToken = default)
         => _service.RegisterAsync(input, cancellationToken);
+
+    public Task<UserInfo> LoginAsync(LoginInput input, CancellationToken cancellationToken = default)
+        => _service.LoginAsync(input, cancellationToken);
 }

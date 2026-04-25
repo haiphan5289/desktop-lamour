@@ -9,4 +9,5 @@ public interface IAuthenticationRepository
 {
     Task<bool>     CheckPhoneExistsAsync(string phone, CancellationToken cancellationToken = default);
     Task<UserInfo> SignUpAsync(RegisterInput input, CancellationToken cancellationToken = default);
+    Task<UserInfo> LoginAsync(LoginInput input, CancellationToken cancellationToken = default);
 }

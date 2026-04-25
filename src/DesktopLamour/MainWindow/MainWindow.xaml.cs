@@ -22,7 +22,7 @@ public partial class MainWindow : System.Windows.Window
         // Wire the navigation service to the window view model
         ((NavigationService)_navigationService).Initialize(_viewModel);
 
-        // Boot directly into Home
-        _navigationService.NavigateTo(NavigationRoutes.Home.Dashboard);
+        // Boot into Login screen
+        _navigationService.NavigateTo(NavigationRoutes.Login);
     }
 }

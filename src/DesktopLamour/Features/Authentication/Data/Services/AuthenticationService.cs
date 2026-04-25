@@ -61,4 +61,29 @@ public class AuthenticationService : IAuthenticationService
             CreatedAt    = DateTime.UtcNow,
         };
     }
+
+    public async Task<UserInfo> LoginAsync(LoginInput input, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Logging in account for phone: {Phone}", input.PhoneNumber);
+
+        var response = await _httpClient.PostAsJsonAsync(
+            "/api/v1/auth/login",
+            new LoginRequestDto(input.PhoneNumber, input.Password),
+            cancellationToken);
+
+        response.EnsureSuccessStatusCode();
+
+        var dto = await response.Content.ReadFromJsonAsync<LoginResponseDto>(
+            cancellationToken: cancellationToken)
+            ?? throw new InvalidOperationException("Empty response from login endpoint.");
+
+        return new UserInfo
+        {
+            UserId      = dto.UserId,
+            Phone       = dto.Phone,
+            Name        = dto.Name,
+            AccessToken = dto.AccessToken,
+            CreatedAt   = DateTime.UtcNow,
+        };
+    }
 }

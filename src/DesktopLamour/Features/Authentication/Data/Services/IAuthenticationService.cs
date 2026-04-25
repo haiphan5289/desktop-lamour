@@ -12,4 +12,7 @@ public interface IAuthenticationService
 
     /// <summary>Creates a new account and returns the authenticated user.</summary>
     Task<UserInfo> RegisterAsync(RegisterInput input, CancellationToken cancellationToken = default);
+
+    /// <summary>Authenticates an existing account and returns the authenticated user.</summary>
+    Task<UserInfo> LoginAsync(LoginInput input, CancellationToken cancellationToken = default);
 }

@@ -58,3 +58,15 @@ Z:/src/DesktopLamour/obj/Debug/net8.0-windows/DesktopLamour.csproj.AssemblyRefer
 /Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/DesktopLamour.pdb
 /Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/DesktopLamour.genruntimeconfig.cache
 /Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/ref/DesktopLamour.dll
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/Authentication/Views/LoginView.g.cs
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Customers/Views/CustomerFormWindow.g.cs
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Customers/Views/CustomerListView.g.cs
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Employees/Views/EmployeeFormWindow.g.cs
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Employees/Views/EmployeeListView.g.cs
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/ProductList/Views/ProductFormWindow.g.cs
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/Authentication/Views/LoginView.baml
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Customers/Views/CustomerFormWindow.baml
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Customers/Views/CustomerListView.baml
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Employees/Views/EmployeeFormWindow.baml
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Employees/Views/EmployeeListView.baml
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/ProductList/Views/ProductFormWindow.baml

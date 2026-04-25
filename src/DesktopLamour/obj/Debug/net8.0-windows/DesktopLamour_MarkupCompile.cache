@@ -10,11 +10,11 @@ none
 false
 TRACE;DEBUG;NET;NET8_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER;WINDOWS7_0_OR_GREATER
 /Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/App.xaml
-14-1006707447
+20-1339111744
 
-641331570649
+141-823465121
 2141069413225
-Features/Authentication/Views/RegisterView.xaml;Features/HomePage/Home/Views/HomeView.xaml;Features/HomePage/ProductList/Views/ProductListView.xaml;Features/HomePage/Suppliers/Views/SupplierFormWindow.xaml;Features/HomePage/Suppliers/Views/SupplierListView.xaml;MainWindow/MainWindow.xaml;Shared/AppConverters.xaml;Shared/ComponentLibrary.xaml;Shared/Styles/AppButtonStyles.xaml;Shared/Styles/AppLabelStyles.xaml;Shared/Styles/AppPasswordFieldStyles.xaml;Shared/Styles/AppTextFieldStyles.xaml;Themes/AppTypography.xaml;Themes/DefaultTheme.xaml;
+Features/Authentication/Views/LoginView.xaml;Features/Authentication/Views/RegisterView.xaml;Features/HomePage/Customers/Views/CustomerFormWindow.xaml;Features/HomePage/Customers/Views/CustomerListView.xaml;Features/HomePage/Employees/Views/EmployeeFormWindow.xaml;Features/HomePage/Employees/Views/EmployeeListView.xaml;Features/HomePage/Home/Views/HomeView.xaml;Features/HomePage/ProductList/Views/ProductFormWindow.xaml;Features/HomePage/ProductList/Views/ProductListView.xaml;Features/HomePage/Suppliers/Views/SupplierFormWindow.xaml;Features/HomePage/Suppliers/Views/SupplierListView.xaml;MainWindow/MainWindow.xaml;Shared/AppConverters.xaml;Shared/ComponentLibrary.xaml;Shared/Styles/AppButtonStyles.xaml;Shared/Styles/AppLabelStyles.xaml;Shared/Styles/AppPasswordFieldStyles.xaml;Shared/Styles/AppTextFieldStyles.xaml;Themes/AppTypography.xaml;Themes/DefaultTheme.xaml;
 
 False
 

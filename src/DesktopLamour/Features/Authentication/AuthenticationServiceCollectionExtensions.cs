@@ -16,13 +16,16 @@ public static class AuthenticationServiceCollectionExtensions
     {
         // ── Views (Transient — new instance per navigation) ──────────────────
         services.AddTransient<RegisterView>();
+        services.AddTransient<LoginView>();
 
         // ── ViewModels ───────────────────────────────────────────────────────
         services.AddTransient<RegisterViewModel>();
+        services.AddTransient<LoginViewModel>();
 
         // ── Domain: UseCases ─────────────────────────────────────────────────
         services.AddTransient<ICheckPhoneExistUseCase, CheckPhoneExistUseCase>();
         services.AddTransient<ISignUpWithPhoneUseCase, SignUpWithPhoneUseCase>();
+        services.AddTransient<ILoginWithPhoneUseCase, LoginWithPhoneUseCase>();
 
         // ── Data: Repository ─────────────────────────────────────────────────
         services.AddTransient<IAuthenticationRepository, AuthenticationRepository>();
@@ -31,7 +34,7 @@ public static class AuthenticationServiceCollectionExtensions
         services.AddHttpClient<IAuthenticationService, AuthenticationService>(client =>
         {
             // TODO: Move base address to configuration (appsettings.json / env)
-            client.BaseAddress = new Uri("https://api.example.com");
+            client.BaseAddress = new Uri("http://192.168.64.1:5282");
             client.Timeout     = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
