@@ -1,6 +1,11 @@
 // HomeServiceCollectionExtensions.cs
 // Copyright © 2026 DesktopLamour. All rights reserved.
 
+using DesktopLamour.Features.HomePage.Customers.Data.Repositories;
+using DesktopLamour.Features.HomePage.Customers.Data.Services;
+using DesktopLamour.Features.HomePage.Customers.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Customers.ViewModels;
+using DesktopLamour.Features.HomePage.Customers.Views;
 using DesktopLamour.Features.HomePage.Home.ViewModels;
 using DesktopLamour.Features.HomePage.Home.Views;
 using DesktopLamour.Features.HomePage.ProductList.Data.Repositories;
@@ -79,6 +84,33 @@ public static class HomeServiceCollectionExtensions
 
         // ── Suppliers: Window factory ────────────────────────────────────────
         services.AddTransient<Func<SupplierFormWindow>>(sp => () => sp.GetRequiredService<SupplierFormWindow>());
+
+        // ── Customers: Views + ViewModels ────────────────────────────────────
+        services.AddTransient<CustomerListView>();
+        services.AddTransient<CustomerListViewModel>();
+        services.AddTransient<CustomerFormWindow>();
+        services.AddTransient<CustomerFormViewModel>();
+
+        // ── Customers: UseCases ──────────────────────────────────────────────
+        services.AddTransient<IGetCustomersUseCase, GetCustomersUseCase>();
+        services.AddTransient<ICreateCustomerUseCase, CreateCustomerUseCase>();
+        services.AddTransient<IUpdateCustomerUseCase, UpdateCustomerUseCase>();
+        services.AddTransient<IDeleteCustomerUseCase, DeleteCustomerUseCase>();
+        services.AddTransient<IDuplicateCustomerUseCase, DuplicateCustomerUseCase>();
+
+        // ── Customers: Repository ────────────────────────────────────────────
+        services.AddTransient<ICustomerRepository, CustomerRepository>();
+
+        // ── Customers: Service + typed HttpClient ────────────────────────────
+        services.AddHttpClient<ICustomerService, CustomerService>(client =>
+        {
+            client.BaseAddress = new Uri("http://192.168.64.1:5282");
+            client.Timeout     = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
+
+        // ── Customers: Window factory ────────────────────────────────────────
+        services.AddTransient<Func<CustomerFormWindow>>(sp => () => sp.GetRequiredService<CustomerFormWindow>());
 
         return services;
     }

@@ -20,8 +20,14 @@ public static class NavigationRoutes
         public const string List = "SupplierListView";
     }
 
+    public static class Customers
+    {
+        public const string List = "CustomerListView";
+    }
+
     public const string ProductList  = "ProductListView";
     public const string SupplierList = "SupplierListView";
+    public const string CustomerList = "CustomerListView";
     public const string Register     = "RegisterView";
     public const string Login        = "LoginView";
     public const string Main         = "MainView";

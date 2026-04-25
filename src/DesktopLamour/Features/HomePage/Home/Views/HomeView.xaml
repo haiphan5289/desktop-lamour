@@ -80,6 +80,31 @@
                 </StackPanel>
             </Border>
 
+            <!-- ── Khách hàng card ────────────────────── -->
+            <Border Background="{StaticResource AppColor.BackgroundPrimary}"
+                    BorderBrush="{StaticResource AppColor.BorderThin}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource AppRadius.Large}"
+                    Margin="0,12,12,0"
+                    Cursor="Hand">
+                <Border.InputBindings>
+                    <MouseBinding MouseAction="LeftClick"
+                                  Command="{Binding NavigateToCustomersCommand}"/>
+                </Border.InputBindings>
+                <StackPanel HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Margin="0,32,0,32">
+                    <TextBlock Text="👥"
+                               FontSize="48"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"/>
+                    <controls:AppLabel Text="Khách hàng"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Margin="0,16,0,0"
+                                       HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
         </UniformGrid>
     </Grid>
 
