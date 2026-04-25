@@ -25,9 +25,15 @@ public static class NavigationRoutes
         public const string List = "CustomerListView";
     }
 
+    public static class Employees
+    {
+        public const string List = "EmployeeListView";
+    }
+
     public const string ProductList  = "ProductListView";
     public const string SupplierList = "SupplierListView";
     public const string CustomerList = "CustomerListView";
+    public const string EmployeeList = "EmployeeListView";
     public const string Register     = "RegisterView";
     public const string Login        = "LoginView";
     public const string Main         = "MainView";

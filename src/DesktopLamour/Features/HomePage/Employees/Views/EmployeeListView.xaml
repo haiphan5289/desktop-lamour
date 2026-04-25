@@ -1,0 +1,125 @@
+<UserControl x:Class="DesktopLamour.Features.HomePage.Employees.Views.EmployeeListView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+             Background="{StaticResource AppColor.BackgroundSecondary}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>   <!-- Page header -->
+            <RowDefinition Height="Auto"/>   <!-- Section 1: Toolbar -->
+            <RowDefinition Height="*"/>      <!-- Section 2: DataGrid -->
+        </Grid.RowDefinitions>
+
+        <!-- Loading overlay -->
+        <Grid Grid.RowSpan="3"
+              Panel.ZIndex="100"
+              Background="{StaticResource AppColor.BackgroundOverlay}"
+              Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
+            <ProgressBar IsIndeterminate="True" Width="48" Height="48"
+                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Grid>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Page header                                   -->
+        <!-- ══════════════════════════════════════════════ -->
+        <StackPanel Grid.Row="0" Margin="24,32,24,0">
+            <controls:AppButton Content="← Quay lại"
+                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                Command="{Binding GoBackCommand}"
+                                HorizontalAlignment="Left"
+                                Margin="0,0,0,8"/>
+            <controls:AppLabel Text="Nhân viên"
+                               Style="{StaticResource AppTypography.DisplayPage}"/>
+        </StackPanel>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Section 1: Toolbar actions                    -->
+        <!-- ══════════════════════════════════════════════ -->
+        <Border Grid.Row="1"
+                Margin="24,16,24,0"
+                Padding="16,12"
+                Background="{StaticResource AppColor.BackgroundPrimary}"
+                BorderBrush="{StaticResource AppColor.BorderThin}"
+                BorderThickness="1"
+                CornerRadius="8">
+            <StackPanel Orientation="Horizontal">
+
+                <controls:AppButton Content="➕ Thêm"
+                                    Style="{StaticResource AppButton.Primary.Medium}"
+                                    Command="{Binding AddEmployeeCommand}"
+                                    Margin="0,0,8,0"/>
+
+                <controls:AppButton Content="📋 Nhân bản"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding DuplicateEmployeeCommand}"
+                                    Margin="0,0,8,0"/>
+
+                <controls:AppButton Content="✏️ Sửa"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding EditEmployeeCommand}"
+                                    Margin="0,0,8,0"/>
+
+                <controls:AppButton Content="🗑️ Xóa"
+                                    Style="{StaticResource AppButton.Destructive.Medium}"
+                                    Command="{Binding DeleteEmployeeCommand}"/>
+
+            </StackPanel>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Section 2: Employee DataGrid                  -->
+        <!-- ══════════════════════════════════════════════ -->
+        <Grid Grid.Row="2" Margin="24,12,24,24">
+
+            <!-- Error banner -->
+            <Border Background="{StaticResource AppColor.BackgroundErrorLight}"
+                    CornerRadius="8"
+                    Padding="12,10"
+                    Margin="0,0,0,12"
+                    VerticalAlignment="Top"
+                    Visibility="{Binding HasError, Converter={StaticResource BoolToVisibilityConverter}}">
+                <controls:AppLabel Text="{Binding ErrorMessage}"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   Foreground="{StaticResource AppColor.TextError}"/>
+            </Border>
+
+            <!-- DataGrid -->
+            <DataGrid ItemsSource="{Binding Employees}"
+                      SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      SelectionMode="Single"
+                      GridLinesVisibility="Horizontal"
+                      BorderBrush="{StaticResource AppColor.BorderThin}"
+                      BorderThickness="1"
+                      RowBackground="{StaticResource AppColor.BackgroundPrimary}"
+                      AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                      Visibility="{Binding HasEmployees, Converter={StaticResource BoolToVisibilityConverter}}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Tên nhân viên"  Binding="{Binding Name}"     Width="*"/>
+                    <DataGridTextColumn Header="Số điện thoại"  Binding="{Binding Phone}"    Width="140"/>
+                    <DataGridTextColumn Header="Chức vụ"        Binding="{Binding Role}"     Width="120"/>
+                    <DataGridCheckBoxColumn Header="Hoạt động"  Binding="{Binding IsActive}" Width="90" IsReadOnly="True"/>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- Empty state -->
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding HasEmployees, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                <TextBlock Text="👤" FontSize="48" HorizontalAlignment="Center" TextAlignment="Center"/>
+                <controls:AppLabel Text="Chưa có nhân viên nào."
+                                   Style="{StaticResource AppTypography.BodySection}"
+                                   Foreground="{StaticResource AppColor.TextSecondary}"
+                                   Margin="0,12,0,0"
+                                   HorizontalAlignment="Center"/>
+            </StackPanel>
+
+        </Grid>
+
+    </Grid>
+
+</UserControl>

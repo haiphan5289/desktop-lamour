@@ -1,6 +1,11 @@
 // HomeServiceCollectionExtensions.cs
 // Copyright © 2026 DesktopLamour. All rights reserved.
 
+using DesktopLamour.Features.HomePage.Employees.Data.Repositories;
+using DesktopLamour.Features.HomePage.Employees.Data.Services;
+using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Employees.ViewModels;
+using DesktopLamour.Features.HomePage.Employees.Views;
 using DesktopLamour.Features.HomePage.Customers.Data.Repositories;
 using DesktopLamour.Features.HomePage.Customers.Data.Services;
 using DesktopLamour.Features.HomePage.Customers.Domain.UseCases;
@@ -111,6 +116,33 @@ public static class HomeServiceCollectionExtensions
 
         // ── Customers: Window factory ────────────────────────────────────────
         services.AddTransient<Func<CustomerFormWindow>>(sp => () => sp.GetRequiredService<CustomerFormWindow>());
+
+        // ── Employees: Views + ViewModels ────────────────────────────────────────
+        services.AddTransient<EmployeeListView>();
+        services.AddTransient<EmployeeListViewModel>();
+        services.AddTransient<EmployeeFormWindow>();
+        services.AddTransient<EmployeeFormViewModel>();
+
+        // ── Employees: UseCases ──────────────────────────────────────────────────
+        services.AddTransient<IGetEmployeesUseCase, GetEmployeesUseCase>();
+        services.AddTransient<ICreateEmployeeUseCase, CreateEmployeeUseCase>();
+        services.AddTransient<IUpdateEmployeeUseCase, UpdateEmployeeUseCase>();
+        services.AddTransient<IDeleteEmployeeUseCase, DeleteEmployeeUseCase>();
+        services.AddTransient<IDuplicateEmployeeUseCase, DuplicateEmployeeUseCase>();
+
+        // ── Employees: Repository ────────────────────────────────────────────────
+        services.AddTransient<IEmployeeRepository, EmployeeRepository>();
+
+        // ── Employees: Service + typed HttpClient ────────────────────────────────
+        services.AddHttpClient<IEmployeeService, EmployeeService>(client =>
+        {
+            client.BaseAddress = new Uri("http://192.168.64.1:5282");
+            client.Timeout     = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
+
+        // ── Employees: Window factory ────────────────────────────────────────────
+        services.AddTransient<Func<EmployeeFormWindow>>(sp => () => sp.GetRequiredService<EmployeeFormWindow>());
 
         return services;
     }
