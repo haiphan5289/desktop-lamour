@@ -30,6 +30,12 @@ public static class NavigationRoutes
         public const string List = "EmployeeListView";
     }
 
+    public static class Warehouse
+    {
+        public const string Hub         = "WarehouseView";
+        public const string TongHopTonKho = "TongHopTonKhoView";
+    }
+
     public const string ProductList  = "ProductListView";
     public const string SupplierList = "SupplierListView";
     public const string CustomerList = "CustomerListView";

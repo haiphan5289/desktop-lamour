@@ -31,4 +31,8 @@ public partial class HomeViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToEmployees()
         => _navigationService.NavigateTo(NavigationRoutes.Employees.List);
+
+    [RelayCommand]
+    private void NavigateToWarehouse()
+        => _navigationService.NavigateTo(NavigationRoutes.Warehouse.Hub);
 }

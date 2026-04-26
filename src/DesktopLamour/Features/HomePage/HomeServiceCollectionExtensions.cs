@@ -6,6 +6,11 @@ using DesktopLamour.Features.HomePage.Employees.Data.Services;
 using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Employees.ViewModels;
 using DesktopLamour.Features.HomePage.Employees.Views;
+using DesktopLamour.Features.HomePage.Warehouse.Data.Repositories;
+using DesktopLamour.Features.HomePage.Warehouse.Data.Services;
+using DesktopLamour.Features.HomePage.Warehouse.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Warehouse.ViewModels;
+using DesktopLamour.Features.HomePage.Warehouse.Views;
 using DesktopLamour.Features.HomePage.Customers.Data.Repositories;
 using DesktopLamour.Features.HomePage.Customers.Data.Services;
 using DesktopLamour.Features.HomePage.Customers.Domain.UseCases;
@@ -143,6 +148,26 @@ public static class HomeServiceCollectionExtensions
 
         // ── Employees: Window factory ────────────────────────────────────────────
         services.AddTransient<Func<EmployeeFormWindow>>(sp => () => sp.GetRequiredService<EmployeeFormWindow>());
+
+        // ── Warehouse: Views + ViewModels ────────────────────────────────────────
+        services.AddTransient<WarehouseView>();
+        services.AddTransient<WarehouseViewModel>();
+        services.AddTransient<TongHopTonKhoView>();
+        services.AddTransient<TongHopTonKhoViewModel>();
+
+        // ── Warehouse: UseCases ──────────────────────────────────────────────────
+        services.AddTransient<IGetInventorySummaryUseCase, GetInventorySummaryUseCase>();
+
+        // ── Warehouse: Repository ────────────────────────────────────────────────
+        services.AddTransient<IWarehouseRepository, WarehouseRepository>();
+
+        // ── Warehouse: Service + typed HttpClient ────────────────────────────────
+        services.AddHttpClient<IWarehouseService, WarehouseService>(client =>
+        {
+            client.BaseAddress = new Uri("http://192.168.64.1:5282");
+            client.Timeout     = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
 
         return services;
     }

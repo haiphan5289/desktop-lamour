@@ -1,0 +1,155 @@
+<UserControl x:Class="DesktopLamour.Features.HomePage.Warehouse.Views.TongHopTonKhoView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+             Background="{StaticResource AppColor.BackgroundSecondary}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Header -->
+            <RowDefinition Height="Auto"/>  <!-- Filter toolbar -->
+            <RowDefinition Height="*"/>     <!-- DataGrid -->
+        </Grid.RowDefinitions>
+
+        <!-- Loading overlay -->
+        <Grid Grid.RowSpan="3"
+              Panel.ZIndex="100"
+              Background="{StaticResource AppColor.BackgroundOverlay}"
+              Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
+            <ProgressBar IsIndeterminate="True" Width="48" Height="48"
+                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Grid>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Page header                                   -->
+        <!-- ══════════════════════════════════════════════ -->
+        <StackPanel Grid.Row="0" Margin="24,32,24,0">
+            <controls:AppButton Content="← Quay lại"
+                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                Command="{Binding GoBackCommand}"
+                                HorizontalAlignment="Left"
+                                Margin="0,0,0,8"/>
+            <controls:AppLabel Text="Tổng hợp tồn kho"
+                               Style="{StaticResource AppTypography.DisplayPage}"/>
+        </StackPanel>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Filter toolbar                                -->
+        <!-- ══════════════════════════════════════════════ -->
+        <Border Grid.Row="1"
+                Margin="24,16,24,0"
+                Padding="16,12"
+                Background="{StaticResource AppColor.BackgroundPrimary}"
+                BorderBrush="{StaticResource AppColor.BorderThin}"
+                BorderThickness="1"
+                CornerRadius="8">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+
+                <controls:AppLabel Text="Từ ngày"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"/>
+                <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}"
+                            Width="140"
+                            Margin="0,0,16,0"/>
+
+                <controls:AppLabel Text="Đến ngày"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"/>
+                <DatePicker SelectedDate="{Binding ToDate, Mode=TwoWay}"
+                            Width="140"
+                            Margin="0,0,16,0"/>
+
+                <controls:AppButton Content="🔍 Xem báo cáo"
+                                    Style="{StaticResource AppButton.Primary.Medium}"
+                                    Command="{Binding LoadCommand}"/>
+
+            </StackPanel>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  DataGrid                                      -->
+        <!-- ══════════════════════════════════════════════ -->
+        <Grid Grid.Row="2" Margin="24,12,24,24">
+
+            <!-- Error banner -->
+            <Border Background="{StaticResource AppColor.BackgroundErrorLight}"
+                    CornerRadius="8"
+                    Padding="12,10"
+                    Margin="0,0,0,12"
+                    VerticalAlignment="Top"
+                    Visibility="{Binding HasError, Converter={StaticResource BoolToVisibilityConverter}}">
+                <controls:AppLabel Text="{Binding ErrorMessage}"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   Foreground="{StaticResource AppColor.TextError}"/>
+            </Border>
+
+            <!-- Summary DataGrid -->
+            <DataGrid ItemsSource="{Binding Items}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      SelectionMode="Single"
+                      GridLinesVisibility="Horizontal"
+                      BorderBrush="{StaticResource AppColor.BorderThin}"
+                      BorderThickness="1"
+                      RowBackground="{StaticResource AppColor.BackgroundPrimary}"
+                      AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                      Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibilityConverter}}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Mã hàng"   Binding="{Binding Code}"         Width="110"/>
+                    <DataGridTextColumn Header="Tên hàng"  Binding="{Binding Name}"         Width="*"/>
+                    <DataGridTextColumn Header="ĐVT"       Binding="{Binding Unit}"         Width="70"/>
+
+                    <!-- Đầu kỳ -->
+                    <DataGridTextColumn Header="Đầu kỳ SL"
+                                        Binding="{Binding OpeningQty, StringFormat=\{0:N0\}}"
+                                        Width="100"/>
+                    <DataGridTextColumn Header="Đầu kỳ GT"
+                                        Binding="{Binding OpeningValue, StringFormat=\{0:N0\}}"
+                                        Width="110"/>
+
+                    <!-- Nhập kho -->
+                    <DataGridTextColumn Header="Nhập SL"
+                                        Binding="{Binding ImportQty, StringFormat=\{0:N0\}}"
+                                        Width="90"/>
+                    <DataGridTextColumn Header="Nhập GT"
+                                        Binding="{Binding ImportValue, StringFormat=\{0:N0\}}"
+                                        Width="110"/>
+
+                    <!-- Xuất kho -->
+                    <DataGridTextColumn Header="Xuất SL"
+                                        Binding="{Binding ExportQty, StringFormat=\{0:N0\}}"
+                                        Width="90"/>
+                    <DataGridTextColumn Header="Xuất GT"
+                                        Binding="{Binding ExportValue, StringFormat=\{0:N0\}}"
+                                        Width="110"/>
+
+                    <!-- Cuối kỳ -->
+                    <DataGridTextColumn Header="Cuối kỳ SL"
+                                        Binding="{Binding ClosingQty, StringFormat=\{0:N0\}}"
+                                        Width="100"/>
+                    <DataGridTextColumn Header="Cuối kỳ GT"
+                                        Binding="{Binding ClosingValue, StringFormat=\{0:N0\}}"
+                                        Width="110"/>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- Empty state -->
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding HasItems, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                <TextBlock Text="📊" FontSize="48" HorizontalAlignment="Center" TextAlignment="Center"/>
+                <controls:AppLabel Text="Chọn khoảng thời gian và nhấn Xem báo cáo."
+                                   Style="{StaticResource AppTypography.BodySection}"
+                                   Foreground="{StaticResource AppColor.TextSecondary}"
+                                   Margin="0,12,0,0"
+                                   HorizontalAlignment="Center"/>
+            </StackPanel>
+
+        </Grid>
+    </Grid>
+
+</UserControl>

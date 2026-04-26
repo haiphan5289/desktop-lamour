@@ -69,6 +69,8 @@ public class NavigationService : INavigationService
             NavigationRoutes.Suppliers.List  => _serviceProvider.GetService(typeof(Features.HomePage.Suppliers.Views.SupplierListView)),
             NavigationRoutes.Customers.List  => _serviceProvider.GetService(typeof(Features.HomePage.Customers.Views.CustomerListView)),
             NavigationRoutes.Employees.List  => _serviceProvider.GetService(typeof(Features.HomePage.Employees.Views.EmployeeListView)),
+            NavigationRoutes.Warehouse.Hub         => _serviceProvider.GetService(typeof(Features.HomePage.Warehouse.Views.WarehouseView)),
+            NavigationRoutes.Warehouse.TongHopTonKho => _serviceProvider.GetService(typeof(Features.HomePage.Warehouse.Views.TongHopTonKhoView)),
             NavigationRoutes.Register        => _serviceProvider.GetService(typeof(Features.Authentication.Views.RegisterView)),
             NavigationRoutes.Login           => _serviceProvider.GetService(typeof(Features.Authentication.Views.LoginView)),
             NavigationRoutes.Main            => _serviceProvider.GetService(typeof(Features.HomePage.Home.Views.HomeView)),
