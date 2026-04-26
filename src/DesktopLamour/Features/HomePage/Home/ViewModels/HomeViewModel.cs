@@ -35,4 +35,8 @@ public partial class HomeViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToWarehouse()
         => _navigationService.NavigateTo(NavigationRoutes.Warehouse.Hub);
+
+    [RelayCommand]
+    private void NavigateToAccounting()
+        => _navigationService.NavigateTo(NavigationRoutes.Accounting.Hub);
 }

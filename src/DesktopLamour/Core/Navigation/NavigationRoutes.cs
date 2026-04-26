@@ -36,6 +36,11 @@ public static class NavigationRoutes
         public const string TongHopTonKho = "TongHopTonKhoView";
     }
 
+    public static class Accounting
+    {
+        public const string Hub = "AccountingView";
+    }
+
     public const string ProductList  = "ProductListView";
     public const string SupplierList = "SupplierListView";
     public const string CustomerList = "CustomerListView";

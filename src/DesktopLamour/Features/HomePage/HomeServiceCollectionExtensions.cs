@@ -6,6 +6,10 @@ using DesktopLamour.Features.HomePage.Employees.Data.Services;
 using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Employees.ViewModels;
 using DesktopLamour.Features.HomePage.Employees.Views;
+using DesktopLamour.Features.HomePage.Accounting.Data.Services;
+using DesktopLamour.Features.HomePage.Accounting.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Accounting.ViewModels;
+using DesktopLamour.Features.HomePage.Accounting.Views;
 using DesktopLamour.Features.HomePage.Warehouse.Data.Repositories;
 using DesktopLamour.Features.HomePage.Warehouse.Data.Services;
 using DesktopLamour.Features.HomePage.Warehouse.Domain.UseCases;
@@ -148,6 +152,21 @@ public static class HomeServiceCollectionExtensions
 
         // ── Employees: Window factory ────────────────────────────────────────────
         services.AddTransient<Func<EmployeeFormWindow>>(sp => () => sp.GetRequiredService<EmployeeFormWindow>());
+
+        // ── Accounting: Views + ViewModels ───────────────────────────────────────
+        services.AddTransient<AccountingView>();
+        services.AddTransient<AccountingViewModel>();
+
+        // ── Accounting: UseCases ─────────────────────────────────────────────────
+        services.AddTransient<IGetCashLedgerUseCase, GetCashLedgerUseCase>();
+
+        // ── Accounting: Service + typed HttpClient ───────────────────────────────
+        services.AddHttpClient<ICashLedgerService, CashLedgerService>(client =>
+        {
+            client.BaseAddress = new Uri("http://192.168.64.1:5282");
+            client.Timeout     = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
 
         // ── Warehouse: Views + ViewModels ────────────────────────────────────────
         services.AddTransient<WarehouseView>();
