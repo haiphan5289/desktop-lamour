@@ -148,8 +148,9 @@
                         <controls:AppLabel Text=" *" Style="{StaticResource AppTypography.LabelSection}"
                                            Foreground="{StaticResource AppColor.TextBrand}"/>
                     </StackPanel>
-                    <controls:AppTextField Text="{Binding TotalAmount, Mode=TwoWay, UpdateSourceTrigger=LostFocus, StringFormat=N0}"
-                                           Placeholder="0" TextAlignment="Right"/>
+                    <controls:AppCurrencyField
+                        Value="{Binding TotalAmount, Mode=TwoWay}"
+                        Placeholder="0"/>
                 </StackPanel>
             </Grid>
 
