@@ -4,25 +4,53 @@
              xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
              Background="{StaticResource AppColor.BackgroundSecondary}">
 
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="GroupHeaderBrush" Color="#BDD7EE"/>
+        <SolidColorBrush x:Key="GroupBorderBrush"  Color="#9CB8D4"/>
+
+        <!-- Strip style mặc định → HeaderTemplate kiểm soát hoàn toàn -->
+        <Style x:Key="CleanHeaderStyle" TargetType="DataGridColumnHeader">
+            <Setter Property="Padding"         Value="0"/>
+            <Setter Property="Margin"          Value="0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridColumnHeader">
+                        <ContentPresenter HorizontalAlignment="Stretch"
+                                          VerticalAlignment="Stretch"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ElementStyle cho ô text (Mã hàng, Tên hàng, ĐVT) -->
+        <Style x:Key="CellText" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="VerticalAlignment"   Value="Center"/>
+            <Setter Property="Padding"             Value="6,0,0,0"/>
+        </Style>
+
+        <!-- ElementStyle cho ô số (Qty, Value) — right-align để thẳng với header centered -->
+        <Style x:Key="CellNumber" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="VerticalAlignment"   Value="Center"/>
+            <Setter Property="Padding"             Value="0,0,8,0"/>
+        </Style>
+    </UserControl.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>  <!-- Header -->
-            <RowDefinition Height="Auto"/>  <!-- Filter toolbar -->
-            <RowDefinition Height="*"/>     <!-- DataGrid -->
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <!-- Loading overlay -->
-        <Grid Grid.RowSpan="3"
-              Panel.ZIndex="100"
-              Background="{StaticResource AppColor.BackgroundOverlay}"
-              Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
-            <ProgressBar IsIndeterminate="True" Width="48" Height="48"
-                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
-        </Grid>
+        <controls:AppLoadingOverlay Grid.RowSpan="3"
+                                    IsLoading="{Binding IsLoading}"/>
 
-        <!-- ══════════════════════════════════════════════ -->
-        <!--  Page header                                   -->
-        <!-- ══════════════════════════════════════════════ -->
+        <!-- Page header -->
         <StackPanel Grid.Row="0" Margin="24,32,24,0">
             <controls:AppButton Content="← Quay lại"
                                 Style="{StaticResource AppButton.Tertiary.Medium}"
@@ -33,9 +61,7 @@
                                Style="{StaticResource AppTypography.DisplayPage}"/>
         </StackPanel>
 
-        <!-- ══════════════════════════════════════════════ -->
-        <!--  Filter toolbar                                -->
-        <!-- ══════════════════════════════════════════════ -->
+        <!-- Filter toolbar -->
         <Border Grid.Row="1"
                 Margin="24,16,24,0"
                 Padding="16,12"
@@ -44,40 +70,30 @@
                 BorderThickness="1"
                 CornerRadius="8">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-
                 <controls:AppLabel Text="Từ ngày"
                                    Style="{StaticResource AppTypography.BodyCaption}"
                                    VerticalAlignment="Center"
                                    Margin="0,0,8,0"/>
                 <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}"
-                            Width="140"
-                            Margin="0,0,16,0"/>
-
+                            Width="140" Margin="0,0,16,0"/>
                 <controls:AppLabel Text="Đến ngày"
                                    Style="{StaticResource AppTypography.BodyCaption}"
                                    VerticalAlignment="Center"
                                    Margin="0,0,8,0"/>
                 <DatePicker SelectedDate="{Binding ToDate, Mode=TwoWay}"
-                            Width="140"
-                            Margin="0,0,16,0"/>
-
+                            Width="140" Margin="0,0,16,0"/>
                 <controls:AppButton Content="🔍 Xem báo cáo"
                                     Style="{StaticResource AppButton.Primary.Medium}"
                                     Command="{Binding LoadCommand}"/>
-
             </StackPanel>
         </Border>
 
-        <!-- ══════════════════════════════════════════════ -->
-        <!--  DataGrid                                      -->
-        <!-- ══════════════════════════════════════════════ -->
+        <!-- DataGrid -->
         <Grid Grid.Row="2" Margin="24,12,24,24">
 
             <!-- Error banner -->
             <Border Background="{StaticResource AppColor.BackgroundErrorLight}"
-                    CornerRadius="8"
-                    Padding="12,10"
-                    Margin="0,0,0,12"
+                    CornerRadius="8" Padding="12,10" Margin="0,0,0,12"
                     VerticalAlignment="Top"
                     Visibility="{Binding HasError, Converter={StaticResource BoolToVisibilityConverter}}">
                 <controls:AppLabel Text="{Binding ErrorMessage}"
@@ -85,55 +101,364 @@
                                    Foreground="{StaticResource AppColor.TextError}"/>
             </Border>
 
-            <!-- Summary DataGrid -->
             <DataGrid ItemsSource="{Binding Items}"
                       AutoGenerateColumns="False"
                       IsReadOnly="True"
                       CanUserAddRows="False"
                       CanUserDeleteRows="False"
+                      CanUserResizeColumns="False"
                       SelectionMode="Single"
+                      HeadersVisibility="Column"
                       GridLinesVisibility="Horizontal"
                       BorderBrush="{StaticResource AppColor.BorderThin}"
                       BorderThickness="1"
                       RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                      ColumnHeaderStyle="{StaticResource CleanHeaderStyle}"
                       Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibilityConverter}}">
+
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Mã hàng"   Binding="{Binding Code}"         Width="110"/>
-                    <DataGridTextColumn Header="Tên hàng"  Binding="{Binding Name}"         Width="*"/>
-                    <DataGridTextColumn Header="ĐVT"       Binding="{Binding Unit}"         Width="70"/>
 
-                    <!-- Đầu kỳ -->
-                    <DataGridTextColumn Header="Đầu kỳ SL"
-                                        Binding="{Binding OpeningQty, StringFormat=\{0:N0\}}"
-                                        Width="100"/>
-                    <DataGridTextColumn Header="Đầu kỳ GT"
-                                        Binding="{Binding OpeningValue, StringFormat=\{0:N0\}}"
-                                        Width="110"/>
+                    <!-- ═══════════════════════════════════ -->
+                    <!--  Cột thông tin (không có nhóm)     -->
+                    <!-- ═══════════════════════════════════ -->
 
-                    <!-- Nhập kho -->
-                    <DataGridTextColumn Header="Nhập SL"
-                                        Binding="{Binding ImportQty, StringFormat=\{0:N0\}}"
-                                        Width="90"/>
-                    <DataGridTextColumn Header="Nhập GT"
-                                        Binding="{Binding ImportValue, StringFormat=\{0:N0\}}"
-                                        Width="110"/>
+                    <DataGridTextColumn Binding="{Binding Code}" Width="110"
+                                        ElementStyle="{StaticResource CellText}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="24"/>
+                                        <RowDefinition Height="26"/>
+                                    </Grid.RowDefinitions>
+                                    <Border Grid.Row="0"
+                                            Background="{StaticResource GroupHeaderBrush}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="1,1,0,1"/>
+                                    <Border Grid.Row="1"
+                                            Background="{StaticResource AppColor.BackgroundSecondary}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="1,0,0,1">
+                                        <TextBlock Text="Mã hàng"
+                                                   FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Left"
+                                                   VerticalAlignment="Center"
+                                                   Margin="6,0,0,0"/>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
 
-                    <!-- Xuất kho -->
-                    <DataGridTextColumn Header="Xuất SL"
-                                        Binding="{Binding ExportQty, StringFormat=\{0:N0\}}"
-                                        Width="90"/>
-                    <DataGridTextColumn Header="Xuất GT"
-                                        Binding="{Binding ExportValue, StringFormat=\{0:N0\}}"
-                                        Width="110"/>
+                    <DataGridTextColumn Binding="{Binding Name}" Width="*"
+                                        ElementStyle="{StaticResource CellText}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="24"/>
+                                        <RowDefinition Height="26"/>
+                                    </Grid.RowDefinitions>
+                                    <Border Grid.Row="0"
+                                            Background="{StaticResource GroupHeaderBrush}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="0,1,0,1"/>
+                                    <Border Grid.Row="1"
+                                            Background="{StaticResource AppColor.BackgroundSecondary}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="0,0,0,1">
+                                        <TextBlock Text="Tên hàng"
+                                                   FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Left"
+                                                   VerticalAlignment="Center"
+                                                   Margin="6,0,0,0"/>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
 
-                    <!-- Cuối kỳ -->
-                    <DataGridTextColumn Header="Cuối kỳ SL"
-                                        Binding="{Binding ClosingQty, StringFormat=\{0:N0\}}"
-                                        Width="100"/>
-                    <DataGridTextColumn Header="Cuối kỳ GT"
-                                        Binding="{Binding ClosingValue, StringFormat=\{0:N0\}}"
-                                        Width="110"/>
+                    <DataGridTextColumn Binding="{Binding Unit}" Width="70"
+                                        ElementStyle="{StaticResource CellText}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="24"/>
+                                        <RowDefinition Height="26"/>
+                                    </Grid.RowDefinitions>
+                                    <Border Grid.Row="0"
+                                            Background="{StaticResource GroupHeaderBrush}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="0,1,1,1"/>
+                                    <Border Grid.Row="1"
+                                            Background="{StaticResource AppColor.BackgroundSecondary}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="0,0,1,1">
+                                        <TextBlock Text="ĐVT"
+                                                   FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Left"
+                                                   VerticalAlignment="Center"
+                                                   Margin="6,0,0,0"/>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- ═══════════════════════════════════ -->
+                    <!--  Nhóm: Đầu kỳ                      -->
+                    <!-- ═══════════════════════════════════ -->
+
+                    <DataGridTextColumn Binding="{Binding OpeningQty, StringFormat=\{0:N0\}}" Width="100"
+                                        ElementStyle="{StaticResource CellNumber}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="24"/>
+                                        <RowDefinition Height="26"/>
+                                    </Grid.RowDefinitions>
+                                    <Border Grid.Row="0"
+                                            Background="{StaticResource GroupHeaderBrush}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="1,1,0,0">
+                                        <TextBlock Text="Đầu kỳ"
+                                                   FontWeight="Bold" FontSize="12"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                    <Border Grid.Row="1"
+                                            Background="{StaticResource AppColor.BackgroundSecondary}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="1,1,0,1">
+                                        <TextBlock Text="Số lượng"
+                                                   FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn Binding="{Binding OpeningValue, StringFormat=\{0:N0\}}" Width="110"
+                                        ElementStyle="{StaticResource CellNumber}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="24"/>
+                                        <RowDefinition Height="26"/>
+                                    </Grid.RowDefinitions>
+                                    <Border Grid.Row="0"
+                                            Background="{StaticResource GroupHeaderBrush}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="0,1,1,0"/>
+                                    <Border Grid.Row="1"
+                                            Background="{StaticResource AppColor.BackgroundSecondary}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="0,1,1,1">
+                                        <TextBlock Text="Giá trị"
+                                                   FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- ═══════════════════════════════════ -->
+                    <!--  Nhóm: Nhập kho                    -->
+                    <!-- ═══════════════════════════════════ -->
+
+                    <DataGridTextColumn Binding="{Binding ImportQty, StringFormat=\{0:N0\}}" Width="90"
+                                        ElementStyle="{StaticResource CellNumber}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="24"/>
+                                        <RowDefinition Height="26"/>
+                                    </Grid.RowDefinitions>
+                                    <Border Grid.Row="0"
+                                            Background="{StaticResource GroupHeaderBrush}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="1,1,0,0">
+                                        <TextBlock Text="Nhập kho"
+                                                   FontWeight="Bold" FontSize="12"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                    <Border Grid.Row="1"
+                                            Background="{StaticResource AppColor.BackgroundSecondary}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="1,1,0,1">
+                                        <TextBlock Text="Số lượng"
+                                                   FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn Binding="{Binding ImportValue, StringFormat=\{0:N0\}}" Width="110"
+                                        ElementStyle="{StaticResource CellNumber}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="24"/>
+                                        <RowDefinition Height="26"/>
+                                    </Grid.RowDefinitions>
+                                    <Border Grid.Row="0"
+                                            Background="{StaticResource GroupHeaderBrush}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="0,1,1,0"/>
+                                    <Border Grid.Row="1"
+                                            Background="{StaticResource AppColor.BackgroundSecondary}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="0,1,1,1">
+                                        <TextBlock Text="Giá trị"
+                                                   FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- ═══════════════════════════════════ -->
+                    <!--  Nhóm: Xuất kho                    -->
+                    <!-- ═══════════════════════════════════ -->
+
+                    <DataGridTextColumn Binding="{Binding ExportQty, StringFormat=\{0:N0\}}" Width="90"
+                                        ElementStyle="{StaticResource CellNumber}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="24"/>
+                                        <RowDefinition Height="26"/>
+                                    </Grid.RowDefinitions>
+                                    <Border Grid.Row="0"
+                                            Background="{StaticResource GroupHeaderBrush}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="1,1,0,0">
+                                        <TextBlock Text="Xuất kho"
+                                                   FontWeight="Bold" FontSize="12"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                    <Border Grid.Row="1"
+                                            Background="{StaticResource AppColor.BackgroundSecondary}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="1,1,0,1">
+                                        <TextBlock Text="Số lượng"
+                                                   FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn Binding="{Binding ExportValue, StringFormat=\{0:N0\}}" Width="110"
+                                        ElementStyle="{StaticResource CellNumber}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="24"/>
+                                        <RowDefinition Height="26"/>
+                                    </Grid.RowDefinitions>
+                                    <Border Grid.Row="0"
+                                            Background="{StaticResource GroupHeaderBrush}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="0,1,1,0"/>
+                                    <Border Grid.Row="1"
+                                            Background="{StaticResource AppColor.BackgroundSecondary}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="0,1,1,1">
+                                        <TextBlock Text="Giá trị"
+                                                   FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- ═══════════════════════════════════ -->
+                    <!--  Nhóm: Cuối kỳ                     -->
+                    <!-- ═══════════════════════════════════ -->
+
+                    <DataGridTextColumn Binding="{Binding ClosingQty, StringFormat=\{0:N0\}}" Width="100"
+                                        ElementStyle="{StaticResource CellNumber}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="24"/>
+                                        <RowDefinition Height="26"/>
+                                    </Grid.RowDefinitions>
+                                    <Border Grid.Row="0"
+                                            Background="{StaticResource GroupHeaderBrush}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="1,1,0,0">
+                                        <TextBlock Text="Cuối kỳ"
+                                                   FontWeight="Bold" FontSize="12"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                    <Border Grid.Row="1"
+                                            Background="{StaticResource AppColor.BackgroundSecondary}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="1,1,0,1">
+                                        <TextBlock Text="Số lượng"
+                                                   FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn Binding="{Binding ClosingValue, StringFormat=\{0:N0\}}" Width="110"
+                                        ElementStyle="{StaticResource CellNumber}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="24"/>
+                                        <RowDefinition Height="26"/>
+                                    </Grid.RowDefinitions>
+                                    <Border Grid.Row="0"
+                                            Background="{StaticResource GroupHeaderBrush}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="0,1,1,0"/>
+                                    <Border Grid.Row="1"
+                                            Background="{StaticResource AppColor.BackgroundSecondary}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="0,1,1,1">
+                                        <TextBlock Text="Giá trị"
+                                                   FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
                 </DataGrid.Columns>
             </DataGrid>
 

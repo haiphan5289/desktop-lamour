@@ -17,15 +17,8 @@
         </Grid.RowDefinitions>
 
         <!-- Loading overlay -->
-        <Grid Grid.RowSpan="3"
-              Panel.ZIndex="100"
-              Background="{StaticResource AppColor.BackgroundOverlay}"
-              Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
-            <ProgressBar IsIndeterminate="True"
-                         Width="40" Height="40"
-                         HorizontalAlignment="Center"
-                         VerticalAlignment="Center"/>
-        </Grid>
+        <controls:AppLoadingOverlay Grid.RowSpan="3"
+                                    IsLoading="{Binding IsLoading}"/>
 
         <!-- Decorative header -->
         <Border Grid.Row="0"

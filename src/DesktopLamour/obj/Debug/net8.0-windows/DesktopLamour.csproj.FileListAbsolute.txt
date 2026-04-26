@@ -70,3 +70,9 @@ Z:/src/DesktopLamour/obj/Debug/net8.0-windows/DesktopLamour.csproj.AssemblyRefer
 /Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Employees/Views/EmployeeFormWindow.baml
 /Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Employees/Views/EmployeeListView.baml
 /Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/ProductList/Views/ProductFormWindow.baml
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Shared/Controls/AppLoadingOverlay.baml
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/TongHopTonKhoView.g.cs
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/WarehouseView.g.cs
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Shared/Controls/AppLoadingOverlay.g.cs
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/TongHopTonKhoView.baml
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/WarehouseView.baml
