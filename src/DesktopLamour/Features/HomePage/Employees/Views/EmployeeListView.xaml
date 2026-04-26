@@ -94,6 +94,7 @@
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
                       Visibility="{Binding HasEmployees, Converter={StaticResource BoolToVisibilityConverter}}">
                 <DataGrid.Columns>
+                    <DataGridTextColumn Header="Mã NV"           Binding="{Binding Code}"              Width="90"/>
                     <DataGridTextColumn Header="Tên nhân viên"   Binding="{Binding Name}"              Width="*"/>
                     <DataGridTextColumn Header="Số điện thoại"   Binding="{Binding Phone}"             Width="130"/>
                     <DataGridTextColumn Header="Chức vụ"         Binding="{Binding Role}"              Width="100"/>

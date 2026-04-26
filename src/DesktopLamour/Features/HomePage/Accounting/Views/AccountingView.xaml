@@ -94,6 +94,10 @@
                 <controls:AppButton Content="🔍 Xem báo cáo"
                                     Style="{StaticResource AppButton.Primary.Medium}"
                                     Command="{Binding LoadCommand}"/>
+                <controls:AppButton Content="📄 Phiếu Thu"
+                                    Style="{StaticResource AppButton.Primary.Medium}"
+                                    Command="{Binding OpenPaymentReceiptCommand}"
+                                    Margin="8,0,0,0"/>
             </StackPanel>
         </Border>
 

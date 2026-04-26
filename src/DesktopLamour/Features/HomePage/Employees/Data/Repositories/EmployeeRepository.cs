@@ -59,6 +59,7 @@ public sealed class EmployeeRepository : IEmployeeRepository
     private static Employee MapToModel(EmployeeResponseDto d) => new()
     {
         Id                = d.Id,
+        Code              = d.Code,
         Name              = d.Name,
         Phone             = d.Phone,
         Role              = d.Role,

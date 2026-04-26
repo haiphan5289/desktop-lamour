@@ -1,18 +1,21 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 using System.Collections.ObjectModel;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.Navigation;
 using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.HomePage.Accounting.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Accounting.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Accounting.Views;
 
 namespace DesktopLamour.Features.HomePage.Accounting.ViewModels;
 
 public partial class AccountingViewModel : ViewModelBase
 {
-    private readonly INavigationService    _navigationService;
-    private readonly IGetCashLedgerUseCase _getCashLedger;
+    private readonly INavigationService        _navigationService;
+    private readonly IGetCashLedgerUseCase     _getCashLedger;
+    private readonly Func<PaymentReceiptWindow> _paymentReceiptWindowFactory;
 
     [ObservableProperty] private bool    _isLoading;
     [ObservableProperty] private bool    _hasError;
@@ -20,21 +23,33 @@ public partial class AccountingViewModel : ViewModelBase
     [ObservableProperty] private bool    _hasItems;
     [ObservableProperty] private decimal _openingBalance;
     [ObservableProperty] private decimal _closingBalance;
-    [ObservableProperty] private DateTime _fromDate = new(2023, 11, 1);
-    [ObservableProperty] private DateTime _toDate   = new(2023, 11, 30);
+    [ObservableProperty] private DateTime _fromDate = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    [ObservableProperty] private DateTime _toDate   = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(1).AddDays(-1);
 
     public ObservableCollection<CashLedgerEntryDto> Items { get; } = new();
 
     public AccountingViewModel(
-        INavigationService    navigationService,
-        IGetCashLedgerUseCase getCashLedger)
+        INavigationService        navigationService,
+        IGetCashLedgerUseCase     getCashLedger,
+        Func<PaymentReceiptWindow> paymentReceiptWindowFactory)
     {
-        _navigationService = navigationService;
-        _getCashLedger     = getCashLedger;
+        _navigationService           = navigationService;
+        _getCashLedger               = getCashLedger;
+        _paymentReceiptWindowFactory = paymentReceiptWindowFactory;
     }
 
     [RelayCommand]
     private void GoBack() => _navigationService.GoBack();
+
+    [RelayCommand]
+    private void OpenPaymentReceipt()
+    {
+        var window = _paymentReceiptWindowFactory();
+        window.Owner = Application.Current.MainWindow;
+        var result = window.ShowDialog();
+        if (result == true)
+            LoadCommand.Execute(null);
+    }
 
     [RelayCommand]
     private async Task LoadAsync(CancellationToken ct = default)

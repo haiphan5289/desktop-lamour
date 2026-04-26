@@ -7,6 +7,7 @@ using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Employees.ViewModels;
 using DesktopLamour.Features.HomePage.Employees.Views;
 using DesktopLamour.Features.HomePage.Accounting.Data.Services;
+using DesktopLamour.Features.HomePage.Accounting.Domain.Models;
 using DesktopLamour.Features.HomePage.Accounting.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Accounting.ViewModels;
 using DesktopLamour.Features.HomePage.Accounting.Views;
@@ -156,9 +157,12 @@ public static class HomeServiceCollectionExtensions
         // ── Accounting: Views + ViewModels ───────────────────────────────────────
         services.AddTransient<AccountingView>();
         services.AddTransient<AccountingViewModel>();
+        services.AddTransient<PaymentReceiptWindow>();
+        services.AddTransient<PaymentReceiptViewModel>();
 
         // ── Accounting: UseCases ─────────────────────────────────────────────────
         services.AddTransient<IGetCashLedgerUseCase, GetCashLedgerUseCase>();
+        services.AddTransient<ICreatePaymentReceiptUseCase, CreatePaymentReceiptUseCase>();
 
         // ── Accounting: Service + typed HttpClient ───────────────────────────────
         services.AddHttpClient<ICashLedgerService, CashLedgerService>(client =>
@@ -167,6 +171,16 @@ public static class HomeServiceCollectionExtensions
             client.Timeout     = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
+
+        services.AddHttpClient<IPaymentReceiptService, PaymentReceiptService>(client =>
+        {
+            client.BaseAddress = new Uri("http://192.168.64.1:5282");
+            client.Timeout     = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
+
+        // ── Accounting: Window factory ───────────────────────────────────────────
+        services.AddTransient<Func<PaymentReceiptWindow>>(sp => () => sp.GetRequiredService<PaymentReceiptWindow>());
 
         // ── Warehouse: Views + ViewModels ────────────────────────────────────────
         services.AddTransient<WarehouseView>();
