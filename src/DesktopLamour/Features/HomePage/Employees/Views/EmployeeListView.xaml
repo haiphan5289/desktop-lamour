@@ -102,6 +102,7 @@
                     <DataGridTextColumn Header="Tên nhân viên"  Binding="{Binding Name}"     Width="*"/>
                     <DataGridTextColumn Header="Số điện thoại"  Binding="{Binding Phone}"    Width="140"/>
                     <DataGridTextColumn Header="Chức vụ"        Binding="{Binding Role}"     Width="120"/>
+                    <DataGridTextColumn Header="Đơn vị"         Binding="{Binding Unit}"     Width="90"/>
                     <DataGridCheckBoxColumn Header="Hoạt động"  Binding="{Binding IsActive}" Width="90" IsReadOnly="True"/>
                 </DataGrid.Columns>
             </DataGrid>

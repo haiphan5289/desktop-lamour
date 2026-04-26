@@ -27,6 +27,8 @@ public partial class CustomerListViewModel : ViewModelBase
 
     public ObservableCollection<Customer> Customers { get; } = new();
 
+    public string TotalCustomersText => $"Tổng: {Customers.Count} khách hàng";
+
     private bool HasSelection => SelectedCustomer is not null;
 
     public CustomerListViewModel(
@@ -65,6 +67,7 @@ public partial class CustomerListViewModel : ViewModelBase
             Customers.Clear();
             foreach (var c in items) Customers.Add(c);
             HasCustomers = Customers.Count > 0;
+            OnPropertyChanged(nameof(TotalCustomersText));
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -95,6 +98,7 @@ public partial class CustomerListViewModel : ViewModelBase
             Customers.Add(copy);
             HasCustomers     = true;
             SelectedCustomer = copy;
+            OnPropertyChanged(nameof(TotalCustomersText));
         }
         catch (Exception ex)
         {
@@ -134,6 +138,7 @@ public partial class CustomerListViewModel : ViewModelBase
             Customers.Remove(SelectedCustomer);
             SelectedCustomer = null;
             HasCustomers     = Customers.Count > 0;
+            OnPropertyChanged(nameof(TotalCustomersText));
         }
         catch (Exception ex)
         {

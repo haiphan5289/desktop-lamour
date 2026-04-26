@@ -27,8 +27,19 @@
                                 Command="{Binding GoBackCommand}"
                                 HorizontalAlignment="Left"
                                 Margin="0,0,0,8"/>
-            <controls:AppLabel Text="Khách hàng"
-                               Style="{StaticResource AppTypography.DisplayPage}"/>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <controls:AppLabel Text="Khách hàng"
+                                   Style="{StaticResource AppTypography.DisplayPage}"/>
+                <Border Background="{StaticResource AppColor.BackgroundBrand}"
+                        CornerRadius="12"
+                        Padding="10,4"
+                        Margin="12,4,0,0"
+                        VerticalAlignment="Center">
+                    <controls:AppLabel Text="{Binding TotalCustomersText}"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                </Border>
+            </StackPanel>
         </StackPanel>
 
         <!-- Toolbar -->

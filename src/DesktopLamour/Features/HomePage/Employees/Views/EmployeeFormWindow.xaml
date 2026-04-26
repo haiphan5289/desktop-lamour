@@ -95,6 +95,21 @@
                           FontSize="14"/>
             </StackPanel>
 
+            <!-- Đơn vị (required) -->
+            <StackPanel Margin="0,0,0,16">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                    <controls:AppLabel Text="Đơn vị"
+                                       Style="{StaticResource AppTypography.LabelSection}"/>
+                    <controls:AppLabel Text=" *"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                </StackPanel>
+                <ComboBox ItemsSource="{Binding Units}"
+                          SelectedItem="{Binding Unit, Mode=TwoWay}"
+                          Padding="10,8"
+                          FontSize="14"/>
+            </StackPanel>
+
             <!-- Mật khẩu -->
             <StackPanel Margin="0,0,0,16">
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">

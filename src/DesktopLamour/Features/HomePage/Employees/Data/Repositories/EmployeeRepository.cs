@@ -29,6 +29,7 @@ public sealed class EmployeeRepository : IEmployeeRepository
             Name     = input.Name,
             Phone    = input.Phone,
             Role     = input.Role,
+            Unit     = input.Unit,
             Password = input.Password,
             IsActive = input.IsActive,
         };
@@ -42,6 +43,7 @@ public sealed class EmployeeRepository : IEmployeeRepository
             Name     = input.Name,
             Phone    = input.Phone,
             Role     = input.Role,
+            Unit     = input.Unit,
             Password = input.Password,
             IsActive = input.IsActive,
         };
@@ -54,6 +56,7 @@ public sealed class EmployeeRepository : IEmployeeRepository
         Name     = d.Name,
         Phone    = d.Phone,
         Role     = d.Role,
+        Unit     = d.Unit,
         IsActive = d.IsActive,
     };
 }

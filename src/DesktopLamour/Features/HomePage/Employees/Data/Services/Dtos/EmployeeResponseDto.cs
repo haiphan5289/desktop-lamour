@@ -8,5 +8,6 @@ public class EmployeeResponseDto
     [JsonPropertyName("name")]      public string Name     { get; set; } = string.Empty;
     [JsonPropertyName("phone")]     public string Phone    { get; set; } = string.Empty;
     [JsonPropertyName("role")]      public string Role     { get; set; } = string.Empty;
+    [JsonPropertyName("unit")]      public string Unit     { get; set; } = string.Empty;
     [JsonPropertyName("is_active")] public bool   IsActive { get; set; }
 }

@@ -24,12 +24,14 @@ public partial class EmployeeFormViewModel : ViewModelBase
     [ObservableProperty] private string _name     = string.Empty;
     [ObservableProperty] private string _phone    = string.Empty;
     [ObservableProperty] private string _role     = "Cashier";
+    [ObservableProperty] private string _unit     = "Spa";
     [ObservableProperty] private string _password = string.Empty;
     [ObservableProperty] private bool   _isActive = true;
 
     public bool IsAddMode => !_isEditMode;
 
     public IReadOnlyList<string> Roles { get; } = new[] { "Admin", "Cashier", "Warehouse" };
+    public IReadOnlyList<string> Units { get; } = new[] { "Spa", "PKD", "Spa", "GD", "Kho" };
 
     public event Action<bool>? RequestClose;
 
@@ -53,6 +55,7 @@ public partial class EmployeeFormViewModel : ViewModelBase
             WindowTitle = "Thêm nhân viên";
             Name = Phone = string.Empty;
             Role     = "Cashier";
+            Unit     = "Spa";
             IsActive = true;
         }
         else
@@ -63,6 +66,7 @@ public partial class EmployeeFormViewModel : ViewModelBase
             Name        = employee.Name;
             Phone       = employee.Phone;
             Role        = employee.Role;
+            Unit        = employee.Unit;
             IsActive    = employee.IsActive;
         }
 
@@ -80,12 +84,12 @@ public partial class EmployeeFormViewModel : ViewModelBase
             {
                 var rawPwd = string.IsNullOrWhiteSpace(Password) ? Phone.Trim() : Password.Trim();
                 await _createUseCase.ExecuteAsync(
-                    new CreateEmployeeInput(Name.Trim(), Phone.Trim(), Role, rawPwd, IsActive), ct);
+                    new CreateEmployeeInput(Name.Trim(), Phone.Trim(), Role, Unit, rawPwd, IsActive), ct);
             }
             else
             {
                 await _updateUseCase.ExecuteAsync(
-                    new UpdateEmployeeInput(_editingId, Name.Trim(), Phone.Trim(), Role,
+                    new UpdateEmployeeInput(_editingId, Name.Trim(), Phone.Trim(), Role, Unit,
                         string.IsNullOrWhiteSpace(Password) ? null : Password.Trim(), IsActive), ct);
             }
             RequestClose?.Invoke(true);
