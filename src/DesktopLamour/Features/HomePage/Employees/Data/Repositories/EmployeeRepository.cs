@@ -26,12 +26,15 @@ public sealed class EmployeeRepository : IEmployeeRepository
     {
         var request = new CreateEmployeeRequestDto
         {
-            Name     = input.Name,
-            Phone    = input.Phone,
-            Role     = input.Role,
-            Unit     = input.Unit,
-            Password = input.Password,
-            IsActive = input.IsActive,
+            Name              = input.Name,
+            Phone             = input.Phone,
+            Role              = input.Role,
+            Unit              = input.Unit,
+            JobTitle          = input.JobTitle,
+            BankAccountNumber = input.BankAccountNumber,
+            BankName          = input.BankName,
+            Password          = input.Password,
+            IsActive          = input.IsActive,
         };
         return MapToModel(await _service.CreateAsync(request, ct));
     }
@@ -40,23 +43,29 @@ public sealed class EmployeeRepository : IEmployeeRepository
     {
         var request = new UpdateEmployeeRequestDto
         {
-            Name     = input.Name,
-            Phone    = input.Phone,
-            Role     = input.Role,
-            Unit     = input.Unit,
-            Password = input.Password,
-            IsActive = input.IsActive,
+            Name              = input.Name,
+            Phone             = input.Phone,
+            Role              = input.Role,
+            Unit              = input.Unit,
+            JobTitle          = input.JobTitle,
+            BankAccountNumber = input.BankAccountNumber,
+            BankName          = input.BankName,
+            Password          = input.Password,
+            IsActive          = input.IsActive,
         };
         return MapToModel(await _service.UpdateAsync(input.Id, request, ct));
     }
 
     private static Employee MapToModel(EmployeeResponseDto d) => new()
     {
-        Id       = d.Id,
-        Name     = d.Name,
-        Phone    = d.Phone,
-        Role     = d.Role,
-        Unit     = d.Unit,
-        IsActive = d.IsActive,
+        Id                = d.Id,
+        Name              = d.Name,
+        Phone             = d.Phone,
+        Role              = d.Role,
+        Unit              = d.Unit,
+        JobTitle          = d.JobTitle,
+        BankAccountNumber = d.BankAccountNumber,
+        BankName          = d.BankName,
+        IsActive          = d.IsActive,
     };
 }

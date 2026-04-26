@@ -110,6 +110,39 @@
                           FontSize="14"/>
             </StackPanel>
 
+            <!-- Chức danh (required) -->
+            <StackPanel Margin="0,0,0,16">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                    <controls:AppLabel Text="Chức danh"
+                                       Style="{StaticResource AppTypography.LabelSection}"/>
+                    <controls:AppLabel Text=" *"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                </StackPanel>
+                <ComboBox ItemsSource="{Binding JobTitles}"
+                          SelectedItem="{Binding JobTitle, Mode=TwoWay}"
+                          Padding="10,8"
+                          FontSize="14"/>
+            </StackPanel>
+
+            <!-- Số tài khoản (optional) -->
+            <StackPanel Margin="0,0,0,16">
+                <controls:AppLabel Text="Số tài khoản"
+                                   Style="{StaticResource AppTypography.LabelSection}"
+                                   Margin="0,0,0,6"/>
+                <controls:AppTextField Text="{Binding BankAccountNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                       Placeholder="VD: 0123456789"/>
+            </StackPanel>
+
+            <!-- Tên ngân hàng (optional) -->
+            <StackPanel Margin="0,0,0,16">
+                <controls:AppLabel Text="Tên ngân hàng"
+                                   Style="{StaticResource AppTypography.LabelSection}"
+                                   Margin="0,0,0,6"/>
+                <controls:AppTextField Text="{Binding BankName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                       Placeholder="VD: Vietcombank"/>
+            </StackPanel>
+
             <!-- Mật khẩu -->
             <StackPanel Margin="0,0,0,16">
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">

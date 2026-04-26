@@ -99,11 +99,14 @@
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
                       Visibility="{Binding HasEmployees, Converter={StaticResource BoolToVisibilityConverter}}">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Tên nhân viên"  Binding="{Binding Name}"     Width="*"/>
-                    <DataGridTextColumn Header="Số điện thoại"  Binding="{Binding Phone}"    Width="140"/>
-                    <DataGridTextColumn Header="Chức vụ"        Binding="{Binding Role}"     Width="120"/>
-                    <DataGridTextColumn Header="Đơn vị"         Binding="{Binding Unit}"     Width="90"/>
-                    <DataGridCheckBoxColumn Header="Hoạt động"  Binding="{Binding IsActive}" Width="90" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Tên nhân viên"   Binding="{Binding Name}"              Width="*"/>
+                    <DataGridTextColumn Header="Số điện thoại"   Binding="{Binding Phone}"             Width="130"/>
+                    <DataGridTextColumn Header="Chức vụ"         Binding="{Binding Role}"              Width="100"/>
+                    <DataGridTextColumn Header="Đơn vị"          Binding="{Binding Unit}"              Width="80"/>
+                    <DataGridTextColumn Header="Chức danh"       Binding="{Binding JobTitle}"          Width="140"/>
+                    <DataGridTextColumn Header="Số tài khoản"    Binding="{Binding BankAccountNumber}" Width="130"/>
+                    <DataGridTextColumn Header="Tên ngân hàng"   Binding="{Binding BankName}"          Width="130"/>
+                    <DataGridCheckBoxColumn Header="Hoạt động"   Binding="{Binding IsActive}"          Width="80" IsReadOnly="True"/>
                 </DataGrid.Columns>
             </DataGrid>
 

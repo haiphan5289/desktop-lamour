@@ -16,5 +16,5 @@ TRACE;DEBUG;NET;NET8_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR
 2141069413225
 Features/Authentication/Views/LoginView.xaml;Features/Authentication/Views/RegisterView.xaml;Features/HomePage/Customers/Views/CustomerFormWindow.xaml;Features/HomePage/Customers/Views/CustomerListView.xaml;Features/HomePage/Employees/Views/EmployeeFormWindow.xaml;Features/HomePage/Employees/Views/EmployeeListView.xaml;Features/HomePage/Home/Views/HomeView.xaml;Features/HomePage/ProductList/Views/ProductFormWindow.xaml;Features/HomePage/ProductList/Views/ProductListView.xaml;Features/HomePage/Suppliers/Views/SupplierFormWindow.xaml;Features/HomePage/Suppliers/Views/SupplierListView.xaml;MainWindow/MainWindow.xaml;Shared/AppConverters.xaml;Shared/ComponentLibrary.xaml;Shared/Styles/AppButtonStyles.xaml;Shared/Styles/AppLabelStyles.xaml;Shared/Styles/AppPasswordFieldStyles.xaml;Shared/Styles/AppTextFieldStyles.xaml;Themes/AppTypography.xaml;Themes/DefaultTheme.xaml;
 
-False
+True
 

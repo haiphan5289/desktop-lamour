@@ -4,10 +4,13 @@ namespace DesktopLamour.Features.HomePage.Employees.Data.Services.Dtos;
 
 public class CreateEmployeeRequestDto
 {
-    [JsonPropertyName("name")]      public string Name     { get; set; } = string.Empty;
-    [JsonPropertyName("phone")]     public string Phone    { get; set; } = string.Empty;
-    [JsonPropertyName("role")]      public string Role     { get; set; } = "Cashier";
-    [JsonPropertyName("unit")]      public string Unit     { get; set; } = "Spa";
-    [JsonPropertyName("password")]  public string Password { get; set; } = string.Empty;
-    [JsonPropertyName("is_active")] public bool   IsActive { get; set; } = true;
+    [JsonPropertyName("name")]                public string  Name              { get; set; } = string.Empty;
+    [JsonPropertyName("phone")]               public string  Phone             { get; set; } = string.Empty;
+    [JsonPropertyName("role")]                public string  Role              { get; set; } = "Cashier";
+    [JsonPropertyName("unit")]                public string  Unit              { get; set; } = "Spa";
+    [JsonPropertyName("job_title")]           public string  JobTitle          { get; set; } = "Khac";
+    [JsonPropertyName("bank_account_number")] public string? BankAccountNumber { get; set; }
+    [JsonPropertyName("bank_name")]           public string? BankName          { get; set; }
+    [JsonPropertyName("password")]            public string  Password          { get; set; } = string.Empty;
+    [JsonPropertyName("is_active")]           public bool    IsActive          { get; set; } = true;
 }

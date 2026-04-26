@@ -21,17 +21,21 @@ public partial class EmployeeFormViewModel : ViewModelBase
     [ObservableProperty] private string _errorMessage = string.Empty;
 
     // Form fields
-    [ObservableProperty] private string _name     = string.Empty;
-    [ObservableProperty] private string _phone    = string.Empty;
-    [ObservableProperty] private string _role     = "Cashier";
-    [ObservableProperty] private string _unit     = "Spa";
-    [ObservableProperty] private string _password = string.Empty;
-    [ObservableProperty] private bool   _isActive = true;
+    [ObservableProperty] private string  _name              = string.Empty;
+    [ObservableProperty] private string  _phone             = string.Empty;
+    [ObservableProperty] private string  _role              = "Cashier";
+    [ObservableProperty] private string  _unit              = "Spa";
+    [ObservableProperty] private string  _jobTitle          = "Khac";
+    [ObservableProperty] private string  _bankAccountNumber = string.Empty;
+    [ObservableProperty] private string  _bankName          = string.Empty;
+    [ObservableProperty] private string  _password          = string.Empty;
+    [ObservableProperty] private bool    _isActive          = true;
 
     public bool IsAddMode => !_isEditMode;
 
-    public IReadOnlyList<string> Roles { get; } = new[] { "Admin", "Cashier", "Warehouse" };
-    public IReadOnlyList<string> Units { get; } = new[] { "Spa", "PKD", "Spa", "GD", "Kho" };
+    public IReadOnlyList<string> Roles     { get; } = new[] { "Admin", "Cashier", "Warehouse" };
+    public IReadOnlyList<string> Units     { get; } = new[] { "Spa", "PKD", "PGD", "GD", "Kho" };
+    public IReadOnlyList<string> JobTitles { get; } = new[] { "Admin", "TruongPhong", "NhanVienBanHang", "NhanVienKho", "ThuNgan", "Khac" };
 
     public event Action<bool>? RequestClose;
 
@@ -50,24 +54,30 @@ public partial class EmployeeFormViewModel : ViewModelBase
 
         if (employee is null)
         {
-            _isEditMode = false;
-            _editingId  = 0;
-            WindowTitle = "Thêm nhân viên";
-            Name = Phone = string.Empty;
-            Role     = "Cashier";
-            Unit     = "Spa";
-            IsActive = true;
+            _isEditMode       = false;
+            _editingId        = 0;
+            WindowTitle       = "Thêm nhân viên";
+            Name = Phone      = string.Empty;
+            Role              = "Cashier";
+            Unit              = "Spa";
+            JobTitle          = "Khac";
+            BankAccountNumber = string.Empty;
+            BankName          = string.Empty;
+            IsActive          = true;
         }
         else
         {
-            _isEditMode = true;
-            _editingId  = employee.Id;
-            WindowTitle = "Sửa nhân viên";
-            Name        = employee.Name;
-            Phone       = employee.Phone;
-            Role        = employee.Role;
-            Unit        = employee.Unit;
-            IsActive    = employee.IsActive;
+            _isEditMode       = true;
+            _editingId        = employee.Id;
+            WindowTitle       = "Sửa nhân viên";
+            Name              = employee.Name;
+            Phone             = employee.Phone;
+            Role              = employee.Role;
+            Unit              = employee.Unit;
+            JobTitle          = employee.JobTitle;
+            BankAccountNumber = employee.BankAccountNumber ?? string.Empty;
+            BankName          = employee.BankName ?? string.Empty;
+            IsActive          = employee.IsActive;
         }
 
         OnPropertyChanged(nameof(IsAddMode));
@@ -80,16 +90,19 @@ public partial class EmployeeFormViewModel : ViewModelBase
         IsLoading    = true;
         try
         {
+            var bankAccount = string.IsNullOrWhiteSpace(BankAccountNumber) ? null : BankAccountNumber.Trim();
+            var bankName    = string.IsNullOrWhiteSpace(BankName) ? null : BankName.Trim();
+
             if (!_isEditMode)
             {
                 var rawPwd = string.IsNullOrWhiteSpace(Password) ? Phone.Trim() : Password.Trim();
                 await _createUseCase.ExecuteAsync(
-                    new CreateEmployeeInput(Name.Trim(), Phone.Trim(), Role, Unit, rawPwd, IsActive), ct);
+                    new CreateEmployeeInput(Name.Trim(), Phone.Trim(), Role, Unit, JobTitle, bankAccount, bankName, rawPwd, IsActive), ct);
             }
             else
             {
                 await _updateUseCase.ExecuteAsync(
-                    new UpdateEmployeeInput(_editingId, Name.Trim(), Phone.Trim(), Role, Unit,
+                    new UpdateEmployeeInput(_editingId, Name.Trim(), Phone.Trim(), Role, Unit, JobTitle, bankAccount, bankName,
                         string.IsNullOrWhiteSpace(Password) ? null : Password.Trim(), IsActive), ct);
             }
             RequestClose?.Invoke(true);
