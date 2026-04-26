@@ -12,13 +12,20 @@ App startup
 
 ## Screen: HomeView
 
-Hiển thị 2 navigation item (icon + text). Không load data.
+Hiển thị 4 navigation tiles chia thành 2 section groups. Không load data.
 
 ```
 ┌─────────────────────────────────────────┐
 │  Tổng quan                              │
 │  Chọn mục để bắt đầu quản lý           │
 ├─────────────────────────────────────────┤
+│  Quản lý                                │
+│  ┌─────────────┐   ┌─────────────────┐  │
+│  │     👥      │   │      👤         │  │
+│  │  Khách hàng │   │   Nhân viên     │  │
+│  └─────────────┘   └─────────────────┘  │
+│                                         │
+│  Kho & Hàng hóa                         │
 │  ┌─────────────┐   ┌─────────────────┐  │
 │  │     📦      │   │      🏪         │  │
 │  │  Sản phẩm   │   │  Nhà cung cấp   │  │
@@ -28,10 +35,12 @@ Hiển thị 2 navigation item (icon + text). Không load data.
 
 ### Click actions
 
-| Item | Command | Navigates to |
-|---|---|---|
-| Sản phẩm | `NavigateToProductsCommand` | `ProductListView` |
-| Nhà cung cấp | `NavigateToSuppliersCommand` | `SupplierListView` |
+| Section | Item | Command | Navigates to |
+|---|---|---|---|
+| Quản lý | Khách hàng | `NavigateToCustomersCommand` | `CustomerListView` |
+| Quản lý | Nhân viên | `NavigateToEmployeesCommand` | `EmployeeListView` |
+| Kho & Hàng hóa | Sản phẩm | `NavigateToProductsCommand` | `ProductListView` |
+| Kho & Hàng hóa | Nhà cung cấp | `NavigateToSuppliersCommand` | `SupplierListView` |
 
 ---
 
@@ -93,6 +102,8 @@ Màn hình nhà cung cấp. Hiện tại là stub — sẽ implement đầy đ�
 |---|---|---|
 | `NavigateToProductsCommand` | `IRelayCommand` | Navigate to ProductListView |
 | `NavigateToSuppliersCommand` | `IRelayCommand` | Navigate to SupplierListView |
+| `NavigateToCustomersCommand` | `IRelayCommand` | Navigate to CustomerListView |
+| `NavigateToEmployeesCommand` | `IRelayCommand` | Navigate to EmployeeListView |
 
 ### ProductListViewModel
 
@@ -114,18 +125,22 @@ Màn hình nhà cung cấp. Hiện tại là stub — sẽ implement đầy đ�
 Features/HomePage/
 ├── HOMEPAGE.md                              ← this file
 ├── HomeServiceCollectionExtensions.cs
-├── Domain/
-│   └── (reserved for future data models)
-├── Data/
-│   └── (reserved for future API calls)
-├── ViewModels/
-│   ├── HomeViewModel.cs
-│   ├── ProductListViewModel.cs
-│   └── SupplierListViewModel.cs
-└── Views/
-    ├── HomeView.xaml / .xaml.cs
-    ├── ProductListView.xaml / .xaml.cs
-    └── SupplierListView.xaml / .xaml.cs
+├── Home/
+│   ├── docs/home.md
+│   ├── ViewModels/HomeViewModel.cs
+│   └── Views/HomeView.xaml
+├── Customers/
+│   ├── docs/customers.md
+│   ├── Domain/ | Data/ | ViewModels/ | Views/
+├── Employees/
+│   ├── docs/employees.md
+│   ├── Domain/ | Data/ | ViewModels/ | Views/
+├── ProductList/
+│   ├── docs/product-list.md
+│   └── ...
+└── Suppliers/
+    ├── docs/suppliers.md
+    └── ...
 ```
 
 ---
