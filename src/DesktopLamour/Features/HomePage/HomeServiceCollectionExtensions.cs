@@ -202,6 +202,28 @@ public static class HomeServiceCollectionExtensions
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
 
+        // ── WarehouseReceipts: Views + ViewModels ────────────────────────────────
+        services.AddTransient<WarehouseReceiptListView>();
+        services.AddTransient<WarehouseReceiptListViewModel>();
+        services.AddTransient<WarehouseReceiptFormWindow>();
+        services.AddTransient<WarehouseReceiptFormViewModel>();
+
+        // ── WarehouseReceipts: UseCases ──────────────────────────────────────────
+        services.AddTransient<IGetWarehouseReceiptsUseCase, GetWarehouseReceiptsUseCase>();
+        services.AddTransient<ICreateWarehouseReceiptUseCase, CreateWarehouseReceiptUseCase>();
+        services.AddTransient<IConfirmWarehouseReceiptUseCase, ConfirmWarehouseReceiptUseCase>();
+
+        // ── WarehouseReceipts: Service + typed HttpClient ────────────────────────
+        services.AddHttpClient<IWarehouseReceiptService, WarehouseReceiptService>(client =>
+        {
+            client.BaseAddress = new Uri("http://192.168.64.1:5282");
+            client.Timeout     = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
+
+        // ── WarehouseReceipts: Window factory ────────────────────────────────────
+        services.AddTransient<Func<WarehouseReceiptFormWindow>>(sp => () => sp.GetRequiredService<WarehouseReceiptFormWindow>());
+
         return services;
     }
 }

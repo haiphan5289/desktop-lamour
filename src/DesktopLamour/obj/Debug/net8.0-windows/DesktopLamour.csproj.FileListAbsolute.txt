@@ -84,3 +84,7 @@ Z:/src/DesktopLamour/obj/Debug/net8.0-windows/DesktopLamour.csproj.AssemblyRefer
 /Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Shared/Controls/AppSearchableComboBox.g.cs
 /Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Shared/Controls/AppCurrencyField.baml
 /Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Shared/Controls/AppCurrencyField.g.cs
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/WarehouseReceiptFormWindow.g.cs
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/WarehouseReceiptListView.g.cs
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/WarehouseReceiptFormWindow.baml
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/WarehouseReceiptListView.baml

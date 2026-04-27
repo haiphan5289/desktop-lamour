@@ -32,8 +32,9 @@ public static class NavigationRoutes
 
     public static class Warehouse
     {
-        public const string Hub         = "WarehouseView";
+        public const string Hub           = "WarehouseView";
         public const string TongHopTonKho = "TongHopTonKhoView";
+        public const string PhieuNhapKho  = "WarehouseReceiptListView";
     }
 
     public static class Accounting

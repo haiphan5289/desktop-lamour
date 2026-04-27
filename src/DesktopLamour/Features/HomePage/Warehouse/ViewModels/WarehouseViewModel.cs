@@ -18,4 +18,8 @@ public partial class WarehouseViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToTongHopTonKho()
         => _navigationService.NavigateTo(NavigationRoutes.Warehouse.TongHopTonKho);
+
+    [RelayCommand]
+    private void NavigateToPhieuNhapKho()
+        => _navigationService.NavigateTo(NavigationRoutes.Warehouse.PhieuNhapKho);
 }

@@ -1,24 +1,26 @@
 ﻿
 
+F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/Authentication/Views/LoginView.xaml;;
 F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/Authentication/Views/RegisterView.xaml;;
+F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Accounting/Views/AccountingView.xaml;;
+F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Accounting/Views/PaymentReceiptWindow.xaml;;
+F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Customers/Views/CustomerFormWindow.xaml;;
+F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Customers/Views/CustomerListView.xaml;;
+F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Employees/Views/EmployeeFormWindow.xaml;;
+F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Employees/Views/EmployeeListView.xaml;;
 F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Home/Views/HomeView.xaml;;
+F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/ProductList/Views/ProductFormWindow.xaml;;
 F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/ProductList/Views/ProductListView.xaml;;
 F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Suppliers/Views/SupplierFormWindow.xaml;;
 F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Suppliers/Views/SupplierListView.xaml;;
+F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Warehouse/Views/TongHopTonKhoView.xaml;;
+F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Warehouse/Views/WarehouseReceiptFormWindow.xaml;;
+F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Warehouse/Views/WarehouseReceiptListView.xaml;;
+F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Warehouse/Views/WarehouseView.xaml;;
 F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Shared/AppConverters.xaml;;
 F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Shared/Styles/AppButtonStyles.xaml;;
 F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Shared/Styles/AppLabelStyles.xaml;;
 F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Shared/Styles/AppPasswordFieldStyles.xaml;;
 F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Shared/Styles/AppTextFieldStyles.xaml;;
 F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Themes/AppTypography.xaml;;
-F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/Authentication/Views/LoginView.xaml;;
-F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Customers/Views/CustomerFormWindow.xaml;;
-F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Customers/Views/CustomerListView.xaml;;
-F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Employees/Views/EmployeeFormWindow.xaml;;
-F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Employees/Views/EmployeeListView.xaml;;
-F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/ProductList/Views/ProductFormWindow.xaml;;
-F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Warehouse/Views/TongHopTonKhoView.xaml;;
-F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Warehouse/Views/WarehouseView.xaml;;
-F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Accounting/Views/AccountingView.xaml;;
-F/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Accounting/Views/PaymentReceiptWindow.xaml;;
 
