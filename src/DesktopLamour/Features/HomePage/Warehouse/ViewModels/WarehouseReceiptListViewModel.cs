@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.Navigation;
 using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.HomePage.Warehouse.Data.Services.Dtos;
+using DesktopLamour.Features.HomePage.Warehouse.Domain.Models;
 using DesktopLamour.Features.HomePage.Warehouse.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Warehouse.Views;
 using Microsoft.Extensions.Logging;
@@ -25,7 +26,7 @@ public partial class WarehouseReceiptListViewModel : ViewModelBase
     [ObservableProperty] private string _errorMessage = string.Empty;
     [ObservableProperty] private bool   _hasItems;
 
-    public ObservableCollection<WarehouseReceiptResponseDto> Items { get; } = new();
+    public ObservableCollection<WarehouseReceiptFlatItem> Items { get; } = new();
 
     public WarehouseReceiptListViewModel(
         IGetWarehouseReceiptsUseCase     getUseCase,
@@ -64,7 +65,16 @@ public partial class WarehouseReceiptListViewModel : ViewModelBase
         {
             var receipts = await _getUseCase.ExecuteAsync(ct);
             Items.Clear();
-            foreach (var r in receipts) Items.Add(r);
+            foreach (var r in receipts)
+            {
+                if (r.Lines.Count == 0)
+                {
+                    Items.Add(ToFlatItem(r, productCode: string.Empty, productName: string.Empty));
+                    continue;
+                }
+                foreach (var line in r.Lines)
+                    Items.Add(ToFlatItem(r, line.ProductCode, line.ProductName));
+            }
             HasItems = Items.Count > 0;
         }
         catch (OperationCanceledException) { }
@@ -76,6 +86,22 @@ public partial class WarehouseReceiptListViewModel : ViewModelBase
         }
         finally { IsLoading = false; }
     }
+
+    private static WarehouseReceiptFlatItem ToFlatItem(
+        WarehouseReceiptResponseDto r, string productCode, string productName)
+        => new()
+        {
+            Id            = r.Id,
+            ReceiptNumber = r.ReceiptNumber,
+            ReceiptType   = r.ReceiptType,
+            Status        = r.Status,
+            CustomerName  = r.CustomerName,
+            EmployeeName  = r.EmployeeName,
+            DocumentDate  = r.DocumentDate,
+            TotalAmount   = r.TotalAmount,
+            ProductCode   = productCode,
+            ProductName   = productName,
+        };
 
     [RelayCommand]
     private async Task ConfirmReceiptAsync(int id, CancellationToken ct = default)

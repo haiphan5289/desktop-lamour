@@ -75,7 +75,7 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
 
             Customers = customers.Cast<ISearchableItem>().ToList().AsReadOnly();
             Employees = employees.Cast<ISearchableItem>().ToList().AsReadOnly();
-            Products  = products.Select(p => (ISearchableItem)new WarehouseProductItem(p)).ToList().AsReadOnly();
+            Products  = products.Where(p => p.IsActive).Select(p => (ISearchableItem)new WarehouseProductItem(p)).ToList().AsReadOnly();
 
             OnPropertyChanged(nameof(Customers));
             OnPropertyChanged(nameof(Employees));
@@ -140,8 +140,8 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
                 ReceiptType    = SelectedReceiptType,
                 CustomerId     = SelectedCustomer?.Id,
                 EmployeeId     = SelectedEmployee?.Id,
-                AccountingDate = AccountingDate,
-                DocumentDate   = DocumentDate,
+                AccountingDate = DateTime.SpecifyKind(AccountingDate.Date, DateTimeKind.Unspecified),
+                DocumentDate   = DateTime.SpecifyKind(DocumentDate.Date,   DateTimeKind.Unspecified),
                 Description    = string.IsNullOrWhiteSpace(Description)    ? null : Description.Trim(),
                 DeliveryPerson = string.IsNullOrWhiteSpace(DeliveryPerson) ? null : DeliveryPerson.Trim(),
                 Reference      = string.IsNullOrWhiteSpace(Reference)      ? null : Reference.Trim(),

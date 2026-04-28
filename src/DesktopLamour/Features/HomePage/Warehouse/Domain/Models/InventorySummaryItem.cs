@@ -13,6 +13,7 @@ public class InventorySummaryItem
     public decimal ImportValue  { get; set; }
     public int     ExportQty    { get; set; }
     public decimal ExportValue  { get; set; }
-    public int     ClosingQty   { get; set; }
-    public decimal ClosingValue { get; set; }
+    public int      ClosingQty            { get; set; }
+    public decimal  ClosingValue          { get; set; }
+    public DateTime? LatestAccountingDate { get; set; }
 }

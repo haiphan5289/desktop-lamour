@@ -93,7 +93,7 @@ public partial class LoginViewModel : ViewModelBase
             if (!string.IsNullOrEmpty(user.AccessToken))
                 _tokenStorage.SaveToken(user.AccessToken);
 
-            _navigationService.NavigateTo(NavigationRoutes.Main);
+            _navigationService.NavigateToHome();
         }
         catch (ValidationException ex)
         {

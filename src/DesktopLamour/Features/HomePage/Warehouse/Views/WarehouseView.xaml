@@ -14,11 +14,15 @@
         <!--  Page header                                   -->
         <!-- ══════════════════════════════════════════════ -->
         <StackPanel Grid.Row="0" Margin="24,32,24,0">
-            <controls:AppButton Content="← Quay lại"
-                                Style="{StaticResource AppButton.Tertiary.Medium}"
-                                Command="{Binding GoBackCommand}"
-                                HorizontalAlignment="Left"
-                                Margin="0,0,0,8"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <controls:AppButton Content="← Quay lại"
+                                    Style="{StaticResource AppButton.Tertiary.Medium}"
+                                    Command="{Binding GoBackCommand}"
+                                    Margin="0,0,8,0"/>
+                <controls:AppButton Content="🏠 Trang chủ"
+                                    Style="{StaticResource AppButton.Tertiary.Medium}"
+                                    Command="{Binding NavigateToHomeCommand}"/>
+            </StackPanel>
             <controls:AppLabel Text="Kho"
                                Style="{StaticResource AppTypography.DisplayPage}"/>
             <controls:AppLabel Text="Quản lý kho hàng hóa"

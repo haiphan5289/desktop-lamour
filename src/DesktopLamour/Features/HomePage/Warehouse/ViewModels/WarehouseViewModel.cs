@@ -16,6 +16,9 @@ public partial class WarehouseViewModel : ViewModelBase
     private void GoBack() => _navigationService.GoBack();
 
     [RelayCommand]
+    private void NavigateToHome() => _navigationService.NavigateToHome();
+
+    [RelayCommand]
     private void NavigateToTongHopTonKho()
         => _navigationService.NavigateTo(NavigationRoutes.Warehouse.TongHopTonKho);
 

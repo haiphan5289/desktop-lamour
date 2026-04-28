@@ -84,6 +84,14 @@
                                         Binding="{Binding ReceiptNumber}"
                                         Width="130"/>
 
+                    <DataGridTextColumn Header="Mã hàng"
+                                        Binding="{Binding ProductCode}"
+                                        Width="110"/>
+
+                    <DataGridTextColumn Header="Tên hàng"
+                                        Binding="{Binding ProductName}"
+                                        Width="*"/>
+
                     <DataGridTemplateColumn Header="Loại phiếu" Width="160">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
@@ -143,7 +151,7 @@
 
                     <DataGridTextColumn Header="Khách hàng"
                                         Binding="{Binding CustomerName}"
-                                        Width="*"/>
+                                        Width="160"/>
 
                     <DataGridTextColumn Header="NV bán hàng"
                                         Binding="{Binding EmployeeName}"

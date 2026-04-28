@@ -40,4 +40,7 @@ public class InventorySummaryItemDto
 
     [JsonPropertyName("closing_value")]
     public decimal ClosingValue { get; set; }
+
+    [JsonPropertyName("latest_accounting_date")]
+    public DateTime? LatestAccountingDate { get; set; }
 }

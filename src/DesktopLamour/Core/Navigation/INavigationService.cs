@@ -8,5 +8,6 @@ public interface INavigationService
     void NavigateTo(string viewName);
     void NavigateTo(string viewName, object parameter);
     void GoBack();
+    void NavigateToHome();
     bool CanGoBack { get; }
 }

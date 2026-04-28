@@ -29,8 +29,11 @@ public sealed class WarehouseRepository : IWarehouseRepository
             ImportValue  = d.ImportValue,
             ExportQty    = d.ExportQty,
             ExportValue  = d.ExportValue,
-            ClosingQty   = d.ClosingQty,
-            ClosingValue = d.ClosingValue,
+            ClosingQty            = d.ClosingQty,
+            ClosingValue          = d.ClosingValue,
+            LatestAccountingDate  = d.LatestAccountingDate.HasValue
+                                        ? d.LatestAccountingDate.Value.ToLocalTime()
+                                        : null,
         });
     }
 }

@@ -59,6 +59,16 @@ public class NavigationService : INavigationService
             _mainWindowViewModel.CurrentContent = content;
     }
 
+    public void NavigateToHome()
+    {
+        _backStack.Clear();
+        _currentView = NavigationRoutes.Home.Dashboard;
+        _logger.LogInformation("Navigating to Home (history cleared)");
+        var content = ResolveView(NavigationRoutes.Home.Dashboard);
+        if (_mainWindowViewModel is not null)
+            _mainWindowViewModel.CurrentContent = content;
+    }
+
     private object? ResolveView(string viewName)
     {
         // Extend this switch as new views are added
