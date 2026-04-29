@@ -1,7 +1,9 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
+using DesktopLamour.Shared.Controls;
+
 namespace DesktopLamour.Features.HomePage.Suppliers.Domain.Models;
 
-public class Supplier
+public class Supplier : ISearchableItem
 {
     public int    Id             { get; set; }
     public string Code           { get; set; } = string.Empty;
@@ -11,4 +13,5 @@ public class Supplier
     public string TaxCode        { get; set; } = string.Empty;
     public string Phone          { get; set; } = string.Empty;
     public bool   IsStopTracking { get; set; }
+    public string DisplayText    => $"{Code} — {Name}";
 }

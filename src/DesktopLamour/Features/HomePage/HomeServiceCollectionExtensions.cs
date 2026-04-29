@@ -158,6 +158,8 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<AccountingViewModel>();
         services.AddTransient<ReceiptWindow>();
         services.AddTransient<ReceiptViewModel>();
+        services.AddTransient<PaymentWindow>();
+        services.AddTransient<PaymentViewModel>();
 
         // ── Accounting: UseCases ─────────────────────────────────────────────────
         services.AddTransient<IGetCashLedgerUseCase, GetCashLedgerUseCase>();
@@ -166,6 +168,12 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<ICreateReceiptUseCase, CreateReceiptUseCase>();
         services.AddTransient<IUpdateReceiptUseCase, UpdateReceiptUseCase>();
         services.AddTransient<IDeleteReceiptUseCase, DeleteReceiptUseCase>();
+        services.AddTransient<IGetPaymentsUseCase, GetPaymentsUseCase>();
+        services.AddTransient<IGetPaymentByIdUseCase, GetPaymentByIdUseCase>();
+        services.AddTransient<ICreatePaymentUseCase, CreatePaymentUseCase>();
+        services.AddTransient<IUpdatePaymentUseCase, UpdatePaymentUseCase>();
+        services.AddTransient<IDeletePaymentUseCase, DeletePaymentUseCase>();
+        services.AddTransient<IDuplicatePaymentUseCase, DuplicatePaymentUseCase>();
 
         // ── Accounting: Service + typed HttpClient ───────────────────────────────
         services.AddHttpClient<ICashLedgerService, CashLedgerService>(client =>
@@ -182,8 +190,16 @@ public static class HomeServiceCollectionExtensions
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
 
+        services.AddHttpClient<IPaymentService, PaymentService>(client =>
+        {
+            client.BaseAddress = new Uri("http://192.168.64.1:5282");
+            client.Timeout     = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
+
         // ── Accounting: Window factory ───────────────────────────────────────────
         services.AddTransient<Func<ReceiptWindow>>(sp => () => sp.GetRequiredService<ReceiptWindow>());
+        services.AddTransient<Func<PaymentWindow>>(sp => () => sp.GetRequiredService<PaymentWindow>());
 
         // ── Warehouse: Views + ViewModels ────────────────────────────────────────
         services.AddTransient<WarehouseView>();

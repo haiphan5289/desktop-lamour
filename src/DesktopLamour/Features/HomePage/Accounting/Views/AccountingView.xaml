@@ -98,6 +98,10 @@
                                     Style="{StaticResource AppButton.Primary.Medium}"
                                     Command="{Binding OpenReceiptCommand}"
                                     Margin="8,0,0,0"/>
+                <controls:AppButton Content="📄 Phiếu Chi"
+                                    Style="{StaticResource AppButton.Primary.Medium}"
+                                    Command="{Binding OpenPaymentCommand}"
+                                    Margin="8,0,0,0"/>
             </StackPanel>
         </Border>
 

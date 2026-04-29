@@ -16,6 +16,7 @@ public partial class AccountingViewModel : ViewModelBase
     private readonly INavigationService   _navigationService;
     private readonly IGetCashLedgerUseCase _getCashLedger;
     private readonly Func<ReceiptWindow>   _receiptWindowFactory;
+    private readonly Func<PaymentWindow>   _paymentWindowFactory;
 
     [ObservableProperty] private bool    _isLoading;
     [ObservableProperty] private bool    _hasError;
@@ -31,11 +32,13 @@ public partial class AccountingViewModel : ViewModelBase
     public AccountingViewModel(
         INavigationService   navigationService,
         IGetCashLedgerUseCase getCashLedger,
-        Func<ReceiptWindow>   receiptWindowFactory)
+        Func<ReceiptWindow>   receiptWindowFactory,
+        Func<PaymentWindow>   paymentWindowFactory)
     {
         _navigationService    = navigationService;
         _getCashLedger        = getCashLedger;
         _receiptWindowFactory = receiptWindowFactory;
+        _paymentWindowFactory = paymentWindowFactory;
     }
 
     [RelayCommand]
@@ -47,6 +50,15 @@ public partial class AccountingViewModel : ViewModelBase
         var window = _receiptWindowFactory();
         window.Owner = Application.Current.MainWindow;
         window.ViewModel.ReceiptSaved += () => _ = LoadAsync(CancellationToken.None);
+        window.Show();
+    }
+
+    [RelayCommand]
+    private void OpenPayment()
+    {
+        var window = _paymentWindowFactory();
+        window.Owner = Application.Current.MainWindow;
+        window.ViewModel.PaymentSaved += () => _ = LoadAsync(CancellationToken.None);
         window.Show();
     }
 

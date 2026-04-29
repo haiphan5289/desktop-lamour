@@ -1,0 +1,462 @@
+<Window x:Class="DesktopLamour.Features.HomePage.Accounting.Views.PaymentWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+        Title="Phiếu chi - CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ LAMOUR"
+        Width="1100"
+        Height="720"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="CanResize">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Loading overlay -->
+        <controls:AppLoadingOverlay Grid.RowSpan="6" IsLoading="{Binding IsBusy}"/>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- Header                                                  -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <Border Grid.Row="0"
+                Background="{StaticResource AppColor.BackgroundBrand}"
+                Padding="20,14">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="💳" FontSize="22" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <StackPanel VerticalAlignment="Center">
+                    <controls:AppLabel Text="Phiếu chi"
+                                       Style="{StaticResource AppTypography.DisplaySection}"
+                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                    <controls:AppLabel Text="Lập và quản lý phiếu thu"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       Foreground="{StaticResource AppColor.TextSecondary}"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- Toolbar                                                 -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <Border Grid.Row="1"
+                Padding="16,12"
+                Background="{StaticResource AppColor.BackgroundPrimary}"
+                BorderBrush="{StaticResource AppColor.BorderThin}"
+                BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Left: Navigation group -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Border Background="{StaticResource AppColor.BackgroundSecondary}"
+                            BorderBrush="{StaticResource AppColor.BorderThin}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="4">
+                        <StackPanel Orientation="Horizontal">
+                            <controls:AppButton Content="◀ Trước"
+                                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                                Command="{Binding NavigatePrevCommand}"
+                                                Margin="0"/>
+                            <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
+                            <controls:AppButton Content="Sau ▶"
+                                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                                Command="{Binding NavigateNextCommand}"
+                                                Margin="0"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Center: Action group -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Left" Margin="12,0,0,0">
+                    <Border Background="{StaticResource AppColor.BackgroundSecondary}"
+                            BorderBrush="{StaticResource AppColor.BorderThin}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="4">
+                        <StackPanel Orientation="Horizontal">
+                            <controls:AppButton Content="➕ Thêm"
+                                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                                Command="{Binding AddNewCommand}"
+                                                Margin="0"/>
+                            <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
+                            <controls:AppButton Content="🗑️ Xóa"
+                                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                                Command="{Binding DeleteCommand}"
+                                                Margin="0"/>
+                            <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
+                            <controls:AppButton Content="↩️ Hoàn"
+                                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                                Command="{Binding CancelCommand}"
+                                                Margin="0"/>
+                            <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
+                            <controls:AppButton Content="✖️ Đóng"
+                                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                                Click="CloseButton_Click"
+                                                Margin="0"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Right: Primary action (Save) -->
+                <controls:AppButton Grid.Column="2"
+                                    Content="💾 Ghi số"
+                                    Style="{StaticResource AppButton.Primary.Medium}"
+                                    Command="{Binding SaveCommand}"
+                                    FontWeight="SemiBold"
+                                    MinWidth="120"
+                                    Padding="16,8"/>
+            </Grid>
+        </Border>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- Form — Thông tin chung + Chứng từ                       -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <Grid Grid.Row="2" Margin="16,12,16,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="240"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ── Left: Thông tin chung ── -->
+            <Border Grid.Column="0"
+                    Padding="14,12"
+                    BorderBrush="{StaticResource AppColor.BorderThin}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Background="{StaticResource AppColor.BackgroundPrimary}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Đối tượng -->
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <controls:AppLabel Grid.Column="0" Text="Đối tượng"
+                                           Style="{StaticResource AppTypography.LabelSection}"
+                                           VerticalAlignment="Center"/>
+                        <controls:AppSearchableComboBox Grid.Column="1"
+                            ItemsSource="{Binding Suppliers}"
+                            SelectedItem="{Binding SelectedSupplier, Mode=TwoWay}"
+                            Placeholder="Chọn khách hàng"
+                            IsNullable="True"/>
+                    </Grid>
+
+                    <!-- Người nhận -->
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <controls:AppLabel Grid.Column="0" Text="Người nhận"
+                                           Style="{StaticResource AppTypography.LabelSection}"
+                                           VerticalAlignment="Center"/>
+                        <controls:AppTextField Grid.Column="1"
+                            Text="{Binding PayeeName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            Placeholder="Tên người nộp"/>
+                    </Grid>
+
+                    <!-- Địa chỉ -->
+                    <Grid Grid.Row="4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <controls:AppLabel Grid.Column="0" Text="Địa chỉ"
+                                           Style="{StaticResource AppTypography.LabelSection}"
+                                           VerticalAlignment="Center"/>
+                        <controls:AppTextField Grid.Column="1"
+                            Text="{Binding Address, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            Placeholder="Địa chỉ"/>
+                    </Grid>
+
+                    <!-- Lý do nộp -->
+                    <Grid Grid.Row="6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <controls:AppLabel Grid.Column="0" Text="Lý do nộp"
+                                           Style="{StaticResource AppTypography.LabelSection}"
+                                           VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="1"
+                                  ItemsSource="{Binding PaymentReasons}"
+                                  SelectedItem="{Binding SelectedPaymentReason, Mode=TwoWay}"
+                                  Height="34"/>
+                    </Grid>
+
+                    <!-- Nhân viên thu | Kèm theo | Tham chiếu -->
+                    <Grid Grid.Row="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <controls:AppLabel Grid.Column="0" Text="Nhân viên thu"
+                                           Style="{StaticResource AppTypography.LabelSection}"
+                                           VerticalAlignment="Center"/>
+                        <controls:AppSearchableComboBox Grid.Column="1"
+                            ItemsSource="{Binding Employees}"
+                            SelectedItem="{Binding SelectedPaymentEmployeeEmployee, Mode=TwoWay}"
+                            Placeholder="Chọn nhân viên"
+                            IsNullable="True"/>
+
+                        <StackPanel Grid.Column="3">
+                            <controls:AppLabel Text="Kèm theo"
+                                               Style="{StaticResource AppTypography.LabelSection}"
+                                               Margin="0,0,0,4"/>
+                            <controls:AppTextField
+                                Text="{Binding Attachment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                Placeholder="chứng từ gốc"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="5">
+                            <controls:AppLabel Text="Tham chiếu"
+                                               Style="{StaticResource AppTypography.LabelSection}"
+                                               Margin="0,0,0,4"/>
+                            <controls:AppTextField
+                                Text="{Binding Reference, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                Placeholder="Số tham chiếu"/>
+                        </StackPanel>
+                    </Grid>
+
+                </Grid>
+            </Border>
+
+            <!-- ── Right: Chứng từ ── -->
+            <Border Grid.Column="2"
+                    Padding="14,12"
+                    BorderBrush="{StaticResource AppColor.BorderThin}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Background="{StaticResource AppColor.BackgroundPrimary}">
+                <StackPanel>
+                    <controls:AppLabel Text="Ngày hạch toán"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Margin="0,0,0,4"/>
+                    <DatePicker SelectedDate="{Binding AccountingDate, Mode=TwoWay}"
+                                Height="34" Margin="0,0,0,10"/>
+
+                    <controls:AppLabel Text="Ngày chứng từ"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Margin="0,0,0,4"/>
+                    <DatePicker SelectedDate="{Binding DocumentDate, Mode=TwoWay}"
+                                Height="34" Margin="0,0,0,10"/>
+
+                    <controls:AppLabel Text="Số chứng từ"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Margin="0,0,0,4"/>
+                    <controls:AppTextField
+                        Text="{Binding DocumentNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        Placeholder="Số chứng từ"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- Tab area — Hạch toán DataGrid                          -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <Grid Grid.Row="3" Margin="16,8,16,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Tab header -->
+            <Border Grid.Row="0"
+                    Padding="12,6"
+                    Background="{StaticResource AppColor.BackgroundSecondary}"
+                    BorderBrush="{StaticResource AppColor.BorderThin}"
+                    BorderThickness="1,1,1,0"
+                    CornerRadius="6,6,0,0">
+                <StackPanel Orientation="Horizontal">
+                    <Border Width="3" Height="14" Background="{StaticResource AppColor.BackgroundBrand}"
+                            CornerRadius="2" Margin="0,0,8,0"/>
+                    <controls:AppLabel Text="1. Hạch toán"
+                                       Style="{StaticResource AppTypography.LabelSection}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- DataGrid -->
+            <DataGrid Grid.Row="1"
+                      ItemsSource="{Binding Entries}"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      CanUserResizeColumns="True"
+                      SelectionMode="Single"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="Horizontal"
+                      BorderBrush="{StaticResource AppColor.BorderThin}"
+                      BorderThickness="1"
+                      RowBackground="{StaticResource AppColor.BackgroundPrimary}"
+                      AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}">
+
+                <DataGrid.Columns>
+
+                    <!-- Diễn giải -->
+                    <DataGridTextColumn Header="Diễn giải"
+                                        Binding="{Binding Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        Width="*"/>
+
+                    <!-- TK Nợ -->
+                    <DataGridTemplateColumn Header="TK Nợ" Width="130">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding DebitAccount}"
+                                           VerticalAlignment="Center" Padding="4,0"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                        <DataGridTemplateColumn.CellEditingTemplate>
+                            <DataTemplate>
+                                <ComboBox ItemsSource="{Binding DataContext.AccountCodes, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                          SelectedItem="{Binding DebitAccount, Mode=TwoWay}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellEditingTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!-- TK Có -->
+                    <DataGridTemplateColumn Header="TK Có" Width="130">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding CreditAccount}"
+                                           VerticalAlignment="Center" Padding="4,0"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                        <DataGridTemplateColumn.CellEditingTemplate>
+                            <DataTemplate>
+                                <ComboBox ItemsSource="{Binding DataContext.AccountCodes, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                          SelectedItem="{Binding CreditAccount, Mode=TwoWay}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellEditingTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!-- Số tiền -->
+                    <DataGridTextColumn Header="Số tiền"
+                                        Binding="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=N0}"
+                                        Width="110">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                <Setter Property="VerticalAlignment"   Value="Center"/>
+                                <Setter Property="Padding"             Value="0,0,6,0"/>
+                                <Setter Property="Foreground"          Value="{StaticResource AppColor.TextBrand}"/>
+                                <Setter Property="FontWeight"          Value="SemiBold"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                    <!-- Đối tượng (SubjectCode) -->
+                    <DataGridTextColumn Header="Đối tượng"
+                                        Binding="{Binding SubjectCode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        Width="100"/>
+
+                    <!-- Tên đối tượng -->
+                    <DataGridTextColumn Header="Tên đối tượng"
+                                        Binding="{Binding SubjectName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        Width="130"/>
+
+                    <!-- TK ngân hàng -->
+                    <DataGridTextColumn Header="TK ngân hàng"
+                                        Binding="{Binding BankAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        Width="120"/>
+
+                    <!-- Remove -->
+                    <DataGridTemplateColumn Header="" Width="32">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="✕" FontSize="10" Padding="4,2"
+                                        Background="Transparent" BorderThickness="0"
+                                        Foreground="{StaticResource AppColor.TextSecondary}"
+                                        Command="{Binding DataContext.RemoveEntryCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        CommandParameter="{Binding}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- Error banner                                            -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <Border Grid.Row="4"
+                Margin="16,4,16,0"
+                Padding="12,8"
+                Background="{StaticResource AppColor.BackgroundErrorLight}"
+                CornerRadius="6"
+                Visibility="{Binding HasError, Converter={StaticResource BoolToVisibilityConverter}}">
+            <controls:AppLabel Text="{Binding ErrorMessage}"
+                               Style="{StaticResource AppTypography.BodyCaption}"
+                               Foreground="{StaticResource AppColor.TextError}"/>
+        </Border>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- Footer — row count + total + add entry                  -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <Border Grid.Row="5"
+                BorderBrush="{StaticResource AppColor.BorderThin}"
+                BorderThickness="0,1,0,0"
+                Padding="16,10"
+                Margin="0,6,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <controls:AppButton Grid.Column="0"
+                                    Content="+ Thêm dòng"
+                                    Style="{StaticResource AppButton.Tertiary.Medium}"
+                                    Command="{Binding AddEntryCommand}"/>
+
+                <controls:AppLabel Grid.Column="1"
+                                   Text="{Binding EntrySummary}"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   Foreground="{StaticResource AppColor.TextSecondary}"
+                                   VerticalAlignment="Center"
+                                   Margin="16,0,0,0"/>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <controls:AppLabel Text="Tổng tiền:"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Margin="0,0,12,0"/>
+                    <controls:AppLabel Text="{Binding TotalAmount, StringFormat=\{0:N0\}}"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+    </Grid>
+
+</Window>
