@@ -43,7 +43,7 @@ public partial class WarehouseReceiptListViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void GoBack() => _navigationService.NavigateTo(NavigationRoutes.Warehouse.Hub);
+    private void GoBack() => _navigationService.GoBack();
 
     [RelayCommand]
     private void OpenForm()

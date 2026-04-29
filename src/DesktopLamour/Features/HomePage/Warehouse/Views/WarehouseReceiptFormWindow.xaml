@@ -239,15 +239,18 @@
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
 
-                <!-- Đơn giá -->
+                <!-- Đơn giá — read-only, auto-filled from product CostPrice -->
                 <DataGridTextColumn Header="Đơn giá"
-                                    Binding="{Binding UnitPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=N0}"
-                                    Width="110">
+                                    Binding="{Binding UnitPrice, StringFormat=N0}"
+                                    Width="110"
+                                    IsReadOnly="True">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="HorizontalAlignment" Value="Right"/>
                             <Setter Property="VerticalAlignment"   Value="Center"/>
                             <Setter Property="Padding"             Value="0,0,6,0"/>
+                            <Setter Property="Foreground"          Value="{StaticResource AppColor.TextError}"/>
+                            <Setter Property="FontWeight"          Value="SemiBold"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>

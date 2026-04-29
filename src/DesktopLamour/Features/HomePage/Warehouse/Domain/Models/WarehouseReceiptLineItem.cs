@@ -13,6 +13,12 @@ public partial class WarehouseReceiptLineItem : ObservableObject
     [ObservableProperty] private string           _debitAccount  = "111";
     [ObservableProperty] private string           _creditAccount = "131";
 
+    partial void OnSelectedProductChanged(ISearchableItem? value)
+    {
+        if (value is WarehouseProductItem p)
+            UnitPrice = p.CostPrice;
+    }
+
     partial void OnQuantityChanged(decimal value)
         => Amount = value * UnitPrice;
 
