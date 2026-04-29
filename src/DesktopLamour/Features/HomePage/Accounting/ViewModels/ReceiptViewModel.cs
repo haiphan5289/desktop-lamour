@@ -284,7 +284,15 @@ public partial class ReceiptViewModel : ViewModelBase
     partial void OnSelectedCustomerChanged(ISearchableItem? value)
     {
         if (value is not null)
+        {
             PayerName = value.Name;
+            
+            // Auto-populate Address from Customer
+            if (value is DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer customer)
+            {
+                Address = customer.Address;
+            }
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

@@ -18,9 +18,10 @@
 Title: "Phiếu thu - CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ LAMOUR"
 Size: 1100×720, WindowStartupLocation=CenterOwner
 
-┌─ Toolbar ─────────────────────────────────────────────┐
-│ Trước | Sau | Thêm | Ghi số | Xóa | Hoàn | Đóng      │
-└───────────────────────────────────────────────────────┘
+┌─ Toolbar ─────────────────────────────────────────────────────────────┐
+│ [◀ Trước | Sau ▶]  [➕ Thêm | 🗑️ Xóa | ↩️ Hoàn | ✖️ Đóng]    [💾 Ghi số] │
+│  Navigation group    Action group (grouped)          Primary action   │
+└───────────────────────────────────────────────────────────────────────┘
 
 ┌─ Thông tin chung ───────────────┐  ┌─ Chứng từ ──────┐
 │ Đối tượng   [Customer ComboBox] │  │ Ngày hạch toán   │
@@ -51,6 +52,10 @@ Footer: Số dòng = N                          {total}
 | `TK Nợ` (new entry row) | `Cash111` (111) |
 | `TK Có` (new entry row) | `Receivable131` (131) |
 
+## Window Open Behavior
+
+Window **luôn mở ở chế độ tạo mới** (blank form). `OnContentRendered` gọi `LoadAsync()` để load lookups + danh sách, sau đó tự gọi `AddNewCommand` để clear form. Dùng **Trước / Sau** để xem phiếu cũ.
+
 ## Dropdown Options
 
 **Lý do nộp (`PaymentReason`):**
@@ -70,13 +75,19 @@ Payroll334     — 334 Phải trả người lao động
 
 ## Quỹ Tiền Mặt Auto-Refresh
 
-Sau khi save thành công, `ReceiptViewModel` fires `ReceiptSaved` event.
-`AccountingViewModel` subscribes khi mở window → tự gọi `LoadAsync()` → Quỹ Tiền Mặt reload.
+Sau khi save thành công:
+1. `ReceiptViewModel` fires `ReceiptSaved` → `AccountingViewModel.LoadAsync()` → Quỹ Tiền Mặt reload
+2. `ReceiptViewModel` fires `RequestClose` → `ReceiptWindow.Close()` → cửa sổ tự đóng
 
 ```csharp
 // AccountingViewModel.OpenReceipt()
-window.ViewModel.ReceiptSaved += () => _ = LoadAsync(CancellationToken.None);
+window.ViewModel.ReceiptSaved  += () => _ = LoadAsync(CancellationToken.None);
+
+// ReceiptWindow constructor (code-behind)
+viewModel.RequestClose += Close;
 ```
+
+Cột **Diễn giải** trong Quỹ Tiền Mặt hiện **chỉ tên người nộp** — không có prefix.
 
 ## Architecture
 
@@ -157,6 +168,14 @@ HomeServiceCollectionExtensions.cs      (updated)
 - `PaymentReceiptLineItem.cs`
 - `ICreatePaymentReceiptUseCase` / `CreatePaymentReceiptUseCase`
 - All related DI registrations in `HomeServiceCollectionExtensions.cs`
+
+## Auto-Population Features
+
+When a customer is selected from the **Đối tượng** dropdown:
+- **Người nộp** is automatically populated with the customer's name
+- **Địa chỉ** is automatically populated with the customer's address
+
+This reduces manual data entry and ensures consistency with customer master data.
 
 ## Known Limitations / Future Work
 

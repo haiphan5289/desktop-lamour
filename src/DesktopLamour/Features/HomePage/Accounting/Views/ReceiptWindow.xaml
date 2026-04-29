@@ -45,40 +45,78 @@
         <!-- Toolbar                                                 -->
         <!-- ═══════════════════════════════════════════════════════ -->
         <Border Grid.Row="1"
-                Padding="16,8"
+                Padding="16,12"
+                Background="{StaticResource AppColor.BackgroundPrimary}"
                 BorderBrush="{StaticResource AppColor.BorderThin}"
                 BorderThickness="0,0,0,1">
-            <StackPanel Orientation="Horizontal">
-                <controls:AppButton Content="◀ Trước"
-                                    Style="{StaticResource AppButton.Tertiary.Medium}"
-                                    Command="{Binding NavigatePrevCommand}"
-                                    Margin="0,0,4,0"/>
-                <controls:AppButton Content="Sau ▶"
-                                    Style="{StaticResource AppButton.Tertiary.Medium}"
-                                    Command="{Binding NavigateNextCommand}"
-                                    Margin="0,0,12,0"/>
-                <Separator Width="1" Height="24" Margin="0,0,12,0"
-                           Background="{StaticResource AppColor.BorderThin}"/>
-                <controls:AppButton Content="+ Thêm"
-                                    Style="{StaticResource AppButton.Tertiary.Medium}"
-                                    Command="{Binding AddNewCommand}"
-                                    Margin="0,0,4,0"/>
-                <controls:AppButton Content="Ghi số"
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Left: Navigation group -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Border Background="{StaticResource AppColor.BackgroundSecondary}"
+                            BorderBrush="{StaticResource AppColor.BorderThin}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="4">
+                        <StackPanel Orientation="Horizontal">
+                            <controls:AppButton Content="◀ Trước"
+                                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                                Command="{Binding NavigatePrevCommand}"
+                                                Margin="0"/>
+                            <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
+                            <controls:AppButton Content="Sau ▶"
+                                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                                Command="{Binding NavigateNextCommand}"
+                                                Margin="0"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Center: Action group -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Left" Margin="12,0,0,0">
+                    <Border Background="{StaticResource AppColor.BackgroundSecondary}"
+                            BorderBrush="{StaticResource AppColor.BorderThin}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="4">
+                        <StackPanel Orientation="Horizontal">
+                            <controls:AppButton Content="➕ Thêm"
+                                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                                Command="{Binding AddNewCommand}"
+                                                Margin="0"/>
+                            <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
+                            <controls:AppButton Content="🗑️ Xóa"
+                                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                                Command="{Binding DeleteCommand}"
+                                                Margin="0"/>
+                            <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
+                            <controls:AppButton Content="↩️ Hoàn"
+                                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                                Command="{Binding CancelCommand}"
+                                                Margin="0"/>
+                            <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
+                            <controls:AppButton Content="✖️ Đóng"
+                                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                                Click="CloseButton_Click"
+                                                Margin="0"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Right: Primary action (Save) -->
+                <controls:AppButton Grid.Column="2"
+                                    Content="💾 Ghi số"
                                     Style="{StaticResource AppButton.Primary.Medium}"
                                     Command="{Binding SaveCommand}"
-                                    Margin="0,0,4,0"/>
-                <controls:AppButton Content="🗑 Xóa"
-                                    Style="{StaticResource AppButton.Tertiary.Medium}"
-                                    Command="{Binding DeleteCommand}"
-                                    Margin="0,0,4,0"/>
-                <controls:AppButton Content="Hoàn"
-                                    Style="{StaticResource AppButton.Tertiary.Medium}"
-                                    Command="{Binding CancelCommand}"
-                                    Margin="0,0,12,0"/>
-                <controls:AppButton Content="Đóng"
-                                    Style="{StaticResource AppButton.Tertiary.Medium}"
-                                    Click="CloseButton_Click"/>
-            </StackPanel>
+                                    FontWeight="SemiBold"
+                                    MinWidth="120"
+                                    Padding="16,8"/>
+            </Grid>
         </Border>
 
         <!-- ═══════════════════════════════════════════════════════ -->
