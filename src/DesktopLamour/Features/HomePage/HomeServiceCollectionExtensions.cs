@@ -7,7 +7,6 @@ using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Employees.ViewModels;
 using DesktopLamour.Features.HomePage.Employees.Views;
 using DesktopLamour.Features.HomePage.Accounting.Data.Services;
-using DesktopLamour.Features.HomePage.Accounting.Domain.Models;
 using DesktopLamour.Features.HomePage.Accounting.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Accounting.ViewModels;
 using DesktopLamour.Features.HomePage.Accounting.Views;
@@ -157,12 +156,16 @@ public static class HomeServiceCollectionExtensions
         // ── Accounting: Views + ViewModels ───────────────────────────────────────
         services.AddTransient<AccountingView>();
         services.AddTransient<AccountingViewModel>();
-        services.AddTransient<PaymentReceiptWindow>();
-        services.AddTransient<PaymentReceiptViewModel>();
+        services.AddTransient<ReceiptWindow>();
+        services.AddTransient<ReceiptViewModel>();
 
         // ── Accounting: UseCases ─────────────────────────────────────────────────
         services.AddTransient<IGetCashLedgerUseCase, GetCashLedgerUseCase>();
-        services.AddTransient<ICreatePaymentReceiptUseCase, CreatePaymentReceiptUseCase>();
+        services.AddTransient<IGetReceiptsUseCase, GetReceiptsUseCase>();
+        services.AddTransient<IGetReceiptByIdUseCase, GetReceiptByIdUseCase>();
+        services.AddTransient<ICreateReceiptUseCase, CreateReceiptUseCase>();
+        services.AddTransient<IUpdateReceiptUseCase, UpdateReceiptUseCase>();
+        services.AddTransient<IDeleteReceiptUseCase, DeleteReceiptUseCase>();
 
         // ── Accounting: Service + typed HttpClient ───────────────────────────────
         services.AddHttpClient<ICashLedgerService, CashLedgerService>(client =>
@@ -172,7 +175,7 @@ public static class HomeServiceCollectionExtensions
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
 
-        services.AddHttpClient<IPaymentReceiptService, PaymentReceiptService>(client =>
+        services.AddHttpClient<IReceiptService, ReceiptService>(client =>
         {
             client.BaseAddress = new Uri("http://192.168.64.1:5282");
             client.Timeout     = TimeSpan.FromSeconds(30);
@@ -180,7 +183,7 @@ public static class HomeServiceCollectionExtensions
         });
 
         // ── Accounting: Window factory ───────────────────────────────────────────
-        services.AddTransient<Func<PaymentReceiptWindow>>(sp => () => sp.GetRequiredService<PaymentReceiptWindow>());
+        services.AddTransient<Func<ReceiptWindow>>(sp => () => sp.GetRequiredService<ReceiptWindow>());
 
         // ── Warehouse: Views + ViewModels ────────────────────────────────────────
         services.AddTransient<WarehouseView>();

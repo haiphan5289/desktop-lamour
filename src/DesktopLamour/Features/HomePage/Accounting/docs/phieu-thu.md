@@ -1,76 +1,117 @@
 # Phiếu Thu — Desktop App Documentation
 
-> Feature: Thu tiền khách hàng (Payment Receipt)
+> Feature: Phiếu Thu (Cash Receipt)
 > Module: Accounting (WPF)
-> Implemented: 2026-04-26
+> Rebuilt: 2026-04-29 (replaced PaymentReceiptWindow popup → standalone ReceiptWindow)
 
 ## User Flow
 
 1. User vào màn **Kế Toán** (AccountingView)
-2. Click nút **"📄 Phiếu Thu"** trong thanh action
-3. Popup `PaymentReceiptWindow` mở (860px, CenterOwner)
-4. User điền thông tin header + thêm dòng chứng từ
-5. Click **"Thu tiền"** → POST lên BE → popup đóng → AccountingView tự refresh
+2. Click nút **"Phiếu Thu"**
+3. `ReceiptWindow` mở như standalone window (không phải popup/ShowDialog)
+4. User điền header info + thêm dòng hạch toán
+5. Click **"Ghi số"** → POST/PUT lên BE → `AccountingView` (Quỹ Tiền Mặt) tự refresh
 
-## Screen Fields
+## Window Layout
 
-### Header form
+```
+Title: "Phiếu thu - CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ LAMOUR"
+Size: 1100×720, WindowStartupLocation=CenterOwner
 
-| Field | Binding | Notes |
-|-------|---------|-------|
-| Phương thức thanh toán | `SelectedPaymentMethod` | RadioButton: "Cash" / "BankTransfer" |
-| Loại tiền | `Currency` | TextBox, default "VND" |
-| Tỷ giá | `ExchangeRate` | TextBox decimal, default 1.00 |
-| Khách hàng | `CustomerCode` | TextBox (nhập mã KH, vd KH00002) |
-| Ngày thu tiền | `CollectionDate` | DatePicker |
-| NV bán hàng | `EmployeeCode` | TextBox (nhập mã NV, vd NV003) |
-| Số tiền | `TotalAmount` | TextBox decimal |
+┌─ Toolbar ─────────────────────────────────────────────┐
+│ Trước | Sau | Thêm | Ghi số | Xóa | Hoàn | Đóng      │
+└───────────────────────────────────────────────────────┘
 
-### Chứng từ công nợ — DataGrid
+┌─ Thông tin chung ───────────────┐  ┌─ Chứng từ ──────┐
+│ Đối tượng   [Customer ComboBox] │  │ Ngày hạch toán   │
+│ Người nộp   [TextBox — auto]    │  │ [DatePicker]     │
+│ Địa chỉ     [TextBox]           │  │ Ngày chứng từ    │
+│ Lý do nộp   [ComboBox]          │  │ [DatePicker]     │
+│ Nhân viên thu [Employee ComboBox]│  │ Số chứng từ      │
+│ Kèm theo    [TextBox]           │  │ [TextBox]        │
+│ Tham chiếu  [TextBox]           │  └──────────────────┘
+└─────────────────────────────────┘
 
-| Column | Binding | Type |
-|--------|---------|------|
-| Ngày chứng từ | `DocumentDate` | DatePicker |
-| Số chứng từ | `DocumentNumber` | TextBox |
-| Số hóa đơn | `InvoiceNumber` | TextBox |
-| Diễn giải | `Description` | TextBox |
-| Hạn thanh toán | `DueDate` | DatePicker (nullable) |
-| Số phải thu | `AmountDue` | decimal TextBox |
-| Số thanh toán | `AmountPaid` | decimal TextBox |
+┌─ 1. Hạch toán ────────────────────────────────────────┐
+│ DataGrid: Diễn giải | TK Nợ | TK Có | Số tiền |       │
+│           Đối tượng | Tên đối tượng | TK ngân hàng    │
+└───────────────────────────────────────────────────────┘
 
-### Buttons
+Footer: Số dòng = N                          {total}
+```
 
-| Button | Command | Action |
-|--------|---------|--------|
-| + Thêm dòng | `AddLineCommand` | Thêm dòng trống vào DataGrid |
-| Thu tiền | `SaveCommand` | POST → đóng popup (DialogResult = true) |
-| Hủy bỏ | Closes window | DialogResult = null |
+## Field Defaults (New Form)
+
+| Field | Default |
+|-------|---------|
+| `Số chứng từ` | `"PT00067"` — user edits as needed |
+| `Ngày hạch toán` | Today |
+| `Ngày chứng từ` | Today |
+| `Lý do nộp` | `ThuKhac` |
+| `TK Nợ` (new entry row) | `Cash111` (111) |
+| `TK Có` (new entry row) | `Receivable131` (131) |
+
+## Dropdown Options
+
+**Lý do nộp (`PaymentReason`):**
+```
+ThuKhac      — Thu khác
+ThuTienHang  — Thu tiền hàng
+ThuCongNo    — Thu công nợ
+```
+
+**TK Nợ / TK Có (`AccountCode`):**
+```
+Cash111        — 111 Tiền mặt
+Bank112        — 112 Tiền gửi ngân hàng
+Receivable131  — 131 Phải thu khách hàng
+Payroll334     — 334 Phải trả người lao động
+```
+
+## Quỹ Tiền Mặt Auto-Refresh
+
+Sau khi save thành công, `ReceiptViewModel` fires `ReceiptSaved` event.
+`AccountingViewModel` subscribes khi mở window → tự gọi `LoadAsync()` → Quỹ Tiền Mặt reload.
+
+```csharp
+// AccountingViewModel.OpenReceipt()
+window.ViewModel.ReceiptSaved += () => _ = LoadAsync(CancellationToken.None);
+```
 
 ## Architecture
 
 ```
-AccountingView.xaml          "📄 Phiếu Thu" button → OpenPaymentReceiptCommand
+AccountingView.xaml           "Phiếu Thu" button → OpenReceiptCommand
         ↓
-AccountingViewModel           Func<PaymentReceiptWindow> factory → ShowDialog()
+AccountingViewModel           Func<ReceiptWindow> factory → window.Show()
+                              subscribes ReceiptSaved → LoadAsync()
         ↓
-PaymentReceiptWindow.xaml     Popup Window, DataContext = PaymentReceiptViewModel
+ReceiptWindow.xaml            Standalone Window, DataContext = ReceiptViewModel
         ↓
-PaymentReceiptViewModel       SaveCommand → ICreatePaymentReceiptUseCase
+ReceiptViewModel              Full CRUD: Load, AddNew, Save, Delete, NavigatePrev/Next
+                              fires ReceiptSaved after successful save
         ↓
-CreatePaymentReceiptUseCase   → IPaymentReceiptService.CreateAsync()
+ICreateReceiptUseCase         → IReceiptService.CreateAsync()
+IUpdateReceiptUseCase         → IReceiptService.UpdateAsync()
+IDeleteReceiptUseCase         → IReceiptService.DeleteAsync()
+IGetReceiptsUseCase           → IReceiptService.GetAllAsync()
+IGetReceiptByIdUseCase        → IReceiptService.GetByIdAsync()
         ↓
-PaymentReceiptService         HttpClient POST /api/v1/accounting/payment-receipts
+ReceiptService                HttpClient → http://192.168.64.1:5282
 ```
 
 ## DI Registration (HomeServiceCollectionExtensions.cs)
 
 ```csharp
-// Accounting — PaymentReceipt
-services.AddTransient<PaymentReceiptWindow>();
-services.AddTransient<PaymentReceiptViewModel>();
-services.AddTransient<ICreatePaymentReceiptUseCase, CreatePaymentReceiptUseCase>();
-services.AddTransient<Func<PaymentReceiptWindow>>(sp => () => sp.GetRequiredService<PaymentReceiptWindow>());
-services.AddHttpClient<IPaymentReceiptService, PaymentReceiptService>(client =>
+services.AddTransient<ReceiptWindow>();
+services.AddTransient<ReceiptViewModel>();
+services.AddTransient<IGetReceiptsUseCase, GetReceiptsUseCase>();
+services.AddTransient<IGetReceiptByIdUseCase, GetReceiptByIdUseCase>();
+services.AddTransient<ICreateReceiptUseCase, CreateReceiptUseCase>();
+services.AddTransient<IUpdateReceiptUseCase, UpdateReceiptUseCase>();
+services.AddTransient<IDeleteReceiptUseCase, DeleteReceiptUseCase>();
+services.AddTransient<Func<ReceiptWindow>>(sp => () => sp.GetRequiredService<ReceiptWindow>());
+services.AddHttpClient<IReceiptService, ReceiptService>(client =>
 {
     client.BaseAddress = new Uri("http://192.168.64.1:5282");
     client.Timeout     = TimeSpan.FromSeconds(30);
@@ -83,31 +124,42 @@ services.AddHttpClient<IPaymentReceiptService, PaymentReceiptService>(client =>
 ```
 Features/HomePage/Accounting/
   Data/Services/
-    Dtos/CreatePaymentReceiptRequestDto.cs
-    Dtos/PaymentReceiptResponseDto.cs
-    IPaymentReceiptService.cs
-    PaymentReceiptService.cs
+    Dtos/ReceiptEntryDto.cs
+    Dtos/ReceiptResponseDto.cs
+    Dtos/CreateReceiptRequestDto.cs
+    Dtos/UpdateReceiptRequestDto.cs
+    IReceiptService.cs
+    ReceiptService.cs
   Domain/
-    Models/PaymentReceiptLineItem.cs
-    UseCases/ICreatePaymentReceiptUseCase.cs
-    UseCases/CreatePaymentReceiptUseCase.cs
+    Models/ReceiptEntryItem.cs          (INotifyPropertyChanged — DataGrid binding)
+    UseCases/IGetReceiptsUseCase.cs + GetReceiptsUseCase.cs
+    UseCases/IGetReceiptByIdUseCase.cs + GetReceiptByIdUseCase.cs
+    UseCases/ICreateReceiptUseCase.cs + CreateReceiptUseCase.cs
+    UseCases/IUpdateReceiptUseCase.cs + UpdateReceiptUseCase.cs
+    UseCases/IDeleteReceiptUseCase.cs + DeleteReceiptUseCase.cs
   ViewModels/
-    PaymentReceiptViewModel.cs       (new)
-    AccountingViewModel.cs           (updated — OpenPaymentReceiptCommand)
+    ReceiptViewModel.cs                 (CRUD, navigation, ReceiptSaved event)
+    AccountingViewModel.cs              (updated — OpenReceiptCommand, ReceiptSaved subscription)
   Views/
-    PaymentReceiptWindow.xaml        (new)
-    PaymentReceiptWindow.xaml.cs     (new)
-    AccountingView.xaml              (updated — added Phiếu Thu button)
+    ReceiptWindow.xaml                  (standalone Window)
+    ReceiptWindow.xaml.cs
+    AccountingView.xaml                 (updated — button → OpenReceiptCommand)
 
-Shared/
-  Converters/StringEqualityConverter.cs  (new — RadioButton ↔ string)
-  AppConverters.xaml                     (updated — registered StringEqualityConverter)
-
-HomeServiceCollectionExtensions.cs       (updated)
+HomeServiceCollectionExtensions.cs      (updated)
 ```
+
+## Removed (replaced by this rebuild)
+
+- `PaymentReceiptWindow.xaml` — popup dialog (replaced by `ReceiptWindow` standalone)
+- `PaymentReceiptViewModel.cs`
+- `IPaymentReceiptService` / `PaymentReceiptService`
+- `CreatePaymentReceiptRequestDto` / `PaymentReceiptResponseDto`
+- `PaymentReceiptLineItem.cs`
+- `ICreatePaymentReceiptUseCase` / `CreatePaymentReceiptUseCase`
+- All related DI registrations in `HomeServiceCollectionExtensions.cs`
 
 ## Known Limitations / Future Work
 
-- `CustomerCode` và `EmployeeCode` hiện là TextBox nhập tay — nên thêm ComboBox/lookup dropdown sau
-- Chưa có "Lấy dữ liệu" (fetch outstanding invoices) — skip theo spec ban đầu
-- Khi ExportInvoice được implement, "Lấy dữ liệu" sẽ gọi `GET /api/v1/accounting/outstanding-invoices?customer_id=`
+- `Số chứng từ` là free-text — không validate uniqueness trên WPF
+- `Tham chiếu` search button chưa có lookup action
+- `+` button cạnh `Đối tượng` và `Nhân viên thu` chưa có quick-add flow

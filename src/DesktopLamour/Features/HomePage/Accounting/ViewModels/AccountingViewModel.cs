@@ -13,9 +13,9 @@ namespace DesktopLamour.Features.HomePage.Accounting.ViewModels;
 
 public partial class AccountingViewModel : ViewModelBase
 {
-    private readonly INavigationService        _navigationService;
-    private readonly IGetCashLedgerUseCase     _getCashLedger;
-    private readonly Func<PaymentReceiptWindow> _paymentReceiptWindowFactory;
+    private readonly INavigationService   _navigationService;
+    private readonly IGetCashLedgerUseCase _getCashLedger;
+    private readonly Func<ReceiptWindow>   _receiptWindowFactory;
 
     [ObservableProperty] private bool    _isLoading;
     [ObservableProperty] private bool    _hasError;
@@ -29,26 +29,25 @@ public partial class AccountingViewModel : ViewModelBase
     public ObservableCollection<CashLedgerEntryDto> Items { get; } = new();
 
     public AccountingViewModel(
-        INavigationService        navigationService,
-        IGetCashLedgerUseCase     getCashLedger,
-        Func<PaymentReceiptWindow> paymentReceiptWindowFactory)
+        INavigationService   navigationService,
+        IGetCashLedgerUseCase getCashLedger,
+        Func<ReceiptWindow>   receiptWindowFactory)
     {
-        _navigationService           = navigationService;
-        _getCashLedger               = getCashLedger;
-        _paymentReceiptWindowFactory = paymentReceiptWindowFactory;
+        _navigationService    = navigationService;
+        _getCashLedger        = getCashLedger;
+        _receiptWindowFactory = receiptWindowFactory;
     }
 
     [RelayCommand]
     private void GoBack() => _navigationService.GoBack();
 
     [RelayCommand]
-    private void OpenPaymentReceipt()
+    private void OpenReceipt()
     {
-        var window = _paymentReceiptWindowFactory();
+        var window = _receiptWindowFactory();
         window.Owner = Application.Current.MainWindow;
-        var result = window.ShowDialog();
-        if (result == true)
-            LoadCommand.Execute(null);
+        window.ViewModel.ReceiptSaved += () => _ = LoadAsync(CancellationToken.None);
+        window.Show();
     }
 
     [RelayCommand]

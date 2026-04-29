@@ -3,9 +3,7 @@ using DesktopLamour.Features.HomePage.Accounting.Data.Services.Dtos;
 
 namespace DesktopLamour.Features.HomePage.Accounting.Domain.UseCases;
 
-public interface ICreatePaymentReceiptUseCase
+public interface IGetReceiptByIdUseCase
 {
-    Task<PaymentReceiptResponseDto> ExecuteAsync(
-        CreatePaymentReceiptRequestDto request,
-        CancellationToken ct = default);
+    Task<ReceiptResponseDto?> ExecuteAsync(int id, CancellationToken ct = default);
 }

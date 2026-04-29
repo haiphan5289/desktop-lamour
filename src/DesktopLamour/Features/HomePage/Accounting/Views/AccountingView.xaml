@@ -96,7 +96,7 @@
                                     Command="{Binding LoadCommand}"/>
                 <controls:AppButton Content="📄 Phiếu Thu"
                                     Style="{StaticResource AppButton.Primary.Medium}"
-                                    Command="{Binding OpenPaymentReceiptCommand}"
+                                    Command="{Binding OpenReceiptCommand}"
                                     Margin="8,0,0,0"/>
             </StackPanel>
         </Border>

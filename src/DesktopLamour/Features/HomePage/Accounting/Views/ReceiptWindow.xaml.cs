@@ -4,21 +4,25 @@ using System.Windows;
 
 namespace DesktopLamour.Features.HomePage.Accounting.Views;
 
-public partial class PaymentReceiptWindow : Window
+public partial class ReceiptWindow : Window
 {
-    public PaymentReceiptViewModel ViewModel { get; }
+    public ReceiptViewModel ViewModel { get; }
 
-    public PaymentReceiptWindow(PaymentReceiptViewModel viewModel)
+    public ReceiptWindow(ReceiptViewModel viewModel)
     {
         InitializeComponent();
         ViewModel   = viewModel;
         DataContext = viewModel;
-        viewModel.RequestClose += result => { DialogResult = result; };
+        viewModel.RequestClose += Close;
     }
 
     protected override async void OnContentRendered(EventArgs e)
     {
         base.OnContentRendered(e);
         await ViewModel.LoadAsync();
+        ViewModel.AddNewCommand.Execute(null);
     }
+
+    private void CloseButton_Click(object sender, RoutedEventArgs e)
+        => Close();
 }
