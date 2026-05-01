@@ -22,6 +22,11 @@ using DesktopLamour.Features.HomePage.Customers.ViewModels;
 using DesktopLamour.Features.HomePage.Customers.Views;
 using DesktopLamour.Features.HomePage.Home.ViewModels;
 using DesktopLamour.Features.HomePage.Home.Views;
+using DesktopLamour.Features.HomePage.Sales.Data.Repositories;
+using DesktopLamour.Features.HomePage.Sales.Data.Services;
+using DesktopLamour.Features.HomePage.Sales.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Sales.ViewModels;
+using DesktopLamour.Features.HomePage.Sales.Views;
 using DesktopLamour.Features.HomePage.ProductList.Data.Repositories;
 using DesktopLamour.Features.HomePage.ProductList.Data.Services;
 using DesktopLamour.Features.HomePage.ProductList.Domain.UseCases;
@@ -242,6 +247,30 @@ public static class HomeServiceCollectionExtensions
 
         // ── WarehouseReceipts: Window factory ────────────────────────────────────
         services.AddTransient<Func<WarehouseReceiptFormWindow>>(sp => () => sp.GetRequiredService<WarehouseReceiptFormWindow>());
+
+        // ── Sales: Views + ViewModels ────────────────────────────────────────────
+        services.AddTransient<SalesOrderWindow>();
+        services.AddTransient<SalesOrderViewModel>();
+
+        // ── Sales: UseCases ──────────────────────────────────────────────────────
+        services.AddTransient<IGetSalesOrdersUseCase, GetSalesOrdersUseCase>();
+        services.AddTransient<ICreateSalesOrderUseCase, CreateSalesOrderUseCase>();
+        services.AddTransient<IUpdateSalesOrderUseCase, UpdateSalesOrderUseCase>();
+        services.AddTransient<IDeleteSalesOrderUseCase, DeleteSalesOrderUseCase>();
+
+        // ── Sales: Repository ────────────────────────────────────────────────────
+        services.AddTransient<ISalesOrderRepository, SalesOrderRepository>();
+
+        // ── Sales: Service + typed HttpClient ────────────────────────────────────
+        services.AddHttpClient<ISalesOrderService, SalesOrderService>(client =>
+        {
+            client.BaseAddress = new Uri("http://192.168.64.1:5282");
+            client.Timeout     = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
+
+        // ── Sales: Window factory ────────────────────────────────────────────────
+        services.AddTransient<Func<SalesOrderWindow>>(sp => () => sp.GetRequiredService<SalesOrderWindow>());
 
         return services;
     }
