@@ -92,3 +92,5 @@ Z:/src/DesktopLamour/obj/Debug/net8.0-windows/DesktopLamour.csproj.AssemblyRefer
 /Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Accounting/Views/PaymentWindow.baml
 /Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Sales/Views/SalesOrderWindow.g.cs
 /Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Sales/Views/SalesOrderWindow.baml
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Sales/Views/SalesOrderListView.g.cs
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Sales/Views/SalesOrderListView.baml

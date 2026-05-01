@@ -37,6 +37,11 @@ public static class NavigationRoutes
         public const string PhieuNhapKho  = "WarehouseReceiptListView";
     }
 
+    public static class SalesOrders
+    {
+        public const string List = "SalesOrderListView";
+    }
+
     public static class Accounting
     {
         public const string Hub = "AccountingView";

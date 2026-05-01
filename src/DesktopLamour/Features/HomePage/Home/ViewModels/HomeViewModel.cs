@@ -4,19 +4,16 @@
 using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.Navigation;
 using DesktopLamour.Core.ViewModels;
-using DesktopLamour.Features.HomePage.Sales.Views;
 
 namespace DesktopLamour.Features.HomePage.Home.ViewModels;
 
 public partial class HomeViewModel : ViewModelBase
 {
-    private readonly INavigationService      _navigationService;
-    private readonly Func<SalesOrderWindow>  _salesWindowFactory;
+    private readonly INavigationService _navigationService;
 
-    public HomeViewModel(INavigationService navigationService, Func<SalesOrderWindow> salesWindowFactory)
+    public HomeViewModel(INavigationService navigationService)
     {
-        _navigationService  = navigationService;
-        _salesWindowFactory = salesWindowFactory;
+        _navigationService = navigationService;
     }
 
     [RelayCommand]
@@ -45,5 +42,5 @@ public partial class HomeViewModel : ViewModelBase
 
     [RelayCommand]
     private void NavigateToSales()
-        => _salesWindowFactory().Show();
+        => _navigationService.NavigateTo(NavigationRoutes.SalesOrders.List);
 }

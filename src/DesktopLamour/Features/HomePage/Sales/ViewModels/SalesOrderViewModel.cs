@@ -1,5 +1,6 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 using System.Collections.ObjectModel;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.ViewModels;
@@ -32,7 +33,6 @@ public partial class SalesOrderViewModel : ViewModelBase
     [ObservableProperty] private bool   _isBusy;
     [ObservableProperty] private bool   _hasError;
     [ObservableProperty] private string _errorMessage = string.Empty;
-    [ObservableProperty] private bool   _isEditing;
 
     // ── Header — Thông tin chung ──────────────────────────────────────────
     [ObservableProperty] private ISearchableItem? _selectedCustomer;
@@ -70,8 +70,8 @@ public partial class SalesOrderViewModel : ViewModelBase
     public IReadOnlyList<ISearchableItem> Employees { get; private set; } = Array.Empty<ISearchableItem>();
     public IReadOnlyList<ISearchableItem> Products  { get; private set; } = Array.Empty<ISearchableItem>();
 
-    private List<SalesOrderResponseDto> _orderListCache = new();
-    private int _currentIndex = -1;
+    // cached document numbers for generating the next number in new-order mode
+    private List<string> _orderNumberCache = new();
 
     public SalesOrderViewModel(
         IGetSalesOrdersUseCase    getOrders,
@@ -95,12 +95,36 @@ public partial class SalesOrderViewModel : ViewModelBase
         Lines.CollectionChanged += (_, _) => RecalculateTotals();
     }
 
-    // ── Init ──────────────────────────────────────────────────────────────
+    // ── Public init — called by SalesOrderWindow ──────────────────────────
 
-    public async Task LoadAsync(CancellationToken ct = default)
+    public async Task InitializeAsync(SalesOrderResponseDto? order, CancellationToken ct = default)
     {
-        await LoadLookupsAsync(ct);
-        await LoadOrdersAsync(ct);
+        IsBusy   = true;
+        HasError = false;
+        try
+        {
+            await LoadLookupsAsync(ct);
+
+            if (order is null)
+            {
+                var allOrders     = await _getOrders.ExecuteAsync(ct);
+                _orderNumberCache = allOrders.Select(o => o.DocumentNumber).ToList();
+                CurrentOrder      = null;
+                ClearForm();
+            }
+            else
+            {
+                CurrentOrder = order;
+                PopulateFormFromCurrent();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to initialize SalesOrderViewModel");
+            HasError     = true;
+            ErrorMessage = $"Không thể tải dữ liệu: {ex.Message}";
+        }
+        finally { IsBusy = false; }
     }
 
     private async Task LoadLookupsAsync(CancellationToken ct)
@@ -146,45 +170,6 @@ public partial class SalesOrderViewModel : ViewModelBase
     // ── Commands ──────────────────────────────────────────────────────────
 
     [RelayCommand]
-    private async Task LoadAsync2(CancellationToken ct = default)
-        => await LoadOrdersAsync(ct);
-
-    private async Task LoadOrdersAsync(CancellationToken ct)
-    {
-        IsBusy   = true;
-        HasError = false;
-        try
-        {
-            var list = await _getOrders.ExecuteAsync(ct);
-            _orderListCache = list.ToList();
-
-            if (_orderListCache.Count > 0)
-            {
-                _currentIndex = 0;
-                CurrentOrder  = _orderListCache[0];
-                PopulateFormFromCurrent();
-            }
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to load sales orders");
-            HasError     = true;
-            ErrorMessage = $"Không thể tải danh sách chứng từ: {ex.Message}";
-        }
-        finally { IsBusy = false; }
-    }
-
-    [RelayCommand]
-    private void AddNew()
-    {
-        CurrentOrder  = null;
-        _currentIndex = -1;
-        IsEditing     = true;
-        ClearForm();
-    }
-
-    [RelayCommand]
     private async Task SaveAsync(CancellationToken ct = default)
     {
         HasError     = false;
@@ -212,19 +197,14 @@ public partial class SalesOrderViewModel : ViewModelBase
                 var request = BuildCreateRequest();
                 var result  = await _createOrder.ExecuteAsync(request, ct);
                 _logger.LogInformation("SalesOrder created: {DocumentNumber}", result.DocumentNumber);
-                await LoadOrdersAsync(ct);
-                NavigateToOrder(result.Id);
             }
             else
             {
                 var request = BuildUpdateRequest();
                 var result  = await _updateOrder.ExecuteAsync(CurrentOrder.Id, request, ct);
                 _logger.LogInformation("SalesOrder updated: {Id}", result.Id);
-                await LoadOrdersAsync(ct);
-                NavigateToOrder(result.Id);
             }
 
-            IsEditing = false;
             OrderSaved?.Invoke();
             RequestClose?.Invoke();
         }
@@ -243,12 +223,20 @@ public partial class SalesOrderViewModel : ViewModelBase
     {
         if (CurrentOrder is null) return;
 
+        var confirm = MessageBox.Show(
+            $"Bạn có chắc muốn xóa chứng từ '{CurrentOrder.DocumentNumber}'?",
+            "Xác nhận xóa",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (confirm != MessageBoxResult.Yes) return;
+
         IsBusy = true;
         try
         {
             await _deleteOrder.ExecuteAsync(CurrentOrder.Id, ct);
             _logger.LogInformation("SalesOrder deleted: {Id}", CurrentOrder.Id);
-            await LoadOrdersAsync(ct);
+            RequestClose?.Invoke();
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -261,21 +249,13 @@ public partial class SalesOrderViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void NavigatePrev()
+    private void Cancel()
     {
-        if (_orderListCache.Count == 0 || _currentIndex <= 0) return;
-        _currentIndex--;
-        CurrentOrder = _orderListCache[_currentIndex];
-        PopulateFormFromCurrent();
-    }
-
-    [RelayCommand]
-    private void NavigateNext()
-    {
-        if (_orderListCache.Count == 0 || _currentIndex >= _orderListCache.Count - 1) return;
-        _currentIndex++;
-        CurrentOrder = _orderListCache[_currentIndex];
-        PopulateFormFromCurrent();
+        HasError = false;
+        if (CurrentOrder is null)
+            ClearForm();
+        else
+            PopulateFormFromCurrent();
     }
 
     [RelayCommand]
@@ -296,14 +276,6 @@ public partial class SalesOrderViewModel : ViewModelBase
     {
         Lines.Remove(line);
         RecalculateTotals();
-    }
-
-    [RelayCommand]
-    private async Task CancelAsync(CancellationToken ct = default)
-    {
-        IsEditing = false;
-        HasError  = false;
-        await LoadOrdersAsync(ct);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
@@ -342,8 +314,7 @@ public partial class SalesOrderViewModel : ViewModelBase
     private string GenerateNextDocumentNumber()
     {
         const string prefix = "BC";
-        var maxNum = _orderListCache
-            .Select(o => o.DocumentNumber)
+        var maxNum = _orderNumberCache
             .Where(n => n.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
             .Select(n => int.TryParse(n[prefix.Length..], out var num) ? num : 0)
             .DefaultIfEmpty(0)
@@ -457,15 +428,4 @@ public partial class SalesOrderViewModel : ViewModelBase
         ReceivableAccount = item.ReceivableAccount,
         RevenueAccount    = item.RevenueAccount,
     };
-
-    private void NavigateToOrder(int id)
-    {
-        var idx = _orderListCache.FindIndex(o => o.Id == id);
-        if (idx >= 0)
-        {
-            _currentIndex = idx;
-            CurrentOrder  = _orderListCache[idx];
-            PopulateFormFromCurrent();
-        }
-    }
 }

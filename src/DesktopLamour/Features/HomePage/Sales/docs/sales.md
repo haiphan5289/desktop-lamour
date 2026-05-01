@@ -12,9 +12,9 @@
 - **User story:** As a Lamour staff, I want to create sales orders with product line items so that customer transactions are recorded and inventory is automatically updated.
 - **Acceptance criteria:**
   - [x] Form nhập đơn hàng với đầy đủ thông tin header (khách hàng, nhân viên bán, ngày, điều khoản TT...)
-  - [x] Danh sách dòng hàng (DataGrid) với tính toán tự động `Amount = Quantity × UnitPrice`
-  - [x] Tổng tiền tự cập nhật theo dòng
-  - [x] Tự động sinh số chứng từ `BH{5 digits}` từ danh sách hiện có
+  - [x] Danh sách dòng hàng (DataGrid) với cột "Tỷ lệ CK(%)" và tính toán tự động `Amount = Quantity × UnitPrice × (1 − CK/100)`
+  - [x] Footer 3 giá trị thẳng hàng: Tổng tiền hàng (gross) / Tổng tiền chiết khấu / Tổng tiền thanh toán (net)
+  - [x] Tự động sinh số chứng từ `BC{5 digits}` từ danh sách hiện có
   - [x] Điều hướng Prev/Next giữa các đơn hàng
   - [x] Tạo mới / Cập nhật / Xóa đơn hàng qua BE API
 
@@ -24,10 +24,12 @@
 
 | Rule | Description |
 |------|-------------|
-| Số chứng từ | Sinh tại client theo format `BH{5 digits}` — tính `max` từ cache list hiện có + 1 |
+| Số chứng từ | Sinh tại client theo format `BC{5 digits}` — tính `max` từ cache list hiện có + 1 |
 | Khách hàng bắt buộc | `SelectedCustomer` phải được chọn trước khi save |
 | Ít nhất 1 dòng | `Lines.Count > 0` — validate tại ViewModel trước khi gọi API |
-| Auto-calc Amount | `SalesOrderLineItem.Amount` tự tính khi `Quantity` hoặc `UnitPrice` thay đổi |
+| Auto-calc Amount | `Amount = Quantity × UnitPrice × (1 − DiscountRate/100)` — khi `Quantity`, `UnitPrice`, hoặc `DiscountRate` thay đổi |
+| Tỷ lệ CK | `DiscountRate` (0–100) per line; clamp tại BE; WPF nhập trực tiếp vào DataGrid |
+| Footer totals | `TotalAmount` = Σ(Qty×UnitPrice) gross; `TotalDiscount` = Σ(Qty×UnitPrice×CK/100); `TotalPayment` = TotalAmount − TotalDiscount |
 | TK mặc định | `ReceivableAccount = "131"`, `RevenueAccount = "511"` điền sẵn khi thêm dòng |
 | Auto-fill Description | Khi chọn khách hàng → `Description = "Bán hàng {TênKH}"` |
 | PaymentDueDate tự tính | Khi nhập `PaymentDueDays` → `PaymentDueDate = DocumentDate + days` |
@@ -45,8 +47,8 @@
 |-------|------|------|
 | View | `Views/SalesOrderWindow.xaml` | Form header + DataGrid lines + toolbar |
 | View (code-behind) | `Views/SalesOrderWindow.xaml.cs` | `OnContentRendered` → `LoadAsync` + `AddNewCommand` |
-| ViewModel | `ViewModels/SalesOrderViewModel.cs` | Toàn bộ state, commands, navigation, form logic |
-| Domain Model | `Domain/Models/SalesOrderLineItem.cs` | Observable line item với auto-calc Amount |
+| ViewModel | `ViewModels/SalesOrderViewModel.cs` | Toàn bộ state, commands, navigation, form logic; tính TotalAmount/TotalDiscount/TotalPayment |
+| Domain Model | `Domain/Models/SalesOrderLineItem.cs` | Observable line item với `DiscountRate` + auto-calc Amount |
 | UseCase | `Domain/UseCases/GetSalesOrdersUseCase.cs` | Fetch list |
 | UseCase | `Domain/UseCases/CreateSalesOrderUseCase.cs` | Pass-through → Repository |
 | UseCase | `Domain/UseCases/UpdateSalesOrderUseCase.cs` | Pass-through → Repository |
@@ -108,10 +110,10 @@ graph TD
 ### Presentation
 - [`Views/SalesOrderWindow.xaml`](../Views/SalesOrderWindow.xaml) — Form đơn hàng: header tabs + DataGrid lines + navigation toolbar
 - [`Views/SalesOrderWindow.xaml.cs`](../Views/SalesOrderWindow.xaml.cs) — `OnContentRendered` → `LoadAsync()` + `AddNewCommand.Execute(null)`; `CloseButton_Click` → `Close()`
-- [`ViewModels/SalesOrderViewModel.cs`](../ViewModels/SalesOrderViewModel.cs) — Commands: `AddNew`, `Save`, `Delete`, `NavigatePrev`, `NavigateNext`, `AddLine`, `RemoveLine`, `Cancel`, `LoadAsync2` (Refresh); Properties: `IsBusy`, `HasError`, `IsEditing`, `TotalAmount`, `LineSummary`, `Lines`
+- [`ViewModels/SalesOrderViewModel.cs`](../ViewModels/SalesOrderViewModel.cs) — Commands: `AddNew`, `Save`, `Delete`, `NavigatePrev`, `NavigateNext`, `AddLine`, `RemoveLine`, `Cancel`, `LoadAsync2` (Refresh); Properties: `IsBusy`, `HasError`, `IsEditing`, `TotalAmount` (gross), `TotalDiscount`, `TotalPayment`, `LineSummary`, `Lines`
 
 ### Domain
-- [`Domain/Models/SalesOrderLineItem.cs`](../Domain/Models/SalesOrderLineItem.cs) — `INotifyPropertyChanged`; `Quantity`/`UnitPrice` setter gọi `RecalculateAmount()` → `Amount = Quantity * UnitPrice`
+- [`Domain/Models/SalesOrderLineItem.cs`](../Domain/Models/SalesOrderLineItem.cs) — `INotifyPropertyChanged`; `Quantity`/`UnitPrice`/`DiscountRate` setter gọi `RecalculateAmount()` → `Amount = Qty × UnitPrice × (1 − clamp(CK,0,100)/100)`
 - [`Domain/UseCases/IGetSalesOrdersUseCase.cs`](../Domain/UseCases/IGetSalesOrdersUseCase.cs)
 - [`Domain/UseCases/ICreateSalesOrderUseCase.cs`](../Domain/UseCases/ICreateSalesOrderUseCase.cs)
 - [`Domain/UseCases/IUpdateSalesOrderUseCase.cs`](../Domain/UseCases/IUpdateSalesOrderUseCase.cs)
@@ -123,7 +125,7 @@ graph TD
 - [`Data/Services/Dtos/SalesOrderResponseDto.cs`](../Data/Services/Dtos/SalesOrderResponseDto.cs) — 18 fields snake_case + `lines[]`
 - [`Data/Services/Dtos/CreateSalesOrderRequestDto.cs`](../Data/Services/Dtos/CreateSalesOrderRequestDto.cs) — 14 header fields + `lines[]`
 - [`Data/Services/Dtos/UpdateSalesOrderRequestDto.cs`](../Data/Services/Dtos/UpdateSalesOrderRequestDto.cs) — Cùng shape với Create
-- [`Data/Services/Dtos/SalesOrderLineDto.cs`](../Data/Services/Dtos/SalesOrderLineDto.cs) — 11 fields (dùng chung request + response)
+- [`Data/Services/Dtos/SalesOrderLineDto.cs`](../Data/Services/Dtos/SalesOrderLineDto.cs) — 12 fields (dùng chung request + response); thêm `discount_rate` (decimal)
 - [`Data/Repositories/SalesOrderRepository.cs`](../Data/Repositories/SalesOrderRepository.cs) — Thin delegate tới `ISalesOrderService`
 
 ---
@@ -157,13 +159,22 @@ graph TD
 ### Sinh số chứng từ
 ```csharp
 // GenerateNextDocumentNumber() trong SalesOrderViewModel
-const string prefix = "BH";
+const string prefix = "BC";
 var maxNum = _orderListCache
     .Select(o => o.DocumentNumber)
     .Where(n => n.StartsWith(prefix, OrdinalIgnoreCase))
     .Select(n => int.TryParse(n[prefix.Length..], out var num) ? num : 0)
     .DefaultIfEmpty(0).Max();
-return $"{prefix}{maxNum + 1:D5}";  // BH00001, BH00002...
+return $"{prefix}{maxNum + 1:D5}";  // BC00001, BC00002...
+```
+
+### Tính 3 tổng tiền footer
+```csharp
+// RecalculateTotals() trong SalesOrderViewModel
+var gross     = Lines.Sum(l => (decimal)l.Quantity * l.UnitPrice);
+TotalAmount   = gross;                                         // Tổng tiền hàng (gross)
+TotalDiscount = Lines.Sum(l => (decimal)l.Quantity * l.UnitPrice * clamp(l.DiscountRate) / 100m);
+TotalPayment  = gross - TotalDiscount;                         // = Σ(line.Amount)
 ```
 
 ### Auto-fill khi chọn khách hàng
@@ -238,9 +249,12 @@ PaymentDueDate = CurrentOrder.PaymentDueDate?.ToLocalTime();
 - [ ] Save Create: `SelectedCustomer = null` → `ErrorMessage` hiển thị
 - [ ] Save Create: `Lines.Count = 0` → `ErrorMessage` hiển thị
 - [ ] Save Create: thành công → `IsEditing = false`, `OrderSaved` invoked
-- [ ] `SalesOrderLineItem`: `Quantity = 3`, `UnitPrice = 100000` → `Amount = 300000`
-- [ ] `GenerateNextDocumentNumber`: cache có BH00005 → trả BH00006
-- [ ] `GenerateNextDocumentNumber`: cache rỗng → trả BH00001
+- [ ] `SalesOrderLineItem`: `Quantity = 3`, `UnitPrice = 100000`, `DiscountRate = 0` → `Amount = 300000`
+- [ ] `SalesOrderLineItem`: `Quantity = 2`, `UnitPrice = 150000`, `DiscountRate = 10` → `Amount = 270000`
+- [ ] `SalesOrderLineItem`: `DiscountRate = 110` (invalid) → clamp → `Amount = 0` (100%)
+- [ ] `GenerateNextDocumentNumber`: cache có BC00005 → trả BC00006
+- [ ] `GenerateNextDocumentNumber`: cache rỗng → trả BC00001
+- [ ] `RecalculateTotals`: 2 lines với CK khác nhau → `TotalPayment = TotalAmount − TotalDiscount`
 - [ ] `OnPaymentDueDaysChanged`: `30` ngày → `PaymentDueDate = DocumentDate + 30d`
 
 ---
@@ -283,4 +297,4 @@ services.AddTransient<Func<SalesOrderWindow>>(sp => () => sp.GetRequiredService<
 
 ---
 
-*Generated by `/ct-ai-document` on 2026-05-01*
+*Generated by `/ct-ai-document` on 2026-05-01 — Updated 2026-05-01: thêm DiscountRate/TotalDiscount/TotalPayment, đổi prefix BH → BC, footer 3 cột ngang*

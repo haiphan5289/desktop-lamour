@@ -1,0 +1,152 @@
+// Copyright © 2026 DesktopLamour. All rights reserved.
+using System.Collections.ObjectModel;
+using System.Windows;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using DesktopLamour.Core.Navigation;
+using DesktopLamour.Core.ViewModels;
+using DesktopLamour.Features.HomePage.Sales.Domain.Models;
+using DesktopLamour.Features.HomePage.Sales.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Sales.Views;
+
+namespace DesktopLamour.Features.HomePage.Sales.ViewModels;
+
+public partial class SalesOrderListViewModel : ViewModelBase
+{
+    private readonly INavigationService       _navigationService;
+    private readonly IGetSalesOrdersUseCase   _getOrders;
+    private readonly IDeleteSalesOrderUseCase _deleteOrder;
+    private readonly Func<SalesOrderWindow>   _formWindowFactory;
+
+    [ObservableProperty] private bool                _isLoading;
+    [ObservableProperty] private bool                _hasError;
+    [ObservableProperty] private string              _errorMessage   = string.Empty;
+    [ObservableProperty] private bool                _hasSalesOrders;
+    [ObservableProperty] private SalesOrderListItem? _selectedOrder;
+    [ObservableProperty] private string              _filterCustomer = string.Empty;
+    [ObservableProperty] private DateTime?           _filterFromDate;
+    [ObservableProperty] private DateTime?           _filterToDate;
+
+    private readonly List<SalesOrderListItem> _allItems = new();
+
+    public ObservableCollection<SalesOrderListItem> SalesOrders { get; } = new();
+
+    private bool HasSelection => SelectedOrder is not null;
+
+    public SalesOrderListViewModel(
+        INavigationService       navigationService,
+        IGetSalesOrdersUseCase   getOrders,
+        IDeleteSalesOrderUseCase deleteOrder,
+        Func<SalesOrderWindow>   formWindowFactory)
+    {
+        _navigationService = navigationService;
+        _getOrders         = getOrders;
+        _deleteOrder       = deleteOrder;
+        _formWindowFactory = formWindowFactory;
+    }
+
+    partial void OnSelectedOrderChanged(SalesOrderListItem? value)
+    {
+        EditSalesOrderCommand.NotifyCanExecuteChanged();
+        DeleteSalesOrderCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnFilterCustomerChanged(string value)    => ApplyFilter();
+    partial void OnFilterFromDateChanged(DateTime? value) => ApplyFilter();
+    partial void OnFilterToDateChanged(DateTime? value)   => ApplyFilter();
+
+    [RelayCommand]
+    private void GoBack() => _navigationService.GoBack();
+
+    [RelayCommand]
+    private async Task LoadSalesOrdersAsync(CancellationToken ct = default)
+    {
+        IsLoading    = true;
+        HasError     = false;
+        ErrorMessage = string.Empty;
+        try
+        {
+            var items = await _getOrders.ExecuteAsync(ct);
+            _allItems.Clear();
+            foreach (var dto in items)
+                _allItems.Add(SalesOrderListItem.FromDto(dto));
+            ApplyFilter();
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            HasError     = true;
+            ErrorMessage = $"Không thể tải dữ liệu: {ex.Message}";
+        }
+        finally { IsLoading = false; }
+    }
+
+    [RelayCommand]
+    private async Task AddSalesOrderAsync(CancellationToken ct = default)
+    {
+        var window = _formWindowFactory();
+        window.Initialize(null);
+        if (window.ShowDialog() == true)
+            await LoadSalesOrdersCommand.ExecuteAsync(null);
+    }
+
+    [RelayCommand(CanExecute = nameof(HasSelection))]
+    private async Task EditSalesOrderAsync(CancellationToken ct = default)
+    {
+        if (SelectedOrder is null) return;
+        var window = _formWindowFactory();
+        window.Initialize(SelectedOrder.Original);
+        if (window.ShowDialog() == true)
+            await LoadSalesOrdersCommand.ExecuteAsync(null);
+    }
+
+    [RelayCommand(CanExecute = nameof(HasSelection))]
+    private async Task DeleteSalesOrderAsync(CancellationToken ct = default)
+    {
+        if (SelectedOrder is null) return;
+
+        var confirm = MessageBox.Show(
+            $"Bạn có chắc muốn xóa chứng từ '{SelectedOrder.DocumentNumber}'?",
+            "Xác nhận xóa",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (confirm != MessageBoxResult.Yes) return;
+
+        IsLoading = true;
+        try
+        {
+            await _deleteOrder.ExecuteAsync(SelectedOrder.Id, ct);
+            _allItems.Remove(SelectedOrder);
+            ApplyFilter();
+            SelectedOrder = null;
+        }
+        catch (Exception ex)
+        {
+            HasError     = true;
+            ErrorMessage = $"Xóa thất bại: {ex.Message}";
+        }
+        finally { IsLoading = false; }
+    }
+
+    private void ApplyFilter()
+    {
+        var filtered = _allItems.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(FilterCustomer))
+            filtered = filtered.Where(o =>
+                o.CustomerName.Contains(FilterCustomer, StringComparison.OrdinalIgnoreCase));
+
+        if (FilterFromDate.HasValue)
+            filtered = filtered.Where(o => o.DocumentDate.Date >= FilterFromDate.Value.Date);
+
+        if (FilterToDate.HasValue)
+            filtered = filtered.Where(o => o.DocumentDate.Date <= FilterToDate.Value.Date);
+
+        SalesOrders.Clear();
+        foreach (var item in filtered.OrderByDescending(o => o.DocumentDate))
+            SalesOrders.Add(item);
+
+        HasSalesOrders = SalesOrders.Count > 0;
+    }
+}

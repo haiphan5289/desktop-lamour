@@ -249,6 +249,8 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<Func<WarehouseReceiptFormWindow>>(sp => () => sp.GetRequiredService<WarehouseReceiptFormWindow>());
 
         // ── Sales: Views + ViewModels ────────────────────────────────────────────
+        services.AddTransient<SalesOrderListView>();
+        services.AddTransient<SalesOrderListViewModel>();
         services.AddTransient<SalesOrderWindow>();
         services.AddTransient<SalesOrderViewModel>();
 
