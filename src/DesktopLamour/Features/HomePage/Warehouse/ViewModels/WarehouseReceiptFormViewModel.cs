@@ -4,7 +4,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.HomePage.Customers.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Customers.Views;
 using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Employees.Views;
 using DesktopLamour.Features.HomePage.ProductList.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Warehouse.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Warehouse.Domain.Models;
@@ -21,6 +23,8 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
     private readonly IGetCustomersUseCase                 _getCustomers;
     private readonly IGetEmployeesUseCase                 _getEmployees;
     private readonly IGetProductsUseCase                  _getProducts;
+    private readonly Func<EmployeeFormWindow>             _employeeFormWindowFactory;
+    private readonly Func<CustomerFormWindow>             _customerFormWindowFactory;
     private readonly ILogger<WarehouseReceiptFormViewModel> _logger;
 
     [ObservableProperty] private bool     _isLoading;
@@ -55,14 +59,18 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
         IGetCustomersUseCase                 getCustomers,
         IGetEmployeesUseCase                 getEmployees,
         IGetProductsUseCase                  getProducts,
+        Func<EmployeeFormWindow>             employeeFormWindowFactory,
+        Func<CustomerFormWindow>             customerFormWindowFactory,
         ILogger<WarehouseReceiptFormViewModel> logger)
     {
-        _createUseCase  = createUseCase;
-        _confirmUseCase = confirmUseCase;
-        _getCustomers   = getCustomers;
-        _getEmployees   = getEmployees;
-        _getProducts    = getProducts;
-        _logger         = logger;
+        _createUseCase             = createUseCase;
+        _confirmUseCase            = confirmUseCase;
+        _getCustomers              = getCustomers;
+        _getEmployees              = getEmployees;
+        _getProducts               = getProducts;
+        _employeeFormWindowFactory = employeeFormWindowFactory;
+        _customerFormWindowFactory = customerFormWindowFactory;
+        _logger                    = logger;
     }
 
     public async Task LoadAsync(CancellationToken ct = default)
@@ -100,6 +108,42 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
     {
         Lines.Remove(line);
         RecalculateTotal();
+    }
+
+    [RelayCommand]
+    private async Task AddEmployeeAsync(CancellationToken ct = default)
+    {
+        var before = Employees.Select(e => e.Id).ToHashSet();
+        var window = _employeeFormWindowFactory();
+        window.Initialize(null);
+        if (window.ShowDialog() != true) return;
+        try
+        {
+            var employees = await _getEmployees.ExecuteAsync(ct);
+            Employees = employees.Cast<ISearchableItem>().ToList().AsReadOnly();
+            OnPropertyChanged(nameof(Employees));
+            var newItem = Employees.FirstOrDefault(e => !before.Contains(e.Id));
+            if (newItem is not null) SelectedEmployee = newItem;
+        }
+        catch (Exception ex) { _logger.LogWarning(ex, "Could not reload employees after add"); }
+    }
+
+    [RelayCommand]
+    private async Task AddCustomerAsync(CancellationToken ct = default)
+    {
+        var before = Customers.Select(c => c.Id).ToHashSet();
+        var window = _customerFormWindowFactory();
+        window.Initialize(null);
+        if (window.ShowDialog() != true) return;
+        try
+        {
+            var customers = await _getCustomers.ExecuteAsync(ct);
+            Customers = customers.Cast<ISearchableItem>().ToList().AsReadOnly();
+            OnPropertyChanged(nameof(Customers));
+            var newItem = Customers.FirstOrDefault(c => !before.Contains(c.Id));
+            if (newItem is not null) SelectedCustomer = newItem;
+        }
+        catch (Exception ex) { _logger.LogWarning(ex, "Could not reload customers after add"); }
     }
 
     private void RecalculateTotal()

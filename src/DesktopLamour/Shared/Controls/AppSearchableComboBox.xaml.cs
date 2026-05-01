@@ -34,6 +34,11 @@ public partial class AppSearchableComboBox : UserControl
             typeof(AppSearchableComboBox),
             new PropertyMetadata(false));
 
+    public static readonly DependencyProperty AddCommandProperty =
+        DependencyProperty.Register(nameof(AddCommand), typeof(ICommand),
+            typeof(AppSearchableComboBox),
+            new PropertyMetadata(null, OnAddCommandChanged));
+
     // ─── Public API ───────────────────────────────────────────────────────────
 
     public IEnumerable? ItemsSource
@@ -60,6 +65,12 @@ public partial class AppSearchableComboBox : UserControl
         set => SetValue(IsNullableProperty, value);
     }
 
+    public ICommand? AddCommand
+    {
+        get => (ICommand?)GetValue(AddCommandProperty);
+        set => SetValue(AddCommandProperty, value);
+    }
+
     // ─── Internal ─────────────────────────────────────────────────────────────
 
     private readonly ObservableCollection<ISearchableItem> _filtered = new();
@@ -78,6 +89,7 @@ public partial class AppSearchableComboBox : UserControl
         ItemsList.PreviewMouseDown += OnListPreviewMouseDown;
         ToggleButton.Click         += OnToggleClick;
         ClearButton.Click          += OnClearClick;
+        AddButton.Click            += OnAddButtonClick;
     }
 
     // ─── DP Callbacks ─────────────────────────────────────────────────────────
@@ -192,6 +204,18 @@ public partial class AppSearchableComboBox : UserControl
         DropdownPopup.IsOpen     = false;
         UpdatePlaceholder();
         UpdateClearButton();
+    }
+
+    private void OnAddButtonClick(object sender, RoutedEventArgs e)
+    {
+        DropdownPopup.IsOpen = false;
+        AddCommand?.Execute(null);
+    }
+
+    private static void OnAddCommandChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is not AppSearchableComboBox combo) return;
+        combo.AddButton.Visibility = e.NewValue is not null ? Visibility.Visible : Visibility.Collapsed;
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

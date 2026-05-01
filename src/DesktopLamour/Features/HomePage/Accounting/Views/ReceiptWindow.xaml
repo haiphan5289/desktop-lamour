@@ -162,7 +162,8 @@
                             ItemsSource="{Binding Customers}"
                             SelectedItem="{Binding SelectedCustomer, Mode=TwoWay}"
                             Placeholder="Chọn khách hàng"
-                            IsNullable="True"/>
+                            IsNullable="True"
+                            AddCommand="{Binding AddCustomerCommand}"/>
                     </Grid>
 
                     <!-- Người nộp -->
@@ -226,7 +227,8 @@
                             ItemsSource="{Binding Employees}"
                             SelectedItem="{Binding SelectedCollectorEmployee, Mode=TwoWay}"
                             Placeholder="Chọn nhân viên"
-                            IsNullable="True"/>
+                            IsNullable="True"
+                            AddCommand="{Binding AddCollectorEmployeeCommand}"/>
 
                         <StackPanel Grid.Column="3">
                             <controls:AppLabel Text="Kèm theo"

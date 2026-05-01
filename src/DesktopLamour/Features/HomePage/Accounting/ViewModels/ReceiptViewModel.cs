@@ -7,7 +7,9 @@ using DesktopLamour.Features.HomePage.Accounting.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Accounting.Domain.Models;
 using DesktopLamour.Features.HomePage.Accounting.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Customers.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Customers.Views;
 using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Employees.Views;
 using DesktopLamour.Shared.Controls;
 using Microsoft.Extensions.Logging;
 
@@ -24,6 +26,8 @@ public partial class ReceiptViewModel : ViewModelBase
     private readonly IDeleteReceiptUseCase    _deleteReceipt;
     private readonly IGetCustomersUseCase     _getCustomers;
     private readonly IGetEmployeesUseCase     _getEmployees;
+    private readonly Func<EmployeeFormWindow> _employeeFormWindowFactory;
+    private readonly Func<CustomerFormWindow> _customerFormWindowFactory;
     private readonly ILogger<ReceiptViewModel> _logger;
 
     // ── State ──────────────────────────────────────────────────────────────
@@ -80,16 +84,20 @@ public partial class ReceiptViewModel : ViewModelBase
         IDeleteReceiptUseCase    deleteReceipt,
         IGetCustomersUseCase     getCustomers,
         IGetEmployeesUseCase     getEmployees,
+        Func<EmployeeFormWindow> employeeFormWindowFactory,
+        Func<CustomerFormWindow> customerFormWindowFactory,
         ILogger<ReceiptViewModel> logger)
     {
-        _getReceipts    = getReceipts;
-        _getReceiptById = getReceiptById;
-        _createReceipt  = createReceipt;
-        _updateReceipt  = updateReceipt;
-        _deleteReceipt  = deleteReceipt;
-        _getCustomers   = getCustomers;
-        _getEmployees   = getEmployees;
-        _logger         = logger;
+        _getReceipts               = getReceipts;
+        _getReceiptById            = getReceiptById;
+        _createReceipt             = createReceipt;
+        _updateReceipt             = updateReceipt;
+        _deleteReceipt             = deleteReceipt;
+        _getCustomers              = getCustomers;
+        _getEmployees              = getEmployees;
+        _employeeFormWindowFactory = employeeFormWindowFactory;
+        _customerFormWindowFactory = customerFormWindowFactory;
+        _logger                    = logger;
 
         Entries.CollectionChanged += (_, _) => RecalculateTotals();
     }
@@ -277,6 +285,42 @@ public partial class ReceiptViewModel : ViewModelBase
         IsEditing = false;
         HasError  = false;
         await LoadReceiptsAsync(ct);
+    }
+
+    [RelayCommand]
+    private async Task AddCustomerAsync(CancellationToken ct = default)
+    {
+        var before = Customers.Select(c => c.Id).ToHashSet();
+        var window = _customerFormWindowFactory();
+        window.Initialize(null);
+        if (window.ShowDialog() != true) return;
+        try
+        {
+            var customers = await _getCustomers.ExecuteAsync(ct);
+            Customers = customers.Cast<ISearchableItem>().ToList().AsReadOnly();
+            OnPropertyChanged(nameof(Customers));
+            var newItem = Customers.FirstOrDefault(c => !before.Contains(c.Id));
+            if (newItem is not null) SelectedCustomer = newItem;
+        }
+        catch (Exception ex) { _logger.LogWarning(ex, "Could not reload customers after add"); }
+    }
+
+    [RelayCommand]
+    private async Task AddCollectorEmployeeAsync(CancellationToken ct = default)
+    {
+        var before = Employees.Select(e => e.Id).ToHashSet();
+        var window = _employeeFormWindowFactory();
+        window.Initialize(null);
+        if (window.ShowDialog() != true) return;
+        try
+        {
+            var employees = await _getEmployees.ExecuteAsync(ct);
+            Employees = employees.Cast<ISearchableItem>().ToList().AsReadOnly();
+            OnPropertyChanged(nameof(Employees));
+            var newItem = Employees.FirstOrDefault(e => !before.Contains(e.Id));
+            if (newItem is not null) SelectedCollectorEmployee = newItem;
+        }
+        catch (Exception ex) { _logger.LogWarning(ex, "Could not reload employees after add"); }
     }
 
     // ── Partial property change hooks ─────────────────────────────────────

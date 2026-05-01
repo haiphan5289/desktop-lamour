@@ -226,7 +226,8 @@
                             ItemsSource="{Binding Employees}"
                             SelectedItem="{Binding SelectedPaymentEmployeeEmployee, Mode=TwoWay}"
                             Placeholder="Chọn nhân viên"
-                            IsNullable="True"/>
+                            IsNullable="True"
+                            AddCommand="{Binding AddPaymentEmployeeCommand}"/>
 
                         <StackPanel Grid.Column="3">
                             <controls:AppLabel Text="Kèm theo"

@@ -16,6 +16,7 @@
             <Grid Margin="12,0,4,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="30"/>
                 </Grid.ColumnDefinitions>
 
@@ -39,9 +40,27 @@
                            VerticalAlignment="Center"
                            IsHitTestVisible="False"/>
 
+                <!-- Add button — shown only when AddCommand is bound -->
+                <Button x:Name="AddButton"
+                        Grid.Column="1"
+                        Visibility="Collapsed"
+                        Width="28"
+                        FontSize="18"
+                        FontWeight="SemiBold"
+                        Content="+"
+                        Background="Transparent"
+                        BorderThickness="1,0,0,0"
+                        BorderBrush="{StaticResource AppColor.BorderThin}"
+                        Foreground="{StaticResource AppColor.TextBrand}"
+                        VerticalAlignment="Stretch"
+                        HorizontalAlignment="Center"
+                        Cursor="Hand"
+                        Focusable="False"
+                        ToolTip="Thêm mới"/>
+
                 <!-- Arrow toggle -->
                 <Button x:Name="ToggleButton"
-                        Grid.Column="1"
+                        Grid.Column="2"
                         Content="▾"
                         FontSize="11"
                         Background="Transparent"
@@ -54,7 +73,7 @@
 
                 <!-- Clear button (visible when IsNullable=True and item selected) -->
                 <Button x:Name="ClearButton"
-                        Grid.Column="1"
+                        Grid.Column="2"
                         Content="✕"
                         FontSize="10"
                         Background="Transparent"
@@ -78,7 +97,6 @@
 
             <Border x:Name="DropdownBorder"
                     MinWidth="{Binding ActualWidth, ElementName=FieldBorder}"
-                    MaxHeight="220"
                     Background="{StaticResource AppColor.BackgroundPrimary}"
                     BorderBrush="{StaticResource AppColor.BorderRegular}"
                     BorderThickness="1"
@@ -92,6 +110,7 @@
                          BorderThickness="0"
                          Background="Transparent"
                          Padding="4"
+                         MaxHeight="200"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          ScrollViewer.VerticalScrollBarVisibility="Auto"
                          FontFamily="Segoe UI"

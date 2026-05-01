@@ -108,7 +108,8 @@
                         ItemsSource="{Binding Customers}"
                         SelectedItem="{Binding SelectedCustomer, Mode=TwoWay}"
                         Placeholder="Chọn khách hàng"
-                        IsNullable="True"/>
+                        IsNullable="True"
+                        AddCommand="{Binding AddCustomerCommand}"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2">
@@ -119,7 +120,8 @@
                         ItemsSource="{Binding Employees}"
                         SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
                         Placeholder="Chọn nhân viên"
-                        IsNullable="True"/>
+                        IsNullable="True"
+                        AddCommand="{Binding AddEmployeeCommand}"/>
                 </StackPanel>
             </Grid>
 

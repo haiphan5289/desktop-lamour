@@ -8,7 +8,9 @@ using DesktopLamour.Features.HomePage.Sales.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Sales.Domain.Models;
 using DesktopLamour.Features.HomePage.Sales.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Customers.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Customers.Views;
 using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Employees.Views;
 using DesktopLamour.Features.HomePage.ProductList.Domain.UseCases;
 using DesktopLamour.Shared.Controls;
 using Microsoft.Extensions.Logging;
@@ -27,6 +29,8 @@ public partial class SalesOrderViewModel : ViewModelBase
     private readonly IGetCustomersUseCase      _getCustomers;
     private readonly IGetEmployeesUseCase      _getEmployees;
     private readonly IGetProductsUseCase       _getProducts;
+    private readonly Func<EmployeeFormWindow>  _employeeFormWindowFactory;
+    private readonly Func<CustomerFormWindow>  _customerFormWindowFactory;
     private readonly ILogger<SalesOrderViewModel> _logger;
 
     // ── State ──────────────────────────────────────────────────────────────
@@ -81,16 +85,20 @@ public partial class SalesOrderViewModel : ViewModelBase
         IGetCustomersUseCase      getCustomers,
         IGetEmployeesUseCase      getEmployees,
         IGetProductsUseCase       getProducts,
+        Func<EmployeeFormWindow>  employeeFormWindowFactory,
+        Func<CustomerFormWindow>  customerFormWindowFactory,
         ILogger<SalesOrderViewModel> logger)
     {
-        _getOrders    = getOrders;
-        _createOrder  = createOrder;
-        _updateOrder  = updateOrder;
-        _deleteOrder  = deleteOrder;
-        _getCustomers = getCustomers;
-        _getEmployees = getEmployees;
-        _getProducts  = getProducts;
-        _logger       = logger;
+        _getOrders                  = getOrders;
+        _createOrder                = createOrder;
+        _updateOrder                = updateOrder;
+        _deleteOrder                = deleteOrder;
+        _getCustomers               = getCustomers;
+        _getEmployees               = getEmployees;
+        _getProducts                = getProducts;
+        _employeeFormWindowFactory  = employeeFormWindowFactory;
+        _customerFormWindowFactory  = customerFormWindowFactory;
+        _logger                     = logger;
 
         Lines.CollectionChanged += (_, _) => RecalculateTotals();
     }
@@ -256,6 +264,42 @@ public partial class SalesOrderViewModel : ViewModelBase
             ClearForm();
         else
             PopulateFormFromCurrent();
+    }
+
+    [RelayCommand]
+    private async Task AddEmployeeAsync(CancellationToken ct = default)
+    {
+        var before = Employees.Select(e => e.Id).ToHashSet();
+        var window = _employeeFormWindowFactory();
+        window.Initialize(null);
+        if (window.ShowDialog() != true) return;
+        try
+        {
+            var employees = await _getEmployees.ExecuteAsync(ct);
+            Employees = employees.Cast<ISearchableItem>().ToList().AsReadOnly();
+            OnPropertyChanged(nameof(Employees));
+            var newItem = Employees.FirstOrDefault(e => !before.Contains(e.Id));
+            if (newItem is not null) SelectedEmployee = newItem;
+        }
+        catch (Exception ex) { _logger.LogWarning(ex, "Could not reload employees after add"); }
+    }
+
+    [RelayCommand]
+    private async Task AddCustomerAsync(CancellationToken ct = default)
+    {
+        var before = Customers.Select(c => c.Id).ToHashSet();
+        var window = _customerFormWindowFactory();
+        window.Initialize(null);
+        if (window.ShowDialog() != true) return;
+        try
+        {
+            var customers = await _getCustomers.ExecuteAsync(ct);
+            Customers = customers.Cast<ISearchableItem>().ToList().AsReadOnly();
+            OnPropertyChanged(nameof(Customers));
+            var newItem = Customers.FirstOrDefault(c => !before.Contains(c.Id));
+            if (newItem is not null) SelectedCustomer = newItem;
+        }
+        catch (Exception ex) { _logger.LogWarning(ex, "Could not reload customers after add"); }
     }
 
     [RelayCommand]

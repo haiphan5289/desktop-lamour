@@ -8,6 +8,7 @@ using DesktopLamour.Features.HomePage.Accounting.Domain.Models;
 using DesktopLamour.Features.HomePage.Accounting.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Suppliers.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Employees.Views;
 using DesktopLamour.Shared.Controls;
 using Microsoft.Extensions.Logging;
 
@@ -24,6 +25,7 @@ public partial class PaymentViewModel : ViewModelBase
     private readonly IDeletePaymentUseCase    _deletePayment;
     private readonly IGetSuppliersUseCase     _getSuppliers;
     private readonly IGetEmployeesUseCase     _getEmployees;
+    private readonly Func<EmployeeFormWindow> _employeeFormWindowFactory;
     private readonly ILogger<PaymentViewModel> _logger;
 
     // ── State ──────────────────────────────────────────────────────────────
@@ -80,16 +82,18 @@ public partial class PaymentViewModel : ViewModelBase
         IDeletePaymentUseCase    deletePayment,
         IGetSuppliersUseCase     getSuppliers,
         IGetEmployeesUseCase     getEmployees,
+        Func<EmployeeFormWindow> employeeFormWindowFactory,
         ILogger<PaymentViewModel> logger)
     {
-        _getPayments    = getPayments;
-        _getPaymentById = getPaymentById;
-        _createPayment  = createPayment;
-        _updatePayment  = updatePayment;
-        _deletePayment  = deletePayment;
-        _getSuppliers   = getSuppliers;
-        _getEmployees   = getEmployees;
-        _logger         = logger;
+        _getPayments               = getPayments;
+        _getPaymentById            = getPaymentById;
+        _createPayment             = createPayment;
+        _updatePayment             = updatePayment;
+        _deletePayment             = deletePayment;
+        _getSuppliers              = getSuppliers;
+        _getEmployees              = getEmployees;
+        _employeeFormWindowFactory = employeeFormWindowFactory;
+        _logger                    = logger;
 
         Entries.CollectionChanged += (_, _) => RecalculateTotals();
     }
@@ -277,6 +281,24 @@ public partial class PaymentViewModel : ViewModelBase
         IsEditing = false;
         HasError  = false;
         await LoadPaymentsAsync(ct);
+    }
+
+    [RelayCommand]
+    private async Task AddPaymentEmployeeAsync(CancellationToken ct = default)
+    {
+        var before = Employees.Select(e => e.Id).ToHashSet();
+        var window = _employeeFormWindowFactory();
+        window.Initialize(null);
+        if (window.ShowDialog() != true) return;
+        try
+        {
+            var employees = await _getEmployees.ExecuteAsync(ct);
+            Employees = employees.Cast<ISearchableItem>().ToList().AsReadOnly();
+            OnPropertyChanged(nameof(Employees));
+            var newItem = Employees.FirstOrDefault(e => !before.Contains(e.Id));
+            if (newItem is not null) SelectedPaymentEmployeeEmployee = newItem;
+        }
+        catch (Exception ex) { _logger.LogWarning(ex, "Could not reload employees after add"); }
     }
 
     // ── Partial property change hooks ─────────────────────────────────────
