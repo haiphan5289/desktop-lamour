@@ -6,6 +6,7 @@ using DesktopLamour.Core.Storage;
 using DesktopLamour.Features.Authentication;
 using DesktopLamour.Features.HomePage;
 using DesktopLamour.MainWindow;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.IO;
@@ -25,8 +26,15 @@ public partial class App : Application
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
+        var config = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+            .Build();
+
+        var serverUrl = config["ServerUrl"] ?? "http://localhost:5282";
+
         var services = new ServiceCollection();
-        ConfigureServices(services);
+        ConfigureServices(services, serverUrl);
         _serviceProvider = services.BuildServiceProvider();
 
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow.MainWindow>();
@@ -49,7 +57,7 @@ public partial class App : Application
         e.SetObserved();
     }
 
-    private static void ConfigureServices(IServiceCollection services)
+    private static void ConfigureServices(IServiceCollection services, string serverUrl)
     {
         // Logging
         services.AddLogging(builder => builder.AddConsole());
@@ -63,7 +71,7 @@ public partial class App : Application
         services.AddTransient<MainWindowViewModel>();
 
         // Feature modules
-        services.AddAuthenticationModule();
-        services.AddHomeModule();
+        services.AddAuthenticationModule(serverUrl);
+        services.AddHomeModule(serverUrl);
     }
 }

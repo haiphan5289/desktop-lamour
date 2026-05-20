@@ -12,7 +12,7 @@ namespace DesktopLamour.Features.Authentication;
 
 public static class AuthenticationServiceCollectionExtensions
 {
-    public static IServiceCollection AddAuthenticationModule(this IServiceCollection services)
+    public static IServiceCollection AddAuthenticationModule(this IServiceCollection services, string serverUrl)
     {
         // ── Views (Transient — new instance per navigation) ──────────────────
         services.AddTransient<RegisterView>();
@@ -33,8 +33,7 @@ public static class AuthenticationServiceCollectionExtensions
         // ── Data: Service + typed HttpClient ─────────────────────────────────
         services.AddHttpClient<IAuthenticationService, AuthenticationService>(client =>
         {
-            // TODO: Move base address to configuration (appsettings.json / env)
-            client.BaseAddress = new Uri("http://192.168.64.1:5282");
+            client.BaseAddress = new Uri(serverUrl);
             client.Timeout     = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });

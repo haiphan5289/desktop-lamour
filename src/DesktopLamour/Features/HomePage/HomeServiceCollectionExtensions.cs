@@ -43,7 +43,7 @@ namespace DesktopLamour.Features.HomePage;
 
 public static class HomeServiceCollectionExtensions
 {
-    public static IServiceCollection AddHomeModule(this IServiceCollection services)
+    public static IServiceCollection AddHomeModule(this IServiceCollection services, string serverUrl)
     {
         // ── Home hub ─────────────────────────────────────────────────────────
         services.AddTransient<HomeView>();
@@ -68,7 +68,7 @@ public static class HomeServiceCollectionExtensions
         // ── ProductList: Service + typed HttpClient ──────────────────────────
         services.AddHttpClient<IProductService, ProductService>(client =>
         {
-            client.BaseAddress = new Uri("http://192.168.64.1:5282");
+            client.BaseAddress = new Uri(serverUrl);
             client.Timeout     = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
@@ -93,7 +93,7 @@ public static class HomeServiceCollectionExtensions
         services.AddHttpClient<ISupplierService, SupplierService>(client =>
         {
             // TODO: Move base address to configuration (appsettings.json / env)
-            client.BaseAddress = new Uri("http://192.168.64.1:5282");
+            client.BaseAddress = new Uri(serverUrl);
             client.Timeout     = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
@@ -123,7 +123,7 @@ public static class HomeServiceCollectionExtensions
         // ── Customers: Service + typed HttpClient ────────────────────────────
         services.AddHttpClient<ICustomerService, CustomerService>(client =>
         {
-            client.BaseAddress = new Uri("http://192.168.64.1:5282");
+            client.BaseAddress = new Uri(serverUrl);
             client.Timeout     = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
@@ -150,7 +150,7 @@ public static class HomeServiceCollectionExtensions
         // ── Employees: Service + typed HttpClient ────────────────────────────────
         services.AddHttpClient<IEmployeeService, EmployeeService>(client =>
         {
-            client.BaseAddress = new Uri("http://192.168.64.1:5282");
+            client.BaseAddress = new Uri(serverUrl);
             client.Timeout     = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
@@ -183,21 +183,21 @@ public static class HomeServiceCollectionExtensions
         // ── Accounting: Service + typed HttpClient ───────────────────────────────
         services.AddHttpClient<ICashLedgerService, CashLedgerService>(client =>
         {
-            client.BaseAddress = new Uri("http://192.168.64.1:5282");
+            client.BaseAddress = new Uri(serverUrl);
             client.Timeout     = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
 
         services.AddHttpClient<IReceiptService, ReceiptService>(client =>
         {
-            client.BaseAddress = new Uri("http://192.168.64.1:5282");
+            client.BaseAddress = new Uri(serverUrl);
             client.Timeout     = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
 
         services.AddHttpClient<IPaymentService, PaymentService>(client =>
         {
-            client.BaseAddress = new Uri("http://192.168.64.1:5282");
+            client.BaseAddress = new Uri(serverUrl);
             client.Timeout     = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
@@ -221,7 +221,7 @@ public static class HomeServiceCollectionExtensions
         // ── Warehouse: Service + typed HttpClient ────────────────────────────────
         services.AddHttpClient<IWarehouseService, WarehouseService>(client =>
         {
-            client.BaseAddress = new Uri("http://192.168.64.1:5282");
+            client.BaseAddress = new Uri(serverUrl);
             client.Timeout     = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
@@ -240,7 +240,7 @@ public static class HomeServiceCollectionExtensions
         // ── WarehouseReceipts: Service + typed HttpClient ────────────────────────
         services.AddHttpClient<IWarehouseReceiptService, WarehouseReceiptService>(client =>
         {
-            client.BaseAddress = new Uri("http://192.168.64.1:5282");
+            client.BaseAddress = new Uri(serverUrl);
             client.Timeout     = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
@@ -266,7 +266,7 @@ public static class HomeServiceCollectionExtensions
         // ── Sales: Service + typed HttpClient ────────────────────────────────────
         services.AddHttpClient<ISalesOrderService, SalesOrderService>(client =>
         {
-            client.BaseAddress = new Uri("http://192.168.64.1:5282");
+            client.BaseAddress = new Uri(serverUrl);
             client.Timeout     = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });

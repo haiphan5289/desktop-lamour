@@ -153,7 +153,7 @@ public partial class PaymentViewModel : ViewModelBase
         {
             _logger.LogError(ex, "Failed to load receipts");
             HasError     = true;
-            ErrorMessage = $"Không thể tải danh sách phiếu thu: {ex.Message}";
+            ErrorMessage = $"Không thể tải danh sách phiếu chi: {ex.Message}";
         }
         finally { IsBusy = false; }
     }
@@ -176,7 +176,7 @@ public partial class PaymentViewModel : ViewModelBase
         if (SelectedSupplier is null)
         {
             HasError     = true;
-            ErrorMessage = "Vui lòng chọn đối tượng (khách hàng).";
+            ErrorMessage = "Vui lòng chọn đối tượng (nhà cung cấp).";
             return;
         }
 
