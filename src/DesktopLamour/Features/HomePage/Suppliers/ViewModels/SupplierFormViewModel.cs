@@ -5,6 +5,7 @@ using DesktopLamour.Core.Exceptions;
 using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.HomePage.Suppliers.Domain.Models;
 using DesktopLamour.Features.HomePage.Suppliers.Domain.UseCases;
+using System.Windows;
 
 namespace DesktopLamour.Features.HomePage.Suppliers.ViewModels;
 
@@ -68,6 +69,7 @@ public partial class SupplierFormViewModel : ViewModelBase
         }
 
         OnPropertyChanged(nameof(IsAddMode));
+        BeginDirtyTracking();
     }
 
     [RelayCommand]
@@ -91,6 +93,7 @@ public partial class SupplierFormViewModel : ViewModelBase
                     Group.Trim(), TaxCode.Trim(), IsStopTracking);
                 await _updateUseCase.ExecuteAsync(input, ct);
             }
+            StopDirtyTracking();
             RequestClose?.Invoke(true);
         }
         catch (ValidationException ex)
@@ -106,5 +109,18 @@ public partial class SupplierFormViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void Cancel() => RequestClose?.Invoke(false);
+    private void Cancel()
+    {
+        if (IsDirty)
+        {
+            var r = MessageBox.Show(
+                "Bạn có chắc muốn thoát? Dữ liệu chưa lưu sẽ bị mất.",
+                "Xác nhận thoát",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (r != MessageBoxResult.Yes) return;
+        }
+        StopDirtyTracking();
+        RequestClose?.Invoke(false);
+    }
 }

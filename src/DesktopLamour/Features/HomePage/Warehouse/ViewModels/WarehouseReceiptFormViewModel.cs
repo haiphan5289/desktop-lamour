@@ -13,6 +13,7 @@ using DesktopLamour.Features.HomePage.Warehouse.Domain.Models;
 using DesktopLamour.Features.HomePage.Warehouse.Domain.UseCases;
 using DesktopLamour.Shared.Controls;
 using Microsoft.Extensions.Logging;
+using System.Windows;
 
 namespace DesktopLamour.Features.HomePage.Warehouse.ViewModels;
 
@@ -93,14 +94,17 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
         {
             _logger.LogWarning(ex, "Could not preload lookup data for WarehouseReceiptForm");
         }
+
+        BeginDirtyTracking();
     }
 
     [RelayCommand]
     private void AddLine()
     {
         var line = new WarehouseReceiptLineItem();
-        line.PropertyChanged += (_, _) => RecalculateTotal();
+        line.PropertyChanged += (_, _) => { RecalculateTotal(); IsDirty = true; };
         Lines.Add(line);
+        IsDirty = true;
     }
 
     [RelayCommand]
@@ -108,6 +112,7 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
     {
         Lines.Remove(line);
         RecalculateTotal();
+        IsDirty = true;
     }
 
     [RelayCommand]
@@ -204,6 +209,7 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
             var result = await _createUseCase.ExecuteAsync(request, ct);
             await _confirmUseCase.ExecuteAsync(result.Id, ct);
             _logger.LogInformation("Warehouse receipt created and confirmed: {ReceiptNumber}", result.ReceiptNumber);
+            StopDirtyTracking();
             RequestClose?.Invoke(true);
         }
         catch (OperationCanceledException) { }
@@ -217,5 +223,18 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void Cancel() => RequestClose?.Invoke(false);
+    private void Cancel()
+    {
+        if (IsDirty)
+        {
+            var r = MessageBox.Show(
+                "Bạn có chắc muốn thoát? Dữ liệu chưa lưu sẽ bị mất.",
+                "Xác nhận thoát",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (r != MessageBoxResult.Yes) return;
+        }
+        StopDirtyTracking();
+        RequestClose?.Invoke(false);
+    }
 }

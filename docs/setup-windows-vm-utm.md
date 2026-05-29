@@ -2,8 +2,8 @@
 
 ## Trạng thái hiện tại
 - ✅ UTM đã cài tại `/Applications/UTM.app`
-- ⏳ Chưa có Windows 11 ARM ISO
-- ⏳ Chưa tạo VM
+- ✅ Windows 11 ARM ISO đã tải
+- ✅ VM đã tạo và đang hoạt động
 
 ## Yêu cầu
 - Mac Apple Silicon (M1/M2/M3/M4)
@@ -100,22 +100,29 @@ dotnet --version
 
 ---
 
-## Bước 6: Build & Run Project WPF
+## Bước 6: Copy sang C:\ và Run Project WPF
 
-Mở **PowerShell** trong VM:
+> ⚠️ **KHÔNG** chạy `dotnet run` từ `Z:\` trực tiếp.
+> MSBuild không glob `**/*.xaml` qua network drive → lỗi BG1002/BG1003.
 
+Mở **PowerShell Terminal 2** (sync), **Terminal 1** (run):
+
+**Terminal 2 — Sync từ Mac sang VM:**
 ```powershell
-# Di chuyển vào shared folder
-Z:
-cd desktop-lamour
+xcopy Z:\ C:\projects\desktop-lamour\ /E /I /Y
+```
 
-# Restore packages
-dotnet restore desktop-lamour.sln
+**Terminal 1 — Chạy từ local:**
+```powershell
+cd C:\projects\desktop-lamour
+dotnet run --project src\DesktopLamour\DesktopLamour.csproj
+```
 
-# Build
-dotnet build desktop-lamour.sln -c Debug
-
-# Run — cửa sổ WPF sẽ hiện ra
+Lần đầu tiên (chưa có `C:\projects\`):
+```powershell
+mkdir C:\projects
+xcopy Z:\ C:\projects\desktop-lamour\ /E /I /Y
+cd C:\projects\desktop-lamour
 dotnet run --project src\DesktopLamour\DesktopLamour.csproj
 ```
 
@@ -144,13 +151,16 @@ dotnet run --project src\DesktopLamour\DesktopLamour.csproj -r win-arm64
 ## Workflow hàng ngày
 
 ```
-Mac (VS Code)                    Windows VM (UTM)
-─────────────────                ──────────────────────
-Mở VS Code                       Mở UTM → Start VM
-Edit .xaml / .cs        ──────→  Z:\desktop-lamour (shared)
-Save file               ──────→  dotnet run → thấy WPF UI
-Sửa tiếp                         Ctrl+C → dotnet run lại
+Mac (VS Code)                    Windows VM — Terminal 2      Windows VM — Terminal 1
+─────────────────                ───────────────────────      ───────────────────────
+Mở UTM → Start VM
+Edit .xaml / .cs                 xcopy Z:\ C:\projects\       cd C:\projects\desktop-lamour
+Save file               ──────→  desktop-lamour\ /E /I /Y  →  dotnet run --project src\DesktopLamour\...
+Sửa tiếp                         xcopy lại                    Ctrl+C → dotnet run lại
 ```
+
+> **Terminal 1**: chạy WPF app (`dotnet run`)
+> **Terminal 2**: sync code từ Mac (`xcopy Z:\`)
 
 ---
 
@@ -163,6 +173,8 @@ Sửa tiếp                         Ctrl+C → dotnet run lại
 | `dotnet` không tìm thấy | Đóng PowerShell, mở lại sau khi cài SDK |
 | WPF không hiện cửa sổ | Chạy lại với `-r win-arm64` |
 | Màn hình VM bị nhỏ | Cài SPICE Guest Tools → resolution tự scale |
+| BG1002: `**/*.xaml` cannot be found | Đang chạy từ `Z:\` (network drive) → copy sang `C:\projects\` rồi chạy lại |
+| BG1003: project file property not valid | Cùng nguyên nhân BG1002 → copy sang `C:\projects\` |
 
 ---
 

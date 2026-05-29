@@ -264,7 +264,8 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <DataGrid Grid.Row="0"
+                    <DataGrid x:Name="LinesDataGrid"
+                              Grid.Row="0"
                               ItemsSource="{Binding Lines}"
                               AutoGenerateColumns="False"
                               CanUserAddRows="False"
@@ -275,7 +276,8 @@
                               GridLinesVisibility="Horizontal"
                               BorderThickness="0"
                               RowBackground="{StaticResource AppColor.BackgroundPrimary}"
-                              AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}">
+                              AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                              CellEditEnding="LinesDataGrid_CellEditEnding">
                         <DataGrid.Columns>
 
                             <!-- Mã hàng — product picker -->
@@ -292,17 +294,33 @@
                                         <ComboBox ItemsSource="{Binding DataContext.Products, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                   SelectedItem="{Binding SelectedProduct, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                   DisplayMemberPath="DisplayText"
-                                                  IsEditable="False"
+                                                  IsEditable="True"
+                                                  IsTextSearchEnabled="False"
                                                   VerticalContentAlignment="Center"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellEditingTemplate>
                             </DataGridTemplateColumn>
 
-                            <!-- Tên hàng — auto-filled from product picker -->
-                            <DataGridTextColumn Header="Tên hàng"
-                                                Binding="{Binding ProductName}"
-                                                Width="*"
-                                                IsReadOnly="True"/>
+                            <!-- Tên hàng — filter by name with dropdown -->
+                            <DataGridTemplateColumn Header="Tên hàng" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding ProductName}"
+                                                   VerticalAlignment="Center"
+                                                   Padding="4,0"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate>
+                                        <ComboBox ItemsSource="{Binding DataContext.Products, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  SelectedItem="{Binding SelectedProduct, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  DisplayMemberPath="DisplayText"
+                                                  IsEditable="True"
+                                                  IsTextSearchEnabled="False"
+                                                  VerticalContentAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                            </DataGridTemplateColumn>
 
                             <!-- Hàng KM -->
                             <DataGridCheckBoxColumn Header="Hàng KM"

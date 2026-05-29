@@ -2,6 +2,7 @@
 using DesktopLamour.Core.Storage;
 using DesktopLamour.Features.HomePage.Customers.Data.Services.Dtos;
 using Microsoft.Extensions.Logging;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -91,6 +92,24 @@ public sealed class CustomerService : ICustomerService
 
         return await response.Content.ReadFromJsonAsync<CustomerResponseDto>(ct)
             ?? throw new InvalidOperationException("Empty response from duplicate customer endpoint.");
+    }
+
+    public async Task<ImportCustomerResultDto> ImportExcelAsync(Stream fileStream, string fileName, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Importing customers from Excel file {FileName}", fileName);
+        SetBearerToken();
+
+        using var content       = new MultipartFormDataContent();
+        using var streamContent = new StreamContent(fileStream);
+        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        content.Add(streamContent, "file", fileName);
+
+        var response = await _httpClient.PostAsync("/api/v1/customers/import-excel", content, ct);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<ImportCustomerResultDto>(ct)
+            ?? throw new InvalidOperationException("Empty response from import-excel endpoint.");
     }
 
     private void SetBearerToken()

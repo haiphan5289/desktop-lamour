@@ -69,6 +69,16 @@ public class NavigationService : INavigationService
             _mainWindowViewModel.CurrentContent = content;
     }
 
+    public void NavigateToLogin()
+    {
+        _backStack.Clear();
+        _currentView = NavigationRoutes.Login;
+        _logger.LogInformation("Navigating to Login (history cleared)");
+        var content = ResolveView(NavigationRoutes.Login);
+        if (_mainWindowViewModel is not null)
+            _mainWindowViewModel.CurrentContent = content;
+    }
+
     private object? ResolveView(string viewName)
     {
         // Extend this switch as new views are added

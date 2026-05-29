@@ -5,6 +5,7 @@ using DesktopLamour.Core.Exceptions;
 using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.HomePage.Employees.Domain.Models;
 using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
+using System.Windows;
 
 namespace DesktopLamour.Features.HomePage.Employees.ViewModels;
 
@@ -81,6 +82,7 @@ public partial class EmployeeFormViewModel : ViewModelBase
         }
 
         OnPropertyChanged(nameof(IsAddMode));
+        BeginDirtyTracking();
     }
 
     [RelayCommand]
@@ -105,6 +107,7 @@ public partial class EmployeeFormViewModel : ViewModelBase
                     new UpdateEmployeeInput(_editingId, Name.Trim(), Phone.Trim(), Role, Unit, JobTitle, bankAccount, bankName,
                         string.IsNullOrWhiteSpace(Password) ? null : Password.Trim(), IsActive), ct);
             }
+            StopDirtyTracking();
             RequestClose?.Invoke(true);
         }
         catch (ValidationException ex)
@@ -120,5 +123,18 @@ public partial class EmployeeFormViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void Cancel() => RequestClose?.Invoke(false);
+    private void Cancel()
+    {
+        if (IsDirty)
+        {
+            var r = MessageBox.Show(
+                "Bạn có chắc muốn thoát? Dữ liệu chưa lưu sẽ bị mất.",
+                "Xác nhận thoát",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (r != MessageBoxResult.Yes) return;
+        }
+        StopDirtyTracking();
+        RequestClose?.Invoke(false);
+    }
 }

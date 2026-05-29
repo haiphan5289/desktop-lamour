@@ -8,16 +8,19 @@ using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.HomePage.Customers.Domain.Models;
 using DesktopLamour.Features.HomePage.Customers.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Customers.Views;
+using Microsoft.Win32;
+using System.IO;
 
 namespace DesktopLamour.Features.HomePage.Customers.ViewModels;
 
 public partial class CustomerListViewModel : ViewModelBase
 {
-    private readonly INavigationService         _navigationService;
-    private readonly IGetCustomersUseCase       _getCustomers;
-    private readonly IDeleteCustomerUseCase     _deleteCustomer;
-    private readonly IDuplicateCustomerUseCase  _duplicateCustomer;
-    private readonly Func<CustomerFormWindow>   _formWindowFactory;
+    private readonly INavigationService              _navigationService;
+    private readonly IGetCustomersUseCase            _getCustomers;
+    private readonly IDeleteCustomerUseCase          _deleteCustomer;
+    private readonly IDuplicateCustomerUseCase       _duplicateCustomer;
+    private readonly IImportExcelCustomersUseCase    _importExcel;
+    private readonly Func<CustomerFormWindow>        _formWindowFactory;
 
     [ObservableProperty] private bool      _isLoading;
     [ObservableProperty] private bool      _hasError;
@@ -32,16 +35,18 @@ public partial class CustomerListViewModel : ViewModelBase
     private bool HasSelection => SelectedCustomer is not null;
 
     public CustomerListViewModel(
-        INavigationService        navigationService,
-        IGetCustomersUseCase      getCustomers,
-        IDeleteCustomerUseCase    deleteCustomer,
-        IDuplicateCustomerUseCase duplicateCustomer,
-        Func<CustomerFormWindow>  formWindowFactory)
+        INavigationService           navigationService,
+        IGetCustomersUseCase         getCustomers,
+        IDeleteCustomerUseCase       deleteCustomer,
+        IDuplicateCustomerUseCase    duplicateCustomer,
+        IImportExcelCustomersUseCase importExcel,
+        Func<CustomerFormWindow>     formWindowFactory)
     {
         _navigationService = navigationService;
         _getCustomers      = getCustomers;
         _deleteCustomer    = deleteCustomer;
         _duplicateCustomer = duplicateCustomer;
+        _importExcel       = importExcel;
         _formWindowFactory = formWindowFactory;
     }
 
@@ -116,6 +121,50 @@ public partial class CustomerListViewModel : ViewModelBase
         window.Initialize(SelectedCustomer);
         if (window.ShowDialog() == true)
             await LoadCustomersCommand.ExecuteAsync(null);
+    }
+
+    [RelayCommand]
+    private async Task ImportExcelAsync(CancellationToken ct = default)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title  = "Chọn file Excel khách hàng",
+            Filter = "Excel files (*.xlsx)|*.xlsx",
+        };
+
+        if (dialog.ShowDialog() != true) return;
+
+        IsLoading    = true;
+        HasError     = false;
+        ErrorMessage = string.Empty;
+        try
+        {
+            await using var stream = File.OpenRead(dialog.FileName);
+            var result = await _importExcel.ExecuteAsync(stream, Path.GetFileName(dialog.FileName), ct);
+
+            await LoadCustomersCommand.ExecuteAsync(null);
+
+            var message = $"Import hoàn tất!\n\nĐã import: {result.Imported}/{result.Total} khách hàng.";
+            if (result.Errors.Count > 0)
+            {
+                var errorLines = result.Errors
+                    .Take(10)
+                    .Select(e => $"  Dòng {e.Row}: {e.Reason}");
+                message += $"\n\nDòng lỗi ({result.Skipped}):\n{string.Join("\n", errorLines)}";
+                if (result.Errors.Count > 10)
+                    message += $"\n  ... và {result.Errors.Count - 10} dòng lỗi khác";
+            }
+
+            MessageBox.Show(message, "Kết quả Import", MessageBoxButton.OK,
+                result.Errors.Count == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            HasError     = true;
+            ErrorMessage = $"Import thất bại: {ex.Message}";
+        }
+        finally { IsLoading = false; }
     }
 
     [RelayCommand(CanExecute = nameof(HasSelection))]

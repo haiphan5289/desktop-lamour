@@ -2,6 +2,19 @@
 
 > Full project spec: `docs/project-overview.md`
 
+## Feature Docs (REQUIRED before implement or debug)
+
+Each feature has a dedicated doc. **Always read the feature doc before implementing or debugging.**
+
+| Feature | Doc path |
+|---------|----------|
+| Sales / Chứng từ bán hàng | `src/DesktopLamour/Features/HomePage/Sales/docs/sales.md` |
+| Login | `docs/login-view.md` |
+
+> For any other feature, check `src/DesktopLamour/Features/[Module]/docs/` first.
+
+---
+
 ## Agent Routing
 
 When a task matches a domain below, **spawn the appropriate agent** via the Agent tool before responding directly. Always prefer agent delegation over inline answers for non-trivial tasks.

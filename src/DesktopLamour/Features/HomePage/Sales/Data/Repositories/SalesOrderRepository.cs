@@ -24,4 +24,7 @@ public class SalesOrderRepository : ISalesOrderRepository
 
     public Task DeleteAsync(int id, CancellationToken ct = default)
         => _service.DeleteAsync(id, ct);
+
+    public Task<string> GetNextCodeAsync(CancellationToken ct = default)
+        => _service.GetNextCodeAsync(ct);
 }

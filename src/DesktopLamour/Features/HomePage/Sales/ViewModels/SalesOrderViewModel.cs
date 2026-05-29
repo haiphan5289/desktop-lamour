@@ -22,16 +22,16 @@ public partial class SalesOrderViewModel : ViewModelBase
     public event Action? OrderSaved;
     public event Action? RequestClose;
 
-    private readonly IGetSalesOrdersUseCase    _getOrders;
-    private readonly ICreateSalesOrderUseCase  _createOrder;
-    private readonly IUpdateSalesOrderUseCase  _updateOrder;
-    private readonly IDeleteSalesOrderUseCase  _deleteOrder;
-    private readonly IGetCustomersUseCase      _getCustomers;
-    private readonly IGetEmployeesUseCase      _getEmployees;
-    private readonly IGetProductsUseCase       _getProducts;
-    private readonly Func<EmployeeFormWindow>  _employeeFormWindowFactory;
-    private readonly Func<CustomerFormWindow>  _customerFormWindowFactory;
-    private readonly ILogger<SalesOrderViewModel> _logger;
+    private readonly ICreateSalesOrderUseCase       _createOrder;
+    private readonly IUpdateSalesOrderUseCase       _updateOrder;
+    private readonly IDeleteSalesOrderUseCase       _deleteOrder;
+    private readonly IGetNextSalesOrderCodeUseCase  _getNextCode;
+    private readonly IGetCustomersUseCase           _getCustomers;
+    private readonly IGetEmployeesUseCase           _getEmployees;
+    private readonly IGetProductsUseCase            _getProducts;
+    private readonly Func<EmployeeFormWindow>       _employeeFormWindowFactory;
+    private readonly Func<CustomerFormWindow>       _customerFormWindowFactory;
+    private readonly ILogger<SalesOrderViewModel>   _logger;
 
     // ── State ──────────────────────────────────────────────────────────────
     [ObservableProperty] private bool   _isBusy;
@@ -72,27 +72,27 @@ public partial class SalesOrderViewModel : ViewModelBase
 
     public IReadOnlyList<ISearchableItem> Customers { get; private set; } = Array.Empty<ISearchableItem>();
     public IReadOnlyList<ISearchableItem> Employees { get; private set; } = Array.Empty<ISearchableItem>();
-    public IReadOnlyList<ISearchableItem> Products  { get; private set; } = Array.Empty<ISearchableItem>();
+    public ObservableCollection<ISearchableItem> Products { get; } = new();
+    private readonly List<ISearchableItem> _allProducts = new();
 
-    // cached document numbers for generating the next number in new-order mode
-    private List<string> _orderNumberCache = new();
+    private string _nextDocumentNumber = "BC00001";
 
     public SalesOrderViewModel(
-        IGetSalesOrdersUseCase    getOrders,
-        ICreateSalesOrderUseCase  createOrder,
-        IUpdateSalesOrderUseCase  updateOrder,
-        IDeleteSalesOrderUseCase  deleteOrder,
-        IGetCustomersUseCase      getCustomers,
-        IGetEmployeesUseCase      getEmployees,
-        IGetProductsUseCase       getProducts,
-        Func<EmployeeFormWindow>  employeeFormWindowFactory,
-        Func<CustomerFormWindow>  customerFormWindowFactory,
-        ILogger<SalesOrderViewModel> logger)
+        ICreateSalesOrderUseCase       createOrder,
+        IUpdateSalesOrderUseCase       updateOrder,
+        IDeleteSalesOrderUseCase       deleteOrder,
+        IGetNextSalesOrderCodeUseCase  getNextCode,
+        IGetCustomersUseCase           getCustomers,
+        IGetEmployeesUseCase           getEmployees,
+        IGetProductsUseCase            getProducts,
+        Func<EmployeeFormWindow>       employeeFormWindowFactory,
+        Func<CustomerFormWindow>       customerFormWindowFactory,
+        ILogger<SalesOrderViewModel>   logger)
     {
-        _getOrders                  = getOrders;
         _createOrder                = createOrder;
         _updateOrder                = updateOrder;
         _deleteOrder                = deleteOrder;
+        _getNextCode                = getNextCode;
         _getCustomers               = getCustomers;
         _getEmployees               = getEmployees;
         _getProducts                = getProducts;
@@ -115,9 +115,8 @@ public partial class SalesOrderViewModel : ViewModelBase
 
             if (order is null)
             {
-                var allOrders     = await _getOrders.ExecuteAsync(ct);
-                _orderNumberCache = allOrders.Select(o => o.DocumentNumber).ToList();
-                CurrentOrder      = null;
+                _nextDocumentNumber = await _getNextCode.ExecuteAsync(ct);
+                CurrentOrder        = null;
                 ClearForm();
             }
             else
@@ -137,42 +136,36 @@ public partial class SalesOrderViewModel : ViewModelBase
 
     private async Task LoadLookupsAsync(CancellationToken ct)
     {
-        try
+        var customerTask = _getCustomers.ExecuteAsync(ct);
+        var employeeTask = _getEmployees.ExecuteAsync(ct);
+        var productTask  = _getProducts.ExecuteAsync(ct);
+
+        await Task.WhenAll(customerTask, employeeTask, productTask);
+
+        if (customerTask.IsCompletedSuccessfully)
         {
-            var customers = await _getCustomers.ExecuteAsync(ct);
-            Customers = customers.Cast<ISearchableItem>().ToList().AsReadOnly();
+            Customers = customerTask.Result.Cast<ISearchableItem>().ToList().AsReadOnly();
             OnPropertyChanged(nameof(Customers));
         }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Could not preload customers for SalesOrderWindow");
-        }
+        else
+            _logger.LogWarning(customerTask.Exception, "Could not preload customers for SalesOrderWindow");
 
-        try
+        if (employeeTask.IsCompletedSuccessfully)
         {
-            var employees = await _getEmployees.ExecuteAsync(ct);
-            Employees = employees.Cast<ISearchableItem>().ToList().AsReadOnly();
+            Employees = employeeTask.Result.Cast<ISearchableItem>().ToList().AsReadOnly();
             OnPropertyChanged(nameof(Employees));
         }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Could not preload employees for SalesOrderWindow");
-        }
+        else
+            _logger.LogWarning(employeeTask.Exception, "Could not preload employees for SalesOrderWindow");
 
-        try
+        if (productTask.IsCompletedSuccessfully)
         {
-            var products = await _getProducts.ExecuteAsync(ct);
-            Products = products
-                .Where(p => p.IsActive)
-                .Cast<ISearchableItem>()
-                .ToList()
-                .AsReadOnly();
-            OnPropertyChanged(nameof(Products));
+            _allProducts.Clear();
+            _allProducts.AddRange(productTask.Result.Where(p => p.IsActive).Cast<ISearchableItem>());
+            ResetProductFilter();
         }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Could not preload products for SalesOrderWindow");
-        }
+        else
+            _logger.LogWarning(productTask.Exception, "Could not preload products for SalesOrderWindow");
     }
 
     // ── Commands ──────────────────────────────────────────────────────────
@@ -355,16 +348,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         RecalculateTotals();
     }
 
-    private string GenerateNextDocumentNumber()
-    {
-        const string prefix = "BC";
-        var maxNum = _orderNumberCache
-            .Where(n => n.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            .Select(n => int.TryParse(n[prefix.Length..], out var num) ? num : 0)
-            .DefaultIfEmpty(0)
-            .Max();
-        return $"{prefix}{maxNum + 1:D5}";
-    }
+    private string GenerateNextDocumentNumber() => _nextDocumentNumber;
 
     private void PopulateFormFromCurrent()
     {
@@ -401,12 +385,39 @@ public partial class SalesOrderViewModel : ViewModelBase
                 ReceivableAccount = l.ReceivableAccount,
                 RevenueAccount    = l.RevenueAccount,
             };
-            item.SetSelectedProductSilent(Products.FirstOrDefault(p => p.Id == l.ProductId));
+            item.SetSelectedProductSilent(_allProducts.FirstOrDefault(p => p.Id == l.ProductId));
             item.PropertyChanged += (_, _) => RecalculateTotals();
             Lines.Add(item);
         }
 
         RecalculateTotals();
+    }
+
+    public void FilterProductsByCode(string? text)
+    {
+        var filtered = string.IsNullOrWhiteSpace(text)
+            ? _allProducts
+            : _allProducts.Where(p => p.Code.Contains(text, StringComparison.OrdinalIgnoreCase));
+        RefreshProducts(filtered);
+    }
+
+    public void FilterProductsByName(string? text)
+    {
+        var filtered = string.IsNullOrWhiteSpace(text)
+            ? _allProducts
+            : _allProducts.Where(p => p.Name.Contains(text, StringComparison.OrdinalIgnoreCase));
+        RefreshProducts(filtered);
+    }
+
+    public void ResetProductFilter()
+    {
+        RefreshProducts(_allProducts);
+    }
+
+    private void RefreshProducts(IEnumerable<ISearchableItem> items)
+    {
+        Products.Clear();
+        foreach (var p in items) Products.Add(p);
     }
 
     private void RecalculateTotals()

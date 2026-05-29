@@ -118,6 +118,15 @@
                                        Placeholder="VD: 0123456789"/>
             </StackPanel>
 
+            <!-- Sale chăm sóc (optional) -->
+            <StackPanel Margin="0,0,0,16">
+                <controls:AppLabel Text="Sale"
+                                   Style="{StaticResource AppTypography.LabelSection}"
+                                   Margin="0,0,0,6"/>
+                <controls:AppTextField Text="{Binding SaleCare, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                       Placeholder="VD: Nguyễn Văn A"/>
+            </StackPanel>
+
             <!-- Error message -->
             <Border Background="{StaticResource AppColor.BackgroundErrorLight}"
                     CornerRadius="8"

@@ -6,6 +6,7 @@ using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.HomePage.Customers.Data.Services;
 using DesktopLamour.Features.HomePage.Customers.Domain.Models;
 using DesktopLamour.Features.HomePage.Customers.Domain.UseCases;
+using System.Windows;
 
 namespace DesktopLamour.Features.HomePage.Customers.ViewModels;
 
@@ -30,6 +31,7 @@ public partial class CustomerFormViewModel : ViewModelBase
     [ObservableProperty] private string _province      = string.Empty;
     [ObservableProperty] private string _customerGroup = string.Empty;
     [ObservableProperty] private string _taxCode       = string.Empty;
+    [ObservableProperty] private string _saleCare      = string.Empty;
 
     public bool IsEditMode => _isEditMode;
 
@@ -54,7 +56,7 @@ public partial class CustomerFormViewModel : ViewModelBase
             _isEditMode   = false;
             _editingId    = 0;
             WindowTitle   = "Thêm khách hàng";
-            Code = Name = Phone = Address = Province = CustomerGroup = TaxCode = string.Empty;
+            Code = Name = Phone = Address = Province = CustomerGroup = TaxCode = SaleCare = string.Empty;
         }
         else
         {
@@ -68,7 +70,10 @@ public partial class CustomerFormViewModel : ViewModelBase
             Province      = customer.Province;
             CustomerGroup = customer.CustomerGroup;
             TaxCode       = customer.TaxCode;
+            SaleCare      = customer.SaleCare;
         }
+
+        BeginDirtyTracking();
     }
 
     public async Task LoadNextCodeAsync(CancellationToken ct = default)
@@ -79,6 +84,7 @@ public partial class CustomerFormViewModel : ViewModelBase
             Code = await _customerService.GetNextCodeAsync(ct);
         }
         catch { /* silently ignore — placeholder still shows */ }
+        IsDirty = false;
     }
 
     [RelayCommand]
@@ -92,16 +98,17 @@ public partial class CustomerFormViewModel : ViewModelBase
             {
                 var input = new CreateCustomerInput(
                     Name.Trim(), Phone.Trim(), Address.Trim(),
-                    Province.Trim(), CustomerGroup.Trim(), TaxCode.Trim());
+                    Province.Trim(), CustomerGroup.Trim(), TaxCode.Trim(), SaleCare.Trim());
                 await _createUseCase.ExecuteAsync(input, ct);
             }
             else
             {
                 var input = new UpdateCustomerInput(
                     _editingId, Name.Trim(), Phone.Trim(), Address.Trim(),
-                    Province.Trim(), CustomerGroup.Trim(), TaxCode.Trim());
+                    Province.Trim(), CustomerGroup.Trim(), TaxCode.Trim(), SaleCare.Trim());
                 await _updateUseCase.ExecuteAsync(input, ct);
             }
+            StopDirtyTracking();
             RequestClose?.Invoke(true);
         }
         catch (ValidationException ex)
@@ -117,5 +124,18 @@ public partial class CustomerFormViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void Cancel() => RequestClose?.Invoke(false);
+    private void Cancel()
+    {
+        if (IsDirty)
+        {
+            var r = MessageBox.Show(
+                "Bạn có chắc muốn thoát? Dữ liệu chưa lưu sẽ bị mất.",
+                "Xác nhận thoát",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (r != MessageBoxResult.Yes) return;
+        }
+        StopDirtyTracking();
+        RequestClose?.Invoke(false);
+    }
 }

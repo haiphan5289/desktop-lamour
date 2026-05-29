@@ -1,6 +1,7 @@
 <Window x:Class="DesktopLamour.MainWindow.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
         Title="DesktopLamour"
         MinWidth="400"
         MinHeight="600"
@@ -9,8 +10,36 @@
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource AppColor.BackgroundPrimary}">
 
-    <ContentControl Content="{Binding CurrentContent}"
-                    HorizontalContentAlignment="Stretch"
-                    VerticalContentAlignment="Stretch"/>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top bar — chỉ hiển thị khi đã đăng nhập -->
+        <Border Grid.Row="0"
+                Background="{StaticResource AppColor.BackgroundPrimary}"
+                BorderBrush="{StaticResource AppColor.BorderThin}"
+                BorderThickness="0,0,0,1"
+                Padding="16,8"
+                Visibility="{Binding IsLoggedIn, Converter={StaticResource BoolToVisibilityConverter}}">
+            <Grid>
+                <TextBlock Text="Lamour"
+                           FontSize="16"
+                           FontWeight="Bold"
+                           Foreground="{StaticResource AppColor.TextBrand}"
+                           VerticalAlignment="Center"/>
+                <controls:AppButton Content="Đăng xuất"
+                                    Command="{Binding LogoutCommand}"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    HorizontalAlignment="Right"/>
+            </Grid>
+        </Border>
+
+        <ContentControl Grid.Row="1"
+                        Content="{Binding CurrentContent}"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch"/>
+    </Grid>
 
 </Window>

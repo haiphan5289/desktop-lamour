@@ -45,125 +45,198 @@
         <!-- ══════════════════════════════════════════════ -->
         <!--  Row 1: Form content                           -->
         <!-- ══════════════════════════════════════════════ -->
-        <StackPanel Grid.Row="1" Margin="24,20,24,8">
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="620">
+        <StackPanel Margin="24,16,24,8">
 
-            <!-- Mã sản phẩm (optional, unique) -->
-            <StackPanel Margin="0,0,0,16">
-                <controls:AppLabel Text="Mã sản phẩm"
-                                   Style="{StaticResource AppTypography.LabelSection}"
-                                   Margin="0,0,0,6"/>
-                <controls:AppTextField Text="{Binding Code, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                       Placeholder="VD: SP001"
-                                       IsEnabled="{Binding IsAddMode}"/>
-            </StackPanel>
+                        <!-- Mã sản phẩm (optional, unique) -->
+                        <StackPanel Margin="0,0,0,16">
+                            <controls:AppLabel Text="Mã sản phẩm"
+                                               Style="{StaticResource AppTypography.LabelSection}"
+                                               Margin="0,0,0,6"/>
+                            <controls:AppTextField Text="{Binding Code, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                   Placeholder="VD: SP001"
+                                                   IsEnabled="{Binding IsAddMode}"/>
+                        </StackPanel>
 
-            <!-- Tên sản phẩm (required) -->
-            <StackPanel Margin="0,0,0,16">
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                    <controls:AppLabel Text="Tên sản phẩm"
-                                       Style="{StaticResource AppTypography.LabelSection}"/>
-                    <controls:AppLabel Text=" *"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Foreground="{StaticResource AppColor.TextBrand}"/>
-                </StackPanel>
-                <controls:AppTextField Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                       Placeholder="VD: Son môi đỏ Ruby"/>
-            </StackPanel>
+                        <!-- Tên sản phẩm (required) -->
+                        <StackPanel Margin="0,0,0,16">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <controls:AppLabel Text="Tên sản phẩm"
+                                                   Style="{StaticResource AppTypography.LabelSection}"/>
+                                <controls:AppLabel Text=" *"
+                                                   Style="{StaticResource AppTypography.LabelSection}"
+                                                   Foreground="{StaticResource AppColor.TextBrand}"/>
+                            </StackPanel>
+                            <controls:AppTextField Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                   Placeholder="VD: Son môi đỏ Ruby"/>
+                        </StackPanel>
 
-            <!-- Two-column row: Danh mục + Đơn vị -->
-            <Grid Margin="0,0,0,16">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="12"/>
-                    <ColumnDefinition Width="120"/>
-                </Grid.ColumnDefinitions>
+                        <!-- Two-column row: Danh mục + Đơn vị -->
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="120"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <controls:AppLabel Text="Danh mục"
+                                                       Style="{StaticResource AppTypography.LabelSection}"/>
+                                    <controls:AppLabel Text=" *"
+                                                       Style="{StaticResource AppTypography.LabelSection}"
+                                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                                </StackPanel>
+                                <controls:AppTextField Text="{Binding Category, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       Placeholder="VD: Son môi"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <controls:AppLabel Text="Đơn vị"
+                                                   Style="{StaticResource AppTypography.LabelSection}"
+                                                   Margin="0,0,0,6"/>
+                                <controls:AppTextField Text="{Binding Unit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       Placeholder="VD: Cái"/>
+                            </StackPanel>
+                        </Grid>
 
-                <!-- Danh mục (required) -->
-                <StackPanel Grid.Column="0">
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <controls:AppLabel Text="Danh mục"
-                                           Style="{StaticResource AppTypography.LabelSection}"/>
-                        <controls:AppLabel Text=" *"
-                                           Style="{StaticResource AppTypography.LabelSection}"
-                                           Foreground="{StaticResource AppColor.TextBrand}"/>
-                    </StackPanel>
-                    <controls:AppTextField Text="{Binding Category, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                           Placeholder="VD: Son môi"/>
-                </StackPanel>
+                        <!-- Two-column row: Giá nhập + Giá bán -->
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <controls:AppLabel Text="Giá nhập (VNĐ)"
+                                                       Style="{StaticResource AppTypography.LabelSection}"/>
+                                    <controls:AppLabel Text=" *"
+                                                       Style="{StaticResource AppTypography.LabelSection}"
+                                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                                </StackPanel>
+                                <controls:AppTextField Text="{Binding CostPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       Placeholder="VD: 50000"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <controls:AppLabel Text="Giá bán (VNĐ)"
+                                                       Style="{StaticResource AppTypography.LabelSection}"/>
+                                    <controls:AppLabel Text=" *"
+                                                       Style="{StaticResource AppTypography.LabelSection}"
+                                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                                </StackPanel>
+                                <controls:AppTextField Text="{Binding SellingPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       Placeholder="VD: 80000"/>
+                            </StackPanel>
+                        </Grid>
 
-                <!-- Đơn vị (optional) -->
-                <StackPanel Grid.Column="2">
-                    <controls:AppLabel Text="Đơn vị"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Margin="0,0,0,6"/>
-                    <controls:AppTextField Text="{Binding Unit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                           Placeholder="VD: Cái"/>
-                </StackPanel>
-            </Grid>
+                        <!-- Two-column row: Tồn kho + Hoạt động -->
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <controls:AppLabel Text="Tồn kho"
+                                                   Style="{StaticResource AppTypography.LabelSection}"
+                                                   Margin="0,0,0,6"/>
+                                <controls:AppTextField Text="{Binding StockQuantity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       Placeholder="VD: 100"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" VerticalAlignment="Bottom">
+                                <StackPanel Orientation="Horizontal">
+                                    <CheckBox IsChecked="{Binding IsActive, Mode=TwoWay}"
+                                              VerticalAlignment="Center"
+                                              Margin="0,0,8,0"/>
+                                    <controls:AppLabel Text="Còn kinh doanh"
+                                                       Style="{StaticResource AppTypography.BodySection}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
 
-            <!-- Two-column row: Giá nhập + Giá bán -->
-            <Grid Margin="0,0,0,16">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="12"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+                        <!-- ── Separator: Thông tin thuế ── -->
+                        <Border BorderBrush="{StaticResource AppColor.BorderThin}"
+                                BorderThickness="0,1,0,0"
+                                Margin="0,4,0,16"/>
 
-                <!-- Giá nhập (required) -->
-                <StackPanel Grid.Column="0">
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <controls:AppLabel Text="Giá nhập (VNĐ)"
-                                           Style="{StaticResource AppTypography.LabelSection}"/>
-                        <controls:AppLabel Text=" *"
-                                           Style="{StaticResource AppTypography.LabelSection}"
-                                           Foreground="{StaticResource AppColor.TextBrand}"/>
-                    </StackPanel>
-                    <controls:AppTextField Text="{Binding CostPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                           Placeholder="VD: 50000"/>
-                </StackPanel>
+                        <!-- Two-column row: Thuế suất GTGT + Có giảm thuế -->
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
 
-                <!-- Giá bán (required) -->
-                <StackPanel Grid.Column="2">
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <controls:AppLabel Text="Giá bán (VNĐ)"
-                                           Style="{StaticResource AppTypography.LabelSection}"/>
-                        <controls:AppLabel Text=" *"
-                                           Style="{StaticResource AppTypography.LabelSection}"
-                                           Foreground="{StaticResource AppColor.TextBrand}"/>
-                    </StackPanel>
-                    <controls:AppTextField Text="{Binding SellingPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                           Placeholder="VD: 80000"/>
-                </StackPanel>
-            </Grid>
+                            <!-- Thuế suất GTGT (%) -->
+                            <StackPanel Grid.Column="0">
+                                <controls:AppLabel Text="Thuế suất GTGT (%)"
+                                                   Style="{StaticResource AppTypography.LabelSection}"
+                                                   Margin="0,0,0,6"/>
+                                <ComboBox ItemsSource="{Binding VatRateOptions}"
+                                          SelectedItem="{Binding VatRate, Mode=TwoWay}"
+                                          Height="36">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Converter={StaticResource VatRateDisplayConverter}}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
 
-            <!-- Two-column row: Tồn kho + Hoạt động -->
-            <Grid Margin="0,0,0,16">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="12"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+                            <!-- Có giảm thuế -->
+                            <StackPanel Grid.Column="2">
+                                <controls:AppLabel Text="Có giảm thuế"
+                                                   Style="{StaticResource AppTypography.LabelSection}"
+                                                   Margin="0,0,0,6"/>
+                                <ComboBox ItemsSource="{Binding TaxReductionStatusOptions}"
+                                          SelectedItem="{Binding TaxReductionType, Mode=TwoWay}"
+                                          Height="36">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Converter={StaticResource TaxReductionStatusDisplayConverter}}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+                        </Grid>
 
-                <!-- Tồn kho (manual input) -->
-                <StackPanel Grid.Column="0">
-                    <controls:AppLabel Text="Tồn kho"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Margin="0,0,0,6"/>
-                    <controls:AppTextField Text="{Binding StockQuantity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                           Placeholder="VD: 100"/>
-                </StackPanel>
+                        <!-- Two-column row: Thuế suất NK + Thuế suất XK -->
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
 
-                <!-- Hoạt động -->
-                <StackPanel Grid.Column="2" VerticalAlignment="Bottom">
-                    <StackPanel Orientation="Horizontal">
-                        <CheckBox IsChecked="{Binding IsActive, Mode=TwoWay}"
-                                  VerticalAlignment="Center"
-                                  Margin="0,0,8,0"/>
-                        <controls:AppLabel Text="Còn kinh doanh"
-                                           Style="{StaticResource AppTypography.BodySection}"/>
-                    </StackPanel>
-                </StackPanel>
-            </Grid>
+                            <!-- Thuế suất NK (%) -->
+                            <StackPanel Grid.Column="0">
+                                <controls:AppLabel Text="Thuế suất NK (%)"
+                                                   Style="{StaticResource AppTypography.LabelSection}"
+                                                   Margin="0,0,0,6"/>
+                                <controls:AppTextField Text="{Binding ImportTaxRate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       Placeholder="VD: 5"/>
+                            </StackPanel>
+
+                            <!-- Thuế suất XK (%) -->
+                            <StackPanel Grid.Column="2">
+                                <controls:AppLabel Text="Thuế suất XK (%)"
+                                                   Style="{StaticResource AppTypography.LabelSection}"
+                                                   Margin="0,0,0,6"/>
+                                <controls:AppTextField Text="{Binding ExportTaxRate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       Placeholder="VD: 0"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Nhóm HHDV chịu thuế TTĐB -->
+                        <StackPanel Margin="0,0,0,16">
+                            <controls:AppLabel Text="Nhóm HHDV chịu thuế TTĐB"
+                                               Style="{StaticResource AppTypography.LabelSection}"
+                                               Margin="0,0,0,6"/>
+                            <ComboBox ItemsSource="{Binding ExciseTaxGroupOptions}"
+                                      SelectedItem="{Binding ExciseTaxGroup, Mode=TwoWay}"
+                                      IsEditable="True"
+                                      Height="36"/>
+                        </StackPanel>
 
             <!-- Error message -->
             <Border Background="{StaticResource AppColor.BackgroundErrorLight}"
@@ -177,6 +250,7 @@
             </Border>
 
         </StackPanel>
+        </ScrollViewer>
 
         <!-- ══════════════════════════════════════════════ -->
         <!--  Row 2: Action buttons                         -->

@@ -116,6 +116,7 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<IUpdateCustomerUseCase, UpdateCustomerUseCase>();
         services.AddTransient<IDeleteCustomerUseCase, DeleteCustomerUseCase>();
         services.AddTransient<IDuplicateCustomerUseCase, DuplicateCustomerUseCase>();
+        services.AddTransient<IImportExcelCustomersUseCase, ImportExcelCustomersUseCase>();
 
         // ── Customers: Repository ────────────────────────────────────────────
         services.AddTransient<ICustomerRepository, CustomerRepository>();
@@ -259,6 +260,7 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<ICreateSalesOrderUseCase, CreateSalesOrderUseCase>();
         services.AddTransient<IUpdateSalesOrderUseCase, UpdateSalesOrderUseCase>();
         services.AddTransient<IDeleteSalesOrderUseCase, DeleteSalesOrderUseCase>();
+        services.AddTransient<IGetNextSalesOrderCodeUseCase, GetNextSalesOrderCodeUseCase>();
 
         // ── Sales: Repository ────────────────────────────────────────────────────
         services.AddTransient<ISalesOrderRepository, SalesOrderRepository>();

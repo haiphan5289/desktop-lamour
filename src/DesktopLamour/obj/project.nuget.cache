@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "CUIEikaOFK0=",
+  "dgSpecHash": "cZNvvTmUYZg=",
   "success": true,
   "projectFilePath": "/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/DesktopLamour.csproj",
   "expectedPackageFiles": [
@@ -26,12 +26,9 @@
     "/Users/hai.phan/.nuget/packages/microsoft.extensions.options.configurationextensions/8.0.0/microsoft.extensions.options.configurationextensions.8.0.0.nupkg.sha512",
     "/Users/hai.phan/.nuget/packages/microsoft.extensions.primitives/8.0.0/microsoft.extensions.primitives.8.0.0.nupkg.sha512",
     "/Users/hai.phan/.nuget/packages/microsoft.netcore.app.ref/8.0.26/microsoft.netcore.app.ref.8.0.26.nupkg.sha512",
-    "/Users/hai.phan/.nuget/packages/microsoft.netcore.app.runtime.win-x64/8.0.26/microsoft.netcore.app.runtime.win-x64.8.0.26.nupkg.sha512",
     "/Users/hai.phan/.nuget/packages/microsoft.windowsdesktop.app.ref/8.0.26/microsoft.windowsdesktop.app.ref.8.0.26.nupkg.sha512",
-    "/Users/hai.phan/.nuget/packages/microsoft.windowsdesktop.app.runtime.win-x64/8.0.26/microsoft.windowsdesktop.app.runtime.win-x64.8.0.26.nupkg.sha512",
     "/Users/hai.phan/.nuget/packages/microsoft.aspnetcore.app.ref/8.0.26/microsoft.aspnetcore.app.ref.8.0.26.nupkg.sha512",
-    "/Users/hai.phan/.nuget/packages/microsoft.aspnetcore.app.runtime.win-x64/8.0.26/microsoft.aspnetcore.app.runtime.win-x64.8.0.26.nupkg.sha512",
-    "/Users/hai.phan/.nuget/packages/microsoft.netcore.app.host.win-x64/8.0.26/microsoft.netcore.app.host.win-x64.8.0.26.nupkg.sha512"
+    "/Users/hai.phan/.nuget/packages/microsoft.netcore.app.host.osx-arm64/8.0.26/microsoft.netcore.app.host.osx-arm64.8.0.26.nupkg.sha512"
   ],
   "logs": []
 }

@@ -29,14 +29,19 @@ public sealed class ProductRepository : IProductRepository
     {
         var request = new CreateProductRequestDto
         {
-            Code          = input.Code,
-            Name          = input.Name,
-            Category      = input.Category,
-            Unit          = input.Unit,
-            CostPrice     = input.CostPrice,
-            SellingPrice  = input.SellingPrice,
-            StockQuantity = input.StockQuantity,
-            IsActive      = input.IsActive,
+            Code             = input.Code,
+            Name             = input.Name,
+            Category         = input.Category,
+            Unit             = input.Unit,
+            CostPrice        = input.CostPrice,
+            SellingPrice     = input.SellingPrice,
+            StockQuantity    = input.StockQuantity,
+            IsActive         = input.IsActive,
+            VatRate          = input.VatRate?.ToString(),
+            TaxReductionType = input.TaxReductionType?.ToString(),
+            ImportTaxRate    = input.ImportTaxRate,
+            ExportTaxRate    = input.ExportTaxRate,
+            ExciseTaxGroup   = input.ExciseTaxGroup,
         };
         var d = await _service.CreateAsync(request, ct);
         return MapToModel(d);
@@ -46,14 +51,19 @@ public sealed class ProductRepository : IProductRepository
     {
         var request = new UpdateProductRequestDto
         {
-            Code          = input.Code,
-            Name          = input.Name,
-            Category      = input.Category,
-            Unit          = input.Unit,
-            CostPrice     = input.CostPrice,
-            SellingPrice  = input.SellingPrice,
-            StockQuantity = input.StockQuantity,
-            IsActive      = input.IsActive,
+            Code             = input.Code,
+            Name             = input.Name,
+            Category         = input.Category,
+            Unit             = input.Unit,
+            CostPrice        = input.CostPrice,
+            SellingPrice     = input.SellingPrice,
+            StockQuantity    = input.StockQuantity,
+            IsActive         = input.IsActive,
+            VatRate          = input.VatRate?.ToString(),
+            TaxReductionType = input.TaxReductionType?.ToString(),
+            ImportTaxRate    = input.ImportTaxRate,
+            ExportTaxRate    = input.ExportTaxRate,
+            ExciseTaxGroup   = input.ExciseTaxGroup,
         };
         var d = await _service.UpdateAsync(input.Id, request, ct);
         return MapToModel(d);
@@ -61,14 +71,19 @@ public sealed class ProductRepository : IProductRepository
 
     private static Product MapToModel(ProductResponseDto d) => new()
     {
-        Id            = d.Id,
-        Code          = d.Code,
-        Name          = d.Name,
-        Category      = d.Category,
-        Unit          = d.Unit,
-        CostPrice     = d.CostPrice,
-        SellingPrice  = d.SellingPrice,
-        StockQuantity = d.StockQuantity,
-        IsActive      = d.IsActive,
+        Id               = d.Id,
+        Code             = d.Code,
+        Name             = d.Name,
+        Category         = d.Category,
+        Unit             = d.Unit,
+        CostPrice        = d.CostPrice,
+        SellingPrice     = d.SellingPrice,
+        StockQuantity    = d.StockQuantity,
+        IsActive         = d.IsActive,
+        VatRate          = Enum.TryParse<VatRateType>(d.VatRate, out var vr) ? vr : null,
+        TaxReductionType = Enum.TryParse<TaxReductionStatus>(d.TaxReductionType, out var tr) ? tr : null,
+        ImportTaxRate    = d.ImportTaxRate,
+        ExportTaxRate    = d.ExportTaxRate,
+        ExciseTaxGroup   = d.ExciseTaxGroup,
     };
 }

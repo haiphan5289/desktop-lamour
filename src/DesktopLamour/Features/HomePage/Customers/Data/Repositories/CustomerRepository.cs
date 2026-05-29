@@ -3,6 +3,7 @@ using DesktopLamour.Features.HomePage.Customers.Data.Services;
 using DesktopLamour.Features.HomePage.Customers.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Customers.Domain.Models;
 using DesktopLamour.Features.HomePage.Customers.Domain.UseCases;
+using System.IO;
 namespace DesktopLamour.Features.HomePage.Customers.Data.Repositories;
 
 public sealed class CustomerRepository : ICustomerRepository
@@ -35,6 +36,7 @@ public sealed class CustomerRepository : ICustomerRepository
             Province      = input.Province,
             CustomerGroup = input.CustomerGroup,
             TaxCode       = input.TaxCode,
+            SaleCare      = input.SaleCare,
         };
         var d = await _service.CreateAsync(request, ct);
         return MapToModel(d);
@@ -50,9 +52,20 @@ public sealed class CustomerRepository : ICustomerRepository
             Province      = input.Province,
             CustomerGroup = input.CustomerGroup,
             TaxCode       = input.TaxCode,
+            SaleCare      = input.SaleCare,
         };
         var d = await _service.UpdateAsync(input.Id, request, ct);
         return MapToModel(d);
+    }
+
+    public async Task<ImportCustomerResult> ImportExcelAsync(Stream fileStream, string fileName, CancellationToken ct = default)
+    {
+        var dto = await _service.ImportExcelAsync(fileStream, fileName, ct);
+        return new ImportCustomerResult(
+            dto.Total,
+            dto.Imported,
+            dto.Skipped,
+            dto.Errors.Select(e => new ImportRowError(e.Row, e.Reason)).ToList());
     }
 
     private static Customer MapToModel(CustomerResponseDto d) => new()
@@ -65,5 +78,6 @@ public sealed class CustomerRepository : ICustomerRepository
         CustomerGroup = d.CustomerGroup,
         TaxCode       = d.TaxCode,
         Phone         = d.Phone,
+        SaleCare      = d.SaleCare,
     };
 }

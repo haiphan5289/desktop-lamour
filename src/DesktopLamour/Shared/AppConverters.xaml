@@ -6,5 +6,7 @@
     <converters:BoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter" Invert="True"/>
     <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
     <converters:StringEqualityConverter x:Key="StringEqualityConverter"/>
+    <converters:VatRateDisplayConverter x:Key="VatRateDisplayConverter"/>
+    <converters:TaxReductionStatusDisplayConverter x:Key="TaxReductionStatusDisplayConverter"/>
 
 </ResourceDictionary>

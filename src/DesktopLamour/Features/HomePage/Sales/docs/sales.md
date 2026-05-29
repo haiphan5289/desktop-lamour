@@ -1,6 +1,6 @@
 # Sales Orders — Feature Document (App)
 
-> **Jira:** — | **Branch:** `dev` | **Generated:** 2026-05-01
+> **Jira:** — | **Branch:** `dev` | **Generated:** 2026-05-01 | **Last updated:** 2026-05-23
 
 ---
 
@@ -14,7 +14,7 @@
   - [x] Form nhập đơn hàng với đầy đủ thông tin header (khách hàng, nhân viên bán, ngày, điều khoản TT...)
   - [x] Danh sách dòng hàng (DataGrid) với cột "Tỷ lệ CK(%)" và tính toán tự động `Amount = Quantity × UnitPrice × (1 − CK/100)`
   - [x] Footer 3 giá trị thẳng hàng: Tổng tiền hàng (gross) / Tổng tiền chiết khấu / Tổng tiền thanh toán (net)
-  - [x] Tự động sinh số chứng từ `BC{5 digits}` từ danh sách hiện có
+  - [x] Tự động sinh số chứng từ `BC{5 digits}` từ BE endpoint `GET /api/v1/sales-orders/next-code`
   - [x] Điều hướng Prev/Next giữa các đơn hàng
   - [x] Tạo mới / Cập nhật / Xóa đơn hàng qua BE API
 
@@ -24,7 +24,7 @@
 
 | Rule | Description |
 |------|-------------|
-| Số chứng từ | Sinh tại client theo format `BC{5 digits}` — tính `max` từ cache list hiện có + 1 |
+| Số chứng từ | Lấy từ BE qua `GET /api/v1/sales-orders/next-code` khi mở form — trả `BC{5 digits}` (`BC00001`...); không còn tự tính từ full-list cache |
 | Khách hàng bắt buộc | `SelectedCustomer` phải được chọn trước khi save |
 | Ít nhất 1 dòng | `Lines.Count > 0` — validate tại ViewModel trước khi gọi API |
 | Auto-calc Amount | `Amount = Quantity × UnitPrice × (1 − DiscountRate/100)` — khi `Quantity`, `UnitPrice`, hoặc `DiscountRate` thay đổi |
@@ -53,8 +53,9 @@
 | UseCase | `Domain/UseCases/CreateSalesOrderUseCase.cs` | Pass-through → Repository |
 | UseCase | `Domain/UseCases/UpdateSalesOrderUseCase.cs` | Pass-through → Repository |
 | UseCase | `Domain/UseCases/DeleteSalesOrderUseCase.cs` | Pass-through → Repository |
+| UseCase | `Domain/UseCases/GetNextSalesOrderCodeUseCase.cs` | Gọi `ISalesOrderRepository.GetNextCodeAsync()` |
 | Repository | `Data/Repositories/SalesOrderRepository.cs` | Delegate tới Service |
-| Service | `Data/Services/SalesOrderService.cs` | HttpClient typed service, 5 operations |
+| Service | `Data/Services/SalesOrderService.cs` | HttpClient typed service, 6 operations |
 | DTOs | `Data/Services/Dtos/` | `SalesOrderResponseDto`, `CreateSalesOrderRequestDto`, `UpdateSalesOrderRequestDto`, `SalesOrderLineDto` |
 
 ### Data Flow
@@ -62,13 +63,17 @@
 ```
 SalesOrderWindow.OnContentRendered
   → ViewModel.LoadAsync()
-    → LoadLookupsAsync() → [GetCustomers, GetEmployees, GetProducts] parallel load
+    → [parallel] Task.WhenAll(
+        _getNextCode.ExecuteAsync()   → GET /api/v1/sales-orders/next-code → _nextDocumentNumber
+        LoadLookupsAsync()            → Task.WhenAll(GetCustomers, GetEmployees, GetProducts)
+      )
     → LoadOrdersAsync()  → IGetSalesOrdersUseCase.ExecuteAsync()
                          → ISalesOrderRepository.GetAllAsync()
                          → ISalesOrderService.GetAllAsync()
                          → HttpClient GET /api/v1/sales-orders
                          ← IEnumerable<SalesOrderResponseDto>
   → _orderListCache populated, form shows first record
+  → Performance: ~900-1100ms (trước) → ~220ms (sau khi parallel load + next-code endpoint)
 
 ViewModel.SaveCommand (Create)
   → Validate (customer, lines)
@@ -89,6 +94,7 @@ ViewModel.DeleteCommand
 graph TD
     A[SalesOrderWindow] --> B[SalesOrderViewModel]
     B --> C[IGetSalesOrdersUseCase]
+    B --> N[IGetNextSalesOrderCodeUseCase]
     B --> D[ICreateSalesOrderUseCase]
     B --> E[IUpdateSalesOrderUseCase]
     B --> F[IDeleteSalesOrderUseCase]
@@ -96,6 +102,7 @@ graph TD
     B --> H[IGetEmployeesUseCase]
     B --> I[IGetProductsUseCase]
     C --> J[ISalesOrderRepository]
+    N --> J
     D --> J
     E --> J
     F --> J
@@ -115,13 +122,15 @@ graph TD
 ### Domain
 - [`Domain/Models/SalesOrderLineItem.cs`](../Domain/Models/SalesOrderLineItem.cs) — `INotifyPropertyChanged`; `Quantity`/`UnitPrice`/`DiscountRate` setter gọi `RecalculateAmount()` → `Amount = Qty × UnitPrice × (1 − clamp(CK,0,100)/100)`
 - [`Domain/UseCases/IGetSalesOrdersUseCase.cs`](../Domain/UseCases/IGetSalesOrdersUseCase.cs)
+- [`Domain/UseCases/IGetNextSalesOrderCodeUseCase.cs`](../Domain/UseCases/IGetNextSalesOrderCodeUseCase.cs) — `Task<string> ExecuteAsync(ct)`
+- [`Domain/UseCases/GetNextSalesOrderCodeUseCase.cs`](../Domain/UseCases/GetNextSalesOrderCodeUseCase.cs) — delegates to `ISalesOrderRepository.GetNextCodeAsync()`
 - [`Domain/UseCases/ICreateSalesOrderUseCase.cs`](../Domain/UseCases/ICreateSalesOrderUseCase.cs)
 - [`Domain/UseCases/IUpdateSalesOrderUseCase.cs`](../Domain/UseCases/IUpdateSalesOrderUseCase.cs)
 - [`Domain/UseCases/IDeleteSalesOrderUseCase.cs`](../Domain/UseCases/IDeleteSalesOrderUseCase.cs)
 
 ### Data
-- [`Data/Services/ISalesOrderService.cs`](../Data/Services/ISalesOrderService.cs) — `GetAllAsync`, `GetByIdAsync`, `CreateAsync`, `UpdateAsync`, `DeleteAsync`
-- [`Data/Services/SalesOrderService.cs`](../Data/Services/SalesOrderService.cs) — HttpClient typed service; `SetBearerToken()` gọi trước mỗi request; handle 404 riêng trong `GetByIdAsync`
+- [`Data/Services/ISalesOrderService.cs`](../Data/Services/ISalesOrderService.cs) — `GetAllAsync`, `GetByIdAsync`, `CreateAsync`, `UpdateAsync`, `DeleteAsync`, `GetNextCodeAsync`
+- [`Data/Services/SalesOrderService.cs`](../Data/Services/SalesOrderService.cs) — HttpClient typed service; `SetBearerToken()` gọi trước mỗi request; handle 404 riêng trong `GetByIdAsync`; `GetNextCodeAsync` → `GET /api/v1/sales-orders/next-code` → deserialize `{ code }` json
 - [`Data/Services/Dtos/SalesOrderResponseDto.cs`](../Data/Services/Dtos/SalesOrderResponseDto.cs) — 18 fields snake_case + `lines[]`
 - [`Data/Services/Dtos/CreateSalesOrderRequestDto.cs`](../Data/Services/Dtos/CreateSalesOrderRequestDto.cs) — 14 header fields + `lines[]`
 - [`Data/Services/Dtos/UpdateSalesOrderRequestDto.cs`](../Data/Services/Dtos/UpdateSalesOrderRequestDto.cs) — Cùng shape với Create
@@ -136,6 +145,7 @@ graph TD
 |--------|----------|--------|
 | `GET` | `/api/v1/sales-orders` | `SalesOrderResponseDto[]` |
 | `GET` | `/api/v1/sales-orders/{id}` | `SalesOrderResponseDto` / 404 |
+| `GET` | `/api/v1/sales-orders/next-code` | `{ "code": "BC00006" }` |
 | `POST` | `/api/v1/sales-orders` | `SalesOrderResponseDto` (201) |
 | `PUT` | `/api/v1/sales-orders/{id}` | `SalesOrderResponseDto` (200) |
 | `DELETE` | `/api/v1/sales-orders/{id}` | 204 |
@@ -156,17 +166,22 @@ graph TD
 
 ## Key ViewModel Logic
 
-### Sinh số chứng từ
+### Sinh số chứng từ (2026-05-23 — đã refactor)
+
+Trước đây: tính `max` từ `_orderListCache` (list đầy đủ) — làm chậm load (~900ms vì phải fetch full orders).
+
+Sau khi refactor: gọi BE endpoint lightweight, không còn phụ thuộc full-list cache:
+
 ```csharp
-// GenerateNextDocumentNumber() trong SalesOrderViewModel
-const string prefix = "BC";
-var maxNum = _orderListCache
-    .Select(o => o.DocumentNumber)
-    .Where(n => n.StartsWith(prefix, OrdinalIgnoreCase))
-    .Select(n => int.TryParse(n[prefix.Length..], out var num) ? num : 0)
-    .DefaultIfEmpty(0).Max();
-return $"{prefix}{maxNum + 1:D5}";  // BC00001, BC00002...
+// InitializeAsync trong SalesOrderViewModel
+_nextDocumentNumber = await _getNextCode.ExecuteAsync(ct);
+// → "BC00006" (từ GET /api/v1/sales-orders/next-code)
+
+// GenerateNextDocumentNumber() — simplified
+private string GenerateNextDocumentNumber() => _nextDocumentNumber;
 ```
+
+Performance: ~900-1100ms → ~220ms (parallel init + lightweight endpoint)
 
 ### Tính 3 tổng tiền footer
 ```csharp
@@ -268,6 +283,7 @@ services.AddTransient<SalesOrderViewModel>();
 
 // ── Sales: UseCases ──────────────────────────────────────────────────────
 services.AddTransient<IGetSalesOrdersUseCase, GetSalesOrdersUseCase>();
+services.AddTransient<IGetNextSalesOrderCodeUseCase, GetNextSalesOrderCodeUseCase>();
 services.AddTransient<ICreateSalesOrderUseCase, CreateSalesOrderUseCase>();
 services.AddTransient<IUpdateSalesOrderUseCase, UpdateSalesOrderUseCase>();
 services.AddTransient<IDeleteSalesOrderUseCase, DeleteSalesOrderUseCase>();
@@ -294,7 +310,11 @@ services.AddTransient<Func<SalesOrderWindow>>(sp => () => sp.GetRequiredService<
 - WPF không có `GetSalesOrderByIdUseCase` — dùng list cache + navigation (Prev/Next) thay vì per-record fetch
 - `SalesOrderLineItem` dùng `INotifyPropertyChanged` thủ công (không dùng CommunityToolkit) để hỗ trợ `RecalculateAmount` side-effect
 - Lookup data (Customers, Employees, Products) được load khi mở window, không reload khi navigate
+- `LoadLookupsAsync` dùng `Task.WhenAll` để load 3 lookups song song — giảm latency từ 3 serial calls → 1 parallel batch
+- `_nextDocumentNumber` được cache từ kết quả `GetNextSalesOrderCodeUseCase.ExecuteAsync()` khi init — không recalculate từ list
 
 ---
 
-*Generated by `/ct-ai-document` on 2026-05-01 — Updated 2026-05-01: thêm DiscountRate/TotalDiscount/TotalPayment, đổi prefix BH → BC, footer 3 cột ngang*
+*Generated by `/ct-ai-document` on 2026-05-01*
+*Updated 2026-05-01: thêm DiscountRate/TotalDiscount/TotalPayment, đổi prefix BH → BC, footer 3 cột ngang*
+*Updated 2026-05-23: thêm `IGetNextSalesOrderCodeUseCase`, refactor `GenerateNextDocumentNumber` → API call, parallel `Task.WhenAll` lookups, cập nhật DI*

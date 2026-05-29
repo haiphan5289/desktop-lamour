@@ -9,5 +9,6 @@ public interface INavigationService
     void NavigateTo(string viewName, object parameter);
     void GoBack();
     void NavigateToHome();
+    void NavigateToLogin();
     bool CanGoBack { get; }
 }
