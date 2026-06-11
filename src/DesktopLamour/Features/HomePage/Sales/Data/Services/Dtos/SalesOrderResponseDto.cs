@@ -23,5 +23,6 @@ public class SalesOrderResponseDto
     [JsonPropertyName("payment_method")]    public string?  PaymentMethod  { get; set; }
     [JsonPropertyName("total_amount")]      public decimal  TotalAmount    { get; set; }
     [JsonPropertyName("created_at")]        public DateTime CreatedAt      { get; set; }
+    [JsonPropertyName("status")]            public int      Status         { get; set; }
     [JsonPropertyName("lines")]             public List<SalesOrderLineDto> Lines { get; set; } = new();
 }

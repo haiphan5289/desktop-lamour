@@ -27,4 +27,10 @@ public class SalesOrderRepository : ISalesOrderRepository
 
     public Task<string> GetNextCodeAsync(CancellationToken ct = default)
         => _service.GetNextCodeAsync(ct);
+
+    public Task<SalesOrderResponseDto> HoldAsync(int id, CancellationToken ct = default)
+        => _service.HoldAsync(id, ct);
+
+    public Task<SalesOrderResponseDto> ConfirmAsync(int id, CancellationToken ct = default)
+        => _service.ConfirmAsync(id, ct);
 }

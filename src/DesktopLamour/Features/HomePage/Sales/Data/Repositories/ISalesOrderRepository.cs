@@ -11,4 +11,6 @@ public interface ISalesOrderRepository
     Task<SalesOrderResponseDto> UpdateAsync(int id, UpdateSalesOrderRequestDto request, CancellationToken ct = default);
     Task DeleteAsync(int id, CancellationToken ct = default);
     Task<string> GetNextCodeAsync(CancellationToken ct = default);
+    Task<SalesOrderResponseDto> HoldAsync(int id, CancellationToken ct = default);
+    Task<SalesOrderResponseDto> ConfirmAsync(int id, CancellationToken ct = default);
 }

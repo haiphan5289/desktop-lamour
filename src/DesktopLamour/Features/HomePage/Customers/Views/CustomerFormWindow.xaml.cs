@@ -37,6 +37,14 @@ public partial class CustomerFormWindow : Window
     protected override async void OnContentRendered(EventArgs e)
     {
         base.OnContentRendered(e);
-        await ViewModel.LoadNextCodeAsync();
+        try
+        {
+            await ViewModel.LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Không thể tải dữ liệu: {ex.Message}", "Lỗi",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 }

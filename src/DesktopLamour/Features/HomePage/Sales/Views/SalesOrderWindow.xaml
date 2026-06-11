@@ -28,17 +28,38 @@
         <Border Grid.Row="0"
                 Background="{StaticResource AppColor.BackgroundBrand}"
                 Padding="20,14">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="🧾" FontSize="22" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                <StackPanel VerticalAlignment="Center">
-                    <controls:AppLabel Text="Chứng từ bán hàng"
-                                       Style="{StaticResource AppTypography.DisplaySection}"
-                                       Foreground="{StaticResource AppColor.TextBrand}"/>
-                    <controls:AppLabel Text="Bán hàng hóa, dịch vụ trong nước chưa thu tiền"
-                                       Style="{StaticResource AppTypography.BodyCaption}"
-                                       Foreground="{StaticResource AppColor.TextSecondary}"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock Text="🧾" FontSize="22" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <StackPanel VerticalAlignment="Center">
+                        <controls:AppLabel Text="Chứng từ bán hàng"
+                                           Style="{StaticResource AppTypography.DisplaySection}"
+                                           Foreground="{StaticResource AppColor.TextBrand}"/>
+                        <controls:AppLabel Text="Bán hàng hóa, dịch vụ trong nước chưa thu tiền"
+                                           Style="{StaticResource AppTypography.BodyCaption}"
+                                           Foreground="{StaticResource AppColor.TextSecondary}"/>
+                    </StackPanel>
                 </StackPanel>
-            </StackPanel>
+
+                <!-- Status badge -->
+                <Border Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Padding="12,6"
+                        CornerRadius="20"
+                        Background="{StaticResource AppColor.BackgroundSecondary}"
+                        BorderBrush="{StaticResource AppColor.BorderThin}"
+                        BorderThickness="1">
+                    <TextBlock Text="{Binding StatusLabel}"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource AppColor.TextPrimary}"/>
+                </Border>
+            </Grid>
         </Border>
 
         <!-- ══════════════════════════════════════════════════════════ -->
@@ -74,6 +95,25 @@
                             <controls:AppButton Content="✖️ Đóng"
                                                 Style="{StaticResource AppButton.Tertiary.Medium}"
                                                 Click="CloseButton_Click"
+                                                Margin="0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Status actions (only for existing orders) -->
+                    <Border Background="{StaticResource AppColor.BackgroundSecondary}"
+                            BorderBrush="{StaticResource AppColor.BorderThin}"
+                            BorderThickness="1" CornerRadius="6" Padding="4"
+                            Margin="8,0,0,0"
+                            Visibility="{Binding HasExistingOrder, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal">
+                            <controls:AppButton Content="⏸ Treo"
+                                                Style="{StaticResource AppButton.Secondary.Medium}"
+                                                Command="{Binding HoldCommand}"
+                                                Margin="0"/>
+                            <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
+                            <controls:AppButton Content="✅ Xác nhận"
+                                                Style="{StaticResource AppButton.Secondary.Medium}"
+                                                Command="{Binding ConfirmOrderCommand}"
                                                 Margin="0"/>
                         </StackPanel>
                     </Border>

@@ -47,6 +47,14 @@
                                     Style="{StaticResource AppButton.Secondary.Medium}"
                                     Command="{Binding EditSalesOrderCommand}"
                                     Margin="0,0,8,0"/>
+                <controls:AppButton Content="⏸ Treo"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding HoldSalesOrderCommand}"
+                                    Margin="0,0,8,0"/>
+                <controls:AppButton Content="✅ Xác nhận"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding ConfirmSalesOrderCommand}"
+                                    Margin="0,0,8,0"/>
                 <controls:AppButton Content="🗑️ Xóa"
                                     Style="{StaticResource AppButton.Destructive.Medium}"
                                     Command="{Binding DeleteSalesOrderCommand}"/>
@@ -122,6 +130,10 @@
                       MouseDoubleClick="OrdersGrid_MouseDoubleClick"
                       Visibility="{Binding HasSalesOrders, Converter={StaticResource BoolToVisibilityConverter}}">
                 <DataGrid.Columns>
+
+                    <DataGridTextColumn Header="Trạng thái"
+                                        Binding="{Binding StatusLabel}"
+                                        Width="100"/>
 
                     <DataGridTextColumn Header="Số chứng từ"
                                         Binding="{Binding DocumentNumber}"

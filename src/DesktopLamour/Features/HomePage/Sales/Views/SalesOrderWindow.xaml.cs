@@ -1,4 +1,5 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -29,7 +30,29 @@ public partial class SalesOrderWindow : Window
     protected override async void OnContentRendered(EventArgs e)
     {
         base.OnContentRendered(e);
-        await ViewModel.InitializeAsync(_initialOrder);
+        try
+        {
+            await ViewModel.InitializeAsync(_initialOrder);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Không thể tải dữ liệu: {ex.Message}", "Lỗi",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        base.OnClosing(e);
+        if (ViewModel.IsDirty && DialogResult is null)
+        {
+            var result = MessageBox.Show(
+                "Bạn có chắc muốn đóng? Dữ liệu chưa lưu sẽ bị mất.",
+                "Xác nhận đóng",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (result != MessageBoxResult.Yes) e.Cancel = true;
+        }
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)

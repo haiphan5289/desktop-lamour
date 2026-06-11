@@ -260,6 +260,8 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<ICreateSalesOrderUseCase, CreateSalesOrderUseCase>();
         services.AddTransient<IUpdateSalesOrderUseCase, UpdateSalesOrderUseCase>();
         services.AddTransient<IDeleteSalesOrderUseCase, DeleteSalesOrderUseCase>();
+        services.AddTransient<IHoldSalesOrderUseCase, HoldSalesOrderUseCase>();
+        services.AddTransient<IConfirmSalesOrderUseCase, ConfirmSalesOrderUseCase>();
         services.AddTransient<IGetNextSalesOrderCodeUseCase, GetNextSalesOrderCodeUseCase>();
 
         // ── Sales: Repository ────────────────────────────────────────────────────

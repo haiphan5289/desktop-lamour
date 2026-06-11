@@ -118,13 +118,16 @@
                                        Placeholder="VD: 0123456789"/>
             </StackPanel>
 
-            <!-- Sale chăm sóc (optional) -->
+            <!-- NV chăm sóc (optional) -->
             <StackPanel Margin="0,0,0,16">
-                <controls:AppLabel Text="Sale"
+                <controls:AppLabel Text="NV chăm sóc"
                                    Style="{StaticResource AppTypography.LabelSection}"
                                    Margin="0,0,0,6"/>
-                <controls:AppTextField Text="{Binding SaleCare, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                       Placeholder="VD: Nguyễn Văn A"/>
+                <controls:AppSearchableComboBox
+                    ItemsSource="{Binding Employees}"
+                    SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
+                    Placeholder="Chọn nhân viên chăm sóc"
+                    IsNullable="True"/>
             </StackPanel>
 
             <!-- Error message -->

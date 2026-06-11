@@ -54,7 +54,7 @@ public sealed class SalesOrderService : ISalesOrderService
         SetBearerToken();
 
         var response = await _httpClient.PostAsJsonAsync("/api/v1/sales-orders", request, ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, ct);
 
         return await response.Content.ReadFromJsonAsync<SalesOrderResponseDto>(ct)
             ?? throw new InvalidOperationException("Empty response from create sales order endpoint.");
@@ -66,7 +66,7 @@ public sealed class SalesOrderService : ISalesOrderService
         SetBearerToken();
 
         var response = await _httpClient.PutAsJsonAsync($"/api/v1/sales-orders/{id}", request, ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, ct);
 
         return await response.Content.ReadFromJsonAsync<SalesOrderResponseDto>(ct)
             ?? throw new InvalidOperationException("Empty response from update sales order endpoint.");
@@ -102,5 +102,33 @@ public sealed class SalesOrderService : ISalesOrderService
                 : null;
     }
 
+    public async Task<SalesOrderResponseDto> HoldAsync(int id, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Holding sales order {Id}", id);
+        SetBearerToken();
+        var response = await _httpClient.PutAsync($"/api/v1/sales-orders/{id}/hold", null, ct);
+        await EnsureSuccessOrThrowAsync(response, ct);
+        return await response.Content.ReadFromJsonAsync<SalesOrderResponseDto>(ct)
+            ?? throw new InvalidOperationException("Empty response from hold endpoint.");
+    }
+
+    public async Task<SalesOrderResponseDto> ConfirmAsync(int id, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Confirming sales order {Id}", id);
+        SetBearerToken();
+        var response = await _httpClient.PutAsync($"/api/v1/sales-orders/{id}/confirm", null, ct);
+        await EnsureSuccessOrThrowAsync(response, ct);
+        return await response.Content.ReadFromJsonAsync<SalesOrderResponseDto>(ct)
+            ?? throw new InvalidOperationException("Empty response from confirm endpoint.");
+    }
+
+    private static async Task EnsureSuccessOrThrowAsync(HttpResponseMessage response, CancellationToken ct)
+    {
+        if (response.IsSuccessStatusCode) return;
+        var body = await response.Content.ReadFromJsonAsync<ApiErrorResponse>(ct);
+        throw new Exception(body?.Error ?? $"Lỗi {(int)response.StatusCode}");
+    }
+
     private record NextCodeResponse(string Code);
+    private record ApiErrorResponse([property: System.Text.Json.Serialization.JsonPropertyName("error")] string? Error);
 }

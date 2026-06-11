@@ -25,6 +25,8 @@ public partial class SalesOrderViewModel : ViewModelBase
     private readonly ICreateSalesOrderUseCase       _createOrder;
     private readonly IUpdateSalesOrderUseCase       _updateOrder;
     private readonly IDeleteSalesOrderUseCase       _deleteOrder;
+    private readonly IHoldSalesOrderUseCase         _holdOrder;
+    private readonly IConfirmSalesOrderUseCase      _confirmOrder;
     private readonly IGetNextSalesOrderCodeUseCase  _getNextCode;
     private readonly IGetCustomersUseCase           _getCustomers;
     private readonly IGetEmployeesUseCase           _getEmployees;
@@ -67,6 +69,15 @@ public partial class SalesOrderViewModel : ViewModelBase
 
     // ── Data ──────────────────────────────────────────────────────────────
     [ObservableProperty] private SalesOrderResponseDto? _currentOrder;
+    [ObservableProperty] private string _statusLabel = "📄 Bình thường";
+
+    partial void OnCurrentOrderChanged(SalesOrderResponseDto? value)
+    {
+        StatusLabel = value?.Status switch { 1 => "⏸ Treo", 2 => "✅ Xác nhận", _ => "📄 Bình thường" };
+        OnPropertyChanged(nameof(HasExistingOrder));
+        HoldCommand.NotifyCanExecuteChanged();
+        ConfirmOrderCommand.NotifyCanExecuteChanged();
+    }
 
     public ObservableCollection<SalesOrderLineItem> Lines { get; } = new();
 
@@ -81,6 +92,8 @@ public partial class SalesOrderViewModel : ViewModelBase
         ICreateSalesOrderUseCase       createOrder,
         IUpdateSalesOrderUseCase       updateOrder,
         IDeleteSalesOrderUseCase       deleteOrder,
+        IHoldSalesOrderUseCase         holdOrder,
+        IConfirmSalesOrderUseCase      confirmOrder,
         IGetNextSalesOrderCodeUseCase  getNextCode,
         IGetCustomersUseCase           getCustomers,
         IGetEmployeesUseCase           getEmployees,
@@ -92,6 +105,8 @@ public partial class SalesOrderViewModel : ViewModelBase
         _createOrder                = createOrder;
         _updateOrder                = updateOrder;
         _deleteOrder                = deleteOrder;
+        _holdOrder                  = holdOrder;
+        _confirmOrder               = confirmOrder;
         _getNextCode                = getNextCode;
         _getCustomers               = getCustomers;
         _getEmployees               = getEmployees;
@@ -132,6 +147,8 @@ public partial class SalesOrderViewModel : ViewModelBase
             ErrorMessage = $"Không thể tải dữ liệu: {ex.Message}";
         }
         finally { IsBusy = false; }
+
+        BeginDirtyTracking();
     }
 
     private async Task LoadLookupsAsync(CancellationToken ct)
@@ -206,6 +223,7 @@ public partial class SalesOrderViewModel : ViewModelBase
                 _logger.LogInformation("SalesOrder updated: {Id}", result.Id);
             }
 
+            StopDirtyTracking();
             OrderSaved?.Invoke();
             RequestClose?.Invoke();
         }
@@ -215,6 +233,7 @@ public partial class SalesOrderViewModel : ViewModelBase
             _logger.LogError(ex, "Failed to save sales order");
             HasError     = true;
             ErrorMessage = ex.Message;
+            MessageBox.Show(ex.Message, "Không thể ghi sổ", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally { IsBusy = false; }
     }
@@ -320,7 +339,16 @@ public partial class SalesOrderViewModel : ViewModelBase
     partial void OnSelectedCustomerChanged(ISearchableItem? value)
     {
         if (value is DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer c)
+        {
             Description = $"Bán hàng {c.Name}";
+            if (!string.IsNullOrWhiteSpace(c.SaleCare))
+            {
+                var matched = Employees.FirstOrDefault(e =>
+                    string.Equals(e.Name, c.SaleCare, StringComparison.OrdinalIgnoreCase));
+                if (matched is not null)
+                    SelectedEmployee = matched;
+            }
+        }
     }
 
     partial void OnPaymentDueDaysChanged(int? value)
@@ -483,4 +511,59 @@ public partial class SalesOrderViewModel : ViewModelBase
         ReceivableAccount = item.ReceivableAccount,
         RevenueAccount    = item.RevenueAccount,
     };
+
+    // ── Hold / Confirm ────────────────────────────────────────────────────────
+    public bool HasExistingOrder => CurrentOrder is not null;
+
+    [RelayCommand(CanExecute = nameof(HasExistingOrder))]
+    private async Task HoldAsync(CancellationToken ct = default)
+    {
+        if (CurrentOrder is null) return;
+        if (CurrentOrder.Status == 2)
+        {
+            MessageBox.Show("Không thể treo đơn đã xác nhận.", "Thông báo",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        IsBusy = true;
+        try
+        {
+            var updated = await _holdOrder.ExecuteAsync(CurrentOrder.Id, ct);
+            CurrentOrder = updated;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Treo đơn thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        finally { IsBusy = false; }
+    }
+
+    [RelayCommand(CanExecute = nameof(HasExistingOrder))]
+    private async Task ConfirmOrderAsync(CancellationToken ct = default)
+    {
+        if (CurrentOrder is null) return;
+        if (CurrentOrder.Status == 2)
+        {
+            MessageBox.Show("Đơn hàng đã được xác nhận trước đó.", "Thông báo",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        var dialog = MessageBox.Show(
+            $"Xác nhận đơn '{CurrentOrder.DocumentNumber}'? Sau khi xác nhận không thể chỉnh sửa.",
+            "Xác nhận đơn hàng", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (dialog != MessageBoxResult.Yes) return;
+
+        IsBusy = true;
+        try
+        {
+            var updated = await _confirmOrder.ExecuteAsync(CurrentOrder.Id, ct);
+            CurrentOrder = updated;
+            RequestClose?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Xác nhận thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        finally { IsBusy = false; }
+    }
 }

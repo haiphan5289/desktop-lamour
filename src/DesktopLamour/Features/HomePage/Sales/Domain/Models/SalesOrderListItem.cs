@@ -14,6 +14,8 @@ public class SalesOrderListItem
     public decimal  TotalDiscount  { get; init; }
     public decimal  TotalPayment   { get; init; }
     public string?  Notes          { get; init; }
+    public int      Status         { get; init; }
+    public string   StatusLabel    { get; init; } = "";
 
     public SalesOrderResponseDto Original { get; init; } = null!;
 
@@ -32,6 +34,8 @@ public class SalesOrderListItem
             TotalDiscount  = discount,
             TotalPayment   = dto.TotalAmount,
             Notes          = dto.Notes,
+            Status         = dto.Status,
+            StatusLabel    = dto.Status switch { 1 => "⏸ Treo", 2 => "✅ Xác nhận", _ => "📄 Bình thường" },
             Original       = dto,
         };
     }
