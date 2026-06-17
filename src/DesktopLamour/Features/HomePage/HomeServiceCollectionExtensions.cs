@@ -27,6 +27,11 @@ using DesktopLamour.Features.HomePage.Sales.Data.Services;
 using DesktopLamour.Features.HomePage.Sales.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Sales.ViewModels;
 using DesktopLamour.Features.HomePage.Sales.Views;
+using DesktopLamour.Features.HomePage.SalesReturn.Data.Repositories;
+using DesktopLamour.Features.HomePage.SalesReturn.Data.Services;
+using DesktopLamour.Features.HomePage.SalesReturn.Domain.UseCases;
+using DesktopLamour.Features.HomePage.SalesReturn.ViewModels;
+using DesktopLamour.Features.HomePage.SalesReturn.Views;
 using DesktopLamour.Features.HomePage.ProductList.Data.Repositories;
 using DesktopLamour.Features.HomePage.ProductList.Data.Services;
 using DesktopLamour.Features.HomePage.ProductList.Domain.UseCases;
@@ -250,6 +255,8 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<Func<WarehouseReceiptFormWindow>>(sp => () => sp.GetRequiredService<WarehouseReceiptFormWindow>());
 
         // ── Sales: Views + ViewModels ────────────────────────────────────────────
+        services.AddTransient<SalesView>();
+        services.AddTransient<SalesViewModel>();
         services.AddTransient<SalesOrderListView>();
         services.AddTransient<SalesOrderListViewModel>();
         services.AddTransient<SalesOrderWindow>();
@@ -277,6 +284,33 @@ public static class HomeServiceCollectionExtensions
 
         // ── Sales: Window factory ────────────────────────────────────────────────
         services.AddTransient<Func<SalesOrderWindow>>(sp => () => sp.GetRequiredService<SalesOrderWindow>());
+
+        // ── SalesReturn: Views + ViewModels ─────────────────────────────────────
+        services.AddTransient<SalesReturnListView>();
+        services.AddTransient<SalesReturnListViewModel>();
+        services.AddTransient<SalesReturnWindow>();
+        services.AddTransient<SalesReturnViewModel>();
+
+        // ── SalesReturn: Window factory ──────────────────────────────────────────
+        services.AddTransient<Func<SalesReturnWindow>>(sp => () => sp.GetRequiredService<SalesReturnWindow>());
+
+        // ── SalesReturn: UseCases ────────────────────────────────────────────────
+        services.AddTransient<IGetSalesReturnsUseCase, GetSalesReturnsUseCase>();
+        services.AddTransient<ICreateSalesReturnUseCase, CreateSalesReturnUseCase>();
+        services.AddTransient<IUpdateSalesReturnUseCase, UpdateSalesReturnUseCase>();
+        services.AddTransient<IDeleteSalesReturnUseCase, DeleteSalesReturnUseCase>();
+        services.AddTransient<IGetNextSalesReturnCodeUseCase, GetNextSalesReturnCodeUseCase>();
+
+        // ── SalesReturn: Repository ──────────────────────────────────────────────
+        services.AddTransient<ISalesReturnRepository, SalesReturnRepository>();
+
+        // ── SalesReturn: Service + typed HttpClient ──────────────────────────────
+        services.AddHttpClient<ISalesReturnService, SalesReturnService>(client =>
+        {
+            client.BaseAddress = new Uri(serverUrl);
+            client.Timeout     = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
 
         return services;
     }

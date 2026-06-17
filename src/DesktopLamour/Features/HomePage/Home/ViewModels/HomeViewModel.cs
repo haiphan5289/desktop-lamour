@@ -42,5 +42,5 @@ public partial class HomeViewModel : ViewModelBase
 
     [RelayCommand]
     private void NavigateToSales()
-        => _navigationService.NavigateTo(NavigationRoutes.SalesOrders.List);
+        => _navigationService.NavigateTo(NavigationRoutes.Sales.Hub);
 }

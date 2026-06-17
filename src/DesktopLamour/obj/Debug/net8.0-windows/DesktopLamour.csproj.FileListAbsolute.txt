@@ -100,3 +100,9 @@ Z:/src/DesktopLamour/obj/Debug/net8.0-windows/DesktopLamour.csproj.AssemblyRefer
 /Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/bin/Debug/net8.0-windows/Microsoft.Extensions.FileProviders.Abstractions.dll
 /Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/bin/Debug/net8.0-windows/Microsoft.Extensions.FileProviders.Physical.dll
 /Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/bin/Debug/net8.0-windows/Microsoft.Extensions.FileSystemGlobbing.dll
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/SalesReturn/Views/SalesReturnListView.g.cs
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/SalesReturn/Views/SalesReturnWindow.g.cs
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/SalesReturn/Views/SalesReturnListView.baml
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/SalesReturn/Views/SalesReturnWindow.baml
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Sales/Views/SalesView.g.cs
+/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Sales/Views/SalesView.baml

@@ -37,9 +37,19 @@ public static class NavigationRoutes
         public const string PhieuNhapKho  = "WarehouseReceiptListView";
     }
 
+    public static class Sales
+    {
+        public const string Hub = "SalesView";
+    }
+
     public static class SalesOrders
     {
         public const string List = "SalesOrderListView";
+    }
+
+    public static class SalesReturns
+    {
+        public const string List = "SalesReturnListView";
     }
 
     public static class Accounting
