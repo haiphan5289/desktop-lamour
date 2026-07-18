@@ -12,6 +12,7 @@ using DesktopLamour.Features.HomePage.Customers.Views;
 using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Employees.Views;
 using DesktopLamour.Features.HomePage.ProductList.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Sales.Views;
 using DesktopLamour.Shared.Controls;
 using Microsoft.Extensions.Logging;
 
@@ -26,13 +27,13 @@ public partial class SalesOrderViewModel : ViewModelBase
     private readonly IUpdateSalesOrderUseCase       _updateOrder;
     private readonly IDeleteSalesOrderUseCase       _deleteOrder;
     private readonly IHoldSalesOrderUseCase         _holdOrder;
-    private readonly IConfirmSalesOrderUseCase      _confirmOrder;
     private readonly IGetNextSalesOrderCodeUseCase  _getNextCode;
     private readonly IGetCustomersUseCase           _getCustomers;
     private readonly IGetEmployeesUseCase           _getEmployees;
     private readonly IGetProductsUseCase            _getProducts;
     private readonly Func<EmployeeFormWindow>       _employeeFormWindowFactory;
     private readonly Func<CustomerFormWindow>       _customerFormWindowFactory;
+    private readonly Func<SalesOrderPrintWindow>    _printWindowFactory;
     private readonly ILogger<SalesOrderViewModel>   _logger;
 
     // ── State ──────────────────────────────────────────────────────────────
@@ -64,19 +65,20 @@ public partial class SalesOrderViewModel : ViewModelBase
     // ── Computed ──────────────────────────────────────────────────────────
     [ObservableProperty] private decimal _totalAmount;    // Tổng tiền hàng (gross)
     [ObservableProperty] private decimal _totalDiscount;  // Tổng tiền chiết khấu
-    [ObservableProperty] private decimal _totalPayment;   // Tổng tiền thanh toán
+    [ObservableProperty] private decimal _totalPayment;   // Tổng tiền thanh toán (chưa thuế)
+    [ObservableProperty] private decimal _totalTaxAmount; // Tổng tiền thuế
+    [ObservableProperty] private decimal _grandTotal;     // TotalPayment + TotalTaxAmount
     [ObservableProperty] private string  _lineSummary = "Số dòng = 0";
 
     // ── Data ──────────────────────────────────────────────────────────────
     [ObservableProperty] private SalesOrderResponseDto? _currentOrder;
-    [ObservableProperty] private string _statusLabel = "📄 Bình thường";
+    [ObservableProperty] private string _statusLabel = "📄 Ghi sổ";
 
     partial void OnCurrentOrderChanged(SalesOrderResponseDto? value)
     {
-        StatusLabel = value?.Status switch { 1 => "⏸ Treo", 2 => "✅ Xác nhận", _ => "📄 Bình thường" };
+        StatusLabel = value?.Status switch { 1 => "⏸ Treo", _ => "📄 Ghi sổ" };
         OnPropertyChanged(nameof(HasExistingOrder));
         HoldCommand.NotifyCanExecuteChanged();
-        ConfirmOrderCommand.NotifyCanExecuteChanged();
     }
 
     public ObservableCollection<SalesOrderLineItem> Lines { get; } = new();
@@ -93,26 +95,26 @@ public partial class SalesOrderViewModel : ViewModelBase
         IUpdateSalesOrderUseCase       updateOrder,
         IDeleteSalesOrderUseCase       deleteOrder,
         IHoldSalesOrderUseCase         holdOrder,
-        IConfirmSalesOrderUseCase      confirmOrder,
         IGetNextSalesOrderCodeUseCase  getNextCode,
         IGetCustomersUseCase           getCustomers,
         IGetEmployeesUseCase           getEmployees,
         IGetProductsUseCase            getProducts,
         Func<EmployeeFormWindow>       employeeFormWindowFactory,
         Func<CustomerFormWindow>       customerFormWindowFactory,
+        Func<SalesOrderPrintWindow>    printWindowFactory,
         ILogger<SalesOrderViewModel>   logger)
     {
         _createOrder                = createOrder;
         _updateOrder                = updateOrder;
         _deleteOrder                = deleteOrder;
         _holdOrder                  = holdOrder;
-        _confirmOrder               = confirmOrder;
         _getNextCode                = getNextCode;
         _getCustomers               = getCustomers;
         _getEmployees               = getEmployees;
         _getProducts                = getProducts;
         _employeeFormWindowFactory  = employeeFormWindowFactory;
         _customerFormWindowFactory  = customerFormWindowFactory;
+        _printWindowFactory         = printWindowFactory;
         _logger                     = logger;
 
         Lines.CollectionChanged += (_, _) => RecalculateTotals();
@@ -210,21 +212,26 @@ public partial class SalesOrderViewModel : ViewModelBase
         IsBusy = true;
         try
         {
+            SalesOrderResponseDto result;
             if (CurrentOrder is null)
             {
                 var request = BuildCreateRequest();
-                var result  = await _createOrder.ExecuteAsync(request, ct);
+                result = await _createOrder.ExecuteAsync(request, ct);
                 _logger.LogInformation("SalesOrder created: {DocumentNumber}", result.DocumentNumber);
             }
             else
             {
                 var request = BuildUpdateRequest();
-                var result  = await _updateOrder.ExecuteAsync(CurrentOrder.Id, request, ct);
+                result = await _updateOrder.ExecuteAsync(CurrentOrder.Id, request, ct);
                 _logger.LogInformation("SalesOrder updated: {Id}", result.Id);
             }
 
             StopDirtyTracking();
             OrderSaved?.Invoke();
+            IsBusy = false;
+
+            ShowPrintPreview(result);
+
             RequestClose?.Invoke();
         }
         catch (OperationCanceledException) { }
@@ -236,6 +243,14 @@ public partial class SalesOrderViewModel : ViewModelBase
             MessageBox.Show(ex.Message, "Không thể ghi sổ", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally { IsBusy = false; }
+    }
+
+    private void ShowPrintPreview(SalesOrderResponseDto order)
+    {
+        var customer = SelectedCustomer as DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer;
+        var printWindow = _printWindowFactory();
+        printWindow.Initialize(order, customer?.Phone, customer?.Address);
+        printWindow.ShowDialog();
     }
 
     [RelayCommand]
@@ -341,10 +356,9 @@ public partial class SalesOrderViewModel : ViewModelBase
         if (value is DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer c)
         {
             Description = $"Bán hàng {c.Name}";
-            if (!string.IsNullOrWhiteSpace(c.SaleCare))
+            if (c.SaleCareEmployeeId.HasValue)
             {
-                var matched = Employees.FirstOrDefault(e =>
-                    string.Equals(e.Name, c.SaleCare, StringComparison.OrdinalIgnoreCase));
+                var matched = Employees.FirstOrDefault(e => e.Id == c.SaleCareEmployeeId.Value);
                 if (matched is not null)
                     SelectedEmployee = matched;
             }
@@ -410,6 +424,8 @@ public partial class SalesOrderViewModel : ViewModelBase
                 UnitPrice         = l.UnitPrice,
                 DiscountRate      = l.DiscountRate,
                 Amount            = l.Amount,
+                TaxRate           = l.TaxRate,
+                TaxAmount         = l.TaxAmount,
                 ReceivableAccount = l.ReceivableAccount,
                 RevenueAccount    = l.RevenueAccount,
             };
@@ -450,11 +466,13 @@ public partial class SalesOrderViewModel : ViewModelBase
 
     private void RecalculateTotals()
     {
-        var gross    = Lines.Sum(l => (decimal)l.Quantity * l.UnitPrice);
-        TotalAmount   = gross;
-        TotalDiscount = Lines.Sum(l => (decimal)l.Quantity * l.UnitPrice * Math.Max(0, Math.Min(100, l.DiscountRate)) / 100m);
-        TotalPayment  = gross - TotalDiscount;
-        LineSummary   = $"Số dòng = {Lines.Count}";
+        var gross     = Lines.Sum(l => (decimal)l.Quantity * l.UnitPrice);
+        TotalAmount    = gross;
+        TotalDiscount  = Lines.Sum(l => (decimal)l.Quantity * l.UnitPrice * Math.Max(0, Math.Min(100, l.DiscountRate)) / 100m);
+        TotalPayment   = gross - TotalDiscount;
+        TotalTaxAmount = Lines.Sum(l => l.TaxAmount);
+        GrandTotal     = TotalPayment + TotalTaxAmount;
+        LineSummary    = $"Số dòng = {Lines.Count}";
     }
 
     private CreateSalesOrderRequestDto BuildCreateRequest() => new()
@@ -508,23 +526,19 @@ public partial class SalesOrderViewModel : ViewModelBase
         UnitPrice         = item.UnitPrice,
         DiscountRate      = item.DiscountRate,
         Amount            = item.Amount,
+        TaxRate           = item.TaxRate,
+        TaxAmount         = item.TaxAmount,
         ReceivableAccount = item.ReceivableAccount,
         RevenueAccount    = item.RevenueAccount,
     };
 
-    // ── Hold / Confirm ────────────────────────────────────────────────────────
+    // ── Hold ──────────────────────────────────────────────────────────────────
     public bool HasExistingOrder => CurrentOrder is not null;
 
     [RelayCommand(CanExecute = nameof(HasExistingOrder))]
     private async Task HoldAsync(CancellationToken ct = default)
     {
         if (CurrentOrder is null) return;
-        if (CurrentOrder.Status == 2)
-        {
-            MessageBox.Show("Không thể treo đơn đã xác nhận.", "Thông báo",
-                MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
         IsBusy = true;
         try
         {
@@ -534,35 +548,6 @@ public partial class SalesOrderViewModel : ViewModelBase
         catch (Exception ex)
         {
             MessageBox.Show(ex.Message, "Treo đơn thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
-        finally { IsBusy = false; }
-    }
-
-    [RelayCommand(CanExecute = nameof(HasExistingOrder))]
-    private async Task ConfirmOrderAsync(CancellationToken ct = default)
-    {
-        if (CurrentOrder is null) return;
-        if (CurrentOrder.Status == 2)
-        {
-            MessageBox.Show("Đơn hàng đã được xác nhận trước đó.", "Thông báo",
-                MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-        var dialog = MessageBox.Show(
-            $"Xác nhận đơn '{CurrentOrder.DocumentNumber}'? Sau khi xác nhận không thể chỉnh sửa.",
-            "Xác nhận đơn hàng", MessageBoxButton.YesNo, MessageBoxImage.Question);
-        if (dialog != MessageBoxResult.Yes) return;
-
-        IsBusy = true;
-        try
-        {
-            var updated = await _confirmOrder.ExecuteAsync(CurrentOrder.Id, ct);
-            CurrentOrder = updated;
-            RequestClose?.Invoke();
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(ex.Message, "Xác nhận thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally { IsBusy = false; }
     }

@@ -1,7 +1,12 @@
 <UserControl x:Class="DesktopLamour.Shared.Controls.AppSearchableComboBox"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
              x:Name="Self">
+
+    <UserControl.Resources>
+        <controls:SearchableItemDropdownTextConverter x:Key="DropdownTextConverter"/>
+    </UserControl.Resources>
 
     <Grid>
 
@@ -115,6 +120,11 @@
                          ScrollViewer.VerticalScrollBarVisibility="Auto"
                          FontFamily="Segoe UI"
                          FontSize="14">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Converter={StaticResource DropdownTextConverter}}"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
                     <ListBox.ItemContainerStyle>
                         <Style TargetType="ListBoxItem">
                             <Setter Property="Padding"    Value="10,7"/>

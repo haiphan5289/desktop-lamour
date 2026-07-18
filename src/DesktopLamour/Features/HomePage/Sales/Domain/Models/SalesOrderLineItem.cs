@@ -17,6 +17,8 @@ public class SalesOrderLineItem : INotifyPropertyChanged
     private decimal          _unitPrice;
     private decimal          _discountRate;
     private decimal          _amount;
+    private decimal          _taxRate;
+    private decimal          _taxAmount;
     private string           _receivableAccount = "131";
     private string           _revenueAccount    = "511";
     private ISearchableItem? _selectedProduct;
@@ -75,6 +77,18 @@ public class SalesOrderLineItem : INotifyPropertyChanged
         set { _amount = value; OnPropertyChanged(); }
     }
 
+    public decimal TaxRate
+    {
+        get => _taxRate;
+        set { _taxRate = value; OnPropertyChanged(); RecalculateTax(); }
+    }
+
+    public decimal TaxAmount
+    {
+        get => _taxAmount;
+        set { _taxAmount = value; OnPropertyChanged(); }
+    }
+
     public string ReceivableAccount
     {
         get => _receivableAccount;
@@ -102,6 +116,7 @@ public class SalesOrderLineItem : INotifyPropertyChanged
                 ProductName = p.Name;
                 Unit        = p.Unit;
                 UnitPrice   = p.SellingPrice;
+                TaxRate     = SalesOrderTaxCalculator.ToPercent(p.VatRate);
             }
         }
     }
@@ -113,8 +128,14 @@ public class SalesOrderLineItem : INotifyPropertyChanged
         OnPropertyChanged(nameof(SelectedProduct));
     }
 
-    private void RecalculateAmount() =>
+    private void RecalculateAmount()
+    {
         Amount = Quantity * UnitPrice * (1 - Math.Max(0, Math.Min(100, DiscountRate)) / 100m);
+        RecalculateTax();
+    }
+
+    private void RecalculateTax() =>
+        TaxAmount = Amount * Math.Max(0, TaxRate) / 100m;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 

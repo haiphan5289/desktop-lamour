@@ -51,10 +51,6 @@
                                     Style="{StaticResource AppButton.Secondary.Medium}"
                                     Command="{Binding HoldSalesOrderCommand}"
                                     Margin="0,0,8,0"/>
-                <controls:AppButton Content="✅ Xác nhận"
-                                    Style="{StaticResource AppButton.Secondary.Medium}"
-                                    Command="{Binding ConfirmSalesOrderCommand}"
-                                    Margin="0,0,8,0"/>
                 <controls:AppButton Content="🗑️ Xóa"
                                     Style="{StaticResource AppButton.Destructive.Medium}"
                                     Command="{Binding DeleteSalesOrderCommand}"/>

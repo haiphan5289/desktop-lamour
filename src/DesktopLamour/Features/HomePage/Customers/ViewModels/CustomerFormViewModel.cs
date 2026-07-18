@@ -21,9 +21,9 @@ public partial class CustomerFormViewModel : ViewModelBase
     private readonly IGetEmployeesUseCase    _getEmployees;
     private readonly ILogger<CustomerFormViewModel> _logger;
 
-    private bool   _isEditMode;
-    private int    _editingId;
-    private string _initialSaleCare = string.Empty;
+    private bool _isEditMode;
+    private int  _editingId;
+    private int? _initialSaleCareEmployeeId;
 
     [ObservableProperty] private string          _windowTitle  = "Thêm khách hàng";
     [ObservableProperty] private bool            _isLoading;
@@ -66,18 +66,18 @@ public partial class CustomerFormViewModel : ViewModelBase
 
         if (customer is null)
         {
-            _isEditMode      = false;
-            _editingId       = 0;
-            _initialSaleCare = string.Empty;
-            WindowTitle      = "Thêm khách hàng";
+            _isEditMode                = false;
+            _editingId                 = 0;
+            _initialSaleCareEmployeeId = null;
+            WindowTitle                = "Thêm khách hàng";
             Code = Name = Phone = Address = Province = CustomerGroup = TaxCode = string.Empty;
         }
         else
         {
-            _isEditMode      = true;
-            _editingId       = customer.Id;
-            _initialSaleCare = customer.SaleCare;
-            WindowTitle      = "Sửa khách hàng";
+            _isEditMode                = true;
+            _editingId                 = customer.Id;
+            _initialSaleCareEmployeeId = customer.SaleCareEmployeeId;
+            WindowTitle                = "Sửa khách hàng";
             Code          = customer.Code;
             Name          = customer.Name;
             Phone         = customer.Phone;
@@ -98,9 +98,8 @@ public partial class CustomerFormViewModel : ViewModelBase
             Employees = employees.Where(e => e.IsActive).Cast<ISearchableItem>().ToList().AsReadOnly();
             OnPropertyChanged(nameof(Employees));
 
-            if (!string.IsNullOrWhiteSpace(_initialSaleCare))
-                SelectedEmployee = Employees.FirstOrDefault(e =>
-                    string.Equals(e.Name, _initialSaleCare, StringComparison.OrdinalIgnoreCase));
+            if (_initialSaleCareEmployeeId.HasValue)
+                SelectedEmployee = Employees.FirstOrDefault(e => e.Id == _initialSaleCareEmployeeId.Value);
         }
         catch (Exception ex)
         {
@@ -127,21 +126,21 @@ public partial class CustomerFormViewModel : ViewModelBase
     {
         ErrorMessage = string.Empty;
         IsLoading    = true;
-        var saleCare = SelectedEmployee?.Name?.Trim() ?? string.Empty;
+        var saleCareEmployeeId = SelectedEmployee?.Id;
         try
         {
             if (!_isEditMode)
             {
                 var input = new CreateCustomerInput(
                     Name.Trim(), Phone.Trim(), Address.Trim(),
-                    Province.Trim(), CustomerGroup.Trim(), TaxCode.Trim(), saleCare);
+                    Province.Trim(), CustomerGroup.Trim(), TaxCode.Trim(), saleCareEmployeeId);
                 await _createUseCase.ExecuteAsync(input, ct);
             }
             else
             {
                 var input = new UpdateCustomerInput(
                     _editingId, Name.Trim(), Phone.Trim(), Address.Trim(),
-                    Province.Trim(), CustomerGroup.Trim(), TaxCode.Trim(), saleCare);
+                    Province.Trim(), CustomerGroup.Trim(), TaxCode.Trim(), saleCareEmployeeId);
                 await _updateUseCase.ExecuteAsync(input, ct);
             }
             StopDirtyTracking();

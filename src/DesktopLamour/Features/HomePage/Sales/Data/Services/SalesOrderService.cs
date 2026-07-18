@@ -93,6 +93,60 @@ public sealed class SalesOrderService : ISalesOrderService
         return result?.Code ?? "BC00001";
     }
 
+    public async Task<IEnumerable<SalesOrderReportLineDto>> GetReportAsync(
+        IEnumerable<int>? productIds, int? employeeId, int? customerId,
+        string? unit, string? category,
+        DateTime? fromDate, DateTime? toDate, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Fetching sales order report");
+        SetBearerToken();
+
+        var queryParams = new List<string>();
+        if (productIds is not null)
+            foreach (var id in productIds) queryParams.Add($"product_ids={id}");
+        if (employeeId.HasValue) queryParams.Add($"employee_id={employeeId.Value}");
+        if (customerId.HasValue) queryParams.Add($"customer_id={customerId.Value}");
+        if (!string.IsNullOrWhiteSpace(unit))     queryParams.Add($"unit={Uri.EscapeDataString(unit)}");
+        if (!string.IsNullOrWhiteSpace(category)) queryParams.Add($"category={Uri.EscapeDataString(category)}");
+        if (fromDate.HasValue)   queryParams.Add($"from_date={fromDate.Value:yyyy-MM-dd}");
+        if (toDate.HasValue)     queryParams.Add($"to_date={toDate.Value:yyyy-MM-dd}");
+
+        var queryString = string.Join("&", queryParams);
+
+        var response = await _httpClient.GetAsync($"/api/v1/sales-orders/report?{queryString}", ct);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<IEnumerable<SalesOrderReportLineDto>>(ct)
+            ?? Enumerable.Empty<SalesOrderReportLineDto>();
+    }
+
+    public async Task<IEnumerable<SalesOrderSummaryLineDto>> GetSummaryReportAsync(
+        IEnumerable<int>? productIds, int? employeeId, int? customerId,
+        string? unit, string? category,
+        DateTime? fromDate, DateTime? toDate, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Fetching sales order summary report");
+        SetBearerToken();
+
+        var queryParams = new List<string>();
+        if (productIds is not null)
+            foreach (var id in productIds) queryParams.Add($"product_ids={id}");
+        if (employeeId.HasValue) queryParams.Add($"employee_id={employeeId.Value}");
+        if (customerId.HasValue) queryParams.Add($"customer_id={customerId.Value}");
+        if (!string.IsNullOrWhiteSpace(unit))     queryParams.Add($"unit={Uri.EscapeDataString(unit)}");
+        if (!string.IsNullOrWhiteSpace(category)) queryParams.Add($"category={Uri.EscapeDataString(category)}");
+        if (fromDate.HasValue) queryParams.Add($"from_date={fromDate.Value:yyyy-MM-dd}");
+        if (toDate.HasValue)   queryParams.Add($"to_date={toDate.Value:yyyy-MM-dd}");
+
+        var queryString = string.Join("&", queryParams);
+
+        var response = await _httpClient.GetAsync($"/api/v1/sales-orders/summary-report?{queryString}", ct);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<IEnumerable<SalesOrderSummaryLineDto>>(ct)
+            ?? Enumerable.Empty<SalesOrderSummaryLineDto>();
+    }
+
     private void SetBearerToken()
     {
         var token = _tokenStorage.GetToken();
@@ -110,16 +164,6 @@ public sealed class SalesOrderService : ISalesOrderService
         await EnsureSuccessOrThrowAsync(response, ct);
         return await response.Content.ReadFromJsonAsync<SalesOrderResponseDto>(ct)
             ?? throw new InvalidOperationException("Empty response from hold endpoint.");
-    }
-
-    public async Task<SalesOrderResponseDto> ConfirmAsync(int id, CancellationToken ct = default)
-    {
-        _logger.LogInformation("Confirming sales order {Id}", id);
-        SetBearerToken();
-        var response = await _httpClient.PutAsync($"/api/v1/sales-orders/{id}/confirm", null, ct);
-        await EnsureSuccessOrThrowAsync(response, ct);
-        return await response.Content.ReadFromJsonAsync<SalesOrderResponseDto>(ct)
-            ?? throw new InvalidOperationException("Empty response from confirm endpoint.");
     }
 
     private static async Task EnsureSuccessOrThrowAsync(HttpResponseMessage response, CancellationToken ct)

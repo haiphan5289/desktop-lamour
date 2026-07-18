@@ -10,5 +10,5 @@ public class CreateCustomerRequestDto
     [JsonPropertyName("customer_group")] public string CustomerGroup { get; set; } = string.Empty;
     [JsonPropertyName("tax_code")]       public string TaxCode       { get; set; } = string.Empty;
     [JsonPropertyName("phone")]          public string Phone         { get; set; } = string.Empty;
-    [JsonPropertyName("sale_care")]      public string SaleCare      { get; set; } = string.Empty;
+    [JsonPropertyName("sale_care_employee_id")] public int? SaleCareEmployeeId { get; set; }
 }

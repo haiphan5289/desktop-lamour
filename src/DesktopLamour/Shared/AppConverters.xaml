@@ -8,5 +8,7 @@
     <converters:StringEqualityConverter x:Key="StringEqualityConverter"/>
     <converters:VatRateDisplayConverter x:Key="VatRateDisplayConverter"/>
     <converters:TaxReductionStatusDisplayConverter x:Key="TaxReductionStatusDisplayConverter"/>
+    <converters:GroupHeaderTextConverter x:Key="GroupHeaderTextConverter"/>
+    <converters:GroupSumConverter x:Key="GroupSumConverter"/>
 
 </ResourceDictionary>

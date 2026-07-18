@@ -30,13 +30,13 @@ public sealed class CustomerRepository : ICustomerRepository
     {
         var request = new CreateCustomerRequestDto
         {
-            Name          = input.Name,
-            Phone         = input.Phone,
-            Address       = input.Address,
-            Province      = input.Province,
-            CustomerGroup = input.CustomerGroup,
-            TaxCode       = input.TaxCode,
-            SaleCare      = input.SaleCare,
+            Name               = input.Name,
+            Phone              = input.Phone,
+            Address            = input.Address,
+            Province           = input.Province,
+            CustomerGroup      = input.CustomerGroup,
+            TaxCode            = input.TaxCode,
+            SaleCareEmployeeId = input.SaleCareEmployeeId,
         };
         var d = await _service.CreateAsync(request, ct);
         return MapToModel(d);
@@ -46,13 +46,13 @@ public sealed class CustomerRepository : ICustomerRepository
     {
         var request = new UpdateCustomerRequestDto
         {
-            Name          = input.Name,
-            Phone         = input.Phone,
-            Address       = input.Address,
-            Province      = input.Province,
-            CustomerGroup = input.CustomerGroup,
-            TaxCode       = input.TaxCode,
-            SaleCare      = input.SaleCare,
+            Name               = input.Name,
+            Phone              = input.Phone,
+            Address            = input.Address,
+            Province           = input.Province,
+            CustomerGroup      = input.CustomerGroup,
+            TaxCode            = input.TaxCode,
+            SaleCareEmployeeId = input.SaleCareEmployeeId,
         };
         var d = await _service.UpdateAsync(input.Id, request, ct);
         return MapToModel(d);
@@ -70,14 +70,15 @@ public sealed class CustomerRepository : ICustomerRepository
 
     private static Customer MapToModel(CustomerResponseDto d) => new()
     {
-        Id            = d.Id,
-        Code          = d.Code,
-        Name          = d.Name,
-        Address       = d.Address,
-        Province      = d.Province,
-        CustomerGroup = d.CustomerGroup,
-        TaxCode       = d.TaxCode,
-        Phone         = d.Phone,
-        SaleCare      = d.SaleCare,
+        Id                   = d.Id,
+        Code                 = d.Code,
+        Name                 = d.Name,
+        Address              = d.Address,
+        Province             = d.Province,
+        CustomerGroup        = d.CustomerGroup,
+        TaxCode              = d.TaxCode,
+        Phone                = d.Phone,
+        SaleCareEmployeeId   = d.SaleCareEmployeeId,
+        SaleCareEmployeeName = d.SaleCareEmployeeName,
     };
 }

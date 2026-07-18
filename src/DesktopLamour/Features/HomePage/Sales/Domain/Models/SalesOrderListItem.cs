@@ -35,7 +35,7 @@ public class SalesOrderListItem
             TotalPayment   = dto.TotalAmount,
             Notes          = dto.Notes,
             Status         = dto.Status,
-            StatusLabel    = dto.Status switch { 1 => "⏸ Treo", 2 => "✅ Xác nhận", _ => "📄 Bình thường" },
+            StatusLabel    = dto.Status switch { 1 => "⏸ Treo", _ => "📄 Ghi sổ" },
             Original       = dto,
         };
     }

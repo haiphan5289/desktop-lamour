@@ -17,7 +17,6 @@ public partial class SalesOrderListViewModel : ViewModelBase
     private readonly IGetSalesOrdersUseCase      _getOrders;
     private readonly IDeleteSalesOrderUseCase    _deleteOrder;
     private readonly IHoldSalesOrderUseCase      _holdOrder;
-    private readonly IConfirmSalesOrderUseCase   _confirmOrder;
     private readonly Func<SalesOrderWindow>      _formWindowFactory;
 
     [ObservableProperty] private bool                _isLoading;
@@ -40,14 +39,12 @@ public partial class SalesOrderListViewModel : ViewModelBase
         IGetSalesOrdersUseCase     getOrders,
         IDeleteSalesOrderUseCase   deleteOrder,
         IHoldSalesOrderUseCase     holdOrder,
-        IConfirmSalesOrderUseCase  confirmOrder,
         Func<SalesOrderWindow>     formWindowFactory)
     {
         _navigationService = navigationService;
         _getOrders         = getOrders;
         _deleteOrder       = deleteOrder;
         _holdOrder         = holdOrder;
-        _confirmOrder      = confirmOrder;
         _formWindowFactory = formWindowFactory;
     }
 
@@ -56,7 +53,6 @@ public partial class SalesOrderListViewModel : ViewModelBase
         EditSalesOrderCommand.NotifyCanExecuteChanged();
         DeleteSalesOrderCommand.NotifyCanExecuteChanged();
         HoldSalesOrderCommand.NotifyCanExecuteChanged();
-        ConfirmSalesOrderCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnFilterCustomerChanged(string value)    => ApplyFilter();
@@ -120,11 +116,6 @@ public partial class SalesOrderListViewModel : ViewModelBase
     private async Task HoldSalesOrderAsync(CancellationToken ct = default)
     {
         if (SelectedOrder is null) return;
-        if (SelectedOrder.Status == 2)
-        {
-            MessageBox.Show("Không thể treo đơn đã xác nhận.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
 
         IsLoading = true;
         try
@@ -137,38 +128,6 @@ public partial class SalesOrderListViewModel : ViewModelBase
         catch (Exception ex)
         {
             MessageBox.Show(ex.Message, "Treo đơn thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
-        finally { IsLoading = false; }
-    }
-
-    [RelayCommand(CanExecute = nameof(HasSelection))]
-    private async Task ConfirmSalesOrderAsync(CancellationToken ct = default)
-    {
-        if (SelectedOrder is null) return;
-        if (SelectedOrder.Status == 2)
-        {
-            MessageBox.Show("Đơn hàng đã được xác nhận trước đó.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-
-        var confirm = MessageBox.Show(
-            $"Xác nhận đơn '{SelectedOrder.DocumentNumber}'? Sau khi xác nhận không thể chỉnh sửa.",
-            "Xác nhận đơn hàng",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
-        if (confirm != MessageBoxResult.Yes) return;
-
-        IsLoading = true;
-        try
-        {
-            var updated = await _confirmOrder.ExecuteAsync(SelectedOrder.Id, ct);
-            var index = _allItems.IndexOf(SelectedOrder);
-            if (index >= 0) _allItems[index] = SalesOrderListItem.FromDto(updated);
-            ApplyFilter();
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(ex.Message, "Xác nhận thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally { IsLoading = false; }
     }

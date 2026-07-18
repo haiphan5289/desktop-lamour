@@ -111,7 +111,7 @@
                     <DataGridTextColumn Header="Nhóm KH"        Binding="{Binding CustomerGroup}"  Width="140"/>
                     <DataGridTextColumn Header="Mã số thuế"      Binding="{Binding TaxCode}"        Width="120"/>
                     <DataGridTextColumn Header="Điện thoại"      Binding="{Binding Phone}"          Width="120"/>
-                    <DataGridTextColumn Header="Sale"             Binding="{Binding SaleCare}"       Width="140"/>
+                    <DataGridTextColumn Header="Sale"             Binding="{Binding SaleCareEmployeeName}" Width="140"/>
                 </DataGrid.Columns>
             </DataGrid>
 

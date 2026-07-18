@@ -261,6 +261,11 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<SalesOrderListViewModel>();
         services.AddTransient<SalesOrderWindow>();
         services.AddTransient<SalesOrderViewModel>();
+        services.AddTransient<SalesOrderPrintWindow>();
+        services.AddTransient<SalesOrderReportFilterWindow>();
+        services.AddTransient<SalesOrderReportFilterViewModel>();
+        services.AddTransient<SalesOrderReportView>();
+        services.AddTransient<SalesOrderReportViewModel>();
 
         // ── Sales: UseCases ──────────────────────────────────────────────────────
         services.AddTransient<IGetSalesOrdersUseCase, GetSalesOrdersUseCase>();
@@ -268,8 +273,9 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<IUpdateSalesOrderUseCase, UpdateSalesOrderUseCase>();
         services.AddTransient<IDeleteSalesOrderUseCase, DeleteSalesOrderUseCase>();
         services.AddTransient<IHoldSalesOrderUseCase, HoldSalesOrderUseCase>();
-        services.AddTransient<IConfirmSalesOrderUseCase, ConfirmSalesOrderUseCase>();
         services.AddTransient<IGetNextSalesOrderCodeUseCase, GetNextSalesOrderCodeUseCase>();
+        services.AddTransient<IGetSalesOrderReportUseCase, GetSalesOrderReportUseCase>();
+        services.AddTransient<IGetSalesOrderSummaryReportUseCase, GetSalesOrderSummaryReportUseCase>();
 
         // ── Sales: Repository ────────────────────────────────────────────────────
         services.AddTransient<ISalesOrderRepository, SalesOrderRepository>();
@@ -284,6 +290,8 @@ public static class HomeServiceCollectionExtensions
 
         // ── Sales: Window factory ────────────────────────────────────────────────
         services.AddTransient<Func<SalesOrderWindow>>(sp => () => sp.GetRequiredService<SalesOrderWindow>());
+        services.AddTransient<Func<SalesOrderPrintWindow>>(sp => () => sp.GetRequiredService<SalesOrderPrintWindow>());
+        services.AddTransient<Func<SalesOrderReportFilterWindow>>(sp => () => sp.GetRequiredService<SalesOrderReportFilterWindow>());
 
         // ── SalesReturn: Views + ViewModels ─────────────────────────────────────
         services.AddTransient<SalesReturnListView>();

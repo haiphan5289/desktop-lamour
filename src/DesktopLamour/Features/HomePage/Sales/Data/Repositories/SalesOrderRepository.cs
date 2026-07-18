@@ -31,6 +31,15 @@ public class SalesOrderRepository : ISalesOrderRepository
     public Task<SalesOrderResponseDto> HoldAsync(int id, CancellationToken ct = default)
         => _service.HoldAsync(id, ct);
 
-    public Task<SalesOrderResponseDto> ConfirmAsync(int id, CancellationToken ct = default)
-        => _service.ConfirmAsync(id, ct);
+    public Task<IEnumerable<SalesOrderReportLineDto>> GetReportAsync(
+        IEnumerable<int>? productIds, int? employeeId, int? customerId,
+        string? unit, string? category,
+        DateTime? fromDate, DateTime? toDate, CancellationToken ct = default)
+        => _service.GetReportAsync(productIds, employeeId, customerId, unit, category, fromDate, toDate, ct);
+
+    public Task<IEnumerable<SalesOrderSummaryLineDto>> GetSummaryReportAsync(
+        IEnumerable<int>? productIds, int? employeeId, int? customerId,
+        string? unit, string? category,
+        DateTime? fromDate, DateTime? toDate, CancellationToken ct = default)
+        => _service.GetSummaryReportAsync(productIds, employeeId, customerId, unit, category, fromDate, toDate, ct);
 }

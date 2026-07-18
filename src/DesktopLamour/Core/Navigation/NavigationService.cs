@@ -1,6 +1,7 @@
 // NavigationService.cs
 // Copyright © 2026 DesktopLamour. All rights reserved.
 
+using System.Windows;
 using DesktopLamour.MainWindow;
 using Microsoft.Extensions.Logging;
 
@@ -45,8 +46,10 @@ public class NavigationService : INavigationService
 
     public void NavigateTo(string viewName, object parameter)
     {
-        // Parameter-aware navigation can be extended here
         NavigateTo(viewName);
+
+        if (_mainWindowViewModel?.CurrentContent is FrameworkElement { DataContext: INavigationParameterAware aware })
+            aware.OnNavigatedTo(parameter);
     }
 
     public void GoBack()
@@ -94,6 +97,7 @@ public class NavigationService : INavigationService
             NavigationRoutes.Warehouse.PhieuNhapKho  => _serviceProvider.GetService(typeof(Features.HomePage.Warehouse.Views.WarehouseReceiptListView)),
             NavigationRoutes.Sales.Hub             => _serviceProvider.GetService(typeof(Features.HomePage.Sales.Views.SalesView)),
             NavigationRoutes.SalesOrders.List      => _serviceProvider.GetService(typeof(Features.HomePage.Sales.Views.SalesOrderListView)),
+            NavigationRoutes.SalesOrders.Report    => _serviceProvider.GetService(typeof(Features.HomePage.Sales.Views.SalesOrderReportView)),
             NavigationRoutes.SalesReturns.List     => _serviceProvider.GetService(typeof(Features.HomePage.SalesReturn.Views.SalesReturnListView)),
             NavigationRoutes.Accounting.Hub        => _serviceProvider.GetService(typeof(Features.HomePage.Accounting.Views.AccountingView)),
             NavigationRoutes.Register        => _serviceProvider.GetService(typeof(Features.Authentication.Views.RegisterView)),

@@ -81,7 +81,6 @@ public partial class AppSearchableComboBox : UserControl
         InitializeComponent();
 
         ItemsList.ItemsSource      = _filtered;
-        ItemsList.DisplayMemberPath = nameof(ISearchableItem.DisplayText);
 
         SearchBox.GotFocus         += OnSearchGotFocus;
         SearchBox.LostFocus        += OnSearchLostFocus;
@@ -242,7 +241,8 @@ public partial class AppSearchableComboBox : UserControl
             if (obj is not ISearchableItem item) continue;
             if (string.IsNullOrEmpty(term)
                 || item.Code.Contains(term, StringComparison.OrdinalIgnoreCase)
-                || item.Name.Contains(term, StringComparison.OrdinalIgnoreCase))
+                || item.Name.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || (item.Phone is { Length: > 0 } phone && phone.Contains(term, StringComparison.OrdinalIgnoreCase)))
             {
                 _filtered.Add(item);
             }

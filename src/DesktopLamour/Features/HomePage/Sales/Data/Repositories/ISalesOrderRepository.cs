@@ -12,5 +12,14 @@ public interface ISalesOrderRepository
     Task DeleteAsync(int id, CancellationToken ct = default);
     Task<string> GetNextCodeAsync(CancellationToken ct = default);
     Task<SalesOrderResponseDto> HoldAsync(int id, CancellationToken ct = default);
-    Task<SalesOrderResponseDto> ConfirmAsync(int id, CancellationToken ct = default);
+
+    Task<IEnumerable<SalesOrderReportLineDto>> GetReportAsync(
+        IEnumerable<int>? productIds, int? employeeId, int? customerId,
+        string? unit, string? category,
+        DateTime? fromDate, DateTime? toDate, CancellationToken ct = default);
+
+    Task<IEnumerable<SalesOrderSummaryLineDto>> GetSummaryReportAsync(
+        IEnumerable<int>? productIds, int? employeeId, int? customerId,
+        string? unit, string? category,
+        DateTime? fromDate, DateTime? toDate, CancellationToken ct = default);
 }

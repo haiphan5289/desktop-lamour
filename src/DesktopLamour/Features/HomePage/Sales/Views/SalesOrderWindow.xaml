@@ -110,11 +110,6 @@
                                                 Style="{StaticResource AppButton.Secondary.Medium}"
                                                 Command="{Binding HoldCommand}"
                                                 Margin="0"/>
-                            <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
-                            <controls:AppButton Content="✅ Xác nhận"
-                                                Style="{StaticResource AppButton.Secondary.Medium}"
-                                                Command="{Binding ConfirmOrderCommand}"
-                                                Margin="0"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -437,6 +432,34 @@
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
+                            <!-- Thuế suất -->
+                            <DataGridTextColumn Header="Thuế suất"
+                                                Binding="{Binding TaxRate, StringFormat={}{0:0}%}"
+                                                Width="80"
+                                                IsReadOnly="True">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Right"/>
+                                        <Setter Property="VerticalAlignment"   Value="Center"/>
+                                        <Setter Property="Padding"             Value="0,0,6,0"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
+                            <!-- Tiền thuế -->
+                            <DataGridTextColumn Header="Tiền thuế"
+                                                Binding="{Binding TaxAmount, StringFormat=N0}"
+                                                Width="100"
+                                                IsReadOnly="True">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Right"/>
+                                        <Setter Property="VerticalAlignment"   Value="Center"/>
+                                        <Setter Property="Padding"             Value="0,0,6,0"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
                             <!-- Remove -->
                             <DataGridTemplateColumn Header="" Width="32">
                                 <DataGridTemplateColumn.CellTemplate>
@@ -618,6 +641,37 @@
                     <controls:AppLabel Text="{Binding TotalPayment, StringFormat=\{0:N0\}}"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        MinWidth="110"
+                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+
+                    <!-- separator -->
+                    <controls:AppLabel Text="|"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Foreground="{StaticResource AppColor.BorderThin}"
+                                       Margin="16,0"/>
+
+                    <!-- Tổng tiền thuế -->
+                    <controls:AppLabel Text="Tổng tiền thuế:"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Margin="0,0,8,0"/>
+                    <controls:AppLabel Text="{Binding TotalTaxAmount, StringFormat=\{0:N0\}}"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       MinWidth="110"
+                                       Foreground="{StaticResource AppColor.TextSecondary}"/>
+
+                    <!-- separator -->
+                    <controls:AppLabel Text="|"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Foreground="{StaticResource AppColor.BorderThin}"
+                                       Margin="16,0"/>
+
+                    <!-- Tổng thanh toán (gồm thuế) -->
+                    <controls:AppLabel Text="Tổng thanh toán (gồm thuế):"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Margin="0,0,8,0"/>
+                    <controls:AppLabel Text="{Binding GrandTotal, StringFormat=\{0:N0\}}"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       MinWidth="110"
+                                       FontWeight="Bold"
                                        Foreground="{StaticResource AppColor.TextBrand}"/>
                 </StackPanel>
             </Grid>
