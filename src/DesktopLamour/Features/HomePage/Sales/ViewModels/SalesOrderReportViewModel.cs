@@ -246,6 +246,9 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
     private void GoBack() => _navigationService.GoBack();
 
     [RelayCommand]
+    private void DismissError() => HasError = false;
+
+    [RelayCommand]
     private void ChooseParameters()
     {
         var window = _reportFilterWindowFactory();

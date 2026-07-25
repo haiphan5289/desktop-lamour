@@ -7,7 +7,8 @@ public class ProductResponseDto
     [JsonPropertyName("id")]                 public int      Id               { get; set; }
     [JsonPropertyName("code")]               public string   Code             { get; set; } = string.Empty;
     [JsonPropertyName("name")]               public string   Name             { get; set; } = string.Empty;
-    [JsonPropertyName("category")]           public string   Category         { get; set; } = string.Empty;
+    [JsonPropertyName("category_id")]        public int      CategoryId       { get; set; }
+    [JsonPropertyName("category_name")]      public string   CategoryName     { get; set; } = string.Empty;
     [JsonPropertyName("unit")]               public string   Unit             { get; set; } = string.Empty;
     [JsonPropertyName("cost_price")]         public decimal  CostPrice        { get; set; }
     [JsonPropertyName("selling_price")]      public decimal  SellingPrice     { get; set; }

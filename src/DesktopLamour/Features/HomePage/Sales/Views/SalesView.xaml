@@ -126,6 +126,35 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- Danh mục -->
+                    <Border Width="176" Height="160"
+                            BorderThickness="1"
+                            CornerRadius="{StaticResource AppRadius.Large}"
+                            Margin="0,0,16,16"
+                            Cursor="Hand">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="{StaticResource AppColor.BackgroundPrimary}"/>
+                                <Setter Property="BorderBrush" Value="{StaticResource AppColor.BorderThin}"/>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="BorderBrush" Value="{StaticResource AppColor.TextSecondary}"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <Border.InputBindings>
+                            <MouseBinding MouseAction="LeftClick" Command="{Binding NavigateToCategoriesCommand}"/>
+                        </Border.InputBindings>
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="🏷️" FontSize="40" HorizontalAlignment="Center" TextAlignment="Center"/>
+                            <controls:AppLabel Text="Danh mục"
+                                               Style="{StaticResource AppTypography.LabelSection}"
+                                               Margin="0,12,0,0"
+                                               HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
                 </WrapPanel>
             </StackPanel>
         </ScrollViewer>

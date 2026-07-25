@@ -63,6 +63,9 @@ public partial class SalesOrderListViewModel : ViewModelBase
     private void GoBack() => _navigationService.GoBack();
 
     [RelayCommand]
+    private void DismissError() => HasError = false;
+
+    [RelayCommand]
     private async Task LoadSalesOrdersAsync(CancellationToken ct = default)
     {
         IsLoading    = true;

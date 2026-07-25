@@ -6,7 +6,7 @@ public class UpdateProductRequestDto
 {
     [JsonPropertyName("code")]                public string  Code             { get; set; } = string.Empty;
     [JsonPropertyName("name")]                public string  Name             { get; set; } = string.Empty;
-    [JsonPropertyName("category")]            public string  Category         { get; set; } = string.Empty;
+    [JsonPropertyName("category_id")]         public int     CategoryId       { get; set; }
     [JsonPropertyName("unit")]                public string  Unit             { get; set; } = string.Empty;
     [JsonPropertyName("cost_price")]          public decimal CostPrice        { get; set; }
     [JsonPropertyName("selling_price")]       public decimal SellingPrice     { get; set; }

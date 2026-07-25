@@ -2,6 +2,7 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 
 using DesktopLamour.Core.Storage;
+using DesktopLamour.Features.HomePage.Categories.Data.Cache;
 using DesktopLamour.Features.HomePage.Customers.Data.Cache;
 using DesktopLamour.Features.HomePage.Employees.Data.Cache;
 using DesktopLamour.Features.HomePage.ProductList.Data.Cache;
@@ -21,6 +22,7 @@ public static class RealtimeServiceCollectionExtensions
             sp.GetRequiredService<IEmployeeCacheStore>(),
             sp.GetRequiredService<IProductCacheStore>(),
             sp.GetRequiredService<ISupplierCacheStore>(),
+            sp.GetRequiredService<ICategoryCacheStore>(),
             sp.GetRequiredService<ILogger<RealtimeSyncService>>(),
             serverUrl));
 

@@ -2,6 +2,8 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 
 using DesktopLamour.Core.Storage;
+using DesktopLamour.Features.HomePage.Categories.Data.Cache;
+using DesktopLamour.Features.HomePage.Categories.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Customers.Data.Cache;
 using DesktopLamour.Features.HomePage.Customers.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Employees.Data.Cache;
@@ -17,7 +19,7 @@ namespace DesktopLamour.Features.Realtime;
 
 /// <summary>
 /// Wraps a SignalR connection to the BE's DataSyncHub. Server pushes Customer/Employee/
-/// Product/Supplier change events here so the local cache stores stay fresh without polling.
+/// Product/Supplier/Category change events here so the local cache stores stay fresh without polling.
 /// </summary>
 public sealed class RealtimeSyncService : IRealtimeSyncService
 {
@@ -26,6 +28,7 @@ public sealed class RealtimeSyncService : IRealtimeSyncService
     private readonly IEmployeeCacheStore          _employeeCache;
     private readonly IProductCacheStore           _productCache;
     private readonly ISupplierCacheStore          _supplierCache;
+    private readonly ICategoryCacheStore          _categoryCache;
     private readonly ILogger<RealtimeSyncService> _logger;
     private readonly string                       _serverUrl;
     private HubConnection?                        _connection;
@@ -36,6 +39,7 @@ public sealed class RealtimeSyncService : IRealtimeSyncService
         IEmployeeCacheStore employeeCache,
         IProductCacheStore productCache,
         ISupplierCacheStore supplierCache,
+        ICategoryCacheStore categoryCache,
         ILogger<RealtimeSyncService> logger,
         string serverUrl)
     {
@@ -44,6 +48,7 @@ public sealed class RealtimeSyncService : IRealtimeSyncService
         _employeeCache = employeeCache;
         _productCache  = productCache;
         _supplierCache = supplierCache;
+        _categoryCache = categoryCache;
         _logger        = logger;
         _serverUrl     = serverUrl;
     }
@@ -78,6 +83,10 @@ public sealed class RealtimeSyncService : IRealtimeSyncService
         _connection.On<SupplierResponseDto>("SupplierCreated", _supplierCache.Upsert);
         _connection.On<SupplierResponseDto>("SupplierUpdated", _supplierCache.Upsert);
         _connection.On<int>("SupplierDeleted", _supplierCache.Remove);
+
+        _connection.On<CategoryResponseDto>("CategoryCreated", _categoryCache.Upsert);
+        _connection.On<CategoryResponseDto>("CategoryUpdated", _categoryCache.Upsert);
+        _connection.On<int>("CategoryDeleted", _categoryCache.Remove);
 
         _connection.Reconnecting += error =>
         {

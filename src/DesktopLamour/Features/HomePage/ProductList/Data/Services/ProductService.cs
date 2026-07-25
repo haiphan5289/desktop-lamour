@@ -55,7 +55,7 @@ public sealed class ProductService : IProductService
         SetBearerToken();
 
         var response = await _httpClient.PostAsJsonAsync("/api/v1/products", request, ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, ct);
 
         var created = await response.Content.ReadFromJsonAsync<ProductResponseDto>(ct)
             ?? throw new InvalidOperationException("Empty response from create product endpoint.");
@@ -69,7 +69,7 @@ public sealed class ProductService : IProductService
         SetBearerToken();
 
         var response = await _httpClient.PutAsJsonAsync($"/api/v1/products/{productId}", request, ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, ct);
 
         var updated = await response.Content.ReadFromJsonAsync<ProductResponseDto>(ct)
             ?? throw new InvalidOperationException("Empty response from update product endpoint.");
@@ -83,7 +83,7 @@ public sealed class ProductService : IProductService
         SetBearerToken();
 
         var response = await _httpClient.DeleteAsync($"/api/v1/products/{productId}", ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, ct);
         _cache.Remove(productId);
     }
 
@@ -93,7 +93,7 @@ public sealed class ProductService : IProductService
         SetBearerToken();
 
         var response = await _httpClient.PostAsync($"/api/v1/products/{productId}/duplicate", null, ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, ct);
 
         var created = await response.Content.ReadFromJsonAsync<ProductResponseDto>(ct)
             ?? throw new InvalidOperationException("Empty response from duplicate product endpoint.");
@@ -109,4 +109,13 @@ public sealed class ProductService : IProductService
                 ? new AuthenticationHeaderValue("Bearer", token)
                 : null;
     }
+
+    private static async Task EnsureSuccessOrThrowAsync(HttpResponseMessage response, CancellationToken ct)
+    {
+        if (response.IsSuccessStatusCode) return;
+        var body = await response.Content.ReadFromJsonAsync<ApiErrorResponse>(ct);
+        throw new Exception(body?.Error ?? $"Lỗi {(int)response.StatusCode}");
+    }
+
+    private record ApiErrorResponse([property: System.Text.Json.Serialization.JsonPropertyName("error")] string? Error);
 }

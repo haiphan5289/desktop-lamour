@@ -45,6 +45,9 @@ public partial class AccountingViewModel : ViewModelBase
     private void GoBack() => _navigationService.GoBack();
 
     [RelayCommand]
+    private void DismissError() => HasError = false;
+
+    [RelayCommand]
     private void OpenReceipt()
     {
         var window = _receiptWindowFactory();

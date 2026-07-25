@@ -85,7 +85,7 @@ public partial class SalesOrderReportFilterViewModel : ViewModelBase
 
             Categories.Clear();
             Categories.Add(AllOption);
-            foreach (var c in _allProducts.Select(p => p.Category)
+            foreach (var c in _allProducts.Select(p => p.CategoryName)
                          .Where(c => !string.IsNullOrWhiteSpace(c)).Distinct().OrderBy(c => c))
                 Categories.Add(c);
             SelectedCategory ??= AllOption;
@@ -111,7 +111,7 @@ public partial class SalesOrderReportFilterViewModel : ViewModelBase
     {
         var filtered = _allProducts.Where(p =>
             (IsAnyOption(SelectedUnit) || p.Unit == SelectedUnit) &&
-            (IsAnyOption(SelectedCategory) || p.Category == SelectedCategory));
+            (IsAnyOption(SelectedCategory) || p.CategoryName == SelectedCategory));
 
         ProductItems.Clear();
         foreach (var p in filtered.OrderBy(p => p.Code))

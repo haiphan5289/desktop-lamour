@@ -20,6 +20,11 @@ public static class NavigationRoutes
         public const string List = "SupplierListView";
     }
 
+    public static class Categories
+    {
+        public const string List = "CategoryListView";
+    }
+
     public static class Customers
     {
         public const string List = "CustomerListView";

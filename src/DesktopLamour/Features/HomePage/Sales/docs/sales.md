@@ -1,6 +1,6 @@
 # Sales Orders — Feature Document (App)
 
-> **Jira:** — | **Branch:** `dev` | **Generated:** 2026-05-01 | **Last updated:** 2026-07-25 (redesign UI In hóa đơn — logo + khung viền + bỏ spacing giữa section)
+> **Jira:** — | **Branch:** `dev` | **Generated:** 2026-05-01 | **Last updated:** 2026-07-25 (hàng khuyến mại → giá/CK/thuế = 0 + ẩn cột khi in; fix bug header logo hóa đơn render sai)
 
 ---
 
@@ -40,6 +40,7 @@
 | Auto-calc Amount | `Amount = Quantity × UnitPrice × (1 − DiscountRate/100)` — khi `Quantity`, `UnitPrice`, hoặc `DiscountRate` thay đổi |
 | Tỷ lệ CK | `DiscountRate` (0–100) per line; clamp tại BE; WPF nhập trực tiếp vào DataGrid |
 | Tính thuế theo sản phẩm (2026-07-15) | Khi chọn sản phẩm cho 1 dòng → `TaxRate` tự set từ `Product.VatRate` (qua `SalesOrderTaxCalculator.ToPercent`: `Five→5`, `Eight→8`, `Ten→10`, còn lại → `0`); `TaxAmount = Amount × TaxRate/100`, đọc-only trên DataGrid (không nhập tay) — BE luôn tính lại authoritative, WPF chỉ là preview |
+| Hàng khuyến mại → giá/CK/thuế = 0 (2026-07-25) | Tick "Hàng KM" (`IsPromotion=true`) → `UnitPrice`/`DiscountRate`/`TaxRate` tự set về `0` ngay (→ `Amount`/`TaxAmount` = 0 theo công thức có sẵn); ô "Đơn giá"/"Tỷ lệ CK(%)" chuyển `IsEnabled=False` (nền xám) khi dòng là KM — không cho sửa tay. Bỏ tick lại → khôi phục `UnitPrice`/`TaxRate` từ `SelectedProduct` (giống lúc mới chọn sản phẩm). **BE ghi đè lại y hệt (authoritative)** khi Ghi sổ — `CreateSalesOrderUseCase`/`UpdateSalesOrderUseCase` ép `UnitPrice=0`/`DiscountRate=0`/`TaxRate=0` nếu `dto.IsPromotion=true`, bất kể client gửi gì lên |
 | Footer totals | `TotalAmount` = Σ(Qty×UnitPrice) gross; `TotalDiscount` = Σ(Qty×UnitPrice×CK/100); `TotalPayment` = TotalAmount − TotalDiscount (**chưa gồm thuế**); `TotalTaxAmount` = Σ(line.TaxAmount); `GrandTotal` = TotalPayment + TotalTaxAmount (tổng thanh toán thật, gồm thuế) |
 | TK mặc định | `ReceivableAccount = "131"`, `RevenueAccount = "511"` điền sẵn khi thêm dòng |
 | Auto-fill Description | Khi chọn khách hàng → `Description = "Bán hàng {TênKH}"` |
@@ -383,6 +384,7 @@ RequestClose?.Invoke();
 - `Điện thoại`/`Địa chỉ` khách hàng lấy từ `SelectedCustomer` (cast sang `Customer` concrete model) tại thời điểm Ghi sổ — **không có trong `SalesOrderResponseDto`**.
 - Cột `THUẾ SUẤT` = `line.TaxRate` thật (denormalized từ `Product.VatRate` — xem "Tính thuế theo sản phẩm" 2026-07-15). `TỔNG CỘNG` mỗi dòng = `line.Amount + line.TaxAmount`; `Tổng tiền thanh toán` = `order.GrandTotal` (BE tính). ~~Trước 2026-07-15 dùng hằng số 8% cố định vì `SalesOrder` chưa lưu thuế — đã bỏ~~.
 - Dòng "Người viết hóa đơn" ở footer để trống — nhân viên ký tay, không tự điền NV bán hàng (quyết định có chủ đích, tránh nhầm giữa NV bán hàng và người thực sự viết hóa đơn).
+- **Hàng khuyến mại (2026-07-25)**: dòng có `line.IsPromotion == true` chỉ in `STT`/`Tên sản phẩm`/`SL` — 5 cột còn lại (`ĐƠN GIÁ`/`CK (%)`/`THÀNH TIỀN`/`THUẾ SUẤT`/`TỔNG CỘNG`) để trống thay vì hiện `"0"`/`"0%"` (đều = 0 do BE ép giá/CK/thuế về 0 cho hàng KM — xem Business Rules "Hàng khuyến mại → giá/CK/thuế = 0").
 - Nút "🖨️ In" gọi `PrintDialog` + `FlowDocument.DocumentPaginator`; nút "✖️ Đóng" chỉ đóng preview, không huỷ đơn đã lưu.
 - DI: `AddTransient<SalesOrderPrintWindow>()` + `AddTransient<Func<SalesOrderPrintWindow>>()` trong `HomeServiceCollectionExtensions.cs`, cùng pattern với `EmployeeFormWindow`/`CustomerFormWindow`.
 
@@ -391,12 +393,35 @@ RequestClose?.Invoke();
 Theo yêu cầu khớp 1 mẫu hóa đơn tham chiếu (ảnh chụp hóa đơn thật của công ty), `BuildInvoiceDocument()` được cấu trúc lại — vẫn cùng 1 file, không thêm ViewModel/dependency mới ngoài asset logo:
 
 - **Logo công ty**: copy file gốc (`lg LM đen@4x.png`, 15419×5029px) vào `Assets/Images/lamour-logo.png` trong project, đăng ký `<Resource Include="Assets\Images\lamour-logo.png" />` trong `DesktopLamour.csproj`, load qua `new BitmapImage(new Uri("pack://application:,,,/Assets/Images/lamour-logo.png"))`, hiển thị 150×49 (`Stretch=Uniform`) trong `Image` control bọc bởi `BlockUIContainer`.
-- **Header đổi từ center 1 cột → 2 cột**: `Table` 2 cột (logo `160px` trái, info công ty `*` phải) — trước đó toàn bộ 5 dòng công ty đều `TextAlignment.Center` trong 1 cột duy nhất, giờ logo cố định trái + tên/địa chỉ/MST/tel/STK căn trái (`LeftLine()` helper mới, thay `CenteredLine()` cũ đã xóa).
+- **Header đổi từ center 1 cột → logo trái + info bên cạnh**: trước đó toàn bộ 5 dòng công ty đều `TextAlignment.Center` trong 1 cột duy nhất — giờ logo nằm bên trái, tên/địa chỉ/MST/tel/STK căn trái ngay cạnh. **Bản đầu tiên (2026-07-25) dùng `Table` 2 cột (logo `160px` trái, info `*` phải) — đã bị revert, xem bug fix bên dưới.**
 - **Khung viền ngoài**: toàn bộ nội dung hóa đơn (trừ chính bản thân `frame`) được add vào `content.Blocks` — `content` là 1 `TableCell` duy nhất của 1 `Table` 1-ô (`frame`), có `BorderBrush = #9DC1E0` (`OuterBorderBrush`, xanh nhạt), `BorderThickness = 1.2`, `Padding = 20`. Đây là kỹ thuật đứng để giả lập "border quanh cả trang" mà `FlowDocument` không hỗ trợ trực tiếp (`Border` UIElement chỉ nhận 1 child, không chứa được nhiều `Block` — nên phải mượn `TableCell.Blocks` vốn là 1 `BlockCollection` thật).
 - **"GHI CHÚ ĐƠN HÀNG" luôn hiển thị**: trước đây `if (!string.IsNullOrWhiteSpace(order.Notes))` mới add — giờ luôn render 1 `Table` 1-ô có border đen 0.5px, label bold + nội dung (rỗng nếu `order.Notes == null`), khớp bố cục ảnh tham chiếu (ô luôn hiện dù trống).
 - **"Tổng tiền thanh toán" cũng có border**: bọc trong `Table` 1-ô cùng kiểu border với dòng Ghi chú (trước đây chỉ là `Paragraph` trần không viền).
 - **Bỏ toàn bộ spacing giữa các section**: `Margin` của `headerTable`/`titleTable`/dòng info cuối cùng của khách hàng/`table` (dòng sản phẩm)/`totalTable`/`noteTable` đều đổi về `Thickness(0)` — Header, Tiêu đề, Thông tin KH, Bảng sản phẩm, Tổng tiền thanh toán, Ghi chú giờ nằm liền kề nhau, border chạm trực tiếp (không còn khoảng trắng giữa các khối). Khoảng trắng trước dòng "Ngày ... Tháng ... Năm ..." và trước bảng chữ ký **vẫn giữ nguyên** (`Margin(0,4,0,40)`) — đây là khoảng trống có chủ đích để dành chỗ ký tay, không phải phần dư cần bỏ.
 - **Known gap (chưa xử lý)**: ảnh tham chiếu để **trống** ô `CK (%)`/`THUẾ SUẤT` khi giá trị = 0%, còn code hiện tại vẫn in `"0%"` — nằm ngoài phạm vi đã chốt với user (chỉ sửa logo/header/khung viền/spacing), giữ nguyên hành vi cũ.
+
+#### Bug fix: header logo render sai — `Table` lồng nhau → `Floater` (2026-07-25)
+
+Bản đầu tiên của header logo (mục trên) dùng 1 `Table` 2 cột lồng bên trong `content` (chính nó cũng là 1 `TableCell` của `frame` — bảng bọc khung viền ngoài). Khi test thật trên Windows (không test được qua preview HTML mockup), cột info (`Width = GridLength(1, GridUnitType.Star)`) bị đo ra gần như **0px** — toàn bộ dòng "CÔNG TY TNHH..." bị wrap từng **1 ký tự/dòng**, xếp dọc theo mép phải trang thay vì nằm ngang cạnh logo. Root cause: `Table` lồng trong `Table` với cột `Star` không có cột ngoài `Width` tường minh là 1 pattern không ổn định trong `FlowDocument` — cùng họ bug với vụ Grid `Auto`/`Star` đo ra 0 đã gặp ở `SalesOrderWindow.xaml` (xem mục layout 2026-07-25 bên dưới), lần này ở tầng `Table`/`TableColumn` thay vì `Grid`/`RowDefinition`.
+
+Fix: bỏ hẳn `Table` lồng nhau, thay bằng `System.Windows.Documents.Floater` — cơ chế `FlowDocument` được thiết kế riêng cho "ảnh trôi nổi 1 bên + chữ tự bọc quanh" (giống `float` trong CSS), không có failure mode kể trên:
+```csharp
+var logoFloater = new Floater
+{
+    Width               = 170,
+    HorizontalAlignment = HorizontalAlignment.Left,
+    Margin              = new Thickness(0, 0, 14, 8),
+};
+logoFloater.Blocks.Add(new BlockUIContainer(logoImage));
+
+var headerPara = new Paragraph();
+headerPara.Inlines.Add(logoFloater);                 // Floater phải nằm trong Paragraph.Inlines (kế thừa Inline)
+headerPara.Inlines.Add(new Bold(new Run("CÔNG TY...")));
+headerPara.Inlines.Add(new LineBreak());
+headerPara.Inlines.Add(new Run("Số 110/20/38 ..."));
+// ... các dòng còn lại nối bằng LineBreak(), không còn TableCell/LeftLine() riêng
+```
+`LeftLine()` helper (dùng cho `TableCell` cũ) đã xóa vì không còn nơi nào gọi. Không có BE change nào (thuần bug UI). WPF build 0 lỗi.
 
 ### Báo cáo bán hàng (2026-07-16, di chuyển lên `SalesView` 2026-07-18)
 
@@ -462,6 +487,22 @@ Route mới: `NavigationRoutes.SalesOrders.Report = "SalesOrderReportView"`, th�
 
 > ⚠️ Lưu ý implementation: bản ghi cuối (`TotalsRow()`) trong `FlowDocument` dùng `TableCell` nối tiếp (sequential append), khác với Excel export dùng `worksheet.Cell(row, col)` (địa chỉ tuyệt đối theo cột) — 2 cách này **không tự động đồng bộ layout**. Cell đầu tiên của `TotalsRow()` có `ColumnSpan = 4` (gộp 4 cột đầu) nên phải chèn đúng số cell rỗng tiếp theo để các cột số liệu (SL/Thành tiền/Thuế/Tổng cộng) không bị lệch cột — đã tự verify và fix 1 lần trong quá trình implement (thiếu 1 cell rỗng làm lệch toàn bộ số liệu sang trái 1 cột khi in).
 
+### `SalesOrderWindow` — layout khu vực "Hàng tiền" + Footer (2026-07-25)
+
+Hai vấn đề **độc lập nhau** được báo cáo cùng lúc trên `SalesOrderWindow.xaml`:
+
+**1. DataGrid không hiện (xem Known Issues #7 — còn OPEN)** — pre-existing, không liên quan code mới, ảnh hưởng cả đơn mới lẫn đơn cũ, không crash. Nghi vấn rendering-tier của UTM VM, đang chờ user test registry key `DisableHWAcceleration` để xác nhận trước khi thêm fix vào code.
+
+**2. Khoảng trắng lớn giữa vùng "Hàng tiền" và footer "Tổng tiền hàng"** — xuất hiện khi cửa sổ bị resize/maximize to hơn kích thước mặc định (`Width="1200" Height="760"`). Đã thử qua nhiều phương án trước khi chốt bản cuối:
+
+| Phương án | Kết quả |
+|---|---|
+| Đổi toàn bộ `Grid.RowDefinitions` (root + `TabControl` + `TabItem` "Hàng tiền") từ `*`/`Auto` lẫn lộn sang toàn bộ `Auto`, thêm `MaxHeight` cho `DataGrid`/`TabControl` | ❌ Gây hiệu ứng ngược — control phình lên **đúng bằng `MaxHeight`** thay vì co theo nội dung thật. Gotcha WPF: set `MaxHeight` mà không kèm `Height` cụ thể khiến control có `ScrollViewer`/`ContentPresenter` nội bộ dùng `Stretch` (cả `TabControl` lẫn `DataGrid`) hiểu là "tôi muốn cao tới `MaxHeight`" thay vì "tôi chỉ cần cao bằng nội dung" |
+| Thêm `Window.SizeToContent="Height"` | ❌ Xung đột với row `*` trong Grid — khi đo `SizeToContent`, row Star được đo với `availableSize=Infinity` nên tính ra 0, không hoạt động đúng cùng lúc với `*` row |
+| **Bản cuối (giữ lại):** revert gần như nguyên bản gốc — root `Grid` Row 3 (`TabControl`) = `Height="*"`; `TabItem` "1. Hàng tiền" Row 0 (`DataGrid`) = `Height="*"`; không `MaxHeight`/`VerticalAlignment="Top"` nào ở cả 2. **Chỉ khác gốc đúng 1 chỗ:** Footer (root Grid Row 5) đổi từ `Height="Auto"` → `Height="100"` cố định | ✅ `DataGrid` co giãn lấp đầy tab, "+ Thêm dòng" luôn nằm sát dưới nó; Footer cố định 100px luôn sát đáy cửa sổ dù resize/maximize cỡ nào — user xác nhận đúng ý muốn |
+
+> Bài học: khi 1 control WPF có `ScrollViewer` nội bộ (DataGrid, TabControl, ScrollViewer trực tiếp...) không set `Height` rõ ràng, tránh chỉ set `MaxHeight` một mình để "giới hạn" — nó có thể khiến control phình tới đúng giá trị `MaxHeight` thay vì co theo nội dung. Muốn giới hạn tăng trưởng mà vẫn co đúng theo nội dung thật, nên bọc trong `ScrollViewer` riêng có `MaxHeight` áp cho chính `ScrollViewer` đó, không áp trực tiếp lên control con.
+
 ---
 
 ## Edge Cases & Error Handling
@@ -499,6 +540,7 @@ Route mới: `NavigationRoutes.SalesOrders.Report = "SalesOrderReportView"`, th�
 | ~~4~~ | ~~🟡 Medium~~ | ~~`EnsureSuccessStatusCode()` không surface BE error body~~ | ✅ **Fixed 2026-06-11** — `EnsureSuccessOrThrowAsync` |
 | 5 | 🟡 Medium | `OnContentRendered` gọi `AddNewCommand` mỗi lần mở window | Cân nhắc chỉ gọi khi `_orderListCache` rỗng |
 | 6 | 🟢 Low | `SaveAsync` gọi `LoadOrdersAsync` + `NavigateToOrder` — double round-trip | Cache result từ Create/Update response thay vì reload toàn bộ list |
+| 7 | 🟠 High | **[OPEN, chưa fix]** `DataGrid` ở tab "1. Hàng tiền" đôi khi không hiện gì (không cả header cột) khi mở `SalesOrderWindow` — chỉ hiện lại sau khi resize/maximize cửa sổ. Xảy ra cả đơn mới lẫn đơn đã có dòng, không crash (`C:\crash_log.txt` trống). Nghi vấn: rendering-tier glitch khi chạy WPF app qua GPU ảo hoá của UTM VM — đã đề xuất test bằng registry `HKCU\SOFTWARE\Microsoft\Avalon.Graphics\DisableHWAcceleration=1` (ép WPF dùng software rendering) nhưng **chưa có kết quả xác nhận** từ user | Chờ user test registry key; nếu xác nhận đúng nguyên nhân → thêm `RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly` vào `App.xaml.cs OnStartup` |
 
 ---
 
@@ -634,3 +676,7 @@ services.AddTransient<Func<SalesOrderReportFilterWindow>>(sp => () => sp.GetRequ
   - Bài học: khi 1 yêu cầu ngắn gọn ("remove X thay bằng Y") có thể hiểu theo nhiều cách kiến trúc khác nhau (xoá hẳn X dùng Y có sẵn riêng, VS gộp X+Y thành 1), nên bám sát VÍ DỤ CỤ THỂ user đưa ra (khối text "Centella / Phương Hoa Spa") làm nguồn sự thật thay vì suy diễn thêm — lần trước đã bỏ qua ví dụ cụ thể để chọn 1 cách hiểu khác, gây revert công sức 2 lượt liên tiếp.*
 *Updated 2026-07-18 (đổi icon collapse/expand từ chevron mặc định OS sang "−"/"+"): `Expander` mặc định của WPF dùng mũi tên xoay (▸/▾) theo theme hệ điều hành — theo yêu cầu đổi sang glyph "−" (khi mở)/"+" (khi đóng) trong 1 ô vuông viền, giống ảnh tham chiếu MISA. Viết `Expander.Template` custom hoàn toàn (thay vì chỉ style nội dung Header như trước) — bên trong là `ToggleButton` với `ToggleButton.Template` riêng: 1 `Border` 20×20 viền `AppColor.TextBrand` chứa `TextBlock` glyph, `ControlTemplate.Trigger` đổi text "−"→"+" khi `IsChecked=False`; `ContentPresenter ContentSource="Header"` hiện phần header cũ (Grid + converter bindings, không đổi) ngay bên phải glyph. `IsExpanded` vẫn bind 2 chiều tới `ToggleButton.IsChecked` qua `RelativeSource TemplatedParent` nên hành vi expand/collapse giữ nguyên, chỉ đổi phần hiển thị icon.*
 *Updated 2026-07-25 (redesign UI In hóa đơn theo ảnh tham chiếu): thêm logo công ty (`Assets/Images/lamour-logo.png`, mới copy vào project + đăng ký `<Resource>` trong `DesktopLamour.csproj`) hiển thị trong header 2 cột (logo trái 160px, thông tin công ty căn trái bên phải — trước đây center 1 cột không logo); thêm khung viền ngoài màu `#9DC1E0` bọc toàn bộ hóa đơn (kỹ thuật: 1 `Table` 1-ô, add mọi block khác vào `TableCell.Blocks` của ô đó thay vì `doc.Blocks` trực tiếp, vì `FlowDocument` không có `Border` bao nhiều block cùng lúc); dòng "GHI CHÚ ĐƠN HÀNG" đổi từ ẩn khi rỗng sang LUÔN hiển thị có border; dòng "Tổng tiền thanh toán" cũng thêm border cùng kiểu; bỏ toàn bộ `Margin` giữa Header/Tiêu đề/Thông tin KH/Bảng sản phẩm/Tổng tiền thanh toán/Ghi chú (`Thickness(0)`) — các section giờ liền kề, border chạm nhau trực tiếp, chỉ giữ nguyên khoảng trắng trước Ngày/chữ ký (khoảng trống có chủ đích để ký tay). Known gap: ảnh tham chiếu để trống ô CK%/Thuế suất khi = 0%, code vẫn in "0%" — ngoài phạm vi đã chốt, chưa xử lý. Không có BE change nào (thuần UI in ấn phía WPF). WPF build 0 lỗi.*
+*Updated 2026-07-25 (fix layout `SalesOrderWindow` — 2 bug độc lập): (1) User báo `DataGrid` tab "1. Hàng tiền" không hiện (kể cả header cột) lúc mở window, chỉ hiện lại sau resize/maximize — điều tra xác nhận: pre-existing (không liên quan code mới), ảnh hưởng cả đơn mới/cũ, không crash (`crash_log.txt` trống). Giả thuyết: rendering-tier glitch của WPF khi chạy qua GPU ảo hoá UTM VM — đề xuất test registry `HKCU\SOFTWARE\Microsoft\Avalon.Graphics\DisableHWAcceleration=1`, **user chưa xác nhận kết quả, vẫn OPEN** (xem Known Issues #7). (2) User báo khoảng trắng lớn giữa vùng "Hàng tiền" và footer "Tổng tiền hàng" khi resize/maximize cửa sổ to — thử qua 3 phương án: (a) đổi hết `RowDefinitions` sang `Auto` + `MaxHeight` cho `DataGrid`/`TabControl` → THẤT BẠI, phát hiện gotcha WPF: set `MaxHeight` không kèm `Height` khiến control có `ScrollViewer` nội bộ (`TabControl`, `DataGrid`) phình lên đúng bằng `MaxHeight` thay vì co theo nội dung thật; (b) thêm `Window.SizeToContent="Height"` → THẤT BẠI, xung đột với row `*` (Star row đo ra 0 khi `SizeToContent` dùng `availableSize=Infinity`); (c) **bản chốt**: revert gần nguyên bản gốc — root `Grid` Row 3 (`TabControl`) và `TabItem` "Hàng tiền" Row 0 (`DataGrid`) đều `Height="*"` (không `MaxHeight`/`VerticalAlignment="Top"`), chỉ đổi Footer (root Grid Row 5) từ `Height="Auto"` → `Height="100"` cố định — `DataGrid` co giãn lấp đầy tab, "+ Thêm dòng" sát dưới nó, Footer luôn sát đáy cửa sổ. User xác nhận đúng ý muốn. Không có BE change nào. WPF build 0 lỗi mỗi bước.*
+*Updated 2026-07-25 (hàng khuyến mại: giá/CK/thuế = 0 + ẩn cột khi in): theo yêu cầu, dòng có `IsPromotion=true` giờ luôn có `UnitPrice=0`/`DiscountRate=0`/`TaxRate=0` (→ `Amount`/`TaxAmount`=0). **BE** (`CreateSalesOrderUseCase`/`UpdateSalesOrderUseCase`) ép các giá trị này về 0 khi `dto.IsPromotion=true`, bất kể client gửi gì lên (authoritative, khớp pattern `TaxRate` sẵn có). **WPF** `SalesOrderLineItem.IsPromotion` setter: tick → zero ngay 3 field trên; bỏ tick → khôi phục `UnitPrice`/`TaxRate` từ `SelectedProduct` (nếu đã chọn SP) giống lúc mới chọn sản phẩm. `SalesOrderWindow.xaml`: cột "Đơn giá"/"Tỷ lệ CK(%)" thêm `CellStyle` với `DataTrigger Binding="{Binding IsPromotion}"` → `IsEnabled=False` + nền xám khi là dòng KM (nhất quán với "Thành tiền"/"Thuế suất" vốn đã read-only). `SalesOrderPrintWindow.xaml.cs`: dòng KM khi in chỉ hiện STT/Tên sản phẩm/SL, 5 cột còn lại để trống thay vì hiện "0"/"0%". Không cần DTO/migration mới (mọi field đã có sẵn). Cả BE lẫn WPF build 0 lỗi.
+
+Trong lúc test tính năng trên, phát hiện thêm 1 bug không liên quan (lần đầu test thật code redesign header logo hóa đơn ở bản update trước — trước giờ chỉ verify qua HTML mockup, chưa chạy thật): header logo dùng `Table` 2 cột lồng bên trong `content` (chính nó là 1 `TableCell` của bảng khung viền ngoài) khiến cột info bị đo ra ~0px, chữ "CÔNG TY TNHH..." wrap 1 ký tự/dòng dọc mép phải trang — cùng họ bug Auto/Star đo ra 0 đã gặp ở `SalesOrderWindow.xaml` nhưng lần này ở tầng `Table`/`TableColumn`. Fix: bỏ `Table` lồng nhau, thay bằng `System.Windows.Documents.Floater` (cơ chế FlowDocument chuyên cho "ảnh trôi nổi 1 bên + chữ bọc quanh", không có failure mode này) — logo `Floater Width=170 HorizontalAlignment=Left` nằm trong `Paragraph.Inlines`, các dòng công ty nối bằng `LineBreak()`. Xóa `LeftLine()` helper (không còn nơi gọi). WPF build 0 lỗi.*

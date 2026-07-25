@@ -54,6 +54,9 @@ public partial class EmployeeListViewModel : ViewModelBase
     private void GoBack() => _navigationService.GoBack();
 
     [RelayCommand]
+    private void DismissError() => HasError = false;
+
+    [RelayCommand]
     private async Task LoadEmployeesAsync(CancellationToken ct = default)
     {
         IsLoading    = true;

@@ -68,15 +68,28 @@
         <Grid Grid.Row="2" Margin="24,12,24,24">
 
             <!-- Error banner -->
-            <Border Background="{StaticResource AppColor.BackgroundErrorLight}"
+            <Border Panel.ZIndex="10"
+                    Background="{StaticResource AppColor.BackgroundErrorLight}"
                     CornerRadius="8"
                     Padding="12,10"
                     Margin="0,0,0,12"
                     VerticalAlignment="Top"
                     Visibility="{Binding HasError, Converter={StaticResource BoolToVisibilityConverter}}">
-                <controls:AppLabel Text="{Binding ErrorMessage}"
-                                   Style="{StaticResource AppTypography.BodyCaption}"
-                                   Foreground="{StaticResource AppColor.TextError}"/>
+                <DockPanel LastChildFill="True">
+                    <Button DockPanel.Dock="Right"
+                            Content="✕"
+                            FontSize="11"
+                            Padding="6,0,0,0"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Foreground="{StaticResource AppColor.TextError}"
+                            Cursor="Hand"
+                            Focusable="False"
+                            Command="{Binding DismissErrorCommand}"/>
+                    <controls:AppLabel Text="{Binding ErrorMessage}"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       Foreground="{StaticResource AppColor.TextError}"/>
+                </DockPanel>
             </Border>
 
             <!-- DataGrid -->

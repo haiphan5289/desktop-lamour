@@ -86,8 +86,12 @@
                                                        Style="{StaticResource AppTypography.LabelSection}"
                                                        Foreground="{StaticResource AppColor.TextBrand}"/>
                                 </StackPanel>
-                                <controls:AppTextField Text="{Binding Category, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                       Placeholder="VD: Son môi"/>
+                                <controls:AppSearchableComboBox
+                                    ItemsSource="{Binding Categories}"
+                                    SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
+                                    Placeholder="Chọn danh mục"
+                                    IsNullable="True"
+                                    AddCommand="{Binding AddCategoryCommand}"/>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
                                 <controls:AppLabel Text="Đơn vị"

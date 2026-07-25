@@ -1,6 +1,8 @@
 // PostLoginSyncService.cs
 // Copyright © 2026 DesktopLamour. All rights reserved.
 
+using DesktopLamour.Features.HomePage.Categories.Data.Cache;
+using DesktopLamour.Features.HomePage.Categories.Data.Services;
 using DesktopLamour.Features.HomePage.Customers.Data.Cache;
 using DesktopLamour.Features.HomePage.Customers.Data.Services;
 using DesktopLamour.Features.HomePage.Employees.Data.Cache;
@@ -14,7 +16,7 @@ using Microsoft.Extensions.Logging;
 namespace DesktopLamour.Features.Realtime;
 
 /// <summary>
-/// Warms up the Customer/Employee/Product/Supplier local caches and opens the realtime
+/// Warms up the Customer/Employee/Product/Supplier/Category local caches and opens the realtime
 /// sync connection right after login; tears both down on logout so a different user
 /// doesn't inherit another account's cached data.
 /// </summary>
@@ -24,10 +26,12 @@ public sealed class PostLoginSyncService : IPostLoginSyncService
     private readonly IEmployeeService             _employeeService;
     private readonly IProductService              _productService;
     private readonly ISupplierService              _supplierService;
+    private readonly ICategoryService             _categoryService;
     private readonly ICustomerCacheStore          _customerCache;
     private readonly IEmployeeCacheStore          _employeeCache;
     private readonly IProductCacheStore           _productCache;
     private readonly ISupplierCacheStore          _supplierCache;
+    private readonly ICategoryCacheStore          _categoryCache;
     private readonly IRealtimeSyncService         _realtimeSync;
     private readonly ILogger<PostLoginSyncService> _logger;
 
@@ -36,10 +40,12 @@ public sealed class PostLoginSyncService : IPostLoginSyncService
         IEmployeeService employeeService,
         IProductService productService,
         ISupplierService supplierService,
+        ICategoryService categoryService,
         ICustomerCacheStore customerCache,
         IEmployeeCacheStore employeeCache,
         IProductCacheStore productCache,
         ISupplierCacheStore supplierCache,
+        ICategoryCacheStore categoryCache,
         IRealtimeSyncService realtimeSync,
         ILogger<PostLoginSyncService> logger)
     {
@@ -47,10 +53,12 @@ public sealed class PostLoginSyncService : IPostLoginSyncService
         _employeeService = employeeService;
         _productService  = productService;
         _supplierService = supplierService;
+        _categoryService = categoryService;
         _customerCache   = customerCache;
         _employeeCache   = employeeCache;
         _productCache    = productCache;
         _supplierCache   = supplierCache;
+        _categoryCache   = categoryCache;
         _realtimeSync    = realtimeSync;
         _logger          = logger;
     }
@@ -63,7 +71,8 @@ public sealed class PostLoginSyncService : IPostLoginSyncService
                 _customerService.GetAllAsync(ct),
                 _employeeService.GetAllAsync(ct),
                 _productService.GetAllAsync(ct),
-                _supplierService.GetAllAsync(ct));
+                _supplierService.GetAllAsync(ct),
+                _categoryService.GetAllAsync(ct));
 
             await _realtimeSync.StartAsync(ct);
             _logger.LogInformation("Post-login cache warmup + realtime sync started.");
@@ -81,5 +90,6 @@ public sealed class PostLoginSyncService : IPostLoginSyncService
         _employeeCache.Clear();
         _productCache.Clear();
         _supplierCache.Clear();
+        _categoryCache.Clear();
     }
 }

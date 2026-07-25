@@ -35,6 +35,9 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
     private void GoBack() => _navigationService.GoBack();
 
     [RelayCommand]
+    private void DismissError() => HasError = false;
+
+    [RelayCommand]
     private void NavigateToHome() => _navigationService.NavigateToHome();
 
     [RelayCommand]

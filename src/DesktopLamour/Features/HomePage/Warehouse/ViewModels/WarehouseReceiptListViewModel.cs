@@ -46,6 +46,9 @@ public partial class WarehouseReceiptListViewModel : ViewModelBase
     private void GoBack() => _navigationService.GoBack();
 
     [RelayCommand]
+    private void DismissError() => HasError = false;
+
+    [RelayCommand]
     private void OpenForm()
     {
         var window = _formWindowFactory();

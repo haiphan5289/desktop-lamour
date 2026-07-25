@@ -72,39 +72,39 @@ public partial class SalesOrderPrintWindow : Window
         frame.RowGroups.Add(frameGroup);
         doc.Blocks.Add(frame);
 
-        // ── Header: logo (left) + company info (right) ──────────────────────
-        var headerTable = new Table { CellSpacing = 0, Margin = new Thickness(0) };
-        headerTable.Columns.Add(new TableColumn { Width = new GridLength(160) });
-        headerTable.Columns.Add(new TableColumn { Width = new GridLength(1, GridUnitType.Star) });
-        var headerRow = new TableRow();
-
-        var logoCell = new TableCell { Padding = new Thickness(0, 0, 14, 0) };
+        // ── Header: logo (floated left) + company info (wraps beside it) ────
+        // NOTE: a nested Table with a Star column here previously caused the
+        // company info to render as one-character-per-line at the page's far
+        // right edge — nested Table + Star column sizing is unreliable in
+        // FlowDocument. Floater is the purpose-built mechanism for "image on
+        // one side, text wraps around it" and doesn't have that failure mode.
         var logoImage = new Image
         {
-            Source              = new BitmapImage(new Uri("pack://application:,,,/Assets/Images/lamour-logo.png")),
-            Width               = 150,
-            Height              = 49,
-            Stretch             = Stretch.Uniform,
-            HorizontalAlignment = HorizontalAlignment.Left,
+            Source  = new BitmapImage(new Uri("pack://application:,,,/Assets/Images/lamour-logo.png")),
+            Width   = 150,
+            Height  = 49,
+            Stretch = Stretch.Uniform,
         };
-        logoCell.Blocks.Add(new BlockUIContainer(logoImage));
-        headerRow.Cells.Add(logoCell);
-
-        var infoCell = new TableCell();
-        infoCell.Blocks.Add(new Paragraph(new Bold(new Run("CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ LAMOUR")) { FontSize = 14 })
+        var logoFloater = new Floater
         {
-            Margin = new Thickness(0, 0, 0, 2),
-        });
-        infoCell.Blocks.Add(LeftLine("Số 110/20/38 Đường số 30, Phường An Nhơn, TP Hồ Chí Minh."));
-        infoCell.Blocks.Add(LeftLine("Mã số thuế: 0319088143"));
-        infoCell.Blocks.Add(LeftLine("Tel: 0868858975 - Website: www.skincoachlamour.com"));
-        infoCell.Blocks.Add(LeftLine("Số tài khoản: 0071.0007.93865 - VCB - CN Tân Sơn Nhất"));
-        headerRow.Cells.Add(infoCell);
+            Width               = 170,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Margin              = new Thickness(0, 0, 14, 8),
+        };
+        logoFloater.Blocks.Add(new BlockUIContainer(logoImage));
 
-        var headerGroup = new TableRowGroup();
-        headerGroup.Rows.Add(headerRow);
-        headerTable.RowGroups.Add(headerGroup);
-        content.Blocks.Add(headerTable);
+        var headerPara = new Paragraph { Margin = new Thickness(0, 0, 0, 10) };
+        headerPara.Inlines.Add(logoFloater);
+        headerPara.Inlines.Add(new Bold(new Run("CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ LAMOUR")) { FontSize = 14 });
+        headerPara.Inlines.Add(new LineBreak());
+        headerPara.Inlines.Add(new Run("Số 110/20/38 Đường số 30, Phường An Nhơn, TP Hồ Chí Minh.") { FontSize = 12 });
+        headerPara.Inlines.Add(new LineBreak());
+        headerPara.Inlines.Add(new Run("Mã số thuế: 0319088143") { FontSize = 12 });
+        headerPara.Inlines.Add(new LineBreak());
+        headerPara.Inlines.Add(new Run("Tel: 0868858975 - Website: www.skincoachlamour.com") { FontSize = 12 });
+        headerPara.Inlines.Add(new LineBreak());
+        headerPara.Inlines.Add(new Run("Số tài khoản: 0071.0007.93865 - VCB - CN Tân Sơn Nhất") { FontSize = 12 });
+        content.Blocks.Add(headerPara);
 
         // Title + invoice number
         var titleTable = new Table { Margin = new Thickness(0) };
@@ -144,6 +144,17 @@ public partial class SalesOrderPrintWindow : Window
         int stt = 1;
         foreach (var line in order.Lines)
         {
+            // Hàng khuyến mại: không hiển thị Đơn giá/CK/Thành tiền/Thuế suất/Tổng cộng (đều = 0).
+            if (line.IsPromotion)
+            {
+                rowGroup.Rows.Add(DataRow(
+                    stt++.ToString(),
+                    line.ProductName,
+                    line.Quantity.ToString(),
+                    "", "", "", "", ""));
+                continue;
+            }
+
             var lineTotal = line.Amount + line.TaxAmount;
 
             rowGroup.Rows.Add(DataRow(
@@ -215,9 +226,6 @@ public partial class SalesOrderPrintWindow : Window
 
         return doc;
     }
-
-    private static Paragraph LeftLine(string text) =>
-        new(new Run(text)) { TextAlignment = TextAlignment.Left, FontSize = 12, Margin = new Thickness(0, 0, 0, 1) };
 
     private static TableRow HeaderRow(params string[] headers)
     {

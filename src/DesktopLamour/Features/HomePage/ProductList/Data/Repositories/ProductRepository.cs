@@ -31,7 +31,7 @@ public sealed class ProductRepository : IProductRepository
         {
             Code             = input.Code,
             Name             = input.Name,
-            Category         = input.Category,
+            CategoryId       = input.CategoryId,
             Unit             = input.Unit,
             CostPrice        = input.CostPrice,
             SellingPrice     = input.SellingPrice,
@@ -53,7 +53,7 @@ public sealed class ProductRepository : IProductRepository
         {
             Code             = input.Code,
             Name             = input.Name,
-            Category         = input.Category,
+            CategoryId       = input.CategoryId,
             Unit             = input.Unit,
             CostPrice        = input.CostPrice,
             SellingPrice     = input.SellingPrice,
@@ -74,7 +74,8 @@ public sealed class ProductRepository : IProductRepository
         Id               = d.Id,
         Code             = d.Code,
         Name             = d.Name,
-        Category         = d.Category,
+        CategoryId       = d.CategoryId,
+        CategoryName     = d.CategoryName,
         Unit             = d.Unit,
         CostPrice        = d.CostPrice,
         SellingPrice     = d.SellingPrice,

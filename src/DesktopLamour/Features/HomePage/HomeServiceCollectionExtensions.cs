@@ -34,6 +34,12 @@ using DesktopLamour.Features.HomePage.SalesReturn.Data.Services;
 using DesktopLamour.Features.HomePage.SalesReturn.Domain.UseCases;
 using DesktopLamour.Features.HomePage.SalesReturn.ViewModels;
 using DesktopLamour.Features.HomePage.SalesReturn.Views;
+using DesktopLamour.Features.HomePage.Categories.Data.Cache;
+using DesktopLamour.Features.HomePage.Categories.Data.Repositories;
+using DesktopLamour.Features.HomePage.Categories.Data.Services;
+using DesktopLamour.Features.HomePage.Categories.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Categories.ViewModels;
+using DesktopLamour.Features.HomePage.Categories.Views;
 using DesktopLamour.Features.HomePage.ProductList.Data.Cache;
 using DesktopLamour.Features.HomePage.ProductList.Data.Repositories;
 using DesktopLamour.Features.HomePage.ProductList.Data.Services;
@@ -115,6 +121,35 @@ public static class HomeServiceCollectionExtensions
 
         // ── ProductList: Window factory ──────────────────────────────────────
         services.AddTransient<Func<ProductFormWindow>>(sp => () => sp.GetRequiredService<ProductFormWindow>());
+
+        // ── Categories: Views + ViewModels ───────────────────────────────────
+        services.AddTransient<CategoryFormWindow>();
+        services.AddTransient<CategoryFormViewModel>();
+        services.AddTransient<CategoryListView>();
+        services.AddTransient<CategoryListViewModel>();
+
+        // ── Categories: UseCases ──────────────────────────────────────────────
+        services.AddTransient<IGetCategoriesUseCase, GetCategoriesUseCase>();
+        services.AddTransient<ICreateCategoryUseCase, CreateCategoryUseCase>();
+        services.AddTransient<IUpdateCategoryUseCase, UpdateCategoryUseCase>();
+        services.AddTransient<IDeleteCategoryUseCase, DeleteCategoryUseCase>();
+
+        // ── Categories: Repository ────────────────────────────────────────────
+        services.AddTransient<ICategoryRepository, CategoryRepository>();
+
+        // ── Categories: Local cache (populated after login, kept fresh via SignalR) ──
+        services.AddSingleton<ICategoryCacheStore, CategoryCacheStore>();
+
+        // ── Categories: Service + typed HttpClient ───────────────────────────
+        services.AddHttpClient<ICategoryService, CategoryService>(client =>
+        {
+            client.BaseAddress = new Uri(serverUrl);
+            client.Timeout     = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
+
+        // ── Categories: Window factory ────────────────────────────────────────
+        services.AddTransient<Func<CategoryFormWindow>>(sp => () => sp.GetRequiredService<CategoryFormWindow>());
 
         // ── Suppliers: Window factory ────────────────────────────────────────
         services.AddTransient<Func<SupplierFormWindow>>(sp => () => sp.GetRequiredService<SupplierFormWindow>());

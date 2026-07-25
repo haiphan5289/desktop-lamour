@@ -13,12 +13,8 @@ public sealed class UpdateProductUseCase : IUpdateProductUseCase
     {
         if (string.IsNullOrWhiteSpace(input.Name))
             throw new ValidationException("Name", "Tên sản phẩm không được để trống.");
-        if (string.IsNullOrWhiteSpace(input.Category))
-            throw new ValidationException("Category", "Danh mục không được để trống.");
-        if (input.CostPrice <= 0)
-            throw new ValidationException("CostPrice", "Giá nhập phải lớn hơn 0.");
-        if (input.SellingPrice <= 0)
-            throw new ValidationException("SellingPrice", "Giá bán phải lớn hơn 0.");
+        if (input.CategoryId <= 0)
+            throw new ValidationException("CategoryId", "Vui lòng chọn danh mục.");
 
         if (!string.IsNullOrWhiteSpace(input.Code))
         {

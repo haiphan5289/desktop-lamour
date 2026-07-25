@@ -44,7 +44,25 @@ public class SalesOrderLineItem : INotifyPropertyChanged
     public bool IsPromotion
     {
         get => _isPromotion;
-        set { _isPromotion = value; OnPropertyChanged(); }
+        set
+        {
+            _isPromotion = value;
+            OnPropertyChanged();
+
+            if (value)
+            {
+                // Hàng khuyến mại: đơn giá/CK/thuế luôn = 0 (BE cũng ép lại giá trị này khi Ghi sổ).
+                UnitPrice    = 0m;
+                DiscountRate = 0m;
+                TaxRate      = 0m;
+            }
+            else if (_selectedProduct is Product p)
+            {
+                // Bỏ tick khuyến mại: khôi phục đơn giá/thuế như lúc mới chọn sản phẩm.
+                UnitPrice = p.SellingPrice;
+                TaxRate   = SalesOrderTaxCalculator.ToPercent(p.VatRate);
+            }
+        }
     }
 
     public string Unit
