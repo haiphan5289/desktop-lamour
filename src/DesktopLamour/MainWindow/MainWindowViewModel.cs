@@ -6,22 +6,25 @@ using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.Navigation;
 using DesktopLamour.Core.Storage;
 using DesktopLamour.Core.ViewModels;
+using DesktopLamour.Features.Realtime;
 using System.Windows;
 
 namespace DesktopLamour.MainWindow;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    private readonly IAuthTokenStorage  _tokenStorage;
-    private readonly INavigationService _navigationService;
+    private readonly IAuthTokenStorage    _tokenStorage;
+    private readonly INavigationService   _navigationService;
+    private readonly IPostLoginSyncService _postLoginSync;
 
     [ObservableProperty] private object? _currentContent;
     [ObservableProperty] private bool    _isLoggedIn;
 
-    public MainWindowViewModel(IAuthTokenStorage tokenStorage, INavigationService navigationService)
+    public MainWindowViewModel(IAuthTokenStorage tokenStorage, INavigationService navigationService, IPostLoginSyncService postLoginSync)
     {
         _tokenStorage      = tokenStorage;
         _navigationService = navigationService;
+        _postLoginSync     = postLoginSync;
     }
 
     partial void OnCurrentContentChanged(object? value)
@@ -38,6 +41,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (r != MessageBoxResult.Yes) return;
 
         _tokenStorage.Clear();
+        _ = _postLoginSync.ShutdownAsync(); // stop realtime + clear cached Customer/Employee lists
         _navigationService.NavigateToLogin();
     }
 }

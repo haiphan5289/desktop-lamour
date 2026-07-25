@@ -54,6 +54,10 @@
               "target": "Package",
               "version": "[8.3.2, )"
             },
+            "Microsoft.AspNetCore.SignalR.Client": {
+              "target": "Package",
+              "version": "[8.0.1, )"
+            },
             "Microsoft.Extensions.Configuration.Json": {
               "target": "Package",
               "version": "[8.0.1, )"

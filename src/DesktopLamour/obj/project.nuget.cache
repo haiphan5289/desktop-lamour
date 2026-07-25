@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "Yc0GJdw8UQk=",
+  "dgSpecHash": "ooDnwEgX3+c=",
   "success": true,
   "projectFilePath": "/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/DesktopLamour.csproj",
   "expectedPackageFiles": [
@@ -10,6 +10,13 @@
     "/Users/haiphan/.nuget/packages/documentformat.openxml/3.1.1/documentformat.openxml.3.1.1.nupkg.sha512",
     "/Users/haiphan/.nuget/packages/documentformat.openxml.framework/3.1.1/documentformat.openxml.framework.3.1.1.nupkg.sha512",
     "/Users/haiphan/.nuget/packages/excelnumberformat/1.1.0/excelnumberformat.1.1.0.nupkg.sha512",
+    "/Users/haiphan/.nuget/packages/microsoft.aspnetcore.connections.abstractions/8.0.1/microsoft.aspnetcore.connections.abstractions.8.0.1.nupkg.sha512",
+    "/Users/haiphan/.nuget/packages/microsoft.aspnetcore.http.connections.client/8.0.1/microsoft.aspnetcore.http.connections.client.8.0.1.nupkg.sha512",
+    "/Users/haiphan/.nuget/packages/microsoft.aspnetcore.http.connections.common/8.0.1/microsoft.aspnetcore.http.connections.common.8.0.1.nupkg.sha512",
+    "/Users/haiphan/.nuget/packages/microsoft.aspnetcore.signalr.client/8.0.1/microsoft.aspnetcore.signalr.client.8.0.1.nupkg.sha512",
+    "/Users/haiphan/.nuget/packages/microsoft.aspnetcore.signalr.client.core/8.0.1/microsoft.aspnetcore.signalr.client.core.8.0.1.nupkg.sha512",
+    "/Users/haiphan/.nuget/packages/microsoft.aspnetcore.signalr.common/8.0.1/microsoft.aspnetcore.signalr.common.8.0.1.nupkg.sha512",
+    "/Users/haiphan/.nuget/packages/microsoft.aspnetcore.signalr.protocols.json/8.0.1/microsoft.aspnetcore.signalr.protocols.json.8.0.1.nupkg.sha512",
     "/Users/haiphan/.nuget/packages/microsoft.extensions.configuration/8.0.0/microsoft.extensions.configuration.8.0.0.nupkg.sha512",
     "/Users/haiphan/.nuget/packages/microsoft.extensions.configuration.abstractions/8.0.0/microsoft.extensions.configuration.abstractions.8.0.0.nupkg.sha512",
     "/Users/haiphan/.nuget/packages/microsoft.extensions.configuration.binder/8.0.2/microsoft.extensions.configuration.binder.8.0.2.nupkg.sha512",
@@ -19,6 +26,7 @@
     "/Users/haiphan/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/8.0.2/microsoft.extensions.dependencyinjection.abstractions.8.0.2.nupkg.sha512",
     "/Users/haiphan/.nuget/packages/microsoft.extensions.diagnostics/8.0.1/microsoft.extensions.diagnostics.8.0.1.nupkg.sha512",
     "/Users/haiphan/.nuget/packages/microsoft.extensions.diagnostics.abstractions/8.0.1/microsoft.extensions.diagnostics.abstractions.8.0.1.nupkg.sha512",
+    "/Users/haiphan/.nuget/packages/microsoft.extensions.features/8.0.1/microsoft.extensions.features.8.0.1.nupkg.sha512",
     "/Users/haiphan/.nuget/packages/microsoft.extensions.fileproviders.abstractions/8.0.0/microsoft.extensions.fileproviders.abstractions.8.0.0.nupkg.sha512",
     "/Users/haiphan/.nuget/packages/microsoft.extensions.fileproviders.physical/8.0.0/microsoft.extensions.fileproviders.physical.8.0.0.nupkg.sha512",
     "/Users/haiphan/.nuget/packages/microsoft.extensions.filesystemglobbing/8.0.0/microsoft.extensions.filesystemglobbing.8.0.0.nupkg.sha512",
@@ -33,10 +41,12 @@
     "/Users/haiphan/.nuget/packages/rbush.signed/4.0.0/rbush.signed.4.0.0.nupkg.sha512",
     "/Users/haiphan/.nuget/packages/sixlabors.fonts/1.0.0/sixlabors.fonts.1.0.0.nupkg.sha512",
     "/Users/haiphan/.nuget/packages/system.io.packaging/8.0.1/system.io.packaging.8.0.1.nupkg.sha512",
-    "/Users/haiphan/.nuget/packages/microsoft.aspnetcore.app.ref/8.0.29/microsoft.aspnetcore.app.ref.8.0.29.nupkg.sha512",
-    "/Users/haiphan/.nuget/packages/microsoft.netcore.app.host.osx-arm64/8.0.29/microsoft.netcore.app.host.osx-arm64.8.0.29.nupkg.sha512",
+    "/Users/haiphan/.nuget/packages/system.io.pipelines/8.0.0/system.io.pipelines.8.0.0.nupkg.sha512",
+    "/Users/haiphan/.nuget/packages/system.threading.channels/8.0.0/system.threading.channels.8.0.0.nupkg.sha512",
     "/Users/haiphan/.nuget/packages/microsoft.netcore.app.ref/8.0.29/microsoft.netcore.app.ref.8.0.29.nupkg.sha512",
-    "/Users/haiphan/.nuget/packages/microsoft.windowsdesktop.app.ref/8.0.29/microsoft.windowsdesktop.app.ref.8.0.29.nupkg.sha512"
+    "/Users/haiphan/.nuget/packages/microsoft.windowsdesktop.app.ref/8.0.29/microsoft.windowsdesktop.app.ref.8.0.29.nupkg.sha512",
+    "/Users/haiphan/.nuget/packages/microsoft.aspnetcore.app.ref/8.0.29/microsoft.aspnetcore.app.ref.8.0.29.nupkg.sha512",
+    "/Users/haiphan/.nuget/packages/microsoft.netcore.app.host.osx-arm64/8.0.29/microsoft.netcore.app.host.osx-arm64.8.0.29.nupkg.sha512"
   ],
   "logs": []
 }

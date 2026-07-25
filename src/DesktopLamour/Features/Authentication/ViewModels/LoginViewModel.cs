@@ -9,6 +9,7 @@ using DesktopLamour.Core.Storage;
 using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.Authentication.Domain.Models;
 using DesktopLamour.Features.Authentication.Domain.UseCases;
+using DesktopLamour.Features.Realtime;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 
@@ -20,6 +21,7 @@ public partial class LoginViewModel : ViewModelBase
     private readonly ILoginWithPhoneUseCase      _loginUseCase;
     private readonly IAuthTokenStorage           _tokenStorage;
     private readonly INavigationService          _navigationService;
+    private readonly IPostLoginSyncService       _postLoginSync;
     private readonly ILogger<LoginViewModel>     _logger;
 
     private static readonly Regex PhoneRegex =
@@ -54,11 +56,13 @@ public partial class LoginViewModel : ViewModelBase
         ILoginWithPhoneUseCase  loginUseCase,
         IAuthTokenStorage       tokenStorage,
         INavigationService      navigationService,
+        IPostLoginSyncService   postLoginSync,
         ILogger<LoginViewModel> logger)
     {
         _loginUseCase      = loginUseCase;
         _tokenStorage      = tokenStorage;
         _navigationService = navigationService;
+        _postLoginSync     = postLoginSync;
         _logger            = logger;
     }
 
@@ -92,6 +96,10 @@ public partial class LoginViewModel : ViewModelBase
 
             if (!string.IsNullOrEmpty(user.AccessToken))
                 _tokenStorage.SaveToken(user.AccessToken);
+
+            // Fire-and-forget: warm the Customer/Employee cache + open the realtime
+            // connection in the background so login navigation isn't blocked on it.
+            _ = _postLoginSync.InitializeAsync(CancellationToken.None);
 
             _navigationService.NavigateToHome();
         }

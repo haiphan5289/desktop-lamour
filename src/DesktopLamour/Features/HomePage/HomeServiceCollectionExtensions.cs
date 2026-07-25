@@ -1,6 +1,7 @@
 // HomeServiceCollectionExtensions.cs
 // Copyright © 2026 DesktopLamour. All rights reserved.
 
+using DesktopLamour.Features.HomePage.Employees.Data.Cache;
 using DesktopLamour.Features.HomePage.Employees.Data.Repositories;
 using DesktopLamour.Features.HomePage.Employees.Data.Services;
 using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
@@ -15,6 +16,7 @@ using DesktopLamour.Features.HomePage.Warehouse.Data.Services;
 using DesktopLamour.Features.HomePage.Warehouse.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Warehouse.ViewModels;
 using DesktopLamour.Features.HomePage.Warehouse.Views;
+using DesktopLamour.Features.HomePage.Customers.Data.Cache;
 using DesktopLamour.Features.HomePage.Customers.Data.Repositories;
 using DesktopLamour.Features.HomePage.Customers.Data.Services;
 using DesktopLamour.Features.HomePage.Customers.Domain.UseCases;
@@ -32,11 +34,13 @@ using DesktopLamour.Features.HomePage.SalesReturn.Data.Services;
 using DesktopLamour.Features.HomePage.SalesReturn.Domain.UseCases;
 using DesktopLamour.Features.HomePage.SalesReturn.ViewModels;
 using DesktopLamour.Features.HomePage.SalesReturn.Views;
+using DesktopLamour.Features.HomePage.ProductList.Data.Cache;
 using DesktopLamour.Features.HomePage.ProductList.Data.Repositories;
 using DesktopLamour.Features.HomePage.ProductList.Data.Services;
 using DesktopLamour.Features.HomePage.ProductList.Domain.UseCases;
 using DesktopLamour.Features.HomePage.ProductList.ViewModels;
 using DesktopLamour.Features.HomePage.ProductList.Views;
+using DesktopLamour.Features.HomePage.Suppliers.Data.Cache;
 using DesktopLamour.Features.HomePage.Suppliers.Data.Repositories;
 using DesktopLamour.Features.HomePage.Suppliers.Data.Services;
 using DesktopLamour.Features.HomePage.Suppliers.Domain.UseCases;
@@ -70,6 +74,9 @@ public static class HomeServiceCollectionExtensions
         // ── ProductList: Repository ──────────────────────────────────────────
         services.AddTransient<IProductRepository, ProductRepository>();
 
+        // ── ProductList: Local cache (populated after login, kept fresh via SignalR) ──
+        services.AddSingleton<IProductCacheStore, ProductCacheStore>();
+
         // ── ProductList: Service + typed HttpClient ──────────────────────────
         services.AddHttpClient<IProductService, ProductService>(client =>
         {
@@ -93,6 +100,9 @@ public static class HomeServiceCollectionExtensions
 
         // ── Suppliers: Repository ────────────────────────────────────────────
         services.AddTransient<ISupplierRepository, SupplierRepository>();
+
+        // ── Suppliers: Local cache (populated after login, kept fresh via SignalR) ──
+        services.AddSingleton<ISupplierCacheStore, SupplierCacheStore>();
 
         // ── Suppliers: Service + typed HttpClient ────────────────────────────
         services.AddHttpClient<ISupplierService, SupplierService>(client =>
@@ -126,6 +136,9 @@ public static class HomeServiceCollectionExtensions
         // ── Customers: Repository ────────────────────────────────────────────
         services.AddTransient<ICustomerRepository, CustomerRepository>();
 
+        // ── Customers: Local cache (populated after login, kept fresh via SignalR) ──
+        services.AddSingleton<ICustomerCacheStore, CustomerCacheStore>();
+
         // ── Customers: Service + typed HttpClient ────────────────────────────
         services.AddHttpClient<ICustomerService, CustomerService>(client =>
         {
@@ -152,6 +165,9 @@ public static class HomeServiceCollectionExtensions
 
         // ── Employees: Repository ────────────────────────────────────────────────
         services.AddTransient<IEmployeeRepository, EmployeeRepository>();
+
+        // ── Employees: Local cache (populated after login, kept fresh via SignalR) ──
+        services.AddSingleton<IEmployeeCacheStore, EmployeeCacheStore>();
 
         // ── Employees: Service + typed HttpClient ────────────────────────────────
         services.AddHttpClient<IEmployeeService, EmployeeService>(client =>

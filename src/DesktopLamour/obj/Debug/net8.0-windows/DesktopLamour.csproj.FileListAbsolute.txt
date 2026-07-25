@@ -227,3 +227,12 @@ Z:/src/DesktopLamour/obj/Debug/net8.0-windows/DesktopLamour.csproj.AssemblyRefer
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/bin/Debug/net8.0-windows/System.IO.Packaging.dll
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Sales/Views/SalesOrderReportFilterWindow.baml
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Sales/Views/SalesOrderReportView.baml
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/bin/Debug/net8.0-windows/Microsoft.AspNetCore.Connections.Abstractions.dll
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/bin/Debug/net8.0-windows/Microsoft.AspNetCore.Http.Connections.Client.dll
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/bin/Debug/net8.0-windows/Microsoft.AspNetCore.Http.Connections.Common.dll
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/bin/Debug/net8.0-windows/Microsoft.AspNetCore.SignalR.Client.dll
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/bin/Debug/net8.0-windows/Microsoft.AspNetCore.SignalR.Client.Core.dll
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/bin/Debug/net8.0-windows/Microsoft.AspNetCore.SignalR.Common.dll
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/bin/Debug/net8.0-windows/Microsoft.AspNetCore.SignalR.Protocols.Json.dll
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/bin/Debug/net8.0-windows/Microsoft.Extensions.Features.dll
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/bin/Debug/net8.0-windows/System.IO.Pipelines.dll
