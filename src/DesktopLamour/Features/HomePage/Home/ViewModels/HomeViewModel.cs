@@ -3,6 +3,7 @@
 
 using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.Navigation;
+using DesktopLamour.Core.Storage;
 using DesktopLamour.Core.ViewModels;
 
 namespace DesktopLamour.Features.HomePage.Home.ViewModels;
@@ -11,9 +12,12 @@ public partial class HomeViewModel : ViewModelBase
 {
     private readonly INavigationService _navigationService;
 
-    public HomeViewModel(INavigationService navigationService)
+    public bool IsAdmin { get; }
+
+    public HomeViewModel(INavigationService navigationService, IAuthTokenStorage tokenStorage)
     {
         _navigationService = navigationService;
+        IsAdmin             = tokenStorage.GetRole() == "Admin";
     }
 
     [RelayCommand]
@@ -43,4 +47,8 @@ public partial class HomeViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToSales()
         => _navigationService.NavigateTo(NavigationRoutes.Sales.Hub);
+
+    [RelayCommand]
+    private void NavigateToBackup()
+        => _navigationService.NavigateTo(NavigationRoutes.Backup.List);
 }

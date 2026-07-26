@@ -9,6 +9,7 @@ namespace DesktopLamour.Core.Storage;
 public class InMemoryAuthTokenStorage : IAuthTokenStorage
 {
     private string? _accessToken;
+    private string? _role;
 
     public bool HasToken => !string.IsNullOrEmpty(_accessToken);
 
@@ -18,6 +19,15 @@ public class InMemoryAuthTokenStorage : IAuthTokenStorage
     public string? GetToken()
         => _accessToken;
 
+    public void SaveRole(string? role)
+        => _role = role;
+
+    public string? GetRole()
+        => _role;
+
     public void Clear()
-        => _accessToken = null;
+    {
+        _accessToken = null;
+        _role        = null;
+    }
 }

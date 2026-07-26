@@ -96,6 +96,7 @@ public partial class LoginViewModel : ViewModelBase
 
             if (!string.IsNullOrEmpty(user.AccessToken))
                 _tokenStorage.SaveToken(user.AccessToken);
+            _tokenStorage.SaveRole(user.Role);
 
             // Fire-and-forget: warm the Customer/Employee cache + open the realtime
             // connection in the background so login navigation isn't blocked on it.

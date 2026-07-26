@@ -57,7 +57,12 @@
 
                 <controls:AppButton Content="🗑️ Xóa"
                                     Style="{StaticResource AppButton.Destructive.Medium}"
-                                    Command="{Binding DeleteProductCommand}"/>
+                                    Command="{Binding DeleteProductCommand}"
+                                    Margin="0,0,8,0"/>
+
+                <controls:AppButton Content="🏷️ Danh mục"
+                                    Style="{StaticResource AppButton.Tertiary.Medium}"
+                                    Command="{Binding NavigateToCategoriesCommand}"/>
 
             </StackPanel>
         </Border>

@@ -52,6 +52,11 @@ using DesktopLamour.Features.HomePage.Suppliers.Data.Services;
 using DesktopLamour.Features.HomePage.Suppliers.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Suppliers.ViewModels;
 using DesktopLamour.Features.HomePage.Suppliers.Views;
+using DesktopLamour.Features.HomePage.Backups.Data.Repositories;
+using DesktopLamour.Features.HomePage.Backups.Data.Services;
+using DesktopLamour.Features.HomePage.Backups.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Backups.ViewModels;
+using DesktopLamour.Features.HomePage.Backups.Views;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DesktopLamour.Features.HomePage;
@@ -370,6 +375,34 @@ public static class HomeServiceCollectionExtensions
             client.Timeout     = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
+
+        // ── Backups: Views + ViewModels ──────────────────────────────────────────
+        services.AddTransient<BackupView>();
+        services.AddTransient<BackupViewModel>();
+        services.AddTransient<RestoreConfirmWindow>();
+        services.AddTransient<RestoreConfirmViewModel>();
+
+        // ── Backups: UseCases ─────────────────────────────────────────────────────
+        services.AddTransient<IGetBackupsUseCase, GetBackupsUseCase>();
+        services.AddTransient<ICreateBackupUseCase, CreateBackupUseCase>();
+        services.AddTransient<IDeleteBackupUseCase, DeleteBackupUseCase>();
+        services.AddTransient<IRestoreBackupUseCase, RestoreBackupUseCase>();
+        services.AddTransient<IGetBackupScheduleUseCase, GetBackupScheduleUseCase>();
+        services.AddTransient<IUpdateBackupScheduleUseCase, UpdateBackupScheduleUseCase>();
+
+        // ── Backups: Repository ───────────────────────────────────────────────────
+        services.AddTransient<IBackupRepository, BackupRepository>();
+
+        // ── Backups: Service + typed HttpClient ──────────────────────────────────
+        services.AddHttpClient<IBackupService, BackupService>(client =>
+        {
+            client.BaseAddress = new Uri(serverUrl);
+            client.Timeout     = TimeSpan.FromMinutes(5); // pg_dump can take a while on large DBs
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
+
+        // ── Backups: Window factory ───────────────────────────────────────────────
+        services.AddTransient<Func<RestoreConfirmWindow>>(sp => () => sp.GetRequiredService<RestoreConfirmWindow>());
 
         return services;
     }

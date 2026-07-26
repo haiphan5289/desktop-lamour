@@ -7,6 +7,8 @@ public interface IAuthTokenStorage
 {
     void SaveToken(string accessToken);
     string? GetToken();
+    void SaveRole(string? role);
+    string? GetRole();
     void Clear();
     bool HasToken { get; }
 }

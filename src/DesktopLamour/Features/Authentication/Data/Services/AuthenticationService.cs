@@ -82,6 +82,7 @@ public class AuthenticationService : IAuthenticationService
             UserId      = dto.UserId,
             Phone       = dto.Phone,
             Name        = dto.Name,
+            Role        = dto.Role,
             AccessToken = dto.AccessToken,
             CreatedAt   = DateTime.UtcNow,
         };

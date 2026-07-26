@@ -25,6 +25,11 @@ public static class NavigationRoutes
         public const string List = "CategoryListView";
     }
 
+    public static class Backup
+    {
+        public const string List = "BackupView";
+    }
+
     public static class Customers
     {
         public const string List = "CustomerListView";

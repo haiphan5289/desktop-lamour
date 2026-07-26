@@ -1,0 +1,237 @@
+<UserControl x:Class="DesktopLamour.Features.HomePage.Backups.Views.BackupView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+             Background="{StaticResource AppColor.BackgroundSecondary}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>   <!-- Page header -->
+            <RowDefinition Height="Auto"/>   <!-- Section 1: Toolbar -->
+            <RowDefinition Height="Auto"/>   <!-- Section 2: Lịch tự động -->
+            <RowDefinition Height="*"/>      <!-- Section 3: DataGrid -->
+        </Grid.RowDefinitions>
+
+        <!-- Loading overlay -->
+        <controls:AppLoadingOverlay Grid.RowSpan="4"
+                                    IsLoading="{Binding IsLoading}"/>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Page header                                   -->
+        <!-- ══════════════════════════════════════════════ -->
+        <StackPanel Grid.Row="0" Margin="24,32,24,0">
+            <controls:AppButton Content="← Quay lại"
+                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                Command="{Binding GoBackCommand}"
+                                HorizontalAlignment="Left"
+                                Margin="0,0,0,8"/>
+            <controls:AppLabel Text="Sao lưu dữ liệu"
+                               Style="{StaticResource AppTypography.DisplayPage}"/>
+            <controls:AppLabel Text="Tạo bản sao lưu toàn bộ cơ sở dữ liệu (pg_dump)"
+                               Style="{StaticResource AppTypography.BodyCaption}"
+                               Foreground="{StaticResource AppColor.TextSecondary}"
+                               Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Section 1: Toolbar actions                    -->
+        <!-- ══════════════════════════════════════════════ -->
+        <Border Grid.Row="1"
+                Margin="24,16,24,0"
+                Padding="16,12"
+                Background="{StaticResource AppColor.BackgroundPrimary}"
+                BorderBrush="{StaticResource AppColor.BorderThin}"
+                BorderThickness="1"
+                CornerRadius="8">
+            <StackPanel Orientation="Horizontal">
+
+                <controls:AppButton Content="💾 Tạo bản sao lưu mới"
+                                    Style="{StaticResource AppButton.Primary.Medium}"
+                                    Command="{Binding CreateBackupCommand}"
+                                    Margin="0,0,8,0"/>
+
+                <controls:AppButton Content="🔄 Phục hồi"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding RestoreBackupCommand}"
+                                    Margin="0,0,8,0"/>
+
+                <controls:AppButton Content="🗑️ Xóa"
+                                    Style="{StaticResource AppButton.Destructive.Medium}"
+                                    Command="{Binding DeleteBackupCommand}"/>
+
+            </StackPanel>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Section 2: Lịch tự động                       -->
+        <!-- ══════════════════════════════════════════════ -->
+        <Border Grid.Row="2"
+                Margin="24,16,24,0"
+                Padding="16,12"
+                Background="{StaticResource AppColor.BackgroundPrimary}"
+                BorderBrush="{StaticResource AppColor.BorderThin}"
+                BorderThickness="1"
+                CornerRadius="8">
+            <StackPanel>
+                <controls:AppLabel Text="⏰ Lịch tự động"
+                                   Style="{StaticResource AppTypography.LabelSection}"
+                                   Margin="0,0,0,10"/>
+
+                <controls:AppLabel Text="Thư mục lưu trữ (trên máy chạy BE)"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   Foreground="{StaticResource AppColor.TextSecondary}"
+                                   Margin="0,0,0,4"/>
+                <Grid Margin="0,0,0,14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <controls:AppTextField Grid.Column="0"
+                                           Text="{Binding ScheduleDirectory, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                           Placeholder="/path/to/backups"
+                                           Margin="0,0,8,0"/>
+                    <controls:AppButton Grid.Column="1"
+                                        Content="📂 Mở thư mục"
+                                        Style="{StaticResource AppButton.Tertiary.Medium}"
+                                        Command="{Binding OpenDirectoryCommand}"/>
+                </Grid>
+
+                <WrapPanel Orientation="Horizontal">
+                    <CheckBox IsChecked="{Binding IsScheduleEnabled, Mode=TwoWay}"
+                              VerticalAlignment="Center"
+                              Margin="0,0,8,0"/>
+                    <controls:AppLabel Text="Bật backup hàng ngày lúc"
+                                       Style="{StaticResource AppTypography.BodySection}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                    <controls:AppLabel Text="Giờ"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       Foreground="{StaticResource AppColor.TextSecondary}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,4,0"/>
+                    <controls:AppTextField Text="{Binding ScheduleHour, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                           Width="90"
+                                           TextAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,6,0"/>
+                    <controls:AppLabel Text=":"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,6,0"/>
+                    <controls:AppLabel Text="Phút"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       Foreground="{StaticResource AppColor.TextSecondary}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,4,0"/>
+                    <controls:AppTextField Text="{Binding ScheduleMinute, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                           Width="90"
+                                           TextAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,16,0"/>
+                    <controls:AppLabel Text="Chạy mỗi"
+                                       Style="{StaticResource AppTypography.BodySection}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                    <controls:AppTextField Text="{Binding ScheduleIntervalDays, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                           Width="90"
+                                           TextAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,8,0"/>
+                    <controls:AppLabel Text="ngày/lần"
+                                       Style="{StaticResource AppTypography.BodySection}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,20,0"/>
+                    <controls:AppLabel Text="Giữ tối đa"
+                                       Style="{StaticResource AppTypography.BodySection}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                    <controls:AppTextField Text="{Binding ScheduleRetentionDays, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                           Width="90"
+                                           TextAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,8,0"/>
+                    <controls:AppLabel Text="ngày"
+                                       Style="{StaticResource AppTypography.BodySection}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,16,0"/>
+                    <controls:AppButton Content="💾 Lưu cấu hình"
+                                        Style="{StaticResource AppButton.Secondary.Medium}"
+                                        Command="{Binding SaveScheduleCommand}"
+                                        Margin="0,4,0,0"/>
+                </WrapPanel>
+                <controls:AppLabel Text="{Binding ScheduleLastRunAt, StringFormat='Lần chạy gần nhất: dd/MM/yyyy HH:mm'}"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   Foreground="{StaticResource AppColor.TextSecondary}"
+                                   Margin="0,10,0,0"
+                                   Visibility="{Binding HasScheduleLastRun, Converter={StaticResource BoolToVisibilityConverter}}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Section 3: Backup DataGrid                    -->
+        <!-- ══════════════════════════════════════════════ -->
+        <Grid Grid.Row="3" Margin="24,12,24,24">
+
+            <!-- Error banner -->
+            <Border Panel.ZIndex="10"
+                    Background="{StaticResource AppColor.BackgroundErrorLight}"
+                    CornerRadius="8"
+                    Padding="12,10"
+                    Margin="0,0,0,12"
+                    VerticalAlignment="Top"
+                    Visibility="{Binding HasError, Converter={StaticResource BoolToVisibilityConverter}}">
+                <DockPanel LastChildFill="True">
+                    <Button DockPanel.Dock="Right"
+                            Content="✕"
+                            FontSize="11"
+                            Padding="6,0,0,0"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Foreground="{StaticResource AppColor.TextError}"
+                            Cursor="Hand"
+                            Focusable="False"
+                            Command="{Binding DismissErrorCommand}"/>
+                    <controls:AppLabel Text="{Binding ErrorMessage}"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       Foreground="{StaticResource AppColor.TextError}"/>
+                </DockPanel>
+            </Border>
+
+            <!-- DataGrid -->
+            <DataGrid ItemsSource="{Binding Backups}"
+                      SelectedItem="{Binding SelectedBackup, Mode=TwoWay}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      SelectionMode="Single"
+                      GridLinesVisibility="Horizontal"
+                      BorderBrush="{StaticResource AppColor.BorderThin}"
+                      BorderThickness="1"
+                      RowBackground="{StaticResource AppColor.BackgroundPrimary}"
+                      AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                      Visibility="{Binding HasBackups, Converter={StaticResource BoolToVisibilityConverter}}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Tên file"    Binding="{Binding FileName}"                          Width="*"/>
+                    <DataGridTextColumn Header="Kích thước"  Binding="{Binding SizeDisplay}"                       Width="120"/>
+                    <DataGridTextColumn Header="Ngày tạo"    Binding="{Binding CreatedAt, StringFormat=dd/MM/yyyy HH:mm}" Width="160"/>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- Empty state -->
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding HasBackups, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                <TextBlock Text="💾" FontSize="48" HorizontalAlignment="Center" TextAlignment="Center"/>
+                <controls:AppLabel Text="Chưa có bản sao lưu nào."
+                                   Style="{StaticResource AppTypography.BodySection}"
+                                   Foreground="{StaticResource AppColor.TextSecondary}"
+                                   Margin="0,12,0,0"
+                                   HorizontalAlignment="Center"/>
+            </StackPanel>
+
+        </Grid>
+
+    </Grid>
+
+</UserControl>

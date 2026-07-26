@@ -34,10 +34,6 @@ public partial class SalesViewModel : ViewModelBase
         => _navigationService.NavigateTo(NavigationRoutes.SalesReturns.List);
 
     [RelayCommand]
-    private void NavigateToCategories()
-        => _navigationService.NavigateTo(NavigationRoutes.Categories.List);
-
-    [RelayCommand]
     private void OpenReport()
     {
         var window = _reportFilterWindowFactory();

@@ -57,6 +57,10 @@ public partial class ProductListViewModel : ViewModelBase
     private void DismissError() => HasError = false;
 
     [RelayCommand]
+    private void NavigateToCategories()
+        => _navigationService.NavigateTo(NavigationRoutes.Categories.List);
+
+    [RelayCommand]
     private async Task LoadProductsAsync(CancellationToken ct = default)
     {
         IsLoading    = true;
