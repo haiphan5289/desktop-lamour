@@ -19,6 +19,30 @@ public class ReportDisplayRow
     public decimal   DiscountValue  { get; init; }
     public decimal   NetRevenue     { get; init; }
 
+    // Identity of the row's own dimension (drill-down target) + the outer dimension for
+    // 2-dimension report types (set alongside GroupKey/GroupLabel) — null when not applicable.
+    public int? ProductId  { get; set; }
+    public int? CustomerId { get; set; }
+    public int? EmployeeId { get; set; }
+
+    public static int? IdFor(SummaryDimension field, SalesOrderSummaryLineItem item) => field switch
+    {
+        SummaryDimension.Product  => item.ProductId,
+        SummaryDimension.Customer => item.CustomerId,
+        SummaryDimension.Employee => item.EmployeeId,
+        _ => null,
+    };
+
+    private void SetId(SummaryDimension field, int? id)
+    {
+        switch (field)
+        {
+            case SummaryDimension.Product:  ProductId  = id; break;
+            case SummaryDimension.Customer: CustomerId = id; break;
+            case SummaryDimension.Employee: EmployeeId = id; break;
+        }
+    }
+
     /// <summary>
     /// "Mã hàng"/"Tên hàng" always show the row's OWN identity — whichever dimension this row
     /// represents (product, customer, or employee). For 2-dimension types the OUTER dimension is
@@ -38,7 +62,7 @@ public class ReportDisplayRow
             _ => ("", ""),
         };
 
-        return new ReportDisplayRow
+        var row = new ReportDisplayRow
         {
             ProductCode  = code,
             ProductName  = name,
@@ -50,5 +74,12 @@ public class ReportDisplayRow
             ReturnValue    = items.Sum(i => i.ReturnValue),
             NetRevenue     = items.Sum(i => i.NetRevenue),
         };
+        row.SetId(identityField, IdFor(identityField, first));
+        return row;
     }
+
+    // Called for 2-dimension report types so a leaf row also carries the OUTER dimension's id
+    // (its own inner-dimension id is already set by Aggregate) — needed to drill down by both.
+    public void SetOuterId(SummaryDimension field, SalesOrderSummaryLineItem sample)
+        => SetId(field, IdFor(field, sample));
 }

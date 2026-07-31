@@ -138,11 +138,32 @@
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
                       MouseDoubleClick="OrdersGrid_MouseDoubleClick"
                       Visibility="{Binding HasSalesOrders, Converter={StaticResource BoolToVisibilityConverter}}">
+                <DataGrid.CellStyle>
+                    <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding StatusLabel}" Value="⏸ Treo">
+                                <Setter Property="Background" Value="{StaticResource AppColor.BackgroundWarningLight}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.CellStyle>
                 <DataGrid.Columns>
 
                     <DataGridTextColumn Header="Trạng thái"
                                         Binding="{Binding StatusLabel}"
-                                        Width="100"/>
+                                        Width="100">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding StatusLabel}" Value="⏸ Treo">
+                                        <Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
 
                     <DataGridTextColumn Header="Số chứng từ"
                                         Binding="{Binding DocumentNumber}"

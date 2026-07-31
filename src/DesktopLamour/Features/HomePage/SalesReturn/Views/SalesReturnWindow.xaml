@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+        xmlns:behaviors="clr-namespace:DesktopLamour.Shared.Behaviors"
         Title="Chứng từ hàng bán bị trả lại - CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ SPA LAMOUR"
         Width="1200"
         Height="760"
@@ -62,7 +63,7 @@
                             BorderThickness="1" CornerRadius="6" Padding="4">
                         <StackPanel Orientation="Horizontal">
                             <controls:AppButton Content="🗑️ Xóa"
-                                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                                Style="{StaticResource AppButton.Destructive.Medium}"
                                                 Command="{Binding DeleteCommand}"
                                                 Margin="0"/>
                             <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
@@ -252,7 +253,8 @@
                               BorderThickness="0"
                               RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                               AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
-                              CellEditEnding="LinesDataGrid_CellEditEnding">
+                              CellEditEnding="LinesDataGrid_CellEditEnding"
+                              behaviors:DataGridRowNavigationBehavior.EnableArrowRowNavigation="True">
                         <DataGrid.Columns>
 
                             <!-- Mã hàng — product picker -->
@@ -393,12 +395,12 @@
                             </DataGridTextColumn>
 
                             <!-- Remove -->
-                            <DataGridTemplateColumn Header="" Width="32">
+                            <DataGridTemplateColumn Header="" Width="40">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Button Content="✕" FontSize="10" Padding="4,2"
-                                                Background="Transparent" BorderThickness="0"
-                                                Foreground="{StaticResource AppColor.TextSecondary}"
+                                        <Button Content="✕"
+                                                Style="{StaticResource AppButton.RemoveLineIcon}"
+                                                HorizontalAlignment="Center"
                                                 Command="{Binding DataContext.RemoveLineCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                 CommandParameter="{Binding}"/>
                                     </DataTemplate>

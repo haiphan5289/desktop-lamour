@@ -54,8 +54,9 @@ public static class NavigationRoutes
 
     public static class SalesOrders
     {
-        public const string List   = "SalesOrderListView";
-        public const string Report = "SalesOrderReportView";
+        public const string List         = "SalesOrderListView";
+        public const string Report       = "SalesOrderReportView";
+        public const string ReportDetail = "SalesOrderReportDetailView";
     }
 
     public static class SalesReturns

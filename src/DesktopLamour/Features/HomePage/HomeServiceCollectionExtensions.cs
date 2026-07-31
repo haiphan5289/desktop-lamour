@@ -322,6 +322,8 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<SalesOrderReportFilterViewModel>();
         services.AddTransient<SalesOrderReportView>();
         services.AddTransient<SalesOrderReportViewModel>();
+        services.AddTransient<SalesOrderReportDetailView>();
+        services.AddTransient<SalesOrderReportDetailViewModel>();
 
         // ── Sales: UseCases ──────────────────────────────────────────────────────
         services.AddTransient<IGetSalesOrdersUseCase, GetSalesOrdersUseCase>();

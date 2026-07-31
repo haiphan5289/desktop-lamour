@@ -100,6 +100,7 @@ public class NavigationService : INavigationService
             NavigationRoutes.Sales.Hub             => _serviceProvider.GetService(typeof(Features.HomePage.Sales.Views.SalesView)),
             NavigationRoutes.SalesOrders.List      => _serviceProvider.GetService(typeof(Features.HomePage.Sales.Views.SalesOrderListView)),
             NavigationRoutes.SalesOrders.Report    => _serviceProvider.GetService(typeof(Features.HomePage.Sales.Views.SalesOrderReportView)),
+            NavigationRoutes.SalesOrders.ReportDetail => _serviceProvider.GetService(typeof(Features.HomePage.Sales.Views.SalesOrderReportDetailView)),
             NavigationRoutes.SalesReturns.List     => _serviceProvider.GetService(typeof(Features.HomePage.SalesReturn.Views.SalesReturnListView)),
             NavigationRoutes.Accounting.Hub        => _serviceProvider.GetService(typeof(Features.HomePage.Accounting.Views.AccountingView)),
             NavigationRoutes.Register        => _serviceProvider.GetService(typeof(Features.Authentication.Views.RegisterView)),

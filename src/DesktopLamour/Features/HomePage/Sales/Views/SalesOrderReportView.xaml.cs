@@ -2,6 +2,8 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using DesktopLamour.Features.HomePage.Sales.Domain.Models;
 using DesktopLamour.Features.HomePage.Sales.ViewModels;
 
 namespace DesktopLamour.Features.HomePage.Sales.Views;
@@ -28,4 +30,10 @@ public partial class SalesOrderReportView : UserControl
 
     private void UpdateColumnVisibility()
         => UnitColumn.Visibility = _viewModel.IsUnitColumnVisible ? Visibility.Visible : Visibility.Collapsed;
+
+    private void ReportGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (ReportGrid.SelectedItem is ReportDisplayRow row && _viewModel.DrillDownCommand.CanExecute(row))
+            _viewModel.DrillDownCommand.Execute(row);
+    }
 }

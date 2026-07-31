@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
         Title="In hóa đơn bán hàng"
-        Width="820"
-        Height="900"
+        Width="640"
+        Height="860"
         WindowStartupLocation="CenterOwner"
         WindowStyle="SingleBorderWindow"
         ResizeMode="CanResize">
@@ -32,10 +32,19 @@
             </StackPanel>
         </Border>
 
-        <!-- Invoice preview -->
-        <FlowDocumentScrollViewer x:Name="InvoiceViewer"
-                                  Grid.Row="1"
-                                  VerticalScrollBarVisibility="Auto"
-                                  Padding="16"/>
+        <!-- Invoice preview — gray canvas, white page centered like a print-preview -->
+        <Border Grid.Row="1" Background="#E3E3E3">
+            <FlowDocumentScrollViewer x:Name="InvoiceViewer"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Top"
+                                      Margin="0,16"
+                                      Background="White"
+                                      VerticalScrollBarVisibility="Auto"
+                                      Padding="0">
+                <FlowDocumentScrollViewer.Effect>
+                    <DropShadowEffect Color="Black" Direction="270" ShadowDepth="2" BlurRadius="10" Opacity="0.25"/>
+                </FlowDocumentScrollViewer.Effect>
+            </FlowDocumentScrollViewer>
+        </Border>
     </Grid>
 </Window>

@@ -103,6 +103,7 @@
                       ScrollViewer.VerticalScrollBarVisibility="Auto"
                       ScrollViewer.CanContentScroll="True"
                       VirtualizingPanel.ScrollUnit="Pixel"
+                      MouseDoubleClick="ReportGrid_MouseDoubleClick"
                       Visibility="{Binding HasLines, Converter={StaticResource BoolToVisibilityConverter}}">
                 <DataGrid.GroupStyle>
                     <GroupStyle>

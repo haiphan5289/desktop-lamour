@@ -102,4 +102,40 @@
         <Setter Property="Background" Value="{StaticResource AppColor.ButtonDestructive}"/>
     </Style>
 
+    <!-- ================================================ -->
+    <!--  Remove-line icon button (DataGrid row delete)    -->
+    <!-- ================================================ -->
+    <Style x:Key="AppButton.RemoveLineIcon" TargetType="{x:Type Button}">
+        <Setter Property="Width"           Value="28"/>
+        <Setter Property="Height"          Value="28"/>
+        <Setter Property="Padding"         Value="0"/>
+        <Setter Property="FontSize"        Value="13"/>
+        <Setter Property="FontWeight"      Value="Bold"/>
+        <Setter Property="Cursor"          Value="Hand"/>
+        <Setter Property="Background"      Value="{StaticResource AppColor.BackgroundErrorLight}"/>
+        <Setter Property="Foreground"      Value="{StaticResource AppColor.TextError}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="ToolTip"         Value="Xóa dòng"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="6">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{StaticResource AppColor.ButtonDestructive}"/>
+                            <Setter Property="Foreground" Value="{StaticResource AppColor.TextInverted}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="border" Property="Opacity" Value="0.85"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>

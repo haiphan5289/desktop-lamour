@@ -184,6 +184,7 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
             {
                 row.GroupKey   = dimensions[0].Key(groupItems[0]);
                 row.GroupLabel = ColumnLabelFor(dimensions[0].Field);
+                row.SetOuterId(dimensions[0].Field, groupItems[0]);
             }
             rows.Add(row);
         }
@@ -257,6 +258,38 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
             CurrentFilter = window.BuildFilter();
             _ = LoadAsync();
         }
+    }
+
+    // Double-click a summary row → drill down into the raw transactions behind it,
+    // narrowed to whichever dimension(s) that row represents (product/customer/employee).
+    [RelayCommand]
+    private void DrillDown(ReportDisplayRow? row)
+    {
+        if (row is null) return;
+
+        var reportType = CurrentFilter?.ReportType ?? SalesOrderReportTypes.ByProduct;
+        if (!GroupingsByType.TryGetValue(reportType, out var dimensions))
+            dimensions = GroupingsByType[SalesOrderReportTypes.ByProduct];
+
+        var innerLabel = ColumnLabelFor(dimensions[^1].Field);
+        var title = row.GroupLabel is not null
+            ? $"{row.GroupLabel}: {row.GroupKey}  —  {innerLabel}: {row.ProductName}"
+            : $"{innerLabel}: {row.ProductName}";
+
+        var filter = CurrentFilter;
+        var detailFilter = new SalesOrderDetailFilter
+        {
+            Title      = title,
+            ProductId  = row.ProductId,
+            CustomerId = row.CustomerId,
+            EmployeeId = row.EmployeeId,
+            Unit       = filter?.Unit,
+            Category   = filter?.Category,
+            FromDate   = filter?.FromDate,
+            ToDate     = filter?.ToDate,
+        };
+
+        _navigationService.NavigateTo(NavigationRoutes.SalesOrders.ReportDetail, detailFilter);
     }
 
     [RelayCommand]

@@ -10,5 +10,6 @@
     <converters:TaxReductionStatusDisplayConverter x:Key="TaxReductionStatusDisplayConverter"/>
     <converters:GroupHeaderTextConverter x:Key="GroupHeaderTextConverter"/>
     <converters:GroupSumConverter x:Key="GroupSumConverter"/>
+    <converters:BlankToZeroConverter x:Key="BlankToZeroConverter"/>
 
 </ResourceDictionary>

@@ -1,0 +1,294 @@
+<UserControl x:Class="DesktopLamour.Features.HomePage.Sales.Views.SalesOrderReportDetailView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+             Background="{StaticResource AppColor.BackgroundSecondary}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>   <!-- Toolbar -->
+            <RowDefinition Height="Auto"/>   <!-- Title -->
+            <RowDefinition Height="*"/>      <!-- DataGrid -->
+            <RowDefinition Height="Auto"/>   <!-- Footer -->
+        </Grid.RowDefinitions>
+
+        <!-- Loading overlay -->
+        <controls:AppLoadingOverlay Grid.RowSpan="4" IsLoading="{Binding IsLoading}"/>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Toolbar                                       -->
+        <!-- ══════════════════════════════════════════════ -->
+        <Border Grid.Row="0"
+                Background="{StaticResource AppColor.BackgroundBrand}"
+                Padding="16,10">
+            <StackPanel Orientation="Horizontal">
+                <controls:AppButton Content="🖨️ In"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding PrintCommand}"
+                                    Margin="0,0,8,0"/>
+                <controls:AppButton Content="📤 Xuất khẩu"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding ExportExcelCommand}"
+                                    Margin="0,0,8,0"/>
+                <controls:AppButton Content="✖ Đóng"
+                                    Style="{StaticResource AppButton.Tertiary.Medium}"
+                                    Command="{Binding GoBackCommand}"
+                                    HorizontalAlignment="Right"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Title                                         -->
+        <!-- ══════════════════════════════════════════════ -->
+        <StackPanel Grid.Row="1" Margin="24,20,24,0" HorizontalAlignment="Center">
+            <controls:AppLabel Text="SỔ CHI TIẾT BÁN HÀNG"
+                               Style="{StaticResource AppTypography.DisplaySection}"
+                               HorizontalAlignment="Center"/>
+            <controls:AppLabel Text="{Binding Title}"
+                               Style="{StaticResource AppTypography.BodySection}"
+                               Foreground="{StaticResource AppColor.TextBrand}"
+                               HorizontalAlignment="Center"
+                               Margin="0,4,0,0"/>
+            <controls:AppLabel Text="{Binding FilterSummary}"
+                               Style="{StaticResource AppTypography.BodyCaption}"
+                               Foreground="{StaticResource AppColor.TextSecondary}"
+                               HorizontalAlignment="Center"
+                               Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  DataGrid                                      -->
+        <!-- ══════════════════════════════════════════════ -->
+        <Grid Grid.Row="2" Margin="24,16,24,0">
+
+            <!-- Error banner -->
+            <Border Panel.ZIndex="10"
+                    Background="{StaticResource AppColor.BackgroundErrorLight}"
+                    CornerRadius="8"
+                    Padding="12,10"
+                    Margin="0,0,0,12"
+                    VerticalAlignment="Top"
+                    Visibility="{Binding HasError, Converter={StaticResource BoolToVisibilityConverter}}">
+                <DockPanel LastChildFill="True">
+                    <Button DockPanel.Dock="Right"
+                            Content="✕"
+                            FontSize="11"
+                            Padding="6,0,0,0"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Foreground="{StaticResource AppColor.TextError}"
+                            Cursor="Hand"
+                            Focusable="False"
+                            Command="{Binding DismissErrorCommand}"/>
+                    <controls:AppLabel Text="{Binding ErrorMessage}"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       Foreground="{StaticResource AppColor.TextError}"/>
+                </DockPanel>
+            </Border>
+
+            <!-- DataGrid -->
+            <DataGrid ItemsSource="{Binding Items}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      SelectionMode="Single"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="Horizontal"
+                      BorderBrush="{StaticResource AppColor.BorderThin}"
+                      BorderThickness="1"
+                      RowBackground="{StaticResource AppColor.BackgroundPrimary}"
+                      AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding HasLines, Converter={StaticResource BoolToVisibilityConverter}}">
+                <DataGrid.Columns>
+
+                    <DataGridTextColumn Header="Ngày hạch toán"
+                                        Binding="{Binding AccountingDate, StringFormat=\{0:dd/MM/yyyy\}}"
+                                        Width="105"/>
+
+                    <DataGridTextColumn Header="Số chứng từ"
+                                        Binding="{Binding DocumentNumber}"
+                                        Width="100"/>
+
+                    <DataGridTextColumn Header="Khách hàng"
+                                        Binding="{Binding CustomerName}"
+                                        Width="150"/>
+
+                    <DataGridTextColumn Header="Nhân viên"
+                                        Binding="{Binding EmployeeName}"
+                                        Width="130"/>
+
+                    <DataGridTextColumn Header="Mã hàng"
+                                        Binding="{Binding ProductCode}"
+                                        Width="90"/>
+
+                    <DataGridTextColumn Header="Tên hàng"
+                                        Binding="{Binding ProductName}"
+                                        Width="*"/>
+
+                    <DataGridTextColumn Header="ĐVT"
+                                        Binding="{Binding Unit}"
+                                        Width="60"/>
+
+                    <DataGridTextColumn Header="Số lượng"
+                                        Binding="{Binding Quantity}"
+                                        Width="75">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                <Setter Property="Padding" Value="0,0,6,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn Header="Đơn giá"
+                                        Binding="{Binding UnitPrice, StringFormat=\{0:N0\}}"
+                                        Width="100">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                <Setter Property="Padding" Value="0,0,6,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn Header="Tỷ lệ CK(%)"
+                                        Binding="{Binding DiscountRate, StringFormat=\{0:N2\}}"
+                                        Width="90">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                <Setter Property="Padding" Value="0,0,6,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn Header="Thành tiền"
+                                        Binding="{Binding Amount, StringFormat=\{0:N0\}}"
+                                        Width="110">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                <Setter Property="Padding" Value="0,0,6,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn Header="Thuế suất"
+                                        Binding="{Binding TaxRate, StringFormat={}{0:0}%}"
+                                        Width="80">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                <Setter Property="Padding" Value="0,0,6,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn Header="Tiền thuế"
+                                        Binding="{Binding TaxAmount, StringFormat=\{0:N0\}}"
+                                        Width="100">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                <Setter Property="Padding" Value="0,0,6,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn Header="Tổng cộng"
+                                        Binding="{Binding GrandTotal, StringFormat=\{0:N0\}}"
+                                        Width="120">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                <Setter Property="Padding"             Value="0,0,6,0"/>
+                                <Setter Property="Foreground"          Value="{StaticResource AppColor.TextBrand}"/>
+                                <Setter Property="FontWeight"          Value="SemiBold"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- Empty state -->
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding HasLines, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                <TextBlock Text="🧾" FontSize="48" HorizontalAlignment="Center" TextAlignment="Center"/>
+                <controls:AppLabel Text="Không có chứng từ nào khớp."
+                                   Style="{StaticResource AppTypography.BodySection}"
+                                   Foreground="{StaticResource AppColor.TextSecondary}"
+                                   Margin="0,12,0,0"
+                                   HorizontalAlignment="Center"/>
+            </StackPanel>
+
+        </Grid>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Footer                                        -->
+        <!-- ══════════════════════════════════════════════ -->
+        <Border Grid.Row="3"
+                Margin="24,12,24,24"
+                Padding="16,12"
+                Background="{StaticResource AppColor.BackgroundPrimary}"
+                BorderBrush="{StaticResource AppColor.BorderThin}"
+                BorderThickness="1"
+                CornerRadius="8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <controls:AppLabel Grid.Column="0"
+                                   Text="{Binding RowCount, StringFormat='Số dòng = {0}'}"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   Foreground="{StaticResource AppColor.TextSecondary}"
+                                   VerticalAlignment="Center"/>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <controls:AppLabel Text="Tổng SL:"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Margin="0,0,8,0"/>
+                    <controls:AppLabel Text="{Binding TotalQuantity}"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       FontWeight="Bold"
+                                       MinWidth="60"/>
+
+                    <controls:AppLabel Text="|"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Foreground="{StaticResource AppColor.BorderThin}"
+                                       Margin="16,0"/>
+
+                    <controls:AppLabel Text="Tiền thuế:"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Margin="0,0,8,0"/>
+                    <controls:AppLabel Text="{Binding TotalTaxAmount, StringFormat=\{0:N0\}}"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       FontWeight="Bold"
+                                       MinWidth="90"/>
+
+                    <controls:AppLabel Text="|"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Foreground="{StaticResource AppColor.BorderThin}"
+                                       Margin="16,0"/>
+
+                    <controls:AppLabel Text="Tổng cộng:"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Margin="0,0,8,0"/>
+                    <controls:AppLabel Text="{Binding TotalGrandTotal, StringFormat=\{0:N0\}}"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       FontWeight="Bold"
+                                       MinWidth="110"
+                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+    </Grid>
+
+</UserControl>
