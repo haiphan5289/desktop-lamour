@@ -17,6 +17,7 @@ public class SalesOrderLineItem : INotifyPropertyChanged
     private decimal          _unitPrice;
     private decimal          _discountRate;
     private decimal          _amount;
+    private bool             _isAmountManual;
     private decimal          _taxRate;
     private decimal          _taxAmount;
     private string           _receivableAccount = "131";
@@ -74,25 +75,63 @@ public class SalesOrderLineItem : INotifyPropertyChanged
     public int Quantity
     {
         get => _quantity;
-        set { _quantity = value; OnPropertyChanged(); RecalculateAmount(); }
+        set { _quantity = value; OnPropertyChanged(); ResetManualAndRecalculate(); }
     }
 
     public decimal UnitPrice
     {
         get => _unitPrice;
-        set { _unitPrice = value; OnPropertyChanged(); RecalculateAmount(); }
+        set { _unitPrice = value; OnPropertyChanged(); ResetManualAndRecalculate(); }
     }
 
     public decimal DiscountRate
     {
         get => _discountRate;
-        set { _discountRate = value; OnPropertyChanged(); RecalculateAmount(); }
+        set { _discountRate = value; OnPropertyChanged(); ResetManualAndRecalculate(); }
     }
 
+    // Gõ tay trực tiếp vào ô Thành tiền (UI binding) → dòng chuyển sang chế độ thủ công,
+    // BE sẽ dùng thẳng giá trị này thay vì tự tính Quantity×UnitPrice×(1-CK%). Đơn giá được
+    // tính ngược lại từ Thành tiền + CK% hiện có để hiển thị đơn giá tương ứng cho user tham khảo.
     public decimal Amount
     {
         get => _amount;
-        set { _amount = value; OnPropertyChanged(); }
+        set
+        {
+            _amount = value;
+            OnPropertyChanged();
+            SetIsAmountManual(true);
+            TryBackCalculateUnitPrice();
+            RecalculateTax();
+        }
+    }
+
+    // Đơn giá = Thành tiền ÷ (SL × (1-CK%/100)). Không chia được (SL=0, CK%=100%) hoặc
+    // Thành tiền vẫn = 0 (chưa nhập) thì giữ nguyên Đơn giá hiện có.
+    private void TryBackCalculateUnitPrice()
+    {
+        var factor = Quantity * (1 - Math.Max(0, Math.Min(100, DiscountRate)) / 100m);
+        if (Amount == 0m || factor == 0m) return;
+        _unitPrice = Amount / factor;
+        OnPropertyChanged(nameof(UnitPrice));
+    }
+
+    public bool IsAmountManual => _isAmountManual;
+
+    private void SetIsAmountManual(bool value)
+    {
+        if (_isAmountManual == value) return;
+        _isAmountManual = value;
+        OnPropertyChanged(nameof(IsAmountManual));
+    }
+
+    // Nạp Thành tiền từ chứng từ đã lưu (BE) mà không kích hoạt chế độ thủ công ngoài ý muốn.
+    public void LoadAmount(decimal amount, bool isAmountManual)
+    {
+        _amount = amount;
+        OnPropertyChanged(nameof(Amount));
+        SetIsAmountManual(isAmountManual);
+        RecalculateTax();
     }
 
     public decimal TaxRate
@@ -146,9 +185,12 @@ public class SalesOrderLineItem : INotifyPropertyChanged
         OnPropertyChanged(nameof(SelectedProduct));
     }
 
-    private void RecalculateAmount()
+    // Sửa Số lượng/Đơn giá/CK% luôn tắt chế độ Thành tiền thủ công và tính lại theo công thức.
+    private void ResetManualAndRecalculate()
     {
-        Amount = Quantity * UnitPrice * (1 - Math.Max(0, Math.Min(100, DiscountRate)) / 100m);
+        SetIsAmountManual(false);
+        _amount = Quantity * UnitPrice * (1 - Math.Max(0, Math.Min(100, DiscountRate)) / 100m);
+        OnPropertyChanged(nameof(Amount));
         RecalculateTax();
     }
 

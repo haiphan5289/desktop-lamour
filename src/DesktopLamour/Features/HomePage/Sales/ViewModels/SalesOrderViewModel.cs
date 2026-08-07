@@ -79,6 +79,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         StatusLabel = value?.Status switch { 1 => "⏸ Treo", _ => "📄 Ghi sổ" };
         OnPropertyChanged(nameof(HasExistingOrder));
         HoldCommand.NotifyCanExecuteChanged();
+        PrintCommand.NotifyCanExecuteChanged();
     }
 
     public ObservableCollection<SalesOrderLineItem> Lines { get; } = new();
@@ -117,7 +118,15 @@ public partial class SalesOrderViewModel : ViewModelBase
         _printWindowFactory         = printWindowFactory;
         _logger                     = logger;
 
-        Lines.CollectionChanged += (_, _) => RecalculateTotals();
+        Lines.CollectionChanged += (_, _) => OnLinesOrTotalsChanged();
+    }
+
+    // Recalc tổng tiền + re-evaluate PrintCommand (in được ngay khi đã có dữ liệu sản phẩm,
+    // kể cả chứng từ chưa Ghi sổ) mỗi khi dòng thêm/bớt hoặc 1 field trên dòng đổi.
+    private void OnLinesOrTotalsChanged()
+    {
+        RecalculateTotals();
+        PrintCommand.NotifyCanExecuteChanged();
     }
 
     // ── Public init — called by SalesOrderWindow ──────────────────────────
@@ -338,7 +347,7 @@ public partial class SalesOrderViewModel : ViewModelBase
             RevenueAccount    = "511",
             Quantity          = 1,
         };
-        line.PropertyChanged += (_, _) => RecalculateTotals();
+        line.PropertyChanged += (_, _) => OnLinesOrTotalsChanged();
         Lines.Add(line);
     }
 
@@ -423,14 +432,16 @@ public partial class SalesOrderViewModel : ViewModelBase
                 Quantity          = l.Quantity,
                 UnitPrice         = l.UnitPrice,
                 DiscountRate      = l.DiscountRate,
-                Amount            = l.Amount,
                 TaxRate           = l.TaxRate,
                 TaxAmount         = l.TaxAmount,
                 ReceivableAccount = l.ReceivableAccount,
                 RevenueAccount    = l.RevenueAccount,
             };
+            // Nạp Thành tiền + cờ thủ công sau cùng — tránh bị Quantity/UnitPrice/DiscountRate
+            // ở trên tự tính lại đè mất giá trị đã lưu từ BE.
+            item.LoadAmount(l.Amount, l.IsAmountManual);
             item.SetSelectedProductSilent(_allProducts.FirstOrDefault(p => p.Id == l.ProductId));
-            item.PropertyChanged += (_, _) => RecalculateTotals();
+            item.PropertyChanged += (_, _) => OnLinesOrTotalsChanged();
             Lines.Add(item);
         }
 
@@ -526,6 +537,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         UnitPrice         = item.UnitPrice,
         DiscountRate      = item.DiscountRate,
         Amount            = item.Amount,
+        IsAmountManual    = item.IsAmountManual,
         TaxRate           = item.TaxRate,
         TaxAmount         = item.TaxAmount,
         ReceivableAccount = item.ReceivableAccount,
@@ -550,5 +562,52 @@ public partial class SalesOrderViewModel : ViewModelBase
             MessageBox.Show(ex.Message, "Treo đơn thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally { IsBusy = false; }
+    }
+
+    // ── Print ─────────────────────────────────────────────────────────────────
+    // In được ngay khi đã có ít nhất 1 dòng đã chọn sản phẩm — không bắt buộc phải Ghi sổ trước
+    // (khác với Treo, vốn chỉ áp dụng cho chứng từ đã tồn tại trên BE).
+    private bool CanPrint => Lines.Any(l => l.ProductId > 0);
+
+    [RelayCommand(CanExecute = nameof(CanPrint))]
+    private void Print()
+    {
+        if (!CanPrint) return;
+        ShowPrintPreview(BuildPreviewOrderDto());
+    }
+
+    // Dựng SalesOrderResponseDto để in preview từ đúng dữ liệu đang hiển thị trên form (kể cả
+    // chưa lưu) — không gọi BE. Nếu đã có CurrentOrder (đã Ghi sổ), vẫn ưu tiên dữ liệu form hiện
+    // tại (có thể đang sửa dở) thay vì bản đã lưu cũ, chỉ giữ lại Id/CreatedAt/Status từ bản đã lưu.
+    private SalesOrderResponseDto BuildPreviewOrderDto()
+    {
+        var customer = SelectedCustomer as DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer;
+        var employee = SelectedEmployee as DesktopLamour.Features.HomePage.Employees.Domain.Models.Employee;
+
+        return new SalesOrderResponseDto
+        {
+            Id             = CurrentOrder?.Id ?? 0,
+            DocumentNumber = DocumentNumber.Trim(),
+            AccountingDate = AccountingDate,
+            DocumentDate   = DocumentDate,
+            CustomerId     = customer?.Id ?? 0,
+            CustomerName   = customer?.Name ?? "",
+            EmployeeId     = employee?.Id,
+            EmployeeName   = employee?.Name,
+            Description    = Description,
+            Reference      = Reference,
+            PaymentTerms   = PaymentTerms,
+            PaymentDueDays = PaymentDueDays,
+            PaymentDueDate = PaymentDueDate,
+            Notes          = Notes,
+            DeliveryMethod = DeliveryMethod,
+            PaymentMethod  = PaymentMethod,
+            TotalAmount    = TotalPayment,
+            TotalTaxAmount = TotalTaxAmount,
+            GrandTotal     = GrandTotal,
+            CreatedAt      = CurrentOrder?.CreatedAt ?? DateTime.UtcNow,
+            Status         = CurrentOrder?.Status ?? 0,
+            Lines          = Lines.Select(ToLineDto).ToList(),
+        };
     }
 }

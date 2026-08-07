@@ -11,5 +11,6 @@
     <converters:GroupHeaderTextConverter x:Key="GroupHeaderTextConverter"/>
     <converters:GroupSumConverter x:Key="GroupSumConverter"/>
     <converters:BlankToZeroConverter x:Key="BlankToZeroConverter"/>
+    <converters:BlankPreserveConverter x:Key="BlankPreserveConverter"/>
 
 </ResourceDictionary>

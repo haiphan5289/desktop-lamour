@@ -1,6 +1,6 @@
 # Sales Orders — Feature Document (App)
 
-> **Jira:** — | **Branch:** `dev` | **Generated:** 2026-05-01 | **Last updated:** 2026-07-25 (hàng khuyến mại → giá/CK/thuế = 0 + ẩn cột khi in; fix bug header logo hóa đơn render sai)
+> **Jira:** — | **Branch:** `dev` | **Generated:** 2026-05-01 | **Last updated:** 2026-07-31 (drill-down từ báo cáo tổng hợp → sổ chi tiết bán hàng)
 
 ---
 
@@ -25,6 +25,7 @@
   - [x] In hóa đơn bán hàng (preview + print) tự động mở sau khi "Ghi sổ" thành công (2026-07-15)
   - [x] Tính thuế theo `Product.VatRate` khi ghi sổ — cột "Thuế suất"/"Tiền thuế" trên DataGrid + "Tổng tiền thuế"/"Tổng thanh toán (gồm thuế)" ở footer (2026-07-15)
   - [x] Ô "📊 Báo cáo" trên màn hình menu "Bán hàng" (`SalesView`, không còn ở toolbar `SalesOrderListView` — di chuyển 2026-07-18) → popup filter (Mặt hàng/Nhân viên/Khách hàng/Đơn vị tính/Nhóm VTHH/Kỳ báo cáo/Từ-Đến ngày) → trang báo cáo riêng với DataGrid + xuất Excel + in (2026-07-16, mở rộng 2026-07-18)
+  - [x] Double-click 1 dòng trong báo cáo tổng hợp → drill down sang trang "Sổ chi tiết bán hàng" liệt kê đúng các chứng từ khớp dòng đó (2026-07-31)
 
 ---
 
@@ -68,6 +69,11 @@
 | Nesting 2 chiều (2026-07-18) | Với type 2 vế (vd "Mặt hàng & khách hàng"), thứ tự nhóm theo đúng thứ tự nhãn — group ngoài = vế đầu, subgroup trong = vế sau, dòng "Cộng" đóng mỗi cấp; "Mặt hàng & khách hàng" và "Khách hàng & mặt hàng" cho cùng 1 tập dữ liệu nhưng lồng nhau theo chiều ngược lại |
 | Filter độc lập với Thống kê theo (2026-07-18) | Đổi type KHÔNG ẩn/disable filter nào — Mặt hàng checklist, Nhân viên, Khách hàng, Đơn vị tính, Nhóm VTHH, Kỳ báo cáo luôn hiển thị và dùng được bất kể type nào đang chọn |
 | Print/Excel giữ nguyên phẳng (2026-07-18) | `PrintCommand`/`ExportExcelCommand` vẫn xuất `Lines` (danh sách phẳng, không group/subtotal) — chỉ `DisplayRows` trên DataGrid màn hình có group/subtotal; quyết định có chủ đích để giới hạn phạm vi, có thể mở rộng sau nếu cần |
+| Drill-down toàn bộ 7 kiểu thống kê (2026-07-31) | Double-click áp dụng cho mọi report type, không riêng "Khách hàng" — vì `ReportDisplayRow` luôn biết ID của dimension nó đại diện bất kể Product/Customer/Employee |
+| Drill-down trigger = double-click dòng (2026-07-31) | Double-click 1 dòng SẢN PHẨM/KHÁCH HÀNG/NHÂN VIÊN con (leaf row) trong `ReportGrid` → mở trang "Sổ chi tiết bán hàng"; double-click trúng dòng GROUP HEADER (Expander của report 2 chiều) không làm gì nếu chưa từng chọn dòng nào trước đó — `DataGrid.SelectedItem` không đổi khi click vào Expander (nó không phải 1 data row thật) |
+| Drill-down lọc theo CẢ 2 chiều khi report 2 vế (2026-07-31) | Vd "Khách hàng & mặt hàng": double-click dòng sản phẩm trong nhóm 1 khách hàng → sổ chi tiết lọc theo ĐÚNG `customer_id` VÀ `product_id` đó (không chỉ 1 chiều) — `ReportDisplayRow` lưu ID của cả outer dimension (`SetOuterId`, gắn cùng lúc với `GroupKey`/`GroupLabel`) lẫn inner dimension (`Aggregate` tự set qua `IdFor`) |
+| Drill-down kế thừa filter gốc (2026-07-31) | Ngày (Từ/Đến), Đơn vị tính, Nhóm VTHH từ `CurrentFilter` của báo cáo tổng hợp được truyền nguyên sang `SalesOrderDetailFilter` — chỉ thêm/ghi đè `product_id`/`customer_id`/`employee_id` theo dòng vừa click |
+| Sổ chi tiết chỉ có dữ liệu BÁN HÀNG, chưa gộp trả lại (2026-07-31, biết trước, chưa xử lý) | Gọi lại `IGetSalesOrderReportUseCase`/`GET /report` (endpoint cấp DÒNG, trước đó không còn ai gọi từ 2026-07-18) — endpoint này chỉ trả `SalesOrderLine`, không có `SalesReturnLine`. Vì vậy tổng số liệu ở "Sổ chi tiết" sẽ KHÔNG khớp tuyệt đối với số "Doanh thu thuần" ở báo cáo tổng hợp (vốn đã gộp cả trả lại qua `/summary-report`) nếu khách/sản phẩm đó có phát sinh trả lại trong kỳ — phạm vi đã chốt với user, có thể mở rộng sau bằng cách merge thêm `ISalesReturnRepository.GetReportLinesAsync` |
 
 ---
 
@@ -84,26 +90,29 @@
 | View (report filter) | `Views/SalesOrderReportFilterWindow.xaml` | Popup (`Window`, `ShowDialog`), mở rộng 2026-07-18 — "Thống kê theo" (7 kiểu, `ComboBox` thật từ 2026-07-18 thứ 2, trước đó fixed "Mặt hàng"), "Kỳ báo cáo" preset `ComboBox`, Từ/Đến `DatePicker`, Đơn vị tính/Nhóm VTHH `ComboBox`, Nhân viên/Khách hàng `AppSearchableComboBox`, `DataGrid` checklist Mặt hàng (multi-select + "Chọn tất cả"), nút "Xóa điều kiện" |
 | ViewModel (report filter) | `ViewModels/SalesOrderReportFilterViewModel.cs` | Load lookups (Products/Employees/Customers) song song; derive `Units`/`Categories` distinct từ Products; `ProductItems` (`ObservableCollection<ProductCheckItem>`) lọc lại theo Unit/Category đã chọn; `SelectedPeriod` auto-fill Từ/Đến qua `ApplyPeriodPreset`; `ClearFiltersCommand`; `SubmitCommand`/`CancelCommand` set `DialogResult`; `BuildFilter()` → `SalesOrderReportFilter` |
 | View (report page) | `Views/SalesOrderReportView.xaml` | Trang riêng (UserControl, navigate) — filter summary header, DataGrid dòng chi tiết, totals footer, nút In/Xuất Excel |
-| ViewModel (report page) | `ViewModels/SalesOrderReportViewModel.cs` | Implements `INavigationParameterAware`; `LoadAsync` gọi `IGetSalesOrderSummaryReportUseCase` (2026-07-18, đổi từ `IGetSalesOrderReportUseCase`) → `Items` (`SalesOrderSummaryLineItem`, finest-grain triple); `RebuildDisplayRows`/`AppendGroup` group + AGGREGATE (không còn liệt kê raw) theo `CurrentFilter.ReportType`, đệ quy 1-2 cấp qua `GroupingsByType` (mỗi entry gắn `SummaryDimension` để biết cột nào hợp lệ hiển thị); `ChooseParametersCommand` (2026-07-18) mở lại `SalesOrderReportFilterWindow` ngay tại trang báo cáo; `PrintCommand`/`ExportExcelCommand` xuất `DisplayRows` (bảng tổng hợp, không còn `Lines` phẳng) |
+| ViewModel (report page) | `ViewModels/SalesOrderReportViewModel.cs` | Implements `INavigationParameterAware`; `LoadAsync` gọi `IGetSalesOrderSummaryReportUseCase` (2026-07-18, đổi từ `IGetSalesOrderReportUseCase`) → `Items` (`SalesOrderSummaryLineItem`, finest-grain triple); `RebuildDisplayRows`/`AppendGroup` group + AGGREGATE (không còn liệt kê raw) theo `CurrentFilter.ReportType`, đệ quy 1-2 cấp qua `GroupingsByType` (mỗi entry gắn `SummaryDimension` để biết cột nào hợp lệ hiển thị); `ChooseParametersCommand` (2026-07-18) mở lại `SalesOrderReportFilterWindow` ngay tại trang báo cáo; `PrintCommand`/`ExportExcelCommand` xuất `DisplayRows` (bảng tổng hợp, không còn `Lines` phẳng); `DrillDownCommand` (2026-07-31) — double-click 1 dòng → build `SalesOrderDetailFilter` từ ID lưu trên `ReportDisplayRow` + filter gốc → `NavigateTo(NavigationRoutes.SalesOrders.ReportDetail, ...)` |
+| View (report detail page, 2026-07-31) | `Views/SalesOrderReportDetailView.xaml` | Drill-down target — trang riêng (UserControl, navigate), tương tự `SalesOrderReportView` nhưng KHÔNG có nút "Chọn tham số" (filter đến từ double-click, không tự chọn lại); DataGrid dòng chi tiết + totals footer + nút In/Xuất Excel |
+| ViewModel (report detail page, 2026-07-31) | `ViewModels/SalesOrderReportDetailViewModel.cs` | Implements `INavigationParameterAware`, nhận `SalesOrderDetailFilter`; `LoadAsync` gọi lại `IGetSalesOrderReportUseCase` (hồi sinh — trước đó không còn ai gọi từ 2026-07-18) → `Items` (`SalesOrderReportLineItem`, dòng phẳng); `PrintCommand`/`ExportExcelCommand` riêng, không tái dùng code của `SalesOrderReportViewModel` (không có group/subtotal để xuất) |
 | View (form) | `Views/SalesOrderWindow.xaml` | Form header + DataGrid lines + navigation toolbar |
 | View (code-behind) | `Views/SalesOrderWindow.xaml.cs` | `OnContentRendered` → `LoadAsync` + `AddNewCommand` |
 | ViewModel (form) | `ViewModels/SalesOrderViewModel.cs` | Toàn bộ state, commands, navigation, form logic; tính TotalAmount/TotalDiscount/TotalPayment |
 | Domain Model (list) | `Domain/Models/SalesOrderListItem.cs` | `Status`, `StatusLabel` (📄 Ghi sổ / ⏸ Treo) |
 | Domain Model (line) | `Domain/Models/SalesOrderLineItem.cs` | Observable line item với `DiscountRate` + auto-calc Amount |
 | Domain Model (report filter) | `Domain/Models/SalesOrderReportFilter.cs` | POCO truyền qua navigation parameter: `ProductIds`/`ProductLabels` (list, 2026-07-18), `EmployeeId`/`CustomerId`/`Unit`/`Category`/`FromDate`/`ToDate` + label hiển thị + computed `Summary` |
-| Domain Model (report line — LEGACY, không còn dùng bởi ReportViewModel) | `Domain/Models/SalesOrderReportLineItem.cs` | `FromDto()`; hiển thị 1 dòng chi tiết + computed `GrandTotal = Amount + TaxAmount`. Class + `IGetSalesOrderReportUseCase`/`GetReportAsync` liên quan vẫn giữ nguyên trong code (không xóa) nhưng không còn được `SalesOrderReportViewModel` gọi từ 2026-07-18 |
+| Domain Model (report detail line) | `Domain/Models/SalesOrderReportLineItem.cs` | `FromDto()`; hiển thị 1 dòng chi tiết + computed `GrandTotal = Amount + TaxAmount`. Không còn dùng bởi `SalesOrderReportViewModel` (bảng tổng hợp) từ 2026-07-18, nhưng **được `SalesOrderReportDetailViewModel` dùng lại từ 2026-07-31** cho màn drill-down "Sổ chi tiết bán hàng" |
+| Domain Model (drill-down filter, 2026-07-31) | `Domain/Models/SalesOrderDetailFilter.cs` | POCO truyền qua navigation parameter khi drill-down: `Title` (label hiển thị, build sẵn từ `ReportDisplayRow`), `ProductId`/`CustomerId`/`EmployeeId` (nullable, ghi đè theo dòng vừa click), `Unit`/`Category`/`FromDate`/`ToDate` (kế thừa nguyên từ `SalesOrderReportFilter` gốc) |
 | Domain Model (summary line) | `Domain/Models/SalesOrderSummaryLineItem.cs` (2026-07-18) | `FromDto(SalesOrderSummaryLineDto)`; 1 dòng = 1 triple `(product, customer, employee)` cộng dồn cả kỳ — `QuantitySold`, `SalesAmount`, `DiscountAmount`, `ReturnQuantity`, `ReturnValue`, `NetRevenue` |
 | Domain Model (product checklist) | `Domain/Models/ProductCheckItem.cs` (2026-07-18) | `ObservableObject` wrapper quanh `Product` với `IsSelected` bindable cho DataGrid checkbox column |
 | Domain Model (period presets) | `Domain/Models/SalesOrderReportPeriods.cs` (2026-07-18) | Static string constants + `All` list cho dropdown "Kỳ báo cáo" |
 | Domain Model (report types) | `Domain/Models/SalesOrderReportTypes.cs` (2026-07-18) | Static string constants (7 kiểu) + `All` list cho dropdown "Thống kê theo" |
-| Domain Model (display row) | `Domain/Models/ReportDisplayRow.cs` (2026-07-18, đổi shape sang tổng hợp) | Row hiển thị trên DataGrid — `Aggregate(items, activeDimensions)` cộng dồn TOÀN BỘ items còn lại thành 1 dòng duy nhất (activeDimensions quyết định cột Mã/Tên hàng, Khách hàng, Nhân viên nào được điền — cột không thuộc dimension đang chọn để trống, tránh hiển thị giá trị sai/mập mờ khi 1 dòng gộp nhiều giá trị khác nhau); `Subtotal(level, dimension, groupValue, items)` — dòng cộng cấp ngoài cho type 2 vế, label chèn vào ĐÚNG cột theo `dimension` (Product/Customer/Employee), không cố định vào `ProductName` |
+| Domain Model (display row) | `Domain/Models/ReportDisplayRow.cs` (2026-07-18, đổi shape sang tổng hợp; +ID fields 2026-07-31) | Row hiển thị trên DataGrid — `Aggregate(items, activeDimensions)` cộng dồn TOÀN BỘ items còn lại thành 1 dòng duy nhất (activeDimensions quyết định cột Mã/Tên hàng, Khách hàng, Nhân viên nào được điền — cột không thuộc dimension đang chọn để trống, tránh hiển thị giá trị sai/mập mờ khi 1 dòng gộp nhiều giá trị khác nhau); `Subtotal(level, dimension, groupValue, items)` — dòng cộng cấp ngoài cho type 2 vế, label chèn vào ĐÚNG cột theo `dimension` (Product/Customer/Employee), không cố định vào `ProductName`. **(2026-07-31)** thêm `ProductId`/`CustomerId`/`EmployeeId` (nullable) — `Aggregate()` tự set ID của dimension chính nó đại diện qua `IdFor()`; với report 2 vế, `RebuildDisplayRows` gọi thêm `row.SetOuterId(outerField, sample)` để dòng con biết luôn cả ID của outer dimension — phục vụ drill-down lọc theo cả 2 chiều |
 | UseCase | `Domain/UseCases/GetSalesOrdersUseCase.cs` | Fetch list |
 | UseCase | `Domain/UseCases/CreateSalesOrderUseCase.cs` | Pass-through → Repository |
 | UseCase | `Domain/UseCases/UpdateSalesOrderUseCase.cs` | Pass-through → Repository |
 | UseCase | `Domain/UseCases/DeleteSalesOrderUseCase.cs` | Pass-through → Repository |
 | UseCase | `Domain/UseCases/HoldSalesOrderUseCase.cs` | PUT `/{id}/hold` → Repository |
 | UseCase | `Domain/UseCases/GetNextSalesOrderCodeUseCase.cs` | Gọi `ISalesOrderRepository.GetNextCodeAsync()` |
-| UseCase | `Domain/UseCases/GetSalesOrderReportUseCase.cs` | Pass-through → `ISalesOrderRepository.GetReportAsync(...)` |
+| UseCase | `Domain/UseCases/GetSalesOrderReportUseCase.cs` | Pass-through → `ISalesOrderRepository.GetReportAsync(...)` — dùng bởi `SalesOrderReportDetailViewModel` (drill-down, 2026-07-31) |
 | Repository | `Data/Repositories/SalesOrderRepository.cs` | Delegate tới Service |
 | Service | `Data/Services/SalesOrderService.cs` | HttpClient typed service, 8 operations (+ `GetReportAsync`, tự build query string) + `EnsureSuccessOrThrowAsync` helper |
 | DTOs | `Data/Services/Dtos/` | `SalesOrderResponseDto` (+ `status`), `CreateSalesOrderRequestDto`, `UpdateSalesOrderRequestDto`, `SalesOrderLineDto`, `SalesOrderReportLineDto` (2026-07-16) |
@@ -135,19 +144,36 @@ HoldSalesOrderCommand
   → ISalesOrderService.HoldAsync(id)   → PUT /api/v1/sales-orders/{id}/hold
   → Update item in _allItems + ApplyFilter
 
-OpenReportCommand (2026-07-16)
+OpenReportCommand (2026-07-16, đổi sang summary-report 2026-07-18)
   → SalesOrderReportFilterWindow.ShowDialog()   ← popup, chỉ chứa filter
-  → user chọn Mặt hàng/Nhân viên/Khách hàng/Từ-Đến ngày → Submit → DialogResult = true
+  → user chọn Mặt hàng(checklist)/Nhân viên/Khách hàng/ĐVT/Nhóm VTHH/Kỳ báo cáo/Từ-Đến ngày → Submit → DialogResult = true
   → window.BuildFilter() → SalesOrderReportFilter
   → _navigationService.NavigateTo(NavigationRoutes.SalesOrders.Report, filter)
     → NavigationService resolves SalesOrderReportView, sets CurrentContent
     → view.DataContext (SalesOrderReportViewModel) implements INavigationParameterAware
-    → OnNavigatedTo(filter) → _ = LoadAsync()
-      → IGetSalesOrderReportUseCase.ExecuteAsync(productId?, employeeId?, customerId?, fromDate?, toDate?)
-        → ISalesOrderRepository.GetReportAsync(...) → ISalesOrderService.GetReportAsync(...)
-          → HttpClient GET /api/v1/sales-orders/report?product_ids=&product_ids=&employee_id=&customer_id=&unit=&category=&from_date=&to_date=
-          ← IEnumerable<SalesOrderReportLineDto>
-      → SalesOrderReportLineItem.FromDto(dto) per row → Lines populated, totals recalculated
+    → OnNavigatedTo(filter) → CurrentFilter = filter; _ = LoadAsync()
+      → IGetSalesOrderSummaryReportUseCase.ExecuteAsync(productIds?, employeeId?, customerId?, unit?, category?, fromDate?, toDate?)
+        → ISalesOrderRepository.GetSummaryReportAsync(...) → ISalesOrderService.GetSummaryReportAsync(...)
+          → HttpClient GET /api/v1/sales-orders/summary-report?...
+          ← IEnumerable<SalesOrderSummaryLineDto>
+      → SalesOrderSummaryLineItem.FromDto(dto) per row → Items populated
+      → RecalculateTotals() + RebuildDisplayRows() → RowsView (grouped/aggregated per ReportType)
+
+DrillDownCommand (2026-07-31 — double-click 1 dòng trong RowsView)
+  → ReportGrid_MouseDoubleClick (code-behind) đọc ReportGrid.SelectedItem as ReportDisplayRow
+  → ViewModel.DrillDownCommand.Execute(row)
+    → build title từ row.GroupLabel/GroupKey (outer, nếu report 2 vế) + inner dimension label + row.ProductName
+    → new SalesOrderDetailFilter { ProductId = row.ProductId, CustomerId = row.CustomerId, EmployeeId = row.EmployeeId,
+                                    Unit/Category/FromDate/ToDate kế thừa từ CurrentFilter }
+    → _navigationService.NavigateTo(NavigationRoutes.SalesOrders.ReportDetail, detailFilter)
+      → NavigationService resolves SalesOrderReportDetailView, sets CurrentContent
+      → view.DataContext (SalesOrderReportDetailViewModel) implements INavigationParameterAware
+      → OnNavigatedTo(filter) → Title/FilterSummary set; _ = LoadAsync()
+        → IGetSalesOrderReportUseCase.ExecuteAsync(productIds?, employeeId?, customerId?, unit?, category?, fromDate?, toDate?)
+          → ISalesOrderRepository.GetReportAsync(...) → ISalesOrderService.GetReportAsync(...)
+            → HttpClient GET /api/v1/sales-orders/report?product_ids=&employee_id=&customer_id=&unit=&category=&from_date=&to_date=
+            ← IEnumerable<SalesOrderReportLineDto>  (chỉ SalesOrderLine, KHÔNG có SalesReturnLine)
+        → SalesOrderReportLineItem.FromDto(dto) per row → Items populated, totals recalculated
 ```
 
 ```mermaid
@@ -165,13 +191,17 @@ graph TD
     RFW --> RFVM[SalesOrderReportFilterViewModel]
     B -- NavigateTo + filter --> RV[SalesOrderReportView]
     RV --> RVM[SalesOrderReportViewModel]
-    RVM --> Re[IGetSalesOrderReportUseCase]
+    RVM --> Sum[IGetSalesOrderSummaryReportUseCase]
+    RVM -- double-click row --> RDV[SalesOrderReportDetailView]
+    RDV --> RDVM[SalesOrderReportDetailViewModel]
+    RDVM --> Re[IGetSalesOrderReportUseCase]
     C --> J[ISalesOrderRepository]
     Ho --> J
     F --> J
     N --> J
     D --> J
     E --> J
+    Sum --> J
     Re --> J
     J --> K[ISalesOrderService]
     K --> L[HttpClient → BE API]
@@ -204,11 +234,14 @@ graph TD
 - [`Domain/UseCases/IGetSalesOrderReportUseCase.cs`](../Domain/UseCases/IGetSalesOrderReportUseCase.cs) / `GetSalesOrderReportUseCase.cs` (2026-07-16) — thin pass-through tới `ISalesOrderRepository.GetReportAsync(...)`
 
 ### Data
-- [`Data/Services/ISalesOrderService.cs`](../Data/Services/ISalesOrderService.cs) — `GetAllAsync`, `GetByIdAsync`, `CreateAsync`, `UpdateAsync`, `DeleteAsync`, `GetNextCodeAsync`, `HoldAsync`, `GetReportAsync(productIds?, employeeId?, customerId?, unit?, category?, fromDate?, toDate?)` (2026-07-16, extended 2026-07-18, KHÔNG còn được `SalesOrderReportViewModel` gọi), `GetSummaryReportAsync(...)` cùng tham số (2026-07-18, dùng bởi ReportViewModel hiện tại)
+- [`Data/Services/ISalesOrderService.cs`](../Data/Services/ISalesOrderService.cs) — `GetAllAsync`, `GetByIdAsync`, `CreateAsync`, `UpdateAsync`, `DeleteAsync`, `GetNextCodeAsync`, `HoldAsync`, `GetReportAsync(productIds?, employeeId?, customerId?, unit?, category?, fromDate?, toDate?)` (2026-07-16, extended 2026-07-18; không còn dùng bởi `SalesOrderReportViewModel` từ 2026-07-18 nhưng **dùng lại bởi `SalesOrderReportDetailViewModel` từ 2026-07-31** cho drill-down), `GetSummaryReportAsync(...)` cùng tham số (2026-07-18, dùng bởi `SalesOrderReportViewModel` cho bảng tổng hợp)
 - [`Data/Services/SalesOrderService.cs`](../Data/Services/SalesOrderService.cs) — HttpClient typed service; `EnsureSuccessOrThrowAsync` helper đọc body 400 → lấy `{ "error": "..." }`; `HoldAsync` → `PUT /{id}/hold`; `GetReportAsync` tự build query string thủ công (không dùng `HttpUtility`), format ngày `yyyy-MM-dd`, chỉ thêm param khi có giá trị; `productIds` gửi bằng nhiều key lặp lại (`product_ids=1&product_ids=2`); `unit`/`category` qua `Uri.EscapeDataString` (2026-07-18)
 - [`Data/Services/Dtos/SalesOrderResponseDto.cs`](../Data/Services/Dtos/SalesOrderResponseDto.cs) — 19 fields snake_case + `lines[]` + `[JsonPropertyName("status")] public int Status`
 - [`Data/Services/Dtos/SalesOrderReportLineDto.cs`](../Data/Services/Dtos/SalesOrderReportLineDto.cs) — mirror BE `SalesOrderReportLineDto` (16 fields snake_case)
-- [`Data/Repositories/ISalesOrderRepository.cs`](../Data/Repositories/ISalesOrderRepository.cs) — `GetAllAsync`, `CreateAsync`, `UpdateAsync`, `DeleteAsync`, `GetNextCodeAsync`, `HoldAsync`, `GetReportAsync` (2026-07-16, extended 2026-07-18, legacy), `GetSummaryReportAsync` (2026-07-18)
+- [`Data/Repositories/ISalesOrderRepository.cs`](../Data/Repositories/ISalesOrderRepository.cs) — `GetAllAsync`, `CreateAsync`, `UpdateAsync`, `DeleteAsync`, `GetNextCodeAsync`, `HoldAsync`, `GetReportAsync` (2026-07-16, extended 2026-07-18; dùng lại từ 2026-07-31 cho drill-down), `GetSummaryReportAsync` (2026-07-18)
+- [`Domain/Models/SalesOrderDetailFilter.cs`](../Domain/Models/SalesOrderDetailFilter.cs) (2026-07-31) — `Title`, `ProductId?`/`CustomerId?`/`EmployeeId?`, `Unit?`/`Category?`/`FromDate?`/`ToDate?`; truyền qua `NavigationService.NavigateTo(NavigationRoutes.SalesOrders.ReportDetail, filter)`
+- [`Views/SalesOrderReportDetailView.xaml`](../Views/SalesOrderReportDetailView.xaml) / `.xaml.cs` (2026-07-31) — trang drill-down; code-behind trivial (`InitializeComponent()` + `DataContext` only, không cần xử lý column visibility như `SalesOrderReportView`)
+- [`ViewModels/SalesOrderReportDetailViewModel.cs`](../ViewModels/SalesOrderReportDetailViewModel.cs) (2026-07-31) — `OnNavigatedTo` nhận `SalesOrderDetailFilter` → `LoadAsync` gọi `IGetSalesOrderReportUseCase.ExecuteAsync(productId là mảng 1 phần tử hoặc null, employeeId, customerId, unit, category, fromDate, toDate)` → `Items` (`SalesOrderReportLineItem`); `PrintCommand`/`ExportExcelCommand` viết riêng (không group/subtotal, khác `SalesOrderReportViewModel`)
 - [`Domain/Models/SalesOrderSummaryLineItem.cs`](../Domain/Models/SalesOrderSummaryLineItem.cs) / [`Domain/UseCases/IGetSalesOrderSummaryReportUseCase.cs`](../Domain/UseCases/IGetSalesOrderSummaryReportUseCase.cs) / `GetSalesOrderSummaryReportUseCase.cs` (2026-07-18) — thin pass-through tới `ISalesOrderRepository.GetSummaryReportAsync(...)`
 - [`Data/Repositories/SalesOrderRepository.cs`](../Data/Repositories/SalesOrderRepository.cs) — thin delegate tới `ISalesOrderService`
 
@@ -388,6 +421,57 @@ RequestClose?.Invoke();
 - Nút "🖨️ In" gọi `PrintDialog` + `FlowDocument.DocumentPaginator`; nút "✖️ Đóng" chỉ đóng preview, không huỷ đơn đã lưu.
 - DI: `AddTransient<SalesOrderPrintWindow>()` + `AddTransient<Func<SalesOrderPrintWindow>>()` trong `HomeServiceCollectionExtensions.cs`, cùng pattern với `EmployeeFormWindow`/`CustomerFormWindow`.
 
+#### Nút "In Hoá Đơn" thủ công trên toolbar popup (2026-08-05)
+
+Trước đây preview hoá đơn chỉ tự mở đúng 1 lần ngay sau khi Ghi sổ thành công — không có cách nào in lại/in thử 1 chứng từ khi đang ở trạng thái "mới" (chưa Ghi sổ) dù đã nhập đủ dòng sản phẩm. Thêm nút "🖨️ In Hoá Đơn" trên toolbar `SalesOrderWindow` (cạnh "↩️ Hoàn"/"✖️ Đóng", nhóm luôn hiển thị), tái dùng nguyên `SalesOrderPrintWindow` đã có, không thêm hạ tầng in mới:
+
+```csharp
+// SalesOrderViewModel.cs
+private bool CanPrint => Lines.Any(l => l.ProductId > 0);
+
+[RelayCommand(CanExecute = nameof(CanPrint))]
+private void Print()
+{
+    if (!CanPrint) return;
+    ShowPrintPreview(BuildPreviewOrderDto());
+}
+```
+
+Điều kiện bật nút là **có ít nhất 1 dòng đã chọn sản phẩm** (`ProductId > 0`), KHÔNG yêu cầu đã Ghi sổ — khác với "⏸ Treo" (`HasExistingOrder`, chỉ áp dụng chứng từ đã tồn tại trên BE). `PrintCommand.NotifyCanExecuteChanged()` được gọi mỗi khi dòng thêm/bớt (`Lines.CollectionChanged`) hoặc 1 field trên dòng đổi (qua helper chung `OnLinesOrTotalsChanged()`, thay `RecalculateTotals()` gọi trực tiếp trước đây).
+
+`BuildPreviewOrderDto()` dựng `SalesOrderResponseDto` **thuần từ dữ liệu đang hiển thị trên form** (không gọi BE) — dùng đúng các field tổng đã tính sẵn client-side (`TotalPayment`/`TotalTaxAmount`/`GrandTotal` từ `RecalculateTotals()`) và `Lines.Select(ToLineDto)`. Nếu đã có `CurrentOrder` (đơn đã lưu), vẫn ưu tiên dữ liệu form hiện tại thay vì bản cũ đã lưu (phòng trường hợp đang sửa dở chưa bấm Ghi sổ) — chỉ giữ `Id`/`CreatedAt`/`Status` từ `CurrentOrder` để hiển thị đúng số chứng từ/trạng thái. Không đổi BE, không đổi layout hoá đơn.
+
+#### Đổi khổ giấy in hoá đơn: A5 → A4 → quay lại A5 (2026-08-05)
+
+Thử đổi sang A4 (210×297mm) dựa trên suy đoán từ ảnh mẫu MISA tham chiếu, nhưng user xác nhận lại khổ đúng vẫn là **A5** (148×210mm) — revert `A5PageWidth`/`A5PageHeight` về 148×210mm, `PrintTicket.PageMediaSize` về `PageMediaSizeName.ISOA5`.
+
+#### Fix preview hóa đơn ngắn nhìn giống hình chữ nhật nằm ngang (2026-08-05)
+
+Phát hiện qua đổi A4 tạm thời: `FlowDocumentScrollViewer` (dùng cho ô xem trước trong app, khác với in thật dùng `DocumentPaginator`) chỉ dùng `PageWidth`/`ColumnWidth` để giới hạn bề ngang xuống dòng — chiều cao **tự co theo đúng nội dung**, không tự kéo nền trắng ra đủ `PageHeight`. Hóa đơn ít dòng sản phẩm (vd 1 dòng) vì vậy hiển thị như hình chữ nhật nằm ngang thay vì tờ giấy đứng cao, dù bản in thật vẫn ra đúng khổ A5 portrait (in dùng `DocumentPaginator`, có tôn trọng `PageHeight`, khác `FlowDocumentScrollViewer`).
+
+Fix: thêm `EstimateContentHeight(int lineCount)` — ước lượng thô chiều cao nội dung theo số dòng sản phẩm (cộng các hằng số cho header/tiêu đề/thông tin KH/bảng/tổng tiền/ghi chú/chữ ký), rồi chèn 1 `BlockUIContainer` chứa `Border` vô hình (`MinHeight = Math.Max(0, A5PageHeight - estimatedContentHeight)`) làm block cuối cùng của `content` — bù đủ chiều cao còn thiếu để preview luôn nhìn giống 1 trang A5 đứng. Đây chỉ là ước lượng gần đúng (WPF `Block`/`TableCell` không expose được chiều cao đã render thật, không có cách đo chính xác dễ dàng) — hóa đơn dài hơn 1 trang không bị ảnh hưởng (`Math.Max(0, ...)` kẹp về 0, không trừ âm).
+
+#### Fix mép phải "Tổng tiền thanh toán"/"GHI CHÚ ĐƠN HÀNG" lệch so với bảng sản phẩm (2026-08-05)
+
+`totalTable`/`noteTable` (2 khung có viền đen bên dưới bảng sản phẩm) trước đó dùng `new TableColumn()` không set `Width` — tự giãn hết chiều ngang khung chứa, RỘNG HƠN bảng sản phẩm (vốn set cứng tổng 8 cột = 490 DIU qua mảng `{ 21, 152, 28, 62, 41, 69, 48, 69 }`) → mép phải 2 khung này lệch ra ngoài so với bảng sản phẩm phía trên. Tách mảng width thành `ProductTableColumnWidths` (hằng số dùng chung, nguồn sự thật duy nhất) + `ProductTableWidth = ProductTableColumnWidths.Sum()` (= 490), rồi set `totalTable`/`noteTable` cùng `Width = ProductTableWidth` — mép phải giờ thẳng hàng với bảng sản phẩm. (`deliveryPaymentTable` — "PT giao hàng"/"PT thanh toán" — vốn đã đúng 245+245=490 từ trước, không cần sửa.)
+
+#### 3 fix layout hoá đơn theo mẫu MISA tham chiếu (2026-08-05)
+
+So sánh với 1 ảnh chụp hóa đơn MISA tham chiếu, phát hiện + sửa 3 điểm khác biệt trong `BuildInvoiceDocument()`:
+
+- **Tiêu đề "HÓA ĐƠN BÁN HÀNG" bị lệch trái**: `titleTable` cũ chỉ có 2 cột bằng nhau (tiêu đề `TextAlignment.Center` trong cột 1, "Số HĐ" cột 2) → tâm chữ tiêu đề rơi vào ~25% chiều rộng trang thay vì đúng giữa. Sửa thành 3 cột: đệm rỗng (`140px`) | tiêu đề (giữa, `Auto`) | "Số HĐ" (`140px`) — cột đệm trái bằng đúng cột phải để tiêu đề được bao đối xứng, căn giữa đúng theo cả trang.
+- **Cột "CK (%)" thiếu số 0**: đổi format từ `"0.##"` (bỏ số 0 thừa, vd `35%`) sang `"N2"` theo culture `vi-VN` (vd `40,00%`) — khớp cách hiển thị 2 số thập phân trong mẫu tham chiếu.
+- **Tên khách hàng chưa đủ đậm**: `FontWeight.SemiBold` → `FontWeight.Bold`.
+- **"PT giao hàng"/"PT thanh toán" bị xô lệch**: trước đây nối 1 chuỗi `$"PT giao hàng: {x}      PT thanh toán: {y}"` với khoảng trắng cứng — vị trí "PT thanh toán" trôi theo độ dài `DeliveryMethod`. Đổi sang bảng 2 cột cố định (`245px`/`245px`), mỗi label/giá trị 1 cell riêng — vị trí "PT thanh toán" giờ luôn cố định.
+
+Không đổi BE, không đổi DTO — thuần chỉnh layout `FlowDocument` trong `SalesOrderPrintWindow.xaml.cs`.
+
+#### Gộp "Tổng tiền thanh toán"/"GHI CHÚ ĐƠN HÀNG" vào chung bảng sản phẩm — hết khoảng cách giữa các hàng (2026-08-06)
+
+Fix trước đó (2026-08-05, mục ngay trên) chỉnh cho mép PHẢI của `totalTable`/`noteTable` thẳng hàng với bảng sản phẩm, nhưng cả 3 vẫn là **3 `Table` riêng biệt** xếp chồng — mỗi bảng có viền ngoài (border) riêng của chính nó, nên dù `Margin=0` giữa các bảng, viền trên/dưới của 2 bảng liền kề vẫn render thành 2 đường viền song song sát nhau thay vì 1 đường liền — nhìn giống có khoảng cách/đường viền đôi giữa dòng sản phẩm cuối, dòng "Tổng tiền thanh toán", và dòng "GHI CHÚ ĐƠN HÀNG".
+
+Fix triệt để: xoá hẳn `totalTable`/`noteTable` (và hằng số `ProductTableWidth` không còn ai dùng) — thêm "Tổng tiền thanh toán" và "GHI CHÚ ĐƠN HÀNG" làm **2 `TableRow` cuối cùng của CHÍNH bảng sản phẩm** (`rowGroup` dùng chung với header row + các data row), mỗi hàng 1 `TableCell` duy nhất với `ColumnSpan = ProductTableColumnWidths.Length` (= 8) để chiếm hết chiều ngang. Vì giờ là hàng của cùng 1 `Table` (`CellSpacing = 0`), viền các hàng chạm trực tiếp vào nhau — không còn viền đôi/khoảng trắng. Không đổi BE, không đổi DTO — thuần chỉnh `BuildInvoiceDocument()` trong `SalesOrderPrintWindow.xaml.cs`. WPF build 0 lỗi.
+
 #### Redesign layout theo ảnh tham chiếu (2026-07-25)
 
 Theo yêu cầu khớp 1 mẫu hóa đơn tham chiếu (ảnh chụp hóa đơn thật của công ty), `BuildInvoiceDocument()` được cấu trúc lại — vẫn cùng 1 file, không thêm ViewModel/dependency mới ngoài asset logo:
@@ -486,6 +570,58 @@ Route mới: `NavigationRoutes.SalesOrders.Report = "SalesOrderReportView"`, th�
 **Xuất Excel** — cần thêm dependency mới **`ClosedXML` 0.105.0** vào `DesktopLamour.csproj` (trước đây chỉ BE dùng ClosedXML để đọc import Excel khách hàng, đây là lần đầu WPF client tự ghi file Excel). `ExportExcelCommand` dùng `Microsoft.Win32.SaveFileDialog` + `ClosedXML.Excel.XLWorkbook`, ghi 1 sheet với header + data rows + dòng tổng bôi đậm, `AdjustToContents()`.
 
 > ⚠️ Lưu ý implementation: bản ghi cuối (`TotalsRow()`) trong `FlowDocument` dùng `TableCell` nối tiếp (sequential append), khác với Excel export dùng `worksheet.Cell(row, col)` (địa chỉ tuyệt đối theo cột) — 2 cách này **không tự động đồng bộ layout**. Cell đầu tiên của `TotalsRow()` có `ColumnSpan = 4` (gộp 4 cột đầu) nên phải chèn đúng số cell rỗng tiếp theo để các cột số liệu (SL/Thành tiền/Thuế/Tổng cộng) không bị lệch cột — đã tự verify và fix 1 lần trong quá trình implement (thiếu 1 cell rỗng làm lệch toàn bộ số liệu sang trái 1 cột khi in).
+
+### Drill-down: báo cáo tổng hợp → "Sổ chi tiết bán hàng" (2026-07-31)
+
+**UX flow:** double-click bất kỳ dòng nào trong `ReportGrid` (báo cáo tổng hợp) → mở trang riêng "Sổ chi tiết bán hàng" (`SalesOrderReportDetailView`) liệt kê từng chứng từ/dòng bán hàng khớp đúng dòng vừa click, giống mẫu tham chiếu MISA "Tổng hợp bán hàng theo nhóm khách hàng" → double-click 1 nhóm → "Sổ chi tiết bán hàng".
+
+**Vì sao không cần đổi BE:** endpoint cấp DÒNG `GET /api/v1/sales-orders/report` đã tồn tại sẵn từ 2026-07-16 nhưng bị bỏ rơi khi màn hình báo cáo đổi sang bảng tổng hợp (2026-07-18) — không còn WPF component nào gọi tới nó nữa (`Domain/Models/SalesOrderReportLineItem.cs`, `IGetSalesOrderReportUseCase`, `ISalesOrderService.GetReportAsync` đều bị bỏ không dùng, được note "LEGACY" trong doc trước đây). Tính năng này **hồi sinh** toàn bộ layer đó cho đúng use case của nó — chi tiết cấp dòng — thay vì xóa đi.
+
+**ID plumbing — biết dòng tổng hợp đại diện cho ai:** `ReportDisplayRow` (trước đây chỉ có `ProductCode`/`ProductName` làm "identity" chung, không phân biệt được nó là Product hay Customer hay Employee ở tầng ID) được thêm 3 field `ProductId?`/`CustomerId?`/`EmployeeId?`:
+```csharp
+// ReportDisplayRow.Aggregate() — tự set ID của dimension NÓ đại diện (inner dimension với report 2 vế)
+row.SetId(identityField, IdFor(identityField, first));
+
+// SalesOrderReportViewModel.RebuildDisplayRows() — với report 2 vế, set thêm ID của OUTER dimension
+if (isNested)
+{
+    row.GroupKey   = dimensions[0].Key(groupItems[0]);
+    row.GroupLabel = ColumnLabelFor(dimensions[0].Field);
+    row.SetOuterId(dimensions[0].Field, groupItems[0]);   // mới — cùng lúc với GroupKey/GroupLabel
+}
+```
+Nhờ vậy 1 dòng con trong report "Khách hàng & mặt hàng" biết luôn cả `CustomerId` (outer) lẫn `ProductId` (inner) — double-click dòng đó lọc được theo **cả 2 chiều** thay vì chỉ 1.
+
+**DrillDownCommand** (`SalesOrderReportViewModel`):
+```csharp
+[RelayCommand]
+private void DrillDown(ReportDisplayRow? row)
+{
+    if (row is null) return;
+
+    var dimensions = GroupingsByType[CurrentFilter?.ReportType ?? SalesOrderReportTypes.ByProduct];
+    var innerLabel = ColumnLabelFor(dimensions[^1].Field);
+    var title = row.GroupLabel is not null
+        ? $"{row.GroupLabel}: {row.GroupKey}  —  {innerLabel}: {row.ProductName}"
+        : $"{innerLabel}: {row.ProductName}";
+
+    var detailFilter = new SalesOrderDetailFilter
+    {
+        Title = title,
+        ProductId = row.ProductId, CustomerId = row.CustomerId, EmployeeId = row.EmployeeId,
+        Unit = CurrentFilter?.Unit, Category = CurrentFilter?.Category,
+        FromDate = CurrentFilter?.FromDate, ToDate = CurrentFilter?.ToDate,
+    };
+    _navigationService.NavigateTo(NavigationRoutes.SalesOrders.ReportDetail, detailFilter);
+}
+```
+Ngày/ĐVT/Nhóm VTHH kế thừa nguyên từ `CurrentFilter` của báo cáo tổng hợp — chỉ `ProductId`/`CustomerId`/`EmployeeId` đổi theo dòng vừa click. Trigger: `ReportGrid.MouseDoubleClick` (code-behind) đọc `SelectedItem as ReportDisplayRow` rồi gọi command — double-click trúng dòng GROUP HEADER (Expander của report 2 chiều) sẽ **không kích hoạt** nếu trước đó chưa từng chọn dòng nào (Expander không phải 1 data row thật trong `DataGrid.SelectedItem`); nếu đã lỡ chọn 1 dòng khác trước đó thì double-click header sẽ dùng lại selection cũ — edge case đã biết, chưa chặn (chưa yêu cầu).
+
+**Route mới:** `NavigationRoutes.SalesOrders.ReportDetail = "SalesOrderReportDetailView"`, thêm case trong `NavigationService.ResolveView`; DI 2 dòng mới (`SalesOrderReportDetailView`/`ViewModel`) trong `HomeServiceCollectionExtensions.cs` — không cần đăng ký lại `IGetSalesOrderReportUseCase` (đã có sẵn từ 2026-07-16).
+
+**Trang "Sổ chi tiết bán hàng"** (`SalesOrderReportDetailView`/`ViewModel`) — cấu trúc tương tự `SalesOrderReportView` (title + filter summary + DataGrid phẳng + totals footer + In/Xuất Excel) nhưng KHÔNG có nút "Chọn tham số" (filter đến từ dòng vừa click, không tự chọn lại) và DataGrid không group/subtotal (mỗi dòng = 1 dòng chứng từ thật, dùng lại `SalesOrderReportLineItem`).
+
+**Known gap — chưa gộp Hàng bán bị trả lại:** `GET /report` chỉ trả `SalesOrderLine`, không có `SalesReturnLine` (khác `/summary-report` đã gộp cả 2 từ 2026-07-18). Nếu khách/sản phẩm/nhân viên đó có phát sinh trả lại trong kỳ, tổng số ở "Sổ chi tiết" sẽ KHÔNG khớp tuyệt đối với "Doanh thu thuần" ở báo cáo tổng hợp. Đã note với user, chưa xử lý (phạm vi đã chốt trước khi implement) — muốn đầy đủ thì cần thêm bước merge `ISalesReturnRepository.GetReportLinesAsync` phía BE, tương tự cách `GetSalesOrderSummaryReportUseCase` đã làm.
 
 ### `SalesOrderWindow` — layout khu vực "Hàng tiền" + Footer (2026-07-25)
 
@@ -680,3 +816,5 @@ services.AddTransient<Func<SalesOrderReportFilterWindow>>(sp => () => sp.GetRequ
 *Updated 2026-07-25 (hàng khuyến mại: giá/CK/thuế = 0 + ẩn cột khi in): theo yêu cầu, dòng có `IsPromotion=true` giờ luôn có `UnitPrice=0`/`DiscountRate=0`/`TaxRate=0` (→ `Amount`/`TaxAmount`=0). **BE** (`CreateSalesOrderUseCase`/`UpdateSalesOrderUseCase`) ép các giá trị này về 0 khi `dto.IsPromotion=true`, bất kể client gửi gì lên (authoritative, khớp pattern `TaxRate` sẵn có). **WPF** `SalesOrderLineItem.IsPromotion` setter: tick → zero ngay 3 field trên; bỏ tick → khôi phục `UnitPrice`/`TaxRate` từ `SelectedProduct` (nếu đã chọn SP) giống lúc mới chọn sản phẩm. `SalesOrderWindow.xaml`: cột "Đơn giá"/"Tỷ lệ CK(%)" thêm `CellStyle` với `DataTrigger Binding="{Binding IsPromotion}"` → `IsEnabled=False` + nền xám khi là dòng KM (nhất quán với "Thành tiền"/"Thuế suất" vốn đã read-only). `SalesOrderPrintWindow.xaml.cs`: dòng KM khi in chỉ hiện STT/Tên sản phẩm/SL, 5 cột còn lại để trống thay vì hiện "0"/"0%". Không cần DTO/migration mới (mọi field đã có sẵn). Cả BE lẫn WPF build 0 lỗi.
 
 Trong lúc test tính năng trên, phát hiện thêm 1 bug không liên quan (lần đầu test thật code redesign header logo hóa đơn ở bản update trước — trước giờ chỉ verify qua HTML mockup, chưa chạy thật): header logo dùng `Table` 2 cột lồng bên trong `content` (chính nó là 1 `TableCell` của bảng khung viền ngoài) khiến cột info bị đo ra ~0px, chữ "CÔNG TY TNHH..." wrap 1 ký tự/dòng dọc mép phải trang — cùng họ bug Auto/Star đo ra 0 đã gặp ở `SalesOrderWindow.xaml` nhưng lần này ở tầng `Table`/`TableColumn`. Fix: bỏ `Table` lồng nhau, thay bằng `System.Windows.Documents.Floater` (cơ chế FlowDocument chuyên cho "ảnh trôi nổi 1 bên + chữ bọc quanh", không có failure mode này) — logo `Floater Width=170 HorizontalAlignment=Left` nằm trong `Paragraph.Inlines`, các dòng công ty nối bằng `LineBreak()`. Xóa `LeftLine()` helper (không còn nơi gọi). WPF build 0 lỗi.*
+*Updated 2026-07-31 (drill-down: báo cáo tổng hợp → "Sổ chi tiết bán hàng"): double-click 1 dòng bất kỳ trong `SalesOrderReportView` (áp dụng cho cả 7 kiểu "Thống kê theo") → mở trang mới `SalesOrderReportDetailView` liệt kê từng dòng chứng từ khớp đúng dimension của dòng vừa click. **Không cần đổi BE** — hồi sinh endpoint cấp DÒNG `GET /api/v1/sales-orders/report` (đã tồn tại từ 2026-07-16 nhưng bị bỏ rơi từ 2026-07-18 khi màn báo cáo đổi sang bảng tổng hợp) cùng toàn bộ layer WPF liên quan (`Domain/Models/SalesOrderReportLineItem.cs`, `IGetSalesOrderReportUseCase`, `ISalesOrderService.GetReportAsync` — trước đây note "LEGACY", giờ dùng lại đúng nghĩa). Thêm mới: `Domain/Models/SalesOrderDetailFilter.cs`, `Views/SalesOrderReportDetailView.xaml(.cs)`, `ViewModels/SalesOrderReportDetailViewModel.cs`; route `NavigationRoutes.SalesOrders.ReportDetail`. `ReportDisplayRow` thêm `ProductId?`/`CustomerId?`/`EmployeeId?` (set qua `Aggregate()` cho inner dimension + `SetOuterId()` cho outer dimension của report 2 vế) để 1 dòng tổng hợp biết chính xác nó đại diện ai — với report 2 vế (vd "Khách hàng & mặt hàng"), drill-down lọc theo **cả 2 chiều**. `SalesOrderReportViewModel` thêm `DrillDownCommand`, build `SalesOrderDetailFilter` (ID từ dòng click + Ngày/ĐVT/Nhóm VTHH kế thừa từ `CurrentFilter`); trigger qua `ReportGrid.MouseDoubleClick` (code-behind đọc `SelectedItem`). Known gap: double-click trúng dòng GROUP HEADER (Expander, không phải data row thật) không làm gì nếu chưa từng chọn dòng nào — nhưng dùng lại selection cũ nếu trước đó đã chọn dòng khác, chưa chặn. Known gap khác: sổ chi tiết chỉ có dữ liệu bán hàng (`SalesOrderLine`), chưa gộp Hàng bán bị trả lại như `/summary-report` đã làm — tổng số có thể không khớp tuyệt đối "Doanh thu thuần" nếu có phát sinh trả lại trong kỳ; đã note với user, ngoài phạm vi lần này. Cả BE lẫn WPF build 0 lỗi (BE không đổi code, chỉ đổi ghi chú doc).*
+*Updated 2026-08-06 (fix khoảng cách giữa các hàng khi in hóa đơn): user báo hàng "Tổng tiền thanh toán" và "GHI CHÚ ĐƠN HÀNG" nhìn tách rời khỏi bảng sản phẩm khi in (dù `Margin=0` từ bản fix 2026-07-25) — nguyên nhân là 3 `Table` riêng biệt, mỗi bảng tự có viền ngoài nên 2 viền liền kề chồng lên nhau thành khoảng cách/đường đôi. Gộp cả 3 thành 1 `Table` duy nhất (2 hàng cuối `ColumnSpan=8`) — xem chi tiết mục "Gộp Tổng tiền thanh toán/GHI CHÚ ĐƠN HÀNG..." phía trên. Xoá `ProductTableWidth` (không còn dùng). Không đổi BE. WPF build 0 lỗi.*

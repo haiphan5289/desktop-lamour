@@ -52,6 +52,8 @@ public partial class SalesOrderPrintWindow : Window
     private static readonly double A5PageWidth  = 148 * MmToDip;
     private static readonly double A5PageHeight = 210 * MmToDip;
 
+    private static readonly int[] ProductTableColumnWidths = { 21, 152, 28, 62, 41, 69, 48, 69 };
+
     private static readonly SolidColorBrush OuterBorderBrush = new(Color.FromRgb(0x9D, 0xC1, 0xE0));
 
     private static FlowDocument BuildInvoiceDocument(SalesOrderResponseDto order, string? customerPhone, string? customerAddress)
@@ -118,11 +120,17 @@ public partial class SalesOrderPrintWindow : Window
         headerPara.Inlines.Add(new Run("Số tài khoản: 0071.0007.93865 - VCB - CN Tân Sơn Nhất") { FontSize = 9 });
         content.Blocks.Add(headerPara);
 
-        // Title + invoice number
+        // Title + invoice number. 3 cột: đệm rỗng | tiêu đề (giữa) | Số HĐ — cột đệm bên trái
+        // rộng bằng đúng cột "Số HĐ" bên phải để tiêu đề được bao đối xứng, căn giữa đúng theo
+        // cả trang thay vì chỉ giữa nửa trang (2 cột bằng nhau trước đây làm tiêu đề bị lệch trái).
+        const double invoiceNoColumnWidth = 140;
         var titleTable = new Table { Margin = new Thickness(0) };
+        titleTable.Columns.Add(new TableColumn { Width = new GridLength(invoiceNoColumnWidth) });
         titleTable.Columns.Add(new TableColumn());
-        titleTable.Columns.Add(new TableColumn());
+        titleTable.Columns.Add(new TableColumn { Width = new GridLength(invoiceNoColumnWidth) });
         var titleRow = new TableRow();
+
+        titleRow.Cells.Add(new TableCell(new Paragraph()));
 
         titleRow.Cells.Add(new TableCell(new Paragraph(new Bold(new Run("HÓA ĐƠN BÁN HÀNG")) { FontSize = 15 })
         {
@@ -140,14 +148,25 @@ public partial class SalesOrderPrintWindow : Window
         content.Blocks.Add(titleTable);
 
         // Customer info
-        content.Blocks.Add(new Paragraph(new Run($"Tên khách hàng: {order.CustomerName}")) { FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 2) });
+        content.Blocks.Add(new Paragraph(new Run($"Tên khách hàng: {order.CustomerName}")) { FontWeight = FontWeights.Bold, Margin = new Thickness(0, 0, 0, 2) });
         content.Blocks.Add(new Paragraph(new Run($"Điện thoại: {customerPhone}")) { Margin = new Thickness(0, 0, 0, 2) });
         content.Blocks.Add(new Paragraph(new Run($"Địa chỉ: {customerAddress}")) { Margin = new Thickness(0, 0, 0, 2) });
-        content.Blocks.Add(new Paragraph(new Run($"PT giao hàng: {order.DeliveryMethod}      PT thanh toán: {order.PaymentMethod}")) { Margin = new Thickness(0) });
+        // "PT giao hàng"/"PT thanh toán": dùng bảng 2 cột cố định thay vì nối chuỗi với khoảng
+        // trắng cứng — trước đây vị trí "PT thanh toán" bị xô lệch tuỳ độ dài DeliveryMethod.
+        var deliveryPaymentTable = new Table { CellSpacing = 0, Margin = new Thickness(0) };
+        deliveryPaymentTable.Columns.Add(new TableColumn { Width = new GridLength(245) });
+        deliveryPaymentTable.Columns.Add(new TableColumn { Width = new GridLength(245) });
+        var deliveryPaymentRow = new TableRow();
+        deliveryPaymentRow.Cells.Add(new TableCell(new Paragraph(new Run($"PT giao hàng: {order.DeliveryMethod}"))));
+        deliveryPaymentRow.Cells.Add(new TableCell(new Paragraph(new Run($"PT thanh toán: {order.PaymentMethod}"))));
+        var deliveryPaymentGroup = new TableRowGroup();
+        deliveryPaymentGroup.Rows.Add(deliveryPaymentRow);
+        deliveryPaymentTable.RowGroups.Add(deliveryPaymentGroup);
+        content.Blocks.Add(deliveryPaymentTable);
 
         // Line items table
         var table = new Table { CellSpacing = 0, Margin = new Thickness(0) };
-        foreach (var width in new[] { 21, 152, 28, 62, 41, 69, 48, 69 })
+        foreach (var width in ProductTableColumnWidths)
             table.Columns.Add(new TableColumn { Width = new GridLength(width) });
 
         var rowGroup = new TableRowGroup();
@@ -174,54 +193,47 @@ public partial class SalesOrderPrintWindow : Window
                 line.ProductName,
                 line.Quantity.ToString(),
                 FormatMoney(line.UnitPrice),
-                line.DiscountRate.ToString("0.##") + "%",
+                line.DiscountRate.ToString("N2", CultureInfo.GetCultureInfo("vi-VN")) + "%",
                 FormatMoney(line.Amount),
                 $"{line.TaxRate:0}%",
                 FormatMoney(lineTotal)));
         }
 
-        table.RowGroups.Add(rowGroup);
-        content.Blocks.Add(table);
-
+        // Tổng tiền thanh toán + Ghi chú đơn hàng — thêm làm 2 hàng cuối của CÙNG bảng sản phẩm
+        // (ColumnSpan hết các cột) thay vì 3 Table riêng biệt, để mép các hàng liền nhau, không
+        // có khoảng cách/border đôi giữa bảng sản phẩm và 2 hàng này.
         var totalPara = new Paragraph(new Bold(new Run($"Tổng tiền thanh toán : {FormatMoney(order.GrandTotal)}")))
         {
             TextAlignment = TextAlignment.Right,
             FontSize      = 11,
             Margin        = new Thickness(0),
         };
-
-        var totalTable = new Table { CellSpacing = 0, Margin = new Thickness(0) };
-        totalTable.Columns.Add(new TableColumn());
         var totalRow = new TableRow();
         totalRow.Cells.Add(new TableCell(totalPara)
         {
+            ColumnSpan      = ProductTableColumnWidths.Length,
             BorderBrush     = Brushes.Black,
             BorderThickness = new Thickness(0.5),
             Padding         = new Thickness(5, 4, 5, 4),
         });
-        var totalGroup = new TableRowGroup();
-        totalGroup.Rows.Add(totalRow);
-        totalTable.RowGroups.Add(totalGroup);
-        content.Blocks.Add(totalTable);
+        rowGroup.Rows.Add(totalRow);
 
         // Ghi chú đơn hàng — always rendered as a bordered row, empty or not.
         var notePara = new Paragraph { Margin = new Thickness(0) };
         notePara.Inlines.Add(new Bold(new Run("GHI CHÚ ĐƠN HÀNG: ")));
         notePara.Inlines.Add(new Run(order.Notes ?? string.Empty));
-
-        var noteTable = new Table { CellSpacing = 0, Margin = new Thickness(0) };
-        noteTable.Columns.Add(new TableColumn());
         var noteRow = new TableRow();
         noteRow.Cells.Add(new TableCell(notePara)
         {
+            ColumnSpan      = ProductTableColumnWidths.Length,
             BorderBrush     = Brushes.Black,
             BorderThickness = new Thickness(0.5),
             Padding         = new Thickness(5, 3, 5, 3),
         });
-        var noteGroup = new TableRowGroup();
-        noteGroup.Rows.Add(noteRow);
-        noteTable.RowGroups.Add(noteGroup);
-        content.Blocks.Add(noteTable);
+        rowGroup.Rows.Add(noteRow);
+
+        table.RowGroups.Add(rowGroup);
+        content.Blocks.Add(table);
 
         content.Blocks.Add(new Paragraph(new Run($"Ngày {order.DocumentDate.Day:D2} Tháng {order.DocumentDate.Month:D2} Năm {order.DocumentDate.Year}"))
         {
@@ -244,6 +256,17 @@ public partial class SalesOrderPrintWindow : Window
         signGroup.Rows.Add(signRow);
         signTable.RowGroups.Add(signGroup);
         content.Blocks.Add(signTable);
+
+        // FlowDocumentScrollViewer (dùng cho preview trong app) chỉ dùng PageWidth để giới hạn bề
+        // ngang — chiều cao tự co theo đúng nội dung, KHÔNG tự kéo nền trắng ra đủ PageHeight như
+        // khi in thật (in dùng DocumentPaginator, có tôn trọng PageHeight). Hóa đơn ít dòng sản
+        // phẩm vì vậy nhìn giống hình chữ nhật nằm ngang thay vì tờ giấy đứng. Chèn 1 spacer vô
+        // hình ở cuối, cao bằng phần còn thiếu để bù đủ 1 trang — chỉ là ước lượng gần đúng
+        // (Block/TableCell không expose được chiều cao đã render thật), không ảnh hưởng gì tới
+        // hóa đơn đã dài hơn 1 trang (kẹp về 0, không âm).
+        var estimatedContentHeight = EstimateContentHeight(order.Lines.Count);
+        var spacerHeight = Math.Max(0, A5PageHeight - estimatedContentHeight);
+        content.Blocks.Add(new BlockUIContainer(new Border { MinHeight = spacerHeight }));
 
         return doc;
     }
@@ -279,4 +302,24 @@ public partial class SalesOrderPrintWindow : Window
     }
 
     private static string FormatMoney(decimal value) => value.ToString("N0", CultureInfo.GetCultureInfo("vi-VN"));
+
+    // Ước lượng thô chiều cao (DIU) của toàn bộ nội dung hóa đơn theo số dòng sản phẩm — dùng để
+    // tính spacer bù đủ 1 trang cho preview (xem chỗ gọi). Không cần chính xác tuyệt đối, chỉ cần
+    // đủ gần để hóa đơn ngắn không còn nhìn như hình chữ nhật nằm ngang.
+    private static double EstimateContentHeight(int lineCount)
+    {
+        const double header          = 85;  // logo + 5 dòng thông tin công ty
+        const double title           = 30;  // "HÓA ĐƠN BÁN HÀNG" + Số HĐ
+        const double customerInfo    = 70;  // Tên KH/Điện thoại/Địa chỉ + PT giao hàng-thanh toán
+        const double tableHeaderRow  = 24;
+        const double perProductRow   = 28;  // xấp xỉ, dài hơn nếu tên sản phẩm wrap 2 dòng
+        const double totalsRow       = 26;
+        const double notesRow        = 26;
+        const double dateAndSignature = 90; // dòng Ngày... + khoảng trống chữ ký có chủ đích
+        const double framePadding    = 24;  // Padding(12) x2 của outer frame
+        const double pagePadding     = 28;  // PagePadding(14) x2
+
+        return header + title + customerInfo + tableHeaderRow + (perProductRow * lineCount)
+            + totalsRow + notesRow + dateAndSignature + framePadding + pagePadding;
+    }
 }

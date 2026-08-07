@@ -113,6 +113,11 @@
                                                 Command="{Binding CancelCommand}"
                                                 Margin="0"/>
                             <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
+                            <controls:AppButton Content="🖨️ In Hoá Đơn"
+                                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                                Command="{Binding PrintCommand}"
+                                                Margin="0"/>
+                            <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
                             <controls:AppButton Content="✖️ Đóng"
                                                 Style="{StaticResource AppButton.Tertiary.Medium}"
                                                 Click="CloseButton_Click"
@@ -333,6 +338,7 @@
                               BorderThickness="0"
                               RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                               AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                              PreparingCellForEdit="LinesDataGrid_PreparingCellForEdit"
                               CellEditEnding="LinesDataGrid_CellEditEnding"
                               behaviors:DataGridRowNavigationBehavior.EnableArrowRowNavigation="True">
                         <DataGrid.Columns>
@@ -448,7 +454,7 @@
 
                             <!-- Đơn giá -->
                             <DataGridTextColumn Header="Đơn giá"
-                                                Binding="{Binding UnitPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=N0, Converter={StaticResource BlankToZeroConverter}}"
+                                                Binding="{Binding UnitPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=N0}"
                                                 Width="100">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
@@ -471,7 +477,7 @@
 
                             <!-- Tỷ lệ CK(%) -->
                             <DataGridTextColumn Header="Tỷ lệ CK(%)"
-                                                Binding="{Binding DiscountRate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=N2, Converter={StaticResource BlankToZeroConverter}}"
+                                                Binding="{Binding DiscountRate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=N2}"
                                                 Width="80">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
@@ -492,11 +498,11 @@
                                 </DataGridTextColumn.CellStyle>
                             </DataGridTextColumn>
 
-                            <!-- Thành tiền -->
+                            <!-- Thành tiền: cho gõ tay để override — dòng tự chuyển sang chế độ thủ công
+                                 (BE dùng thẳng giá trị này); sửa lại Đơn giá/SL/CK% sẽ tự tắt chế độ này. -->
                             <DataGridTextColumn Header="Thành tiền"
-                                                Binding="{Binding Amount, StringFormat=N0}"
-                                                Width="110"
-                                                IsReadOnly="True">
+                                                Binding="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=N0}"
+                                                Width="110">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="HorizontalAlignment" Value="Right"/>
@@ -506,6 +512,16 @@
                                         <Setter Property="FontWeight"          Value="SemiBold"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
+                                <DataGridTextColumn.CellStyle>
+                                    <Style TargetType="DataGridCell">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsPromotion}" Value="True">
+                                                <Setter Property="IsEnabled" Value="False"/>
+                                                <Setter Property="Background" Value="{StaticResource AppColor.BackgroundSecondary}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DataGridTextColumn.CellStyle>
                             </DataGridTextColumn>
 
                             <!-- Thuế suất -->

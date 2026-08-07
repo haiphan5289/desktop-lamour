@@ -253,6 +253,7 @@
                               BorderThickness="0"
                               RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                               AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                              PreparingCellForEdit="LinesDataGrid_PreparingCellForEdit"
                               CellEditEnding="LinesDataGrid_CellEditEnding"
                               behaviors:DataGridRowNavigationBehavior.EnableArrowRowNavigation="True">
                         <DataGrid.Columns>

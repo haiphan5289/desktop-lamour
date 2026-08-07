@@ -15,6 +15,7 @@ public class SalesOrderLineDto
     [JsonPropertyName("unit_price")]           public decimal UnitPrice         { get; set; }
     [JsonPropertyName("discount_rate")]        public decimal DiscountRate      { get; set; }
     [JsonPropertyName("amount")]               public decimal Amount            { get; set; }
+    [JsonPropertyName("is_amount_manual")]     public bool    IsAmountManual    { get; set; }
     [JsonPropertyName("tax_rate")]             public decimal TaxRate           { get; set; }
     [JsonPropertyName("tax_amount")]           public decimal TaxAmount         { get; set; }
     [JsonPropertyName("receivable_account")]  public string  ReceivableAccount { get; set; } = "131";
