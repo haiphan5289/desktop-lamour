@@ -4,3 +4,9 @@
 /Users/hai.phan/Desktop/haiphan/desktop-lamour/tests/DesktopLamour.Tests/obj/Debug/net8.0-windows/DesktopLamour.Tests.AssemblyInfo.cs
 /Users/hai.phan/Desktop/haiphan/desktop-lamour/tests/DesktopLamour.Tests/obj/Debug/net8.0-windows/DesktopLamour.Tests.csproj.CoreCompileInputs.cache
 /Users/hai.phan/Desktop/haiphan/desktop-lamour/tests/DesktopLamour.Tests/obj/Debug/net8.0-windows/DesktopLamour.Tests.sourcelink.json
+/Users/haiphan/Desktop/haiphan/desktop-lamour/tests/DesktopLamour.Tests/obj/Debug/net8.0-windows/DesktopLamour.Tests.csproj.AssemblyReference.cache
+/Users/haiphan/Desktop/haiphan/desktop-lamour/tests/DesktopLamour.Tests/obj/Debug/net8.0-windows/DesktopLamour.Tests.GeneratedMSBuildEditorConfig.editorconfig
+/Users/haiphan/Desktop/haiphan/desktop-lamour/tests/DesktopLamour.Tests/obj/Debug/net8.0-windows/DesktopLamour.Tests.AssemblyInfoInputs.cache
+/Users/haiphan/Desktop/haiphan/desktop-lamour/tests/DesktopLamour.Tests/obj/Debug/net8.0-windows/DesktopLamour.Tests.AssemblyInfo.cs
+/Users/haiphan/Desktop/haiphan/desktop-lamour/tests/DesktopLamour.Tests/obj/Debug/net8.0-windows/DesktopLamour.Tests.csproj.CoreCompileInputs.cache
+/Users/haiphan/Desktop/haiphan/desktop-lamour/tests/DesktopLamour.Tests/obj/Debug/net8.0-windows/DesktopLamour.Tests.sourcelink.json

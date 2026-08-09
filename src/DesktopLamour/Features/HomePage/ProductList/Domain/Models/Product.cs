@@ -22,5 +22,36 @@ public class Product : ISearchableItem
     public decimal?     ExportTaxRate    { get; set; }
     public string?      ExciseTaxGroup   { get; set; }
 
+    // Header — "Sửa Vật tư, hàng hoá, dịch vụ"
+    public ProductNature Nature              { get; set; } = ProductNature.VatTuHangHoa;
+    public string?        Description         { get; set; }
+    public int?            ProductUnitId       { get; set; }
+    public string?         ProductUnitName     { get; set; }
+    public string?         WarrantyPeriod      { get; set; }
+    public int             MinStockQuantity    { get; set; }
+    public string?         Origin              { get; set; }
+    public string?         PurchaseDescription { get; set; }
+    public string?         SaleDescription     { get; set; }
+
+    // Tab "Ngầm định"
+    public int?    DefaultWarehouseId        { get; set; }
+    public string? DefaultWarehouseName      { get; set; }
+    public int?    StockAccountId            { get; set; }
+    public string? StockAccountCode          { get; set; }
+    public int?    RevenueAccountId          { get; set; }
+    public string? RevenueAccountCode        { get; set; }
+    public int?    DiscountAccountId         { get; set; }
+    public string? DiscountAccountCode       { get; set; }
+    public int?    PriceReductionAccountId   { get; set; }
+    public string? PriceReductionAccountCode { get; set; }
+    public int?    ReturnAccountId           { get; set; }
+    public string? ReturnAccountCode         { get; set; }
+    public int?    CostAccountId             { get; set; }
+    public string? CostAccountCode           { get; set; }
+    public decimal TradeDiscountRate         { get; set; }
+    public string? SpecialGoodsType          { get; set; }
+    public decimal LatestPurchasePrice       { get; set; }
+    public bool    IsPromotionalGood         { get; set; }
+
     public string DisplayText => $"{Code} — {Name}";
 }

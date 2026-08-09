@@ -1,30 +1,30 @@
 {
   "format": 1,
   "restore": {
-    "/Users/hai.phan/Desktop/haiphan/desktop-lamour/tests/DesktopLamour.Tests/DesktopLamour.Tests.csproj": {}
+    "/Users/haiphan/Desktop/haiphan/desktop-lamour/tests/DesktopLamour.Tests/DesktopLamour.Tests.csproj": {}
   },
   "projects": {
-    "/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/DesktopLamour.csproj": {
+    "/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/DesktopLamour.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/DesktopLamour.csproj",
+        "projectUniqueName": "/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/DesktopLamour.csproj",
         "projectName": "DesktopLamour",
-        "projectPath": "/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/DesktopLamour.csproj",
-        "packagesPath": "/Users/hai.phan/.nuget/packages/",
-        "outputPath": "/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/",
+        "projectPath": "/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/DesktopLamour.csproj",
+        "packagesPath": "/Users/haiphan/.nuget/packages/",
+        "outputPath": "/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/Users/hai.phan/.nuget/NuGet/NuGet.Config"
+          "/Users/haiphan/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0-windows"
         ],
         "sources": {
-          "/opt/homebrew/Cellar/dotnet/10.0.107/libexec/library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
-          "net8.0-windows7.0": {
+          "net8.0-windows": {
+            "framework": "net8.0-windows7.0",
             "targetAlias": "net8.0-windows",
             "projectReferences": {}
           }
@@ -39,15 +39,28 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "10.0.300"
       },
       "frameworks": {
-        "net8.0-windows7.0": {
+        "net8.0-windows": {
+          "framework": "net8.0-windows7.0",
           "targetAlias": "net8.0-windows",
           "dependencies": {
+            "ClosedXML": {
+              "target": "Package",
+              "version": "[0.105.0, )"
+            },
             "CommunityToolkit.Mvvm": {
               "target": "Package",
               "version": "[8.3.2, )"
+            },
+            "Microsoft.AspNetCore.SignalR.Client": {
+              "target": "Package",
+              "version": "[8.0.1, )"
+            },
+            "Microsoft.Extensions.Configuration.Json": {
+              "target": "Package",
+              "version": "[8.0.1, )"
             },
             "Microsoft.Extensions.DependencyInjection": {
               "target": "Package",
@@ -80,19 +93,19 @@
           "downloadDependencies": [
             {
               "name": "Microsoft.AspNetCore.App.Ref",
-              "version": "[8.0.26, 8.0.26]"
+              "version": "[8.0.29, 8.0.29]"
             },
             {
               "name": "Microsoft.NETCore.App.Host.osx-arm64",
-              "version": "[8.0.26, 8.0.26]"
+              "version": "[8.0.29, 8.0.29]"
             },
             {
               "name": "Microsoft.NETCore.App.Ref",
-              "version": "[8.0.26, 8.0.26]"
+              "version": "[8.0.29, 8.0.29]"
             },
             {
               "name": "Microsoft.WindowsDesktop.App.Ref",
-              "version": "[8.0.26, 8.0.26]"
+              "version": "[8.0.29, 8.0.29]"
             }
           ],
           "frameworkReferences": {
@@ -103,35 +116,35 @@
               "privateAssets": "none"
             }
           },
-          "runtimeIdentifierGraphPath": "/opt/homebrew/Cellar/dotnet/10.0.107/libexec/sdk/10.0.107/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.302/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "/Users/hai.phan/Desktop/haiphan/desktop-lamour/tests/DesktopLamour.Tests/DesktopLamour.Tests.csproj": {
+    "/Users/haiphan/Desktop/haiphan/desktop-lamour/tests/DesktopLamour.Tests/DesktopLamour.Tests.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/hai.phan/Desktop/haiphan/desktop-lamour/tests/DesktopLamour.Tests/DesktopLamour.Tests.csproj",
+        "projectUniqueName": "/Users/haiphan/Desktop/haiphan/desktop-lamour/tests/DesktopLamour.Tests/DesktopLamour.Tests.csproj",
         "projectName": "DesktopLamour.Tests",
-        "projectPath": "/Users/hai.phan/Desktop/haiphan/desktop-lamour/tests/DesktopLamour.Tests/DesktopLamour.Tests.csproj",
-        "packagesPath": "/Users/hai.phan/.nuget/packages/",
-        "outputPath": "/Users/hai.phan/Desktop/haiphan/desktop-lamour/tests/DesktopLamour.Tests/obj/",
+        "projectPath": "/Users/haiphan/Desktop/haiphan/desktop-lamour/tests/DesktopLamour.Tests/DesktopLamour.Tests.csproj",
+        "packagesPath": "/Users/haiphan/.nuget/packages/",
+        "outputPath": "/Users/haiphan/Desktop/haiphan/desktop-lamour/tests/DesktopLamour.Tests/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/Users/hai.phan/.nuget/NuGet/NuGet.Config"
+          "/Users/haiphan/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0-windows"
         ],
         "sources": {
-          "/opt/homebrew/Cellar/dotnet/10.0.107/libexec/library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
-          "net8.0-windows7.0": {
+          "net8.0-windows": {
+            "framework": "net8.0-windows7.0",
             "targetAlias": "net8.0-windows",
             "projectReferences": {
-              "/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/DesktopLamour.csproj": {
-                "projectPath": "/Users/hai.phan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/DesktopLamour.csproj"
+              "/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/DesktopLamour.csproj": {
+                "projectPath": "/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/DesktopLamour.csproj"
               }
             }
           }
@@ -146,10 +159,11 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "10.0.300"
       },
       "frameworks": {
-        "net8.0-windows7.0": {
+        "net8.0-windows": {
+          "framework": "net8.0-windows7.0",
           "targetAlias": "net8.0-windows",
           "dependencies": {
             "FluentAssertions": {
@@ -193,15 +207,15 @@
           "downloadDependencies": [
             {
               "name": "Microsoft.AspNetCore.App.Ref",
-              "version": "[8.0.26, 8.0.26]"
+              "version": "[8.0.29, 8.0.29]"
             },
             {
               "name": "Microsoft.NETCore.App.Ref",
-              "version": "[8.0.26, 8.0.26]"
+              "version": "[8.0.29, 8.0.29]"
             },
             {
               "name": "Microsoft.WindowsDesktop.App.Ref",
-              "version": "[8.0.26, 8.0.26]"
+              "version": "[8.0.29, 8.0.29]"
             }
           ],
           "frameworkReferences": {
@@ -212,7 +226,7 @@
               "privateAssets": "none"
             }
           },
-          "runtimeIdentifierGraphPath": "/opt/homebrew/Cellar/dotnet/10.0.107/libexec/sdk/10.0.107/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.302/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

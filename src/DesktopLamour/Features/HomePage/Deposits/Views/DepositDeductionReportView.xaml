@@ -1,0 +1,198 @@
+<UserControl x:Class="DesktopLamour.Features.HomePage.Deposits.Views.DepositDeductionReportView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+             Background="{StaticResource AppColor.BackgroundSecondary}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Loading overlay -->
+        <controls:AppLoadingOverlay Grid.RowSpan="4" IsLoading="{Binding IsLoading}"/>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Page header                                   -->
+        <!-- ══════════════════════════════════════════════ -->
+        <StackPanel Grid.Row="0" Margin="24,32,24,0">
+            <controls:AppButton Content="← Quay lại"
+                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                Command="{Binding GoBackCommand}"
+                                HorizontalAlignment="Left"
+                                Margin="0,0,0,8"/>
+            <controls:AppLabel Text="Báo cáo đơn trừ cọc"
+                               Style="{StaticResource AppTypography.DisplayPage}"/>
+            <controls:AppLabel Text="Theo dõi các lần trừ cọc vào chứng từ bán hàng"
+                               Style="{StaticResource AppTypography.BodyCaption}"
+                               Foreground="{StaticResource AppColor.TextSecondary}"
+                               Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Filter toolbar                                -->
+        <!-- ══════════════════════════════════════════════ -->
+        <Border Grid.Row="1"
+                Margin="24,16,24,0"
+                Padding="16,12"
+                Background="{StaticResource AppColor.BackgroundPrimary}"
+                BorderBrush="{StaticResource AppColor.BorderThin}"
+                BorderThickness="1"
+                CornerRadius="8">
+            <StackPanel Orientation="Horizontal">
+                <controls:AppLabel Text="Từ ngày"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"/>
+                <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}"
+                            Width="140" Margin="0,0,16,0"/>
+                <controls:AppLabel Text="Đến ngày"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"/>
+                <DatePicker SelectedDate="{Binding ToDate, Mode=TwoWay}"
+                            Width="140" Margin="0,0,16,0"/>
+                <controls:AppTextField Text="{Binding FilterKeyword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                       Placeholder="Tìm theo khách hàng / số chứng từ"
+                                       Width="220"
+                                       Margin="0,0,16,0"/>
+                <controls:AppButton Content="🔍 Xem báo cáo"
+                                    Style="{StaticResource AppButton.Primary.Medium}"
+                                    Command="{Binding LoadCommand}"/>
+                <controls:AppButton Content="🗑️ Xóa"
+                                    Style="{StaticResource AppButton.Destructive.Medium}"
+                                    Command="{Binding DeleteCommand}"
+                                    Margin="8,0,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Summary                                       -->
+        <!-- ══════════════════════════════════════════════ -->
+        <Border Grid.Row="2"
+                Margin="24,8,24,0"
+                Padding="16,10"
+                Background="{StaticResource AppColor.BackgroundPrimary}"
+                BorderBrush="{StaticResource AppColor.BorderThin}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibilityConverter}}">
+            <StackPanel Orientation="Horizontal">
+                <controls:AppLabel Text="Tổng số tiền đã trừ cọc:"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   Margin="0,0,8,0"/>
+                <controls:AppLabel Text="{Binding TotalDeducted, StringFormat=\{0:N0\}}"
+                                   Style="{StaticResource AppTypography.LabelSection}"
+                                   Foreground="{StaticResource AppColor.TextBrand}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  DataGrid                                      -->
+        <!-- ══════════════════════════════════════════════ -->
+        <Grid Grid.Row="3" Margin="24,8,24,24">
+
+            <!-- Error banner -->
+            <Border Panel.ZIndex="10"
+                    Background="{StaticResource AppColor.BackgroundErrorLight}"
+                    CornerRadius="8" Padding="12,10" Margin="0,0,0,12"
+                    VerticalAlignment="Top"
+                    Visibility="{Binding HasError, Converter={StaticResource BoolToVisibilityConverter}}">
+                <DockPanel LastChildFill="True">
+                    <Button DockPanel.Dock="Right"
+                            Content="✕"
+                            FontSize="11"
+                            Padding="6,0,0,0"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Foreground="{StaticResource AppColor.TextError}"
+                            Cursor="Hand"
+                            Focusable="False"
+                            Command="{Binding DismissErrorCommand}"/>
+                    <controls:AppLabel Text="{Binding ErrorMessage}"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       Foreground="{StaticResource AppColor.TextError}"/>
+                </DockPanel>
+            </Border>
+
+            <DataGrid ItemsSource="{Binding Items}"
+                      SelectedItem="{Binding SelectedDeduction, Mode=TwoWay}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      CanUserResizeColumns="True"
+                      SelectionMode="Single"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="Horizontal"
+                      BorderBrush="{StaticResource AppColor.BorderThin}"
+                      BorderThickness="1"
+                      RowBackground="{StaticResource AppColor.BackgroundPrimary}"
+                      AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                      Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibilityConverter}}">
+
+                <DataGrid.Columns>
+
+                    <DataGridTextColumn Header="Số chứng từ"
+                                        Binding="{Binding DocumentNumber}"
+                                        Width="110"/>
+
+                    <DataGridTextColumn Header="Ngày"
+                                        Binding="{Binding AccountingDate, StringFormat=\{0:dd/MM/yyyy\}}"
+                                        Width="100"/>
+
+                    <DataGridTextColumn Header="Cọc"
+                                        Binding="{Binding DepositDocumentNumber}"
+                                        Width="100"/>
+
+                    <DataGridTextColumn Header="Đơn bán hàng"
+                                        Binding="{Binding SalesOrderDocumentNumber}"
+                                        Width="120"/>
+
+                    <DataGridTextColumn Header="Khách hàng"
+                                        Binding="{Binding CustomerName}"
+                                        Width="*"/>
+
+                    <DataGridTextColumn Header="Nhân viên"
+                                        Binding="{Binding EmployeeName}"
+                                        Width="140"/>
+
+                    <DataGridTextColumn Header="Số tiền trừ"
+                                        Binding="{Binding Amount, StringFormat=\{0:N0\}}"
+                                        Width="130">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                <Setter Property="VerticalAlignment"   Value="Center"/>
+                                <Setter Property="Padding"             Value="0,0,6,0"/>
+                                <Setter Property="Foreground"          Value="{StaticResource AppColor.TextBrand}"/>
+                                <Setter Property="FontWeight"          Value="SemiBold"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn Header="Diễn giải"
+                                        Binding="{Binding Description}"
+                                        Width="*"/>
+
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- Empty state -->
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Visibility="{Binding HasItems, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                <TextBlock Text="💰" FontSize="48" HorizontalAlignment="Center" TextAlignment="Center"/>
+                <controls:AppLabel Text="Chưa có đơn trừ cọc nào."
+                                   Style="{StaticResource AppTypography.BodySection}"
+                                   Foreground="{StaticResource AppColor.TextSecondary}"
+                                   Margin="0,12,0,0"
+                                   HorizontalAlignment="Center"/>
+            </StackPanel>
+
+        </Grid>
+    </Grid>
+
+</UserControl>

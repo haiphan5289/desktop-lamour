@@ -34,12 +34,34 @@ using DesktopLamour.Features.HomePage.SalesReturn.Data.Services;
 using DesktopLamour.Features.HomePage.SalesReturn.Domain.UseCases;
 using DesktopLamour.Features.HomePage.SalesReturn.ViewModels;
 using DesktopLamour.Features.HomePage.SalesReturn.Views;
+using DesktopLamour.Features.HomePage.Deposits.Data.Services;
+using DesktopLamour.Features.HomePage.Deposits.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Deposits.ViewModels;
+using DesktopLamour.Features.HomePage.Deposits.Views;
 using DesktopLamour.Features.HomePage.Categories.Data.Cache;
 using DesktopLamour.Features.HomePage.Categories.Data.Repositories;
 using DesktopLamour.Features.HomePage.Categories.Data.Services;
 using DesktopLamour.Features.HomePage.Categories.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Categories.ViewModels;
 using DesktopLamour.Features.HomePage.Categories.Views;
+using DesktopLamour.Features.HomePage.ProductUnits.Data.Cache;
+using DesktopLamour.Features.HomePage.ProductUnits.Data.Repositories;
+using DesktopLamour.Features.HomePage.ProductUnits.Data.Services;
+using DesktopLamour.Features.HomePage.ProductUnits.Domain.UseCases;
+using DesktopLamour.Features.HomePage.ProductUnits.ViewModels;
+using DesktopLamour.Features.HomePage.ProductUnits.Views;
+using DesktopLamour.Features.HomePage.AccountSettings.Data.Cache;
+using DesktopLamour.Features.HomePage.AccountSettings.Data.Repositories;
+using DesktopLamour.Features.HomePage.AccountSettings.Data.Services;
+using DesktopLamour.Features.HomePage.AccountSettings.Domain.UseCases;
+using DesktopLamour.Features.HomePage.AccountSettings.ViewModels;
+using DesktopLamour.Features.HomePage.AccountSettings.Views;
+using DesktopLamour.Features.HomePage.Warehouses.Data.Cache;
+using DesktopLamour.Features.HomePage.Warehouses.Data.Repositories;
+using DesktopLamour.Features.HomePage.Warehouses.Data.Services;
+using DesktopLamour.Features.HomePage.Warehouses.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Warehouses.ViewModels;
+using DesktopLamour.Features.HomePage.Warehouses.Views;
 using DesktopLamour.Features.HomePage.ProductList.Data.Cache;
 using DesktopLamour.Features.HomePage.ProductList.Data.Repositories;
 using DesktopLamour.Features.HomePage.ProductList.Data.Services;
@@ -155,6 +177,93 @@ public static class HomeServiceCollectionExtensions
 
         // ── Categories: Window factory ────────────────────────────────────────
         services.AddTransient<Func<CategoryFormWindow>>(sp => () => sp.GetRequiredService<CategoryFormWindow>());
+
+        // ── Product Units: Views + ViewModels ────────────────────────────────
+        services.AddTransient<ProductUnitFormWindow>();
+        services.AddTransient<ProductUnitFormViewModel>();
+        services.AddTransient<ProductUnitListView>();
+        services.AddTransient<ProductUnitListViewModel>();
+
+        // ── Product Units: UseCases ──────────────────────────────────────────
+        services.AddTransient<IGetProductUnitsUseCase, GetProductUnitsUseCase>();
+        services.AddTransient<ICreateProductUnitUseCase, CreateProductUnitUseCase>();
+        services.AddTransient<IUpdateProductUnitUseCase, UpdateProductUnitUseCase>();
+        services.AddTransient<IDeleteProductUnitUseCase, DeleteProductUnitUseCase>();
+
+        // ── Product Units: Repository ─────────────────────────────────────────
+        services.AddTransient<IProductUnitRepository, ProductUnitRepository>();
+
+        // ── Product Units: Local cache (populated after login, kept fresh via SignalR) ──
+        services.AddSingleton<IProductUnitCacheStore, ProductUnitCacheStore>();
+
+        // ── Product Units: Service + typed HttpClient ────────────────────────
+        services.AddHttpClient<IProductUnitService, ProductUnitService>(client =>
+        {
+            client.BaseAddress = new Uri(serverUrl);
+            client.Timeout     = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
+
+        // ── Product Units: Window factory ────────────────────────────────────
+        services.AddTransient<Func<ProductUnitFormWindow>>(sp => () => sp.GetRequiredService<ProductUnitFormWindow>());
+
+        // ── Account Settings: Views + ViewModels ─────────────────────────────
+        services.AddTransient<AccountSettingFormWindow>();
+        services.AddTransient<AccountSettingFormViewModel>();
+        services.AddTransient<AccountSettingListView>();
+        services.AddTransient<AccountSettingListViewModel>();
+
+        // ── Account Settings: UseCases ────────────────────────────────────────
+        services.AddTransient<IGetAccountSettingsUseCase, GetAccountSettingsUseCase>();
+        services.AddTransient<ICreateAccountSettingUseCase, CreateAccountSettingUseCase>();
+        services.AddTransient<IUpdateAccountSettingUseCase, UpdateAccountSettingUseCase>();
+        services.AddTransient<IDeleteAccountSettingUseCase, DeleteAccountSettingUseCase>();
+
+        // ── Account Settings: Repository ──────────────────────────────────────
+        services.AddTransient<IAccountSettingRepository, AccountSettingRepository>();
+
+        // ── Account Settings: Local cache (populated after login, kept fresh via SignalR) ──
+        services.AddSingleton<IAccountSettingCacheStore, AccountSettingCacheStore>();
+
+        // ── Account Settings: Service + typed HttpClient ─────────────────────
+        services.AddHttpClient<IAccountSettingService, AccountSettingService>(client =>
+        {
+            client.BaseAddress = new Uri(serverUrl);
+            client.Timeout     = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
+
+        // ── Account Settings: Window factory ─────────────────────────────────
+        services.AddTransient<Func<AccountSettingFormWindow>>(sp => () => sp.GetRequiredService<AccountSettingFormWindow>());
+
+        // ── Warehouses (Kho): Views + ViewModels ─────────────────────────────
+        services.AddTransient<WarehouseSettingFormWindow>();
+        services.AddTransient<WarehouseSettingFormViewModel>();
+        services.AddTransient<WarehouseSettingListView>();
+        services.AddTransient<WarehouseSettingListViewModel>();
+
+        // ── Warehouses (Kho): UseCases ────────────────────────────────────────
+        services.AddTransient<IGetWarehouseSettingsUseCase, GetWarehouseSettingsUseCase>();
+        services.AddTransient<ICreateWarehouseSettingUseCase, CreateWarehouseSettingUseCase>();
+        services.AddTransient<IUpdateWarehouseSettingUseCase, UpdateWarehouseSettingUseCase>();
+        services.AddTransient<IDeleteWarehouseSettingUseCase, DeleteWarehouseSettingUseCase>();
+
+        // ── Warehouses (Kho): Repository ──────────────────────────────────────
+        services.AddTransient<IWarehouseSettingRepository, WarehouseSettingRepository>();
+
+        // ── Warehouses (Kho): Local cache (populated after login, kept fresh via SignalR) ──
+        services.AddSingleton<IWarehouseSettingCacheStore, WarehouseSettingCacheStore>();
+
+        // ── Warehouses (Kho): Service + typed HttpClient ─────────────────────
+        services.AddHttpClient<IWarehouseSettingService, WarehouseSettingService>(client =>
+        {
+            client.BaseAddress = new Uri(serverUrl);
+            client.Timeout     = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
+
+        // ── Warehouses (Kho): Window factory ─────────────────────────────────
+        services.AddTransient<Func<WarehouseSettingFormWindow>>(sp => () => sp.GetRequiredService<WarehouseSettingFormWindow>());
 
         // ── Suppliers: Window factory ────────────────────────────────────────
         services.AddTransient<Func<SupplierFormWindow>>(sp => () => sp.GetRequiredService<SupplierFormWindow>());
@@ -359,6 +468,41 @@ public static class HomeServiceCollectionExtensions
 
         // ── SalesReturn: Window factory ──────────────────────────────────────────
         services.AddTransient<Func<SalesReturnWindow>>(sp => () => sp.GetRequiredService<SalesReturnWindow>());
+
+        // ── Deposits: Views + ViewModels ─────────────────────────────────────────
+        services.AddTransient<DepositWindow>();
+        services.AddTransient<DepositViewModel>();
+        services.AddTransient<DepositDeductionReportView>();
+        services.AddTransient<DepositDeductionReportViewModel>();
+
+        // ── Deposits: UseCases ────────────────────────────────────────────────────
+        services.AddTransient<IGetDepositsUseCase, GetDepositsUseCase>();
+        services.AddTransient<IGetNextDepositCodeUseCase, GetNextDepositCodeUseCase>();
+        services.AddTransient<IGetDepositsByCustomerUseCase, GetDepositsByCustomerUseCase>();
+        services.AddTransient<ICreateDepositUseCase, CreateDepositUseCase>();
+        services.AddTransient<IUpdateDepositUseCase, UpdateDepositUseCase>();
+        services.AddTransient<IDeleteDepositUseCase, DeleteDepositUseCase>();
+        services.AddTransient<IGetDepositDeductionsUseCase, GetDepositDeductionsUseCase>();
+        services.AddTransient<ICreateDepositDeductionUseCase, CreateDepositDeductionUseCase>();
+        services.AddTransient<IDeleteDepositDeductionUseCase, DeleteDepositDeductionUseCase>();
+
+        // ── Deposits: Service + typed HttpClient ─────────────────────────────────
+        services.AddHttpClient<IDepositService, DepositService>(client =>
+        {
+            client.BaseAddress = new Uri(serverUrl);
+            client.Timeout     = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
+
+        services.AddHttpClient<IDepositDeductionService, DepositDeductionService>(client =>
+        {
+            client.BaseAddress = new Uri(serverUrl);
+            client.Timeout     = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
+
+        // ── Deposits: Window factory ──────────────────────────────────────────────
+        services.AddTransient<Func<DepositWindow>>(sp => () => sp.GetRequiredService<DepositWindow>());
 
         // ── SalesReturn: UseCases ────────────────────────────────────────────────
         services.AddTransient<IGetSalesReturnsUseCase, GetSalesReturnsUseCase>();

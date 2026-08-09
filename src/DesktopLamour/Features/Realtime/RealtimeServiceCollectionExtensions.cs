@@ -2,11 +2,14 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 
 using DesktopLamour.Core.Storage;
+using DesktopLamour.Features.HomePage.AccountSettings.Data.Cache;
 using DesktopLamour.Features.HomePage.Categories.Data.Cache;
 using DesktopLamour.Features.HomePage.Customers.Data.Cache;
 using DesktopLamour.Features.HomePage.Employees.Data.Cache;
 using DesktopLamour.Features.HomePage.ProductList.Data.Cache;
+using DesktopLamour.Features.HomePage.ProductUnits.Data.Cache;
 using DesktopLamour.Features.HomePage.Suppliers.Data.Cache;
+using DesktopLamour.Features.HomePage.Warehouses.Data.Cache;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -23,6 +26,9 @@ public static class RealtimeServiceCollectionExtensions
             sp.GetRequiredService<IProductCacheStore>(),
             sp.GetRequiredService<ISupplierCacheStore>(),
             sp.GetRequiredService<ICategoryCacheStore>(),
+            sp.GetRequiredService<IProductUnitCacheStore>(),
+            sp.GetRequiredService<IAccountSettingCacheStore>(),
+            sp.GetRequiredService<IWarehouseSettingCacheStore>(),
             sp.GetRequiredService<ILogger<RealtimeSyncService>>(),
             serverUrl));
 

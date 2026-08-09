@@ -25,4 +25,16 @@ public partial class WarehouseViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToPhieuNhapKho()
         => _navigationService.NavigateTo(NavigationRoutes.Warehouse.PhieuNhapKho);
+
+    [RelayCommand]
+    private void NavigateToProductUnits()
+        => _navigationService.NavigateTo(NavigationRoutes.ProductUnits.List);
+
+    [RelayCommand]
+    private void NavigateToAccountSettings()
+        => _navigationService.NavigateTo(NavigationRoutes.AccountSettings.List);
+
+    [RelayCommand]
+    private void NavigateToWarehouses()
+        => _navigationService.NavigateTo(NavigationRoutes.Warehouses.List);
 }

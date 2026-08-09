@@ -1,7 +1,9 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
+using System.Windows;
 using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.Navigation;
 using DesktopLamour.Core.ViewModels;
+using DesktopLamour.Features.HomePage.Deposits.Views;
 using DesktopLamour.Features.HomePage.Sales.Views;
 
 namespace DesktopLamour.Features.HomePage.Sales.ViewModels;
@@ -10,13 +12,16 @@ public partial class SalesViewModel : ViewModelBase
 {
     private readonly INavigationService _navigationService;
     private readonly Func<SalesOrderReportFilterWindow> _reportFilterWindowFactory;
+    private readonly Func<DepositWindow> _depositWindowFactory;
 
     public SalesViewModel(
         INavigationService navigationService,
-        Func<SalesOrderReportFilterWindow> reportFilterWindowFactory)
+        Func<SalesOrderReportFilterWindow> reportFilterWindowFactory,
+        Func<DepositWindow> depositWindowFactory)
     {
         _navigationService         = navigationService;
         _reportFilterWindowFactory = reportFilterWindowFactory;
+        _depositWindowFactory      = depositWindowFactory;
     }
 
     [RelayCommand]
@@ -43,4 +48,16 @@ public partial class SalesViewModel : ViewModelBase
             _navigationService.NavigateTo(NavigationRoutes.SalesOrders.Report, filter);
         }
     }
+
+    [RelayCommand]
+    private void OpenDeposit()
+    {
+        var window = _depositWindowFactory();
+        window.Owner = Application.Current.MainWindow;
+        window.ShowDialog();
+    }
+
+    [RelayCommand]
+    private void NavigateToDepositDeductionReport()
+        => _navigationService.NavigateTo(NavigationRoutes.Deposits.DeductionReport);
 }

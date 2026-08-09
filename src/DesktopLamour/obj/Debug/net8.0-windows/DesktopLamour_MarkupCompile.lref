@@ -11,6 +11,8 @@ F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePa
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Categories/Views/CategoryListView.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Customers/Views/CustomerFormWindow.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Customers/Views/CustomerListView.xaml;;
+F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Deposits/Views/DepositDeductionReportView.xaml;;
+F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Deposits/Views/DepositWindow.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Employees/Views/EmployeeFormWindow.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Employees/Views/EmployeeListView.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Home/Views/HomeView.xaml;;
@@ -18,6 +20,7 @@ F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePa
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/ProductList/Views/ProductListView.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Sales/Views/SalesOrderListView.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Sales/Views/SalesOrderPrintWindow.xaml;;
+F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Sales/Views/SalesOrderReportDetailView.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Sales/Views/SalesOrderReportFilterWindow.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Sales/Views/SalesOrderReportView.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Sales/Views/SalesOrderWindow.xaml;;
@@ -38,5 +41,10 @@ F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Shared/Styles/A
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Shared/Styles/AppPasswordFieldStyles.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Shared/Styles/AppTextFieldStyles.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Themes/AppTypography.xaml;;
-F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Sales/Views/SalesOrderReportDetailView.xaml;;
+F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/AccountSettings/Views/AccountSettingFormWindow.xaml;;
+F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/AccountSettings/Views/AccountSettingListView.xaml;;
+F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/ProductUnits/Views/ProductUnitFormWindow.xaml;;
+F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/ProductUnits/Views/ProductUnitListView.xaml;;
+F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Warehouses/Views/WarehouseSettingFormWindow.xaml;;
+F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Warehouses/Views/WarehouseSettingListView.xaml;;
 

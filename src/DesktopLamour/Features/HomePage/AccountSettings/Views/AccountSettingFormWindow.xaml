@@ -1,0 +1,110 @@
+<Window x:Class="DesktopLamour.Features.HomePage.AccountSettings.Views.AccountSettingFormWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+        Title="{Binding WindowTitle}"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="NoResize"
+        Width="420"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Row 0: Decorative header -->
+            <RowDefinition Height="Auto"/>  <!-- Row 1: Form content -->
+            <RowDefinition Height="Auto"/>  <!-- Row 2: Action buttons -->
+        </Grid.RowDefinitions>
+
+        <!-- Loading overlay -->
+        <controls:AppLoadingOverlay Grid.RowSpan="3"
+                                    IsLoading="{Binding IsLoading}"/>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Row 0: Decorative header strip                -->
+        <!-- ══════════════════════════════════════════════ -->
+        <Border Grid.Row="0"
+                Background="{StaticResource AppColor.BackgroundBrand}"
+                Padding="24,20">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="📒"
+                           FontSize="28"
+                           VerticalAlignment="Center"
+                           Margin="0,0,12,0"/>
+                <StackPanel VerticalAlignment="Center">
+                    <controls:AppLabel Text="{Binding WindowTitle}"
+                                       Style="{StaticResource AppTypography.DisplaySection}"
+                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                    <controls:AppLabel Text="Tài khoản kế toán"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       Foreground="{StaticResource AppColor.TextSecondary}"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Row 1: Form content                           -->
+        <!-- ══════════════════════════════════════════════ -->
+        <StackPanel Grid.Row="1" Margin="24,16,24,8">
+
+            <!-- Số tài khoản (required) -->
+            <StackPanel Margin="0,0,0,16">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                    <controls:AppLabel Text="Số tài khoản"
+                                       Style="{StaticResource AppTypography.LabelSection}"/>
+                    <controls:AppLabel Text=" *"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                </StackPanel>
+                <controls:AppTextField Text="{Binding Code, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                       Placeholder="VD: 632"/>
+            </StackPanel>
+
+            <!-- Tên tài khoản (required) -->
+            <StackPanel Margin="0,0,0,16">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                    <controls:AppLabel Text="Tên tài khoản"
+                                       Style="{StaticResource AppTypography.LabelSection}"/>
+                    <controls:AppLabel Text=" *"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                </StackPanel>
+                <controls:AppTextField Text="{Binding Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                       Placeholder="VD: Giá vốn hàng bán"/>
+            </StackPanel>
+
+            <!-- Error message -->
+            <Border Background="{StaticResource AppColor.BackgroundErrorLight}"
+                    CornerRadius="8"
+                    Padding="12,10"
+                    Margin="0,0,0,8"
+                    Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}">
+                <controls:AppLabel Text="{Binding ErrorMessage}"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   Foreground="{StaticResource AppColor.TextError}"/>
+            </Border>
+
+        </StackPanel>
+
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Row 2: Action buttons                         -->
+        <!-- ══════════════════════════════════════════════ -->
+        <Border Grid.Row="2"
+                BorderBrush="{StaticResource AppColor.BorderThin}"
+                BorderThickness="0,1,0,0"
+                Padding="24,16">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <controls:AppButton Content="Hủy"
+                                    Style="{StaticResource AppButton.Tertiary.Medium}"
+                                    Command="{Binding CancelCommand}"
+                                    Margin="0,0,12,0"/>
+                <controls:AppButton Content="💾 Lưu"
+                                    Style="{StaticResource AppButton.Primary.Large}"
+                                    Command="{Binding SaveCommand}"
+                                    Width="140"/>
+            </StackPanel>
+        </Border>
+
+    </Grid>
+
+</Window>

@@ -25,6 +25,16 @@ public static class NavigationRoutes
         public const string List = "CategoryListView";
     }
 
+    public static class ProductUnits
+    {
+        public const string List = "ProductUnitListView";
+    }
+
+    public static class AccountSettings
+    {
+        public const string List = "AccountSettingListView";
+    }
+
     public static class Backup
     {
         public const string List = "BackupView";
@@ -47,6 +57,11 @@ public static class NavigationRoutes
         public const string PhieuNhapKho  = "WarehouseReceiptListView";
     }
 
+    public static class Warehouses
+    {
+        public const string List = "WarehouseListView";
+    }
+
     public static class Sales
     {
         public const string Hub = "SalesView";
@@ -67,6 +82,11 @@ public static class NavigationRoutes
     public static class Accounting
     {
         public const string Hub = "AccountingView";
+    }
+
+    public static class Deposits
+    {
+        public const string DeductionReport = "DepositDeductionReportView";
     }
 
 

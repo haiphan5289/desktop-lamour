@@ -1,6 +1,7 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using DesktopLamour.Features.HomePage.Deposits.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.ProductList.Domain.Models;
 using DesktopLamour.Shared.Controls;
 
@@ -23,6 +24,32 @@ public class SalesOrderLineItem : INotifyPropertyChanged
     private string           _receivableAccount = "131";
     private string           _revenueAccount    = "511";
     private ISearchableItem? _selectedProduct;
+    private bool              _isDepositDeductionRow;
+    private DepositResponseDto? _linkedDeposit;
+
+    // Dòng ảo "Trừ cọc" — không phải sản phẩm thật, không gửi lên BE như 1 SalesOrderLine.
+    public bool IsDepositDeductionRow
+    {
+        get => _isDepositDeductionRow;
+        set { _isDepositDeductionRow = value; OnPropertyChanged(); }
+    }
+
+    // Cọc được chọn để trừ cho dòng này — chỉ có ý nghĩa khi IsDepositDeductionRow = true.
+    // Hiển thị y hệt 1 dòng sản phẩm bình thường: Mã hàng = số chứng từ cọc, Tên hàng = "Trừ cọc".
+    public DepositResponseDto? LinkedDeposit
+    {
+        get => _linkedDeposit;
+        set
+        {
+            _linkedDeposit = value;
+            OnPropertyChanged();
+            if (value is not null)
+            {
+                ProductCode = value.DocumentNumber;
+                ProductName = "Trừ cọc";
+            }
+        }
+    }
 
     public int ProductId
     {
@@ -98,6 +125,17 @@ public class SalesOrderLineItem : INotifyPropertyChanged
         get => _amount;
         set
         {
+            // Dòng Trừ cọc: user luôn gõ số dương, tự động lưu thành số âm để cộng dồn
+            // đúng vào GrandTotal ở RecalculateTotals — không áp dụng logic thành tiền thủ công
+            // của dòng sản phẩm (Quantity=0 nên back-calculate Đơn giá vô nghĩa với dòng này).
+            if (_isDepositDeductionRow)
+            {
+                _amount = -Math.Abs(value);
+                OnPropertyChanged();
+                RecalculateTax();
+                return;
+            }
+
             _amount = value;
             OnPropertyChanged();
             SetIsAmountManual(true);
@@ -166,13 +204,33 @@ public class SalesOrderLineItem : INotifyPropertyChanged
             _selectedProduct = value;
             OnPropertyChanged();
 
-            if (value is Product p)
+            if (value is DepositProductPickerItem depositItem)
             {
+                // Chọn "Trừ cọc" trong dropdown sản phẩm → biến dòng này thành dòng Trừ cọc.
+                IsDepositDeductionRow = true;
+                ProductId             = 0;
+                Unit                  = "";
+                Quantity              = 0;
+                UnitPrice             = 0;
+                DiscountRate          = 0;
+                TaxRate               = 0;
+                ReceivableAccount     = "";
+                RevenueAccount        = "";
+                LinkedDeposit         = depositItem.Deposit; // set sau cùng — tự gán ProductCode/ProductName
+            }
+            else if (value is Product p)
+            {
+                // Chọn lại 1 sản phẩm thật → khôi phục dòng về trạng thái bình thường.
+                IsDepositDeductionRow = false;
+                LinkedDeposit         = null;
                 ProductId   = p.Id;
                 ProductCode = p.Code;
                 ProductName = p.Name;
                 Unit        = p.Unit;
+                Quantity    = Quantity == 0 ? 1 : Quantity;
                 UnitPrice   = p.SellingPrice;
+                ReceivableAccount = string.IsNullOrEmpty(ReceivableAccount) ? "131" : ReceivableAccount;
+                RevenueAccount    = string.IsNullOrEmpty(RevenueAccount)    ? "511" : RevenueAccount;
                 TaxRate     = SalesOrderTaxCalculator.ToPercent(p.VatRate);
             }
         }

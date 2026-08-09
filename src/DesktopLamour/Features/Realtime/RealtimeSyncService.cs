@@ -2,6 +2,8 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 
 using DesktopLamour.Core.Storage;
+using DesktopLamour.Features.HomePage.AccountSettings.Data.Cache;
+using DesktopLamour.Features.HomePage.AccountSettings.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Categories.Data.Cache;
 using DesktopLamour.Features.HomePage.Categories.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Customers.Data.Cache;
@@ -10,8 +12,12 @@ using DesktopLamour.Features.HomePage.Employees.Data.Cache;
 using DesktopLamour.Features.HomePage.Employees.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.ProductList.Data.Cache;
 using DesktopLamour.Features.HomePage.ProductList.Data.Services.Dtos;
+using DesktopLamour.Features.HomePage.ProductUnits.Data.Cache;
+using DesktopLamour.Features.HomePage.ProductUnits.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Suppliers.Data.Cache;
 using DesktopLamour.Features.HomePage.Suppliers.Data.Services.Dtos;
+using DesktopLamour.Features.HomePage.Warehouses.Data.Cache;
+using DesktopLamour.Features.HomePage.Warehouses.Data.Services.Dtos;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
 
@@ -29,6 +35,9 @@ public sealed class RealtimeSyncService : IRealtimeSyncService
     private readonly IProductCacheStore           _productCache;
     private readonly ISupplierCacheStore          _supplierCache;
     private readonly ICategoryCacheStore          _categoryCache;
+    private readonly IProductUnitCacheStore       _productUnitCache;
+    private readonly IAccountSettingCacheStore    _accountSettingCache;
+    private readonly IWarehouseSettingCacheStore  _warehouseCache;
     private readonly ILogger<RealtimeSyncService> _logger;
     private readonly string                       _serverUrl;
     private HubConnection?                        _connection;
@@ -40,17 +49,23 @@ public sealed class RealtimeSyncService : IRealtimeSyncService
         IProductCacheStore productCache,
         ISupplierCacheStore supplierCache,
         ICategoryCacheStore categoryCache,
+        IProductUnitCacheStore productUnitCache,
+        IAccountSettingCacheStore accountSettingCache,
+        IWarehouseSettingCacheStore warehouseCache,
         ILogger<RealtimeSyncService> logger,
         string serverUrl)
     {
-        _tokenStorage  = tokenStorage;
-        _customerCache = customerCache;
-        _employeeCache = employeeCache;
-        _productCache  = productCache;
-        _supplierCache = supplierCache;
-        _categoryCache = categoryCache;
-        _logger        = logger;
-        _serverUrl     = serverUrl;
+        _tokenStorage         = tokenStorage;
+        _customerCache        = customerCache;
+        _employeeCache        = employeeCache;
+        _productCache         = productCache;
+        _supplierCache        = supplierCache;
+        _categoryCache        = categoryCache;
+        _productUnitCache     = productUnitCache;
+        _accountSettingCache  = accountSettingCache;
+        _warehouseCache       = warehouseCache;
+        _logger               = logger;
+        _serverUrl            = serverUrl;
     }
 
     public async Task StartAsync(CancellationToken ct = default)
@@ -87,6 +102,18 @@ public sealed class RealtimeSyncService : IRealtimeSyncService
         _connection.On<CategoryResponseDto>("CategoryCreated", _categoryCache.Upsert);
         _connection.On<CategoryResponseDto>("CategoryUpdated", _categoryCache.Upsert);
         _connection.On<int>("CategoryDeleted", _categoryCache.Remove);
+
+        _connection.On<ProductUnitResponseDto>("ProductUnitCreated", _productUnitCache.Upsert);
+        _connection.On<ProductUnitResponseDto>("ProductUnitUpdated", _productUnitCache.Upsert);
+        _connection.On<int>("ProductUnitDeleted", _productUnitCache.Remove);
+
+        _connection.On<AccountSettingResponseDto>("AccountSettingCreated", _accountSettingCache.Upsert);
+        _connection.On<AccountSettingResponseDto>("AccountSettingUpdated", _accountSettingCache.Upsert);
+        _connection.On<int>("AccountSettingDeleted", _accountSettingCache.Remove);
+
+        _connection.On<WarehouseSettingResponseDto>("WarehouseCreated", _warehouseCache.Upsert);
+        _connection.On<WarehouseSettingResponseDto>("WarehouseUpdated", _warehouseCache.Upsert);
+        _connection.On<int>("WarehouseDeleted", _warehouseCache.Remove);
 
         _connection.Reconnecting += error =>
         {
