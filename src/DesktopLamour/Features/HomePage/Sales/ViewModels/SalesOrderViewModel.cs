@@ -15,6 +15,7 @@ using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Employees.Views;
 using DesktopLamour.Features.HomePage.ProductList.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Sales.Views;
+using DesktopLamour.Features.HomePage.Warehouses.Domain.UseCases;
 using DesktopLamour.Shared.Controls;
 using Microsoft.Extensions.Logging;
 
@@ -33,6 +34,7 @@ public partial class SalesOrderViewModel : ViewModelBase
     private readonly IGetCustomersUseCase           _getCustomers;
     private readonly IGetEmployeesUseCase           _getEmployees;
     private readonly IGetProductsUseCase            _getProducts;
+    private readonly IGetWarehouseSettingsUseCase   _getWarehouses;
     private readonly IGetDepositsByCustomerUseCase  _getDepositsByCustomer;
     private readonly ICreateDepositDeductionUseCase _createDepositDeduction;
     private readonly Func<EmployeeFormWindow>       _employeeFormWindowFactory;
@@ -94,6 +96,7 @@ public partial class SalesOrderViewModel : ViewModelBase
     public IReadOnlyList<ISearchableItem> Customers { get; private set; } = Array.Empty<ISearchableItem>();
     public IReadOnlyList<ISearchableItem> Employees { get; private set; } = Array.Empty<ISearchableItem>();
     public ObservableCollection<ISearchableItem> Products { get; } = new();
+    public IReadOnlyList<ISearchableItem> Warehouses { get; private set; } = Array.Empty<ISearchableItem>();
     private readonly List<ISearchableItem> _allProducts = new();
     private List<ISearchableItem> _depositPickerItems = new();
 
@@ -108,6 +111,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         IGetCustomersUseCase           getCustomers,
         IGetEmployeesUseCase           getEmployees,
         IGetProductsUseCase            getProducts,
+        IGetWarehouseSettingsUseCase   getWarehouses,
         IGetDepositsByCustomerUseCase  getDepositsByCustomer,
         ICreateDepositDeductionUseCase createDepositDeduction,
         Func<EmployeeFormWindow>       employeeFormWindowFactory,
@@ -123,6 +127,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         _getCustomers               = getCustomers;
         _getEmployees               = getEmployees;
         _getProducts                = getProducts;
+        _getWarehouses              = getWarehouses;
         _getDepositsByCustomer      = getDepositsByCustomer;
         _createDepositDeduction     = createDepositDeduction;
         _employeeFormWindowFactory  = employeeFormWindowFactory;
@@ -176,11 +181,20 @@ public partial class SalesOrderViewModel : ViewModelBase
 
     private async Task LoadLookupsAsync(CancellationToken ct)
     {
-        var customerTask = _getCustomers.ExecuteAsync(ct);
-        var employeeTask = _getEmployees.ExecuteAsync(ct);
-        var productTask  = _getProducts.ExecuteAsync(ct);
+        var customerTask  = _getCustomers.ExecuteAsync(ct);
+        var employeeTask  = _getEmployees.ExecuteAsync(ct);
+        var productTask   = _getProducts.ExecuteAsync(ct);
+        var warehouseTask = _getWarehouses.ExecuteAsync(ct);
 
-        await Task.WhenAll(customerTask, employeeTask, productTask);
+        await Task.WhenAll(customerTask, employeeTask, productTask, warehouseTask);
+
+        if (warehouseTask.IsCompletedSuccessfully)
+        {
+            Warehouses = warehouseTask.Result.Cast<ISearchableItem>().ToList().AsReadOnly();
+            OnPropertyChanged(nameof(Warehouses));
+        }
+        else
+            _logger.LogWarning(warehouseTask.Exception, "Could not preload warehouses for SalesOrderWindow");
 
         if (customerTask.IsCompletedSuccessfully)
         {
@@ -399,6 +413,7 @@ public partial class SalesOrderViewModel : ViewModelBase
             RevenueAccount    = "511",
             Quantity          = 1,
         };
+        line.SetSelectedWarehouseSilent(Warehouses.FirstOrDefault());
         line.PropertyChanged += (_, _) => OnLinesOrTotalsChanged();
         Lines.Add(line);
     }
@@ -523,6 +538,7 @@ public partial class SalesOrderViewModel : ViewModelBase
             // ở trên tự tính lại đè mất giá trị đã lưu từ BE.
             item.LoadAmount(l.Amount, l.IsAmountManual);
             item.SetSelectedProductSilent(_allProducts.FirstOrDefault(p => p.Id == l.ProductId));
+            item.SetSelectedWarehouseSilent(Warehouses.FirstOrDefault(w => w.Id == l.WarehouseId));
             item.PropertyChanged += (_, _) => OnLinesOrTotalsChanged();
             Lines.Add(item);
         }
@@ -623,6 +639,7 @@ public partial class SalesOrderViewModel : ViewModelBase
     private static SalesOrderLineDto ToLineDto(SalesOrderLineItem item) => new()
     {
         ProductId         = item.ProductId,
+        WarehouseId       = item.WarehouseId,
         ProductCode       = item.ProductCode,
         ProductName       = item.ProductName,
         IsPromotion       = item.IsPromotion,

@@ -12,6 +12,7 @@ using DesktopLamour.Features.HomePage.Customers.Views;
 using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Employees.Views;
 using DesktopLamour.Features.HomePage.ProductList.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Warehouses.Domain.UseCases;
 using DesktopLamour.Shared.Controls;
 using Microsoft.Extensions.Logging;
 
@@ -29,6 +30,7 @@ public partial class SalesReturnViewModel : ViewModelBase
     private readonly IGetCustomersUseCase           _getCustomers;
     private readonly IGetEmployeesUseCase           _getEmployees;
     private readonly IGetProductsUseCase            _getProducts;
+    private readonly IGetWarehouseSettingsUseCase   _getWarehouses;
     private readonly Func<EmployeeFormWindow>       _employeeFormWindowFactory;
     private readonly Func<CustomerFormWindow>       _customerFormWindowFactory;
     private readonly ILogger<SalesReturnViewModel>  _logger;
@@ -72,6 +74,7 @@ public partial class SalesReturnViewModel : ViewModelBase
     public IReadOnlyList<ISearchableItem> Customers { get; private set; } = Array.Empty<ISearchableItem>();
     public IReadOnlyList<ISearchableItem> Employees { get; private set; } = Array.Empty<ISearchableItem>();
     public ObservableCollection<ISearchableItem> Products { get; } = new();
+    public IReadOnlyList<ISearchableItem> Warehouses { get; private set; } = Array.Empty<ISearchableItem>();
     private readonly List<ISearchableItem> _allProducts = new();
 
     public IReadOnlyList<ReturnTypeItem> ReturnTypes { get; } = new[]
@@ -90,6 +93,7 @@ public partial class SalesReturnViewModel : ViewModelBase
         IGetCustomersUseCase           getCustomers,
         IGetEmployeesUseCase           getEmployees,
         IGetProductsUseCase            getProducts,
+        IGetWarehouseSettingsUseCase   getWarehouses,
         Func<EmployeeFormWindow>       employeeFormWindowFactory,
         Func<CustomerFormWindow>       customerFormWindowFactory,
         ILogger<SalesReturnViewModel>  logger)
@@ -101,6 +105,7 @@ public partial class SalesReturnViewModel : ViewModelBase
         _getCustomers              = getCustomers;
         _getEmployees              = getEmployees;
         _getProducts               = getProducts;
+        _getWarehouses             = getWarehouses;
         _employeeFormWindowFactory = employeeFormWindowFactory;
         _customerFormWindowFactory = customerFormWindowFactory;
         _logger                    = logger;
@@ -141,11 +146,19 @@ public partial class SalesReturnViewModel : ViewModelBase
 
     private async Task LoadLookupsAsync(CancellationToken ct)
     {
-        var customerTask = _getCustomers.ExecuteAsync(ct);
-        var employeeTask = _getEmployees.ExecuteAsync(ct);
-        var productTask  = _getProducts.ExecuteAsync(ct);
+        var customerTask  = _getCustomers.ExecuteAsync(ct);
+        var employeeTask  = _getEmployees.ExecuteAsync(ct);
+        var productTask   = _getProducts.ExecuteAsync(ct);
+        var warehouseTask = _getWarehouses.ExecuteAsync(ct);
 
-        await Task.WhenAll(customerTask, employeeTask, productTask);
+        await Task.WhenAll(customerTask, employeeTask, productTask, warehouseTask);
+
+        if (warehouseTask.IsCompletedSuccessfully)
+        {
+            Warehouses = warehouseTask.Result.Cast<ISearchableItem>().ToList().AsReadOnly();
+            OnPropertyChanged(nameof(Warehouses));
+        }
+        else _logger.LogWarning(warehouseTask.Exception, "Could not preload warehouses");
 
         if (customerTask.IsCompletedSuccessfully)
         {
@@ -309,6 +322,7 @@ public partial class SalesReturnViewModel : ViewModelBase
             DiscountAccount = "5211",
             Quantity        = 1,
         };
+        line.SetSelectedWarehouseSilent(Warehouses.FirstOrDefault());
         line.PropertyChanged += (_, _) => RecalculateTotals();
         Lines.Add(line);
     }
@@ -373,6 +387,7 @@ public partial class SalesReturnViewModel : ViewModelBase
                 SalesOrderNumber = l.SalesOrderNumber,
             };
             item.SetSelectedProductSilent(_allProducts.FirstOrDefault(p => p.Id == l.ProductId));
+            item.SetSelectedWarehouseSilent(Warehouses.FirstOrDefault(w => w.Id == l.WarehouseId));
             item.PropertyChanged += (_, _) => RecalculateTotals();
             Lines.Add(item);
         }
@@ -441,6 +456,7 @@ public partial class SalesReturnViewModel : ViewModelBase
     private static SalesReturnLineDto ToLineDto(SalesReturnLineItem item) => new()
     {
         ProductId        = item.ProductId,
+        WarehouseId      = item.WarehouseId,
         ProductCode      = item.ProductCode,
         ProductName      = item.ProductName,
         ReturnAccount    = item.ReturnAccount,

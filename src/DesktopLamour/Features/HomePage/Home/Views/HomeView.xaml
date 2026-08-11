@@ -95,14 +95,14 @@
 
                 </WrapPanel>
 
-                <!-- ── Section: Kế toán ─────────────── -->
-                <controls:AppLabel Text="Kế toán"
+                <!-- ── Section: Quỹ ─────────────── -->
+                <controls:AppLabel Text="Quỹ"
                                    Style="{StaticResource AppTypography.BodyCaption}"
                                    Foreground="{StaticResource AppColor.TextSecondary}"
                                    Margin="0,0,0,12"/>
                 <WrapPanel Margin="0,0,0,24">
 
-                    <!-- Kế toán -->
+                    <!-- Quỹ -->
                     <Border Width="176" Height="160"
                             BorderThickness="1"
                             CornerRadius="{StaticResource AppRadius.Large}"
@@ -124,7 +124,7 @@
                         </Border.InputBindings>
                         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                             <TextBlock Text="💰" FontSize="40" HorizontalAlignment="Center" TextAlignment="Center"/>
-                            <controls:AppLabel Text="Kế toán"
+                            <controls:AppLabel Text="Quỹ"
                                                Style="{StaticResource AppTypography.LabelSection}"
                                                Margin="0,12,0,0"
                                                HorizontalAlignment="Center"/>

@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 
 namespace DesktopLamour.Features.HomePage.Accounting.Data.Services;
 
@@ -30,7 +31,7 @@ public sealed class PaymentService : IPaymentService
         SetBearerToken();
 
         var response = await _httpClient.GetAsync("/api/v1/accounting/payments", ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, ct);
 
         return await response.Content.ReadFromJsonAsync<IEnumerable<PaymentResponseDto>>(ct)
             ?? Enumerable.Empty<PaymentResponseDto>();
@@ -43,7 +44,7 @@ public sealed class PaymentService : IPaymentService
 
         var response = await _httpClient.GetAsync($"/api/v1/accounting/payments/{id}", ct);
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, ct);
 
         return await response.Content.ReadFromJsonAsync<PaymentResponseDto>(ct);
     }
@@ -54,7 +55,7 @@ public sealed class PaymentService : IPaymentService
         SetBearerToken();
 
         var response = await _httpClient.PostAsJsonAsync("/api/v1/accounting/payments", request, ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, ct);
 
         return await response.Content.ReadFromJsonAsync<PaymentResponseDto>(ct)
             ?? throw new InvalidOperationException("Empty response from create payment endpoint.");
@@ -66,7 +67,7 @@ public sealed class PaymentService : IPaymentService
         SetBearerToken();
 
         var response = await _httpClient.PutAsJsonAsync($"/api/v1/accounting/payments/{id}", request, ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, ct);
 
         return await response.Content.ReadFromJsonAsync<PaymentResponseDto>(ct)
             ?? throw new InvalidOperationException("Empty response from update payment endpoint.");
@@ -78,7 +79,7 @@ public sealed class PaymentService : IPaymentService
         SetBearerToken();
 
         var response = await _httpClient.DeleteAsync($"/api/v1/accounting/payments/{id}", ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, ct);
     }
 
     public async Task<PaymentResponseDto> DuplicateAsync(int id, CancellationToken ct = default)
@@ -87,10 +88,34 @@ public sealed class PaymentService : IPaymentService
         SetBearerToken();
 
         var response = await _httpClient.PostAsync($"/api/v1/accounting/payments/{id}/duplicate", null, ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, ct);
 
         return await response.Content.ReadFromJsonAsync<PaymentResponseDto>(ct)
             ?? throw new InvalidOperationException("Empty response from duplicate payment endpoint.");
+    }
+
+    public async Task<PaymentResponseDto> ConfirmAsync(int id, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Confirming payment {Id}", id);
+        SetBearerToken();
+
+        var response = await _httpClient.PostAsync($"/api/v1/accounting/payments/{id}/confirm", null, ct);
+        await EnsureSuccessOrThrowAsync(response, ct);
+
+        return await response.Content.ReadFromJsonAsync<PaymentResponseDto>(ct)
+            ?? throw new InvalidOperationException("Empty response from confirm payment endpoint.");
+    }
+
+    public async Task<PaymentResponseDto> TreoAsync(int id, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Setting payment {Id} to Treo", id);
+        SetBearerToken();
+
+        var response = await _httpClient.PostAsync($"/api/v1/accounting/payments/{id}/treo", null, ct);
+        await EnsureSuccessOrThrowAsync(response, ct);
+
+        return await response.Content.ReadFromJsonAsync<PaymentResponseDto>(ct)
+            ?? throw new InvalidOperationException("Empty response from treo payment endpoint.");
     }
 
     private void SetBearerToken()
@@ -101,4 +126,13 @@ public sealed class PaymentService : IPaymentService
                 ? new AuthenticationHeaderValue("Bearer", token)
                 : null;
     }
+
+    private static async Task EnsureSuccessOrThrowAsync(HttpResponseMessage response, CancellationToken ct)
+    {
+        if (response.IsSuccessStatusCode) return;
+        var body = await response.Content.ReadFromJsonAsync<ApiErrorResponse>(ct);
+        throw new Exception(body?.Error ?? $"Lỗi {(int)response.StatusCode}");
+    }
+
+    private record ApiErrorResponse([property: JsonPropertyName("error")] string? Error);
 }

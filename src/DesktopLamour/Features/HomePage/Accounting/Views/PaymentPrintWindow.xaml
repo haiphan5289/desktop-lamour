@@ -1,0 +1,50 @@
+<Window x:Class="DesktopLamour.Features.HomePage.Accounting.Views.PaymentPrintWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+        Title="In phiếu chi"
+        Width="640"
+        Height="860"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="CanResize">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Toolbar -->
+        <Border Grid.Row="0"
+                Padding="16,10"
+                Background="{StaticResource AppColor.BackgroundPrimary}"
+                BorderBrush="{StaticResource AppColor.BorderThin}"
+                BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <controls:AppButton Content="🖨️ In"
+                                    Style="{StaticResource AppButton.Primary.Medium}"
+                                    Click="PrintButton_Click"
+                                    Margin="0,0,8,0"/>
+                <controls:AppButton Content="✖️ Đóng"
+                                    Style="{StaticResource AppButton.Tertiary.Medium}"
+                                    Click="CloseButton_Click"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Voucher preview — gray canvas, white page centered like a print-preview -->
+        <Border Grid.Row="1" Background="#E3E3E3">
+            <FlowDocumentScrollViewer x:Name="VoucherViewer"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Top"
+                                      Margin="0,16"
+                                      Background="White"
+                                      VerticalScrollBarVisibility="Auto"
+                                      Padding="0">
+                <FlowDocumentScrollViewer.Effect>
+                    <DropShadowEffect Color="Black" Direction="270" ShadowDepth="2" BlurRadius="10" Opacity="0.25"/>
+                </FlowDocumentScrollViewer.Effect>
+            </FlowDocumentScrollViewer>
+        </Border>
+    </Grid>
+</Window>

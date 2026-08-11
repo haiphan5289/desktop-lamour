@@ -29,6 +29,8 @@ public static class RealtimeServiceCollectionExtensions
             sp.GetRequiredService<IProductUnitCacheStore>(),
             sp.GetRequiredService<IAccountSettingCacheStore>(),
             sp.GetRequiredService<IWarehouseSettingCacheStore>(),
+            sp.GetRequiredService<IDepartmentCacheStore>(),
+            sp.GetRequiredService<IExpenseCategoryCacheStore>(),
             sp.GetRequiredService<ILogger<RealtimeSyncService>>(),
             serverUrl));
 

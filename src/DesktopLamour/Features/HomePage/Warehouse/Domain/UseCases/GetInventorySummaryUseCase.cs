@@ -14,6 +14,9 @@ public sealed class GetInventorySummaryUseCase : IGetInventorySummaryUseCase
     public Task<IEnumerable<InventorySummaryItem>> ExecuteAsync(
         DateOnly fromDate,
         DateOnly toDate,
+        IReadOnlyList<int>? warehouseIds = null,
+        int? categoryId = null,
+        int? productUnitId = null,
         CancellationToken ct = default)
-        => _repository.GetSummaryAsync(fromDate, toDate, ct);
+        => _repository.GetSummaryAsync(fromDate, toDate, warehouseIds, categoryId, productUnitId, ct);
 }

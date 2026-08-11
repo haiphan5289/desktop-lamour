@@ -14,9 +14,12 @@ public sealed class WarehouseRepository : IWarehouseRepository
     public async Task<IEnumerable<InventorySummaryItem>> GetSummaryAsync(
         DateOnly fromDate,
         DateOnly toDate,
+        IReadOnlyList<int>? warehouseIds = null,
+        int? categoryId = null,
+        int? productUnitId = null,
         CancellationToken ct = default)
     {
-        var dtos = await _service.GetInventorySummaryAsync(fromDate, toDate, ct);
+        var dtos = await _service.GetInventorySummaryAsync(fromDate, toDate, warehouseIds, categoryId, productUnitId, ct);
         return dtos.Select(d => new InventorySummaryItem
         {
             ProductId    = d.ProductId,

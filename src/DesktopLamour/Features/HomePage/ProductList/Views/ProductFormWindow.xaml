@@ -277,7 +277,8 @@
                         <StackPanel Grid.Column="0">
                             <controls:AppLabel Text="Tồn kho" Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,0,6"/>
                             <controls:AppTextField Text="{Binding StockQuantity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                   Placeholder="VD: 100"/>
+                                                   Placeholder="VD: 100"
+                                                   IsEnabled="{Binding IsAddMode}"/>
                         </StackPanel>
                         <StackPanel Grid.Column="2" VerticalAlignment="Bottom">
                             <StackPanel Orientation="Horizontal">

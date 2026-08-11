@@ -11,6 +11,9 @@ public class SalesReturnLineItem : INotifyPropertyChanged
     private int              _productId;
     private string           _productCode       = "";
     private string           _productName       = "";
+    private int              _warehouseId;
+    private string           _warehouseName     = "";
+    private ISearchableItem? _selectedWarehouse;
     private string           _returnAccount     = "5212";
     private string           _debtAccount       = "131";
     private string           _discountAccount   = "5211";
@@ -40,6 +43,32 @@ public class SalesReturnLineItem : INotifyPropertyChanged
         get => _productName;
         set { _productName = value; OnPropertyChanged(); }
     }
+
+    public int WarehouseId
+    {
+        get => _warehouseId;
+        set { _warehouseId = value; OnPropertyChanged(); }
+    }
+
+    public string WarehouseName
+    {
+        get => _warehouseName;
+        set { _warehouseName = value; OnPropertyChanged(); }
+    }
+
+    public ISearchableItem? SelectedWarehouse
+    {
+        get => _selectedWarehouse;
+        set
+        {
+            _selectedWarehouse = value;
+            OnPropertyChanged();
+            WarehouseId   = value?.Id ?? 0;
+            WarehouseName = value?.Name ?? "";
+        }
+    }
+
+    public void SetSelectedWarehouseSilent(ISearchableItem? warehouse) => SelectedWarehouse = warehouse;
 
     public string ReturnAccount
     {

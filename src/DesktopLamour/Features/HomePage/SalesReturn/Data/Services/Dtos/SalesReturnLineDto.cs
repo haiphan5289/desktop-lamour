@@ -7,6 +7,7 @@ public class SalesReturnLineDto
 {
     [JsonPropertyName("id")]                  public int     Id              { get; set; }
     [JsonPropertyName("product_id")]          public int     ProductId       { get; set; }
+    [JsonPropertyName("warehouse_id")]         public int     WarehouseId     { get; set; }
     [JsonPropertyName("product_code")]        public string  ProductCode     { get; set; } = "";
     [JsonPropertyName("product_name")]        public string  ProductName     { get; set; } = "";
     [JsonPropertyName("return_account")]      public string  ReturnAccount   { get; set; } = "5212";

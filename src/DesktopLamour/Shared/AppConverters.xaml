@@ -13,5 +13,6 @@
     <converters:GroupSumConverter x:Key="GroupSumConverter"/>
     <converters:BlankToZeroConverter x:Key="BlankToZeroConverter"/>
     <converters:BlankPreserveConverter x:Key="BlankPreserveConverter"/>
+    <converters:CashLedgerStatusDisplayConverter x:Key="CashLedgerStatusDisplayConverter"/>
 
 </ResourceDictionary>

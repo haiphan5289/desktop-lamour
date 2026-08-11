@@ -37,4 +37,12 @@ public partial class WarehouseViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToWarehouses()
         => _navigationService.NavigateTo(NavigationRoutes.Warehouses.List);
+
+    [RelayCommand]
+    private void NavigateToDepartments()
+        => _navigationService.NavigateTo(NavigationRoutes.Departments.List);
+
+    [RelayCommand]
+    private void NavigateToExpenseCategories()
+        => _navigationService.NavigateTo(NavigationRoutes.ExpenseCategories.List);
 }

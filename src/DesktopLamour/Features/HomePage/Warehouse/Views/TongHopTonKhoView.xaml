@@ -73,23 +73,16 @@
                 BorderBrush="{StaticResource AppColor.BorderThin}"
                 BorderThickness="1"
                 CornerRadius="8">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <controls:AppLabel Text="Từ ngày"
-                                   Style="{StaticResource AppTypography.BodyCaption}"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,8,0"/>
-                <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}"
-                            Width="140" Margin="0,0,16,0"/>
-                <controls:AppLabel Text="Đến ngày"
-                                   Style="{StaticResource AppTypography.BodyCaption}"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,8,0"/>
-                <DatePicker SelectedDate="{Binding ToDate, Mode=TwoWay}"
-                            Width="140" Margin="0,0,16,0"/>
-                <controls:AppButton Content="🔍 Xem báo cáo"
+            <Grid>
+                <controls:AppLabel Text="{Binding FilterSummary}"
+                                   Style="{StaticResource AppTypography.BodySection}"
+                                   Foreground="{StaticResource AppColor.TextSecondary}"
+                                   VerticalAlignment="Center"/>
+                <controls:AppButton Content="🔍 Lọc"
                                     Style="{StaticResource AppButton.Primary.Medium}"
-                                    Command="{Binding LoadCommand}"/>
-            </StackPanel>
+                                    Command="{Binding OpenFilterCommand}"
+                                    HorizontalAlignment="Right"/>
+            </Grid>
         </Border>
 
         <!-- DataGrid -->
@@ -516,7 +509,7 @@
                         VerticalAlignment="Center"
                         Visibility="{Binding HasItems, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                 <TextBlock Text="📊" FontSize="48" HorizontalAlignment="Center" TextAlignment="Center"/>
-                <controls:AppLabel Text="Chọn khoảng thời gian và nhấn Xem báo cáo."
+                <controls:AppLabel Text="Nhấn 🔍 Lọc để chọn kỳ báo cáo và xem báo cáo."
                                    Style="{StaticResource AppTypography.BodySection}"
                                    Foreground="{StaticResource AppColor.TextSecondary}"
                                    Margin="0,12,0,0"

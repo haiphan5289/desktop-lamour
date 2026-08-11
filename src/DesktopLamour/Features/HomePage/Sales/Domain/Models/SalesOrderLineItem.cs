@@ -12,6 +12,9 @@ public class SalesOrderLineItem : INotifyPropertyChanged
     private int              _productId;
     private string           _productCode       = "";
     private string           _productName       = "";
+    private int              _warehouseId;
+    private string           _warehouseName     = "";
+    private ISearchableItem? _selectedWarehouse;
     private bool             _isPromotion;
     private string           _unit              = "";
     private int              _quantity;
@@ -68,6 +71,35 @@ public class SalesOrderLineItem : INotifyPropertyChanged
         get => _productName;
         set { _productName = value; OnPropertyChanged(); }
     }
+
+    public int WarehouseId
+    {
+        get => _warehouseId;
+        set { _warehouseId = value; OnPropertyChanged(); }
+    }
+
+    public string WarehouseName
+    {
+        get => _warehouseName;
+        set { _warehouseName = value; OnPropertyChanged(); }
+    }
+
+    public ISearchableItem? SelectedWarehouse
+    {
+        get => _selectedWarehouse;
+        set
+        {
+            _selectedWarehouse = value;
+            OnPropertyChanged();
+            WarehouseId   = value?.Id ?? 0;
+            WarehouseName = value?.Name ?? "";
+        }
+    }
+
+    // Nạp Kho từ chứng từ đã lưu (BE) không qua setter công khai — không có side-effect gì khác
+    // ngoài WarehouseId/WarehouseName nên dùng chung logic với SelectedWarehouse, chỉ tách tên
+    // để rõ ràng khi gọi từ chỗ nạp dữ liệu (giống SetSelectedProductSilent).
+    public void SetSelectedWarehouseSilent(ISearchableItem? warehouse) => SelectedWarehouse = warehouse;
 
     public bool IsPromotion
     {

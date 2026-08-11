@@ -38,6 +38,8 @@ public sealed class RealtimeSyncService : IRealtimeSyncService
     private readonly IProductUnitCacheStore       _productUnitCache;
     private readonly IAccountSettingCacheStore    _accountSettingCache;
     private readonly IWarehouseSettingCacheStore  _warehouseCache;
+    private readonly IDepartmentCacheStore        _departmentCache;
+    private readonly IExpenseCategoryCacheStore   _expenseCategoryCache;
     private readonly ILogger<RealtimeSyncService> _logger;
     private readonly string                       _serverUrl;
     private HubConnection?                        _connection;
@@ -52,6 +54,8 @@ public sealed class RealtimeSyncService : IRealtimeSyncService
         IProductUnitCacheStore productUnitCache,
         IAccountSettingCacheStore accountSettingCache,
         IWarehouseSettingCacheStore warehouseCache,
+        IDepartmentCacheStore departmentCache,
+        IExpenseCategoryCacheStore expenseCategoryCache,
         ILogger<RealtimeSyncService> logger,
         string serverUrl)
     {
@@ -64,6 +68,8 @@ public sealed class RealtimeSyncService : IRealtimeSyncService
         _productUnitCache     = productUnitCache;
         _accountSettingCache  = accountSettingCache;
         _warehouseCache       = warehouseCache;
+        _departmentCache      = departmentCache;
+        _expenseCategoryCache = expenseCategoryCache;
         _logger               = logger;
         _serverUrl            = serverUrl;
     }
@@ -114,6 +120,14 @@ public sealed class RealtimeSyncService : IRealtimeSyncService
         _connection.On<WarehouseSettingResponseDto>("WarehouseCreated", _warehouseCache.Upsert);
         _connection.On<WarehouseSettingResponseDto>("WarehouseUpdated", _warehouseCache.Upsert);
         _connection.On<int>("WarehouseDeleted", _warehouseCache.Remove);
+
+        _connection.On<DepartmentResponseDto>("DepartmentCreated", _departmentCache.Upsert);
+        _connection.On<DepartmentResponseDto>("DepartmentUpdated", _departmentCache.Upsert);
+        _connection.On<int>("DepartmentDeleted", _departmentCache.Remove);
+
+        _connection.On<ExpenseCategoryResponseDto>("ExpenseCategoryCreated", _expenseCategoryCache.Upsert);
+        _connection.On<ExpenseCategoryResponseDto>("ExpenseCategoryUpdated", _expenseCategoryCache.Upsert);
+        _connection.On<int>("ExpenseCategoryDeleted", _expenseCategoryCache.Remove);
 
         _connection.Reconnecting += error =>
         {

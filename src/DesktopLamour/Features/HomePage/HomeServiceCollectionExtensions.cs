@@ -8,6 +8,7 @@ using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Employees.ViewModels;
 using DesktopLamour.Features.HomePage.Employees.Views;
 using DesktopLamour.Features.HomePage.Accounting.Data.Services;
+using DesktopLamour.Features.HomePage.Accounting.Data.Storage;
 using DesktopLamour.Features.HomePage.Accounting.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Accounting.ViewModels;
 using DesktopLamour.Features.HomePage.Accounting.Views;
@@ -265,6 +266,64 @@ public static class HomeServiceCollectionExtensions
         // ── Warehouses (Kho): Window factory ─────────────────────────────────
         services.AddTransient<Func<WarehouseSettingFormWindow>>(sp => () => sp.GetRequiredService<WarehouseSettingFormWindow>());
 
+        // ── Departments (Phòng ban): Views + ViewModels ───────────────────────
+        services.AddTransient<DepartmentFormWindow>();
+        services.AddTransient<DepartmentFormViewModel>();
+        services.AddTransient<DepartmentListView>();
+        services.AddTransient<DepartmentListViewModel>();
+
+        // ── Departments (Phòng ban): UseCases ─────────────────────────────────
+        services.AddTransient<IGetDepartmentsUseCase, GetDepartmentsUseCase>();
+        services.AddTransient<ICreateDepartmentUseCase, CreateDepartmentUseCase>();
+        services.AddTransient<IUpdateDepartmentUseCase, UpdateDepartmentUseCase>();
+        services.AddTransient<IDeleteDepartmentUseCase, DeleteDepartmentUseCase>();
+
+        // ── Departments (Phòng ban): Repository ───────────────────────────────
+        services.AddTransient<IDepartmentRepository, DepartmentRepository>();
+
+        // ── Departments (Phòng ban): Local cache (populated after login, kept fresh via SignalR) ──
+        services.AddSingleton<IDepartmentCacheStore, DepartmentCacheStore>();
+
+        // ── Departments (Phòng ban): Service + typed HttpClient ───────────────
+        services.AddHttpClient<IDepartmentService, DepartmentService>(client =>
+        {
+            client.BaseAddress = new Uri(serverUrl);
+            client.Timeout     = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
+
+        // ── Departments (Phòng ban): Window factory ───────────────────────────
+        services.AddTransient<Func<DepartmentFormWindow>>(sp => () => sp.GetRequiredService<DepartmentFormWindow>());
+
+        // ── Expense Categories (Khoản mục chi phí): Views + ViewModels ────────
+        services.AddTransient<ExpenseCategoryFormWindow>();
+        services.AddTransient<ExpenseCategoryFormViewModel>();
+        services.AddTransient<ExpenseCategoryListView>();
+        services.AddTransient<ExpenseCategoryListViewModel>();
+
+        // ── Expense Categories (Khoản mục chi phí): UseCases ───────────────────
+        services.AddTransient<IGetExpenseCategoriesUseCase, GetExpenseCategoriesUseCase>();
+        services.AddTransient<ICreateExpenseCategoryUseCase, CreateExpenseCategoryUseCase>();
+        services.AddTransient<IUpdateExpenseCategoryUseCase, UpdateExpenseCategoryUseCase>();
+        services.AddTransient<IDeleteExpenseCategoryUseCase, DeleteExpenseCategoryUseCase>();
+
+        // ── Expense Categories (Khoản mục chi phí): Repository ─────────────────
+        services.AddTransient<IExpenseCategoryRepository, ExpenseCategoryRepository>();
+
+        // ── Expense Categories (Khoản mục chi phí): Local cache (populated after login, kept fresh via SignalR) ──
+        services.AddSingleton<IExpenseCategoryCacheStore, ExpenseCategoryCacheStore>();
+
+        // ── Expense Categories (Khoản mục chi phí): Service + typed HttpClient ─
+        services.AddHttpClient<IExpenseCategoryService, ExpenseCategoryService>(client =>
+        {
+            client.BaseAddress = new Uri(serverUrl);
+            client.Timeout     = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
+
+        // ── Expense Categories (Khoản mục chi phí): Window factory ────────────
+        services.AddTransient<Func<ExpenseCategoryFormWindow>>(sp => () => sp.GetRequiredService<ExpenseCategoryFormWindow>());
+
         // ── Suppliers: Window factory ────────────────────────────────────────
         services.AddTransient<Func<SupplierFormWindow>>(sp => () => sp.GetRequiredService<SupplierFormWindow>());
 
@@ -336,6 +395,7 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<ReceiptViewModel>();
         services.AddTransient<PaymentWindow>();
         services.AddTransient<PaymentViewModel>();
+        services.AddTransient<PaymentPrintWindow>();
 
         // ── Accounting: UseCases ─────────────────────────────────────────────────
         services.AddTransient<IGetCashLedgerUseCase, GetCashLedgerUseCase>();
@@ -350,6 +410,9 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<IUpdatePaymentUseCase, UpdatePaymentUseCase>();
         services.AddTransient<IDeletePaymentUseCase, DeletePaymentUseCase>();
         services.AddTransient<IDuplicatePaymentUseCase, DuplicatePaymentUseCase>();
+        services.AddTransient<IConfirmPaymentUseCase, ConfirmPaymentUseCase>();
+        services.AddTransient<ISetPaymentTreoUseCase, SetPaymentTreoUseCase>();
+        services.AddSingleton<ILastUsedPaymentAccountsStore, LastUsedPaymentAccountsStore>();
 
         // ── Accounting: Service + typed HttpClient ───────────────────────────────
         services.AddHttpClient<ICashLedgerService, CashLedgerService>(client =>
@@ -376,12 +439,16 @@ public static class HomeServiceCollectionExtensions
         // ── Accounting: Window factory ───────────────────────────────────────────
         services.AddTransient<Func<ReceiptWindow>>(sp => () => sp.GetRequiredService<ReceiptWindow>());
         services.AddTransient<Func<PaymentWindow>>(sp => () => sp.GetRequiredService<PaymentWindow>());
+        services.AddTransient<Func<PaymentPrintWindow>>(sp => () => sp.GetRequiredService<PaymentPrintWindow>());
 
         // ── Warehouse: Views + ViewModels ────────────────────────────────────────
         services.AddTransient<WarehouseView>();
         services.AddTransient<WarehouseViewModel>();
         services.AddTransient<TongHopTonKhoView>();
         services.AddTransient<TongHopTonKhoViewModel>();
+        services.AddTransient<TongHopTonKhoFilterWindow>();
+        services.AddTransient<TongHopTonKhoFilterViewModel>();
+        services.AddTransient<Func<TongHopTonKhoFilterWindow>>(sp => () => sp.GetRequiredService<TongHopTonKhoFilterWindow>());
 
         // ── Warehouse: UseCases ──────────────────────────────────────────────────
         services.AddTransient<IGetInventorySummaryUseCase, GetInventorySummaryUseCase>();

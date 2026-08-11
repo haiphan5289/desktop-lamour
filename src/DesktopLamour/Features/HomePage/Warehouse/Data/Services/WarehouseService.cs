@@ -27,12 +27,22 @@ public sealed class WarehouseService : IWarehouseService
     public async Task<IEnumerable<InventorySummaryItemDto>> GetInventorySummaryAsync(
         DateOnly fromDate,
         DateOnly toDate,
+        IReadOnlyList<int>? warehouseIds = null,
+        int? categoryId = null,
+        int? productUnitId = null,
         CancellationToken ct = default)
     {
         _logger.LogInformation("Fetching inventory summary {From} → {To}", fromDate, toDate);
         SetBearerToken();
 
         var url = $"/api/v1/inventory/summary?from_date={fromDate:yyyy-MM-dd}&to_date={toDate:yyyy-MM-dd}";
+        if (warehouseIds is { Count: > 0 })
+            url += string.Concat(warehouseIds.Select(id => $"&warehouse_ids={id}"));
+        if (categoryId.HasValue)
+            url += $"&category_id={categoryId.Value}";
+        if (productUnitId.HasValue)
+            url += $"&product_unit_id={productUnitId.Value}";
+
         var response = await _httpClient.GetAsync(url, ct);
         response.EnsureSuccessStatusCode();
 

@@ -169,7 +169,9 @@
                       CanUserResizeColumns="True"
                       SelectionMode="Single"
                       HeadersVisibility="Column"
-                      GridLinesVisibility="Horizontal"
+                      GridLinesVisibility="All"
+                      HorizontalGridLinesBrush="{StaticResource GroupBorderBrush}"
+                      VerticalGridLinesBrush="{StaticResource GroupBorderBrush}"
                       BorderBrush="{StaticResource AppColor.BorderThin}"
                       BorderThickness="1"
                       RowBackground="{StaticResource AppColor.BackgroundPrimary}"
@@ -233,6 +235,21 @@
                                         BorderBrush="{StaticResource GroupBorderBrush}"
                                         BorderThickness="0,1,0,1" Padding="6,4">
                                     <TextBlock Text="Số phiếu chi" FontWeight="SemiBold" FontSize="12"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- Trạng thái -->
+                    <DataGridTextColumn Binding="{Binding Status, Converter={StaticResource CashLedgerStatusDisplayConverter}}"
+                                        Width="90" ElementStyle="{StaticResource CellCenter}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <Border Background="{StaticResource AppColor.BackgroundSecondary}"
+                                        BorderBrush="{StaticResource GroupBorderBrush}"
+                                        BorderThickness="0,1,0,1" Padding="6,4">
+                                    <TextBlock Text="Trạng thái" FontWeight="SemiBold" FontSize="12"
                                                HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
                                 </Border>
                             </DataTemplate>

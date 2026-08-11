@@ -7,6 +7,7 @@ public class SalesOrderLineDto
 {
     [JsonPropertyName("id")]                  public int     Id                { get; set; }
     [JsonPropertyName("product_id")]          public int     ProductId         { get; set; }
+    [JsonPropertyName("warehouse_id")]         public int     WarehouseId       { get; set; }
     [JsonPropertyName("product_code")]        public string  ProductCode       { get; set; } = "";
     [JsonPropertyName("product_name")]        public string  ProductName       { get; set; } = "";
     [JsonPropertyName("is_promotion")]        public bool    IsPromotion       { get; set; }

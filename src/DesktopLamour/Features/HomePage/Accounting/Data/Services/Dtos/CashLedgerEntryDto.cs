@@ -16,4 +16,5 @@ public class CashLedgerEntryDto
     [JsonPropertyName("credit_amount")]   public decimal  CreditAmount   { get; set; }
     [JsonPropertyName("balance")]         public decimal  Balance        { get; set; }
     [JsonPropertyName("person_name")]     public string?  PersonName     { get; set; }
+    [JsonPropertyName("status")]          public string   Status         { get; set; } = "Confirmed";
 }

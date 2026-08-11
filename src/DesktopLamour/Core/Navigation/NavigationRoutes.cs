@@ -62,6 +62,16 @@ public static class NavigationRoutes
         public const string List = "WarehouseListView";
     }
 
+    public static class Departments
+    {
+        public const string List = "DepartmentListView";
+    }
+
+    public static class ExpenseCategories
+    {
+        public const string List = "ExpenseCategoryListView";
+    }
+
     public static class Sales
     {
         public const string Hub = "SalesView";

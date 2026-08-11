@@ -9,6 +9,7 @@ public class UpdatePaymentRequestDto
     [JsonPropertyName("payee_name")]            public string   PayeeName           { get; set; } = "";
     [JsonPropertyName("address")]               public string?  Address             { get; set; }
     [JsonPropertyName("payment_reason")]        public string   PaymentReason       { get; set; } = "ChiKhac";
+    [JsonPropertyName("reason_detail")]         public string?  ReasonDetail        { get; set; }
     [JsonPropertyName("payment_employee_id")]   public int?     PaymentEmployeeId   { get; set; }
     [JsonPropertyName("attachment")]            public string?  Attachment          { get; set; }
     [JsonPropertyName("reference")]             public string?  Reference           { get; set; }

@@ -1,14 +1,20 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 using System.Collections.ObjectModel;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.ViewModels;
+using DesktopLamour.Features.HomePage.AccountSettings.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Accounting.Data.Services.Dtos;
+using DesktopLamour.Features.HomePage.Accounting.Data.Storage;
 using DesktopLamour.Features.HomePage.Accounting.Domain.Models;
 using DesktopLamour.Features.HomePage.Accounting.Domain.UseCases;
-using DesktopLamour.Features.HomePage.Suppliers.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Accounting.Views;
 using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Employees.Views;
+using DesktopLamour.Features.HomePage.Suppliers.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Warehouses.Domain.Models;
+using DesktopLamour.Features.HomePage.Warehouses.Domain.UseCases;
 using DesktopLamour.Shared.Controls;
 using Microsoft.Extensions.Logging;
 
@@ -18,15 +24,21 @@ public partial class PaymentViewModel : ViewModelBase
 {
     public event Action? PaymentSaved;
     public event Action? RequestClose;
-    private readonly IGetPaymentsUseCase      _getPayments;
-    private readonly IGetPaymentByIdUseCase   _getPaymentById;
-    private readonly ICreatePaymentUseCase    _createPayment;
-    private readonly IUpdatePaymentUseCase    _updatePayment;
-    private readonly IDeletePaymentUseCase    _deletePayment;
-    private readonly IGetSuppliersUseCase     _getSuppliers;
-    private readonly IGetEmployeesUseCase     _getEmployees;
-    private readonly Func<EmployeeFormWindow> _employeeFormWindowFactory;
-    private readonly ILogger<PaymentViewModel> _logger;
+    private readonly IGetPaymentsUseCase          _getPayments;
+    private readonly IGetPaymentByIdUseCase       _getPaymentById;
+    private readonly ICreatePaymentUseCase        _createPayment;
+    private readonly IUpdatePaymentUseCase        _updatePayment;
+    private readonly IDeletePaymentUseCase        _deletePayment;
+    private readonly IConfirmPaymentUseCase       _confirmPayment;
+    private readonly ISetPaymentTreoUseCase       _setPaymentTreo;
+    private readonly IGetSuppliersUseCase         _getSuppliers;
+    private readonly IGetEmployeesUseCase         _getEmployees;
+    private readonly IGetExpenseCategoriesUseCase _getExpenseCategories;
+    private readonly IGetAccountSettingsUseCase   _getAccountSettings;
+    private readonly ILastUsedPaymentAccountsStore _lastUsedAccounts;
+    private readonly Func<EmployeeFormWindow>     _employeeFormWindowFactory;
+    private readonly Func<PaymentPrintWindow>     _printWindowFactory;
+    private readonly ILogger<PaymentViewModel>    _logger;
 
     // ── State ──────────────────────────────────────────────────────────────
     [ObservableProperty] private bool    _isBusy;
@@ -39,6 +51,7 @@ public partial class PaymentViewModel : ViewModelBase
     [ObservableProperty] private string  _payeeName             = string.Empty;
     [ObservableProperty] private string? _address;
     [ObservableProperty] private string  _selectedPaymentReason = "ChiKhac";
+    [ObservableProperty] private string? _reasonDetail;
     [ObservableProperty] private ISearchableItem? _selectedPaymentEmployeeEmployee;
     [ObservableProperty] private string? _attachment;
     [ObservableProperty] private string? _reference;
@@ -60,39 +73,53 @@ public partial class PaymentViewModel : ViewModelBase
 
     public IReadOnlyList<ISearchableItem> Suppliers { get; private set; } = Array.Empty<ISearchableItem>();
     public IReadOnlyList<ISearchableItem> Employees { get; private set; } = Array.Empty<ISearchableItem>();
+    public IReadOnlyList<ISearchableItem> AccountSettings { get; private set; } = Array.Empty<ISearchableItem>();
+    public IReadOnlyList<ExpenseCategory> ExpenseCategories { get; private set; }
+        = Array.Empty<ExpenseCategory>();
 
     public IReadOnlyList<string> PaymentReasons { get; } = new[]
     {
         "ChiKhac", "ChiMuaHang", "ChiTraNo"
     };
 
-    public IReadOnlyList<string> AccountCodes { get; } = new[]
-    {
-        "Cash111", "Bank112", "Receivable131", "Payroll334"
-    };
+    // Chỉ Nháp (hoặc phiếu mới, chưa lưu) mới cho phép sửa — phiếu đã Ghi số là bất biến.
+    public bool CanEdit => CurrentPayment is null || CurrentPayment.Status != "Confirmed";
+    public bool CanPrint => CurrentPayment is not null;
 
     private List<PaymentResponseDto> _receiptListCache = new();
     private int _currentIndex = -1;
 
     public PaymentViewModel(
-        IGetPaymentsUseCase      getPayments,
-        IGetPaymentByIdUseCase   getPaymentById,
-        ICreatePaymentUseCase    createPayment,
-        IUpdatePaymentUseCase    updatePayment,
-        IDeletePaymentUseCase    deletePayment,
-        IGetSuppliersUseCase     getSuppliers,
-        IGetEmployeesUseCase     getEmployees,
-        Func<EmployeeFormWindow> employeeFormWindowFactory,
-        ILogger<PaymentViewModel> logger)
+        IGetPaymentsUseCase          getPayments,
+        IGetPaymentByIdUseCase       getPaymentById,
+        ICreatePaymentUseCase        createPayment,
+        IUpdatePaymentUseCase        updatePayment,
+        IDeletePaymentUseCase        deletePayment,
+        IConfirmPaymentUseCase       confirmPayment,
+        ISetPaymentTreoUseCase       setPaymentTreo,
+        IGetSuppliersUseCase         getSuppliers,
+        IGetEmployeesUseCase         getEmployees,
+        IGetExpenseCategoriesUseCase getExpenseCategories,
+        IGetAccountSettingsUseCase   getAccountSettings,
+        ILastUsedPaymentAccountsStore lastUsedAccounts,
+        Func<EmployeeFormWindow>     employeeFormWindowFactory,
+        Func<PaymentPrintWindow>     printWindowFactory,
+        ILogger<PaymentViewModel>    logger)
     {
         _getPayments               = getPayments;
         _getPaymentById            = getPaymentById;
         _createPayment             = createPayment;
         _updatePayment             = updatePayment;
         _deletePayment             = deletePayment;
+        _confirmPayment            = confirmPayment;
+        _setPaymentTreo            = setPaymentTreo;
         _getSuppliers              = getSuppliers;
         _getEmployees              = getEmployees;
+        _getExpenseCategories      = getExpenseCategories;
+        _getAccountSettings        = getAccountSettings;
+        _lastUsedAccounts          = lastUsedAccounts;
         _employeeFormWindowFactory = employeeFormWindowFactory;
+        _printWindowFactory        = printWindowFactory;
         _logger                    = logger;
 
         Entries.CollectionChanged += (_, _) => RecalculateTotals();
@@ -110,14 +137,20 @@ public partial class PaymentViewModel : ViewModelBase
     {
         try
         {
-            var customers = await _getSuppliers.ExecuteAsync(ct);
-            var employees = await _getEmployees.ExecuteAsync(ct);
+            var customers        = await _getSuppliers.ExecuteAsync(ct);
+            var employees        = await _getEmployees.ExecuteAsync(ct);
+            var expenseCategories = await _getExpenseCategories.ExecuteAsync(ct);
+            var accountSettings  = await _getAccountSettings.ExecuteAsync(ct);
 
-            Suppliers = customers.Cast<ISearchableItem>().ToList().AsReadOnly();
-            Employees = employees.Cast<ISearchableItem>().ToList().AsReadOnly();
+            Suppliers         = customers.Cast<ISearchableItem>().ToList().AsReadOnly();
+            Employees         = employees.Cast<ISearchableItem>().ToList().AsReadOnly();
+            ExpenseCategories = expenseCategories.ToList().AsReadOnly();
+            AccountSettings   = accountSettings.Cast<ISearchableItem>().ToList().AsReadOnly();
 
             OnPropertyChanged(nameof(Suppliers));
             OnPropertyChanged(nameof(Employees));
+            OnPropertyChanged(nameof(ExpenseCategories));
+            OnPropertyChanged(nameof(AccountSettings));
         }
         catch (Exception ex)
         {
@@ -127,9 +160,60 @@ public partial class PaymentViewModel : ViewModelBase
 
     // ── Commands ──────────────────────────────────────────────────────────
 
+    // "🔄 Làm mới" — refresh danh sách phiếu chi từ server (không đổi trạng thái gì).
     [RelayCommand]
-    private async Task LoadAsync2(CancellationToken ct = default)
+    private async Task RefreshAsync(CancellationToken ct = default)
         => await LoadPaymentsAsync(ct);
+
+    // "📌 Treo" — lưu phiếu (thay cho nút Cất đã bỏ). Đang Nháp thì lưu + chuyển sang Treo;
+    // đã Treo rồi thì chỉ lưu lại thay đổi, không gọi lại endpoint /treo.
+    [RelayCommand]
+    private async Task TreoAsync(CancellationToken ct = default)
+    {
+        HasError     = false;
+        ErrorMessage = string.Empty;
+
+        if (CurrentPayment is not null && CurrentPayment.Status == "Confirmed")
+        {
+            HasError     = true;
+            ErrorMessage = "Phiếu chi đã ghi số, không thể sửa.";
+            return;
+        }
+
+        var isDraft = CurrentPayment is null || CurrentPayment.Status == "Draft";
+
+        var savedId = await PersistAsync(ct);
+        if (savedId is null) return;
+
+        if (!isDraft) // đã Treo — vừa lưu lại thay đổi, không cần đổi trạng thái nữa
+        {
+            IsEditing = false;
+            PaymentSaved?.Invoke();
+            RequestClose?.Invoke();
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            var treo = await _setPaymentTreo.ExecuteAsync(savedId.Value, ct);
+            _logger.LogInformation("Payment set to Treo: {Id}", treo.Id);
+            await LoadPaymentsAsync(ct);
+            NavigateToPayment(treo.Id);
+
+            IsEditing = false;
+            PaymentSaved?.Invoke();
+            RequestClose?.Invoke();
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to set payment to Treo");
+            HasError     = true;
+            ErrorMessage = ex.Message;
+        }
+        finally { IsBusy = false; }
+    }
 
     private async Task LoadPaymentsAsync(CancellationToken ct)
     {
@@ -168,39 +252,37 @@ public partial class PaymentViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task SaveAsync(CancellationToken ct = default)
+    private async Task ConfirmAsync(CancellationToken ct = default)
     {
         HasError     = false;
         ErrorMessage = string.Empty;
 
-        if (SelectedSupplier is null)
+        if (CurrentPayment is not null && CurrentPayment.Status != "Treo")
         {
             HasError     = true;
-            ErrorMessage = "Vui lòng chọn đối tượng (nhà cung cấp).";
+            ErrorMessage = CurrentPayment.Status == "Confirmed"
+                ? "Phiếu chi này đã được ghi số trước đó."
+                : "Chỉ phiếu chi ở trạng thái Treo mới có thể ghi số. Vui lòng bấm Treo trước.";
             return;
         }
+
+        if (Entries.Count == 0)
+        {
+            HasError     = true;
+            ErrorMessage = "Phiếu chi phải có ít nhất 1 dòng hạch toán.";
+            return;
+        }
+
+        var savedId = await PersistAsync(ct);
+        if (savedId is null) return;
 
         IsBusy = true;
         try
         {
-            if (CurrentPayment is null)
-            {
-                // Create
-                var request = BuildCreateRequest();
-                var result  = await _createPayment.ExecuteAsync(request, ct);
-                _logger.LogInformation("Payment created: {DocumentNumber}", result.DocumentNumber);
-                await LoadPaymentsAsync(ct);
-                NavigateToPayment(result.Id);
-            }
-            else
-            {
-                // Update
-                var request = BuildUpdateRequest();
-                var result  = await _updatePayment.ExecuteAsync(CurrentPayment.Id, request, ct);
-                _logger.LogInformation("Payment updated: {Id}", result.Id);
-                await LoadPaymentsAsync(ct);
-                NavigateToPayment(result.Id);
-            }
+            var confirmed = await _confirmPayment.ExecuteAsync(savedId.Value, ct);
+            _logger.LogInformation("Payment confirmed: {Id}", confirmed.Id);
+            await LoadPaymentsAsync(ct);
+            NavigateToPayment(confirmed.Id);
 
             IsEditing = false;
             PaymentSaved?.Invoke();
@@ -209,9 +291,59 @@ public partial class PaymentViewModel : ViewModelBase
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to save receipt");
+            _logger.LogError(ex, "Failed to confirm payment");
             HasError     = true;
             ErrorMessage = ex.Message;
+        }
+        finally { IsBusy = false; }
+    }
+
+    /// Lưu (create/update), trả về Id của phiếu vừa lưu — hoặc null nếu lưu thất bại.
+    private async Task<int?> PersistAsync(CancellationToken ct)
+    {
+        HasError     = false;
+        ErrorMessage = string.Empty;
+
+        if (SelectedSupplier is null)
+        {
+            HasError     = true;
+            ErrorMessage = "Vui lòng chọn đối tượng (nhà cung cấp).";
+            return null;
+        }
+
+        IsBusy = true;
+        try
+        {
+            int id;
+            if (CurrentPayment is null)
+            {
+                var request = BuildCreateRequest();
+                var result  = await _createPayment.ExecuteAsync(request, ct);
+                _logger.LogInformation("Payment created: {DocumentNumber}", result.DocumentNumber);
+                id = result.Id;
+            }
+            else
+            {
+                var request = BuildUpdateRequest();
+                var result  = await _updatePayment.ExecuteAsync(CurrentPayment.Id, request, ct);
+                _logger.LogInformation("Payment updated: {Id}", result.Id);
+                id = result.Id;
+            }
+
+            await LoadPaymentsAsync(ct);
+            NavigateToPayment(id);
+            return id;
+        }
+        catch (OperationCanceledException)
+        {
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save payment");
+            HasError     = true;
+            ErrorMessage = ex.Message;
+            return null;
         }
         finally { IsBusy = false; }
     }
@@ -239,6 +371,30 @@ public partial class PaymentViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void Edit()
+    {
+        if (CurrentPayment is not null && CurrentPayment.Status == "Confirmed")
+        {
+            MessageBox.Show(
+                "Phiếu chi đã ghi số, không thể sửa.",
+                "Không thể sửa",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+        IsEditing = true;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanPrint))]
+    private void Print()
+    {
+        if (CurrentPayment is null) return;
+        var window = _printWindowFactory();
+        window.Initialize(CurrentPayment);
+        window.ShowDialog();
+    }
+
+    [RelayCommand]
     private void NavigatePrev()
     {
         if (_receiptListCache.Count == 0 || _currentIndex <= 0) return;
@@ -261,10 +417,10 @@ public partial class PaymentViewModel : ViewModelBase
     {
         var entry = new PaymentEntryItem
         {
-            DebitAccount  = "Cash111",
-            CreditAccount = "Receivable131",
+            SelectedDebitAccount  = AccountSettings.FirstOrDefault(a => a.Id == _lastUsedAccounts.LastDebitAccountId),
+            SelectedCreditAccount = AccountSettings.FirstOrDefault(a => a.Id == _lastUsedAccounts.LastCreditAccountId),
         };
-        entry.PropertyChanged += (_, _) => RecalculateTotals();
+        AttachEntryHandlers(entry);
         Entries.Add(entry);
     }
 
@@ -308,7 +464,7 @@ public partial class PaymentViewModel : ViewModelBase
         if (value is not null)
         {
             PayeeName = value.Name;
-            
+
             // Auto-populate Address from Supplier
             if (value is DesktopLamour.Features.HomePage.Suppliers.Domain.Models.Supplier customer)
             {
@@ -317,7 +473,34 @@ public partial class PaymentViewModel : ViewModelBase
         }
     }
 
+    partial void OnCurrentPaymentChanged(PaymentResponseDto? value)
+    {
+        OnPropertyChanged(nameof(CanEdit));
+        OnPropertyChanged(nameof(CanPrint));
+        PrintCommand.NotifyCanExecuteChanged();
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
+
+    // Ghi nhớ TK Nợ/TK Có vừa chọn để dòng mới lần sau mặc định theo đó. Không cần đồng bộ
+    // tên hiển thị thủ công nữa — SelectedDebitAccount/SelectedCreditAccount/SelectedExpenseCategory
+    // giữ nguyên object, CellTemplate đọc trực tiếp qua property path (VD: SelectedDebitAccount.DisplayText).
+    private void AttachEntryHandlers(PaymentEntryItem entry)
+    {
+        entry.PropertyChanged += (_, e) =>
+        {
+            switch (e.PropertyName)
+            {
+                case nameof(PaymentEntryItem.SelectedDebitAccount):
+                    _lastUsedAccounts.LastDebitAccountId = entry.SelectedDebitAccount?.Id;
+                    break;
+                case nameof(PaymentEntryItem.SelectedCreditAccount):
+                    _lastUsedAccounts.LastCreditAccountId = entry.SelectedCreditAccount?.Id;
+                    break;
+            }
+            RecalculateTotals();
+        };
+    }
 
     private void ClearForm()
     {
@@ -325,6 +508,7 @@ public partial class PaymentViewModel : ViewModelBase
         PayeeName                 = string.Empty;
         Address                   = null;
         SelectedPaymentReason     = "ChiKhac";
+        ReasonDetail              = null;
         SelectedPaymentEmployeeEmployee = null;
         Attachment                = null;
         Reference                 = null;
@@ -355,6 +539,7 @@ public partial class PaymentViewModel : ViewModelBase
         PayeeName                 = CurrentPayment.PayeeName;
         Address                   = CurrentPayment.Address;
         SelectedPaymentReason     = CurrentPayment.PaymentReason;
+        ReasonDetail              = CurrentPayment.ReasonDetail;
         SelectedPaymentEmployeeEmployee = Employees.FirstOrDefault(e => e.Id == CurrentPayment.PaymentEmployeeId);
         Attachment                = CurrentPayment.Attachment;
         Reference                 = CurrentPayment.Reference;
@@ -367,15 +552,16 @@ public partial class PaymentViewModel : ViewModelBase
         {
             var item = new PaymentEntryItem
             {
-                Description   = e.Description,
-                DebitAccount  = e.DebitAccount,
-                CreditAccount = e.CreditAccount,
-                Amount        = e.Amount,
-                SubjectCode   = e.SubjectCode,
-                SubjectName   = e.SubjectName,
-                BankAccount   = e.BankAccount,
+                Description            = e.Description,
+                SelectedDebitAccount    = AccountSettings.FirstOrDefault(a => a.Id == e.DebitAccountId),
+                SelectedCreditAccount   = AccountSettings.FirstOrDefault(a => a.Id == e.CreditAccountId),
+                Amount                  = e.Amount,
+                SubjectCode             = e.SubjectCode,
+                SubjectName             = e.SubjectName,
+                BankAccount             = e.BankAccount,
+                SelectedExpenseCategory = ExpenseCategories.FirstOrDefault(c => c.Id == e.ExpenseCategoryId),
             };
-            item.PropertyChanged += (_, _) => RecalculateTotals();
+            AttachEntryHandlers(item);
             Entries.Add(item);
         }
 
@@ -394,6 +580,7 @@ public partial class PaymentViewModel : ViewModelBase
         PayeeName           = PayeeName.Trim(),
         Address             = string.IsNullOrWhiteSpace(Address)         ? null : Address.Trim(),
         PaymentReason       = SelectedPaymentReason,
+        ReasonDetail        = string.IsNullOrWhiteSpace(ReasonDetail)    ? null : ReasonDetail.Trim(),
         PaymentEmployeeId = SelectedPaymentEmployeeEmployee?.Id,
         Attachment          = string.IsNullOrWhiteSpace(Attachment)      ? null : Attachment.Trim(),
         Reference           = string.IsNullOrWhiteSpace(Reference)       ? null : Reference.Trim(),
@@ -409,6 +596,7 @@ public partial class PaymentViewModel : ViewModelBase
         PayeeName           = PayeeName.Trim(),
         Address             = string.IsNullOrWhiteSpace(Address)         ? null : Address.Trim(),
         PaymentReason       = SelectedPaymentReason,
+        ReasonDetail        = string.IsNullOrWhiteSpace(ReasonDetail)    ? null : ReasonDetail.Trim(),
         PaymentEmployeeId = SelectedPaymentEmployeeEmployee?.Id,
         Attachment          = string.IsNullOrWhiteSpace(Attachment)      ? null : Attachment.Trim(),
         Reference           = string.IsNullOrWhiteSpace(Reference)       ? null : Reference.Trim(),
@@ -420,13 +608,14 @@ public partial class PaymentViewModel : ViewModelBase
 
     private static PaymentEntryDto ToEntryDto(PaymentEntryItem item) => new()
     {
-        Description   = item.Description,
-        DebitAccount  = item.DebitAccount,
-        CreditAccount = item.CreditAccount,
-        Amount        = item.Amount,
-        SubjectCode   = item.SubjectCode,
-        SubjectName   = item.SubjectName,
-        BankAccount   = item.BankAccount,
+        Description       = item.Description,
+        DebitAccountId     = item.SelectedDebitAccount?.Id ?? 0,
+        CreditAccountId    = item.SelectedCreditAccount?.Id ?? 0,
+        Amount             = item.Amount,
+        SubjectCode        = item.SubjectCode,
+        SubjectName        = item.SubjectName,
+        BankAccount        = item.BankAccount,
+        ExpenseCategoryId  = item.SelectedExpenseCategory?.Id,
     };
 
     private void NavigateToPayment(int id)
