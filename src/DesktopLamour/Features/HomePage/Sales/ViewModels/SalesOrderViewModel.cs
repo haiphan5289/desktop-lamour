@@ -61,7 +61,7 @@ public partial class SalesOrderViewModel : ViewModelBase
     // ── Chứng từ ──────────────────────────────────────────────────────────
     [ObservableProperty] private DateTime _accountingDate = DateTime.Today;
     [ObservableProperty] private DateTime _documentDate   = DateTime.Today;
-    [ObservableProperty] private string   _documentNumber = "BC00001";
+    [ObservableProperty] private string   _documentNumber = "XK00001";
 
     // ── Thông tin bổ sung (Tab 6) ─────────────────────────────────────────
     [ObservableProperty] private string? _notes;
@@ -100,7 +100,7 @@ public partial class SalesOrderViewModel : ViewModelBase
     private readonly List<ISearchableItem> _allProducts = new();
     private List<ISearchableItem> _depositPickerItems = new();
 
-    private string _nextDocumentNumber = "BC00001";
+    private string _nextDocumentNumber = "XK00001";
 
     public SalesOrderViewModel(
         ICreateSalesOrderUseCase       createOrder,

@@ -87,7 +87,7 @@ public partial class SalesOrderReportFilterViewModel : ViewModelBase
             Categories.Add(AllOption);
             foreach (var c in _allProducts.Select(p => p.CategoryName)
                          .Where(c => !string.IsNullOrWhiteSpace(c)).Distinct().OrderBy(c => c))
-                Categories.Add(c);
+                Categories.Add(c!);
             SelectedCategory ??= AllOption;
 
             ApplyProductFilter();

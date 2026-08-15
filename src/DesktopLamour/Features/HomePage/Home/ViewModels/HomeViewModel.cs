@@ -38,7 +38,7 @@ public partial class HomeViewModel : ViewModelBase
 
     [RelayCommand]
     private void NavigateToWarehouse()
-        => _navigationService.NavigateTo(NavigationRoutes.Warehouse.Hub);
+        => _navigationService.NavigateTo(NavigationRoutes.Warehouse.NhapXuatKho);
 
     [RelayCommand]
     private void NavigateToAccounting()
@@ -51,4 +51,24 @@ public partial class HomeViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToBackup()
         => _navigationService.NavigateTo(NavigationRoutes.Backup.List);
+
+    [RelayCommand]
+    private void NavigateToProductUnits()
+        => _navigationService.NavigateTo(NavigationRoutes.ProductUnits.List);
+
+    [RelayCommand]
+    private void NavigateToAccountSettings()
+        => _navigationService.NavigateTo(NavigationRoutes.AccountSettings.List);
+
+    [RelayCommand]
+    private void NavigateToWarehouses()
+        => _navigationService.NavigateTo(NavigationRoutes.Warehouses.List);
+
+    [RelayCommand]
+    private void NavigateToDepartments()
+        => _navigationService.NavigateTo(NavigationRoutes.Departments.List);
+
+    [RelayCommand]
+    private void NavigateToExpenseCategories()
+        => _navigationService.NavigateTo(NavigationRoutes.ExpenseCategories.List);
 }

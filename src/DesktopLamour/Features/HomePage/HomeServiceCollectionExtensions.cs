@@ -442,8 +442,6 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<Func<PaymentPrintWindow>>(sp => () => sp.GetRequiredService<PaymentPrintWindow>());
 
         // ── Warehouse: Views + ViewModels ────────────────────────────────────────
-        services.AddTransient<WarehouseView>();
-        services.AddTransient<WarehouseViewModel>();
         services.AddTransient<TongHopTonKhoView>();
         services.AddTransient<TongHopTonKhoViewModel>();
         services.AddTransient<TongHopTonKhoFilterWindow>();
@@ -485,6 +483,21 @@ public static class HomeServiceCollectionExtensions
 
         // ── WarehouseReceipts: Window factory ────────────────────────────────────
         services.AddTransient<Func<WarehouseReceiptFormWindow>>(sp => () => sp.GetRequiredService<WarehouseReceiptFormWindow>());
+
+        // ── WarehouseTransactions (Nhập, xuất kho — danh sách gộp): Views + ViewModels ──
+        services.AddTransient<WarehouseTransactionListView>();
+        services.AddTransient<WarehouseTransactionListViewModel>();
+
+        // ── WarehouseTransactions: UseCases ───────────────────────────────────────
+        services.AddTransient<IGetWarehouseTransactionsUseCase, GetWarehouseTransactionsUseCase>();
+
+        // ── WarehouseTransactions: Service + typed HttpClient ────────────────────
+        services.AddHttpClient<IWarehouseTransactionService, WarehouseTransactionService>(client =>
+        {
+            client.BaseAddress = new Uri(serverUrl);
+            client.Timeout     = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
 
         // ── Sales: Views + ViewModels ────────────────────────────────────────────
         services.AddTransient<SalesView>();

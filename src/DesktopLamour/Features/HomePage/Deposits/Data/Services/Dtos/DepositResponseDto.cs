@@ -19,5 +19,7 @@ public class DepositResponseDto
     [JsonPropertyName("remaining_balance")] public decimal  RemainingBalance { get; set; }
     [JsonPropertyName("status")]            public int      Status           { get; set; }
     [JsonPropertyName("created_at")]        public DateTime CreatedAt        { get; set; }
+    [JsonPropertyName("source_sales_order_id")]              public int?    SourceSalesOrderId             { get; set; }
+    [JsonPropertyName("source_sales_order_document_number")] public string? SourceSalesOrderDocumentNumber { get; set; }
     [JsonPropertyName("deductions")]        public List<DepositDeductionResponseDto> Deductions { get; set; } = new();
 }

@@ -8,6 +8,7 @@ using DesktopLamour.Features.HomePage.Customers.Views;
 using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Employees.Views;
 using DesktopLamour.Features.HomePage.ProductList.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Suppliers.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Warehouse.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Warehouse.Domain.Models;
 using DesktopLamour.Features.HomePage.Warehouse.Domain.UseCases;
@@ -22,6 +23,7 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
     private readonly ICreateWarehouseReceiptUseCase       _createUseCase;
     private readonly IConfirmWarehouseReceiptUseCase      _confirmUseCase;
     private readonly IGetCustomersUseCase                 _getCustomers;
+    private readonly IGetSuppliersUseCase                 _getSuppliers;
     private readonly IGetEmployeesUseCase                 _getEmployees;
     private readonly IGetProductsUseCase                  _getProducts;
     private readonly Func<EmployeeFormWindow>             _employeeFormWindowFactory;
@@ -38,15 +40,18 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
     [ObservableProperty] private string   _reference       = string.Empty;
     [ObservableProperty] private decimal  _totalAmount;
 
-    // 0-based index for ComboBox binding; maps to ReceiptType 1, 2, 3
+    // 0-based index for ComboBox binding; maps to ReceiptType 1, 2, 3, 4
     [ObservableProperty] private int _selectedReceiptTypeIndex;
 
     public int SelectedReceiptType => SelectedReceiptTypeIndex + 1;
 
-    [ObservableProperty] private ISearchableItem? _selectedCustomer;
+    [ObservableProperty] private ISearchableItem? _selectedObject;
     [ObservableProperty] private ISearchableItem? _selectedEmployee;
 
-    public IReadOnlyList<ISearchableItem> Customers { get; private set; } = Array.Empty<ISearchableItem>();
+    private IReadOnlyList<ISearchableItem> _customers = Array.Empty<ISearchableItem>();
+    private IReadOnlyList<ISearchableItem> _suppliers = Array.Empty<ISearchableItem>();
+
+    public IReadOnlyList<ISearchableItem> Objects  { get; private set; } = Array.Empty<ISearchableItem>();
     public IReadOnlyList<ISearchableItem> Employees { get; private set; } = Array.Empty<ISearchableItem>();
     public IReadOnlyList<ISearchableItem> Products  { get; private set; } = Array.Empty<ISearchableItem>();
 
@@ -58,6 +63,7 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
         ICreateWarehouseReceiptUseCase       createUseCase,
         IConfirmWarehouseReceiptUseCase      confirmUseCase,
         IGetCustomersUseCase                 getCustomers,
+        IGetSuppliersUseCase                 getSuppliers,
         IGetEmployeesUseCase                 getEmployees,
         IGetProductsUseCase                  getProducts,
         Func<EmployeeFormWindow>             employeeFormWindowFactory,
@@ -67,6 +73,7 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
         _createUseCase             = createUseCase;
         _confirmUseCase            = confirmUseCase;
         _getCustomers              = getCustomers;
+        _getSuppliers              = getSuppliers;
         _getEmployees              = getEmployees;
         _getProducts               = getProducts;
         _employeeFormWindowFactory = employeeFormWindowFactory;
@@ -79,14 +86,17 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
         try
         {
             var customers = await _getCustomers.ExecuteAsync(ct);
+            var suppliers = await _getSuppliers.ExecuteAsync(ct);
             var employees = await _getEmployees.ExecuteAsync(ct);
             var products  = await _getProducts.ExecuteAsync(ct);
 
-            Customers = customers.Cast<ISearchableItem>().ToList().AsReadOnly();
+            _customers = customers.Cast<ISearchableItem>().ToList().AsReadOnly();
+            _suppliers = suppliers.Select(s => (ISearchableItem)new WarehouseObjectItem(s)).ToList().AsReadOnly();
+            RebuildObjects();
+
             Employees = employees.Cast<ISearchableItem>().ToList().AsReadOnly();
             Products  = products.Where(p => p.IsActive).Select(p => (ISearchableItem)new WarehouseProductItem(p)).ToList().AsReadOnly();
 
-            OnPropertyChanged(nameof(Customers));
             OnPropertyChanged(nameof(Employees));
             OnPropertyChanged(nameof(Products));
         }
@@ -96,6 +106,12 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
         }
 
         BeginDirtyTracking();
+    }
+
+    private void RebuildObjects()
+    {
+        Objects = _customers.Concat(_suppliers).ToList().AsReadOnly();
+        OnPropertyChanged(nameof(Objects));
     }
 
     [RelayCommand]
@@ -136,17 +152,17 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
     [RelayCommand]
     private async Task AddCustomerAsync(CancellationToken ct = default)
     {
-        var before = Customers.Select(c => c.Id).ToHashSet();
+        var before = _customers.Select(c => c.Id).ToHashSet();
         var window = _customerFormWindowFactory();
         window.Initialize(null);
         if (window.ShowDialog() != true) return;
         try
         {
             var customers = await _getCustomers.ExecuteAsync(ct);
-            Customers = customers.Cast<ISearchableItem>().ToList().AsReadOnly();
-            OnPropertyChanged(nameof(Customers));
-            var newItem = Customers.FirstOrDefault(c => !before.Contains(c.Id));
-            if (newItem is not null) SelectedCustomer = newItem;
+            _customers = customers.Cast<ISearchableItem>().ToList().AsReadOnly();
+            RebuildObjects();
+            var newItem = _customers.FirstOrDefault(c => !before.Contains(c.Id));
+            if (newItem is not null) SelectedObject = newItem;
         }
         catch (Exception ex) { _logger.LogWarning(ex, "Could not reload customers after add"); }
     }
@@ -184,10 +200,18 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
         IsLoading = true;
         try
         {
+            var selectedCustomerId = (SelectedObject as WarehouseObjectItem)?.Type == WarehouseObjectType.Supplier
+                ? null
+                : SelectedObject?.Id;
+            var selectedSupplierId = (SelectedObject as WarehouseObjectItem)?.Type == WarehouseObjectType.Supplier
+                ? SelectedObject?.Id
+                : null;
+
             var request = new CreateWarehouseReceiptRequestDto
             {
                 ReceiptType    = SelectedReceiptType,
-                CustomerId     = SelectedCustomer?.Id,
+                CustomerId     = selectedCustomerId,
+                SupplierId     = selectedSupplierId,
                 EmployeeId     = SelectedEmployee?.Id,
                 AccountingDate = DateTime.SpecifyKind(AccountingDate.Date, DateTimeKind.Unspecified),
                 DocumentDate   = DateTime.SpecifyKind(DocumentDate.Date,   DateTimeKind.Unspecified),
@@ -196,13 +220,20 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
                 Reference      = string.IsNullOrWhiteSpace(Reference)      ? null : Reference.Trim(),
                 Lines          = Lines.Select(l => new CreateWarehouseReceiptLineDto
                 {
-                    ProductId     = l.SelectedProduct!.Id,
-                    WarehouseId   = 1,  // default warehouse
-                    Quantity      = l.Quantity,
-                    UnitPrice     = l.UnitPrice,
-                    Amount        = l.Amount,
-                    DebitAccount  = l.DebitAccount,
-                    CreditAccount = l.CreditAccount,
+                    ProductId           = l.SelectedProduct!.Id,
+                    WarehouseId         = 1,  // default warehouse
+                    Quantity            = l.Quantity,
+                    UnitPrice           = l.UnitPrice,
+                    Amount              = l.Amount,
+                    DebitAccount        = l.DebitAccount,
+                    CreditAccount       = l.CreditAccount,
+                    CostItem            = string.IsNullOrWhiteSpace(l.CostItem)            ? null : l.CostItem.Trim(),
+                    CostObject          = string.IsNullOrWhiteSpace(l.CostObject)          ? null : l.CostObject.Trim(),
+                    Project             = string.IsNullOrWhiteSpace(l.Project)             ? null : l.Project.Trim(),
+                    PurchaseOrderNumber = string.IsNullOrWhiteSpace(l.PurchaseOrderNumber) ? null : l.PurchaseOrderNumber.Trim(),
+                    SalesContractNumber = string.IsNullOrWhiteSpace(l.SalesContractNumber) ? null : l.SalesContractNumber.Trim(),
+                    LoanContractNumber  = string.IsNullOrWhiteSpace(l.LoanContractNumber)  ? null : l.LoanContractNumber.Trim(),
+                    StatisticsCode      = string.IsNullOrWhiteSpace(l.StatisticsCode)      ? null : l.StatisticsCode.Trim(),
                 }).ToList()
             };
 

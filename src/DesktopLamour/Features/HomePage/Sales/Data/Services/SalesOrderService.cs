@@ -90,7 +90,7 @@ public sealed class SalesOrderService : ISalesOrderService
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<NextCodeResponse>(ct);
-        return result?.Code ?? "BC00001";
+        return result?.Code ?? "XK00001";
     }
 
     public async Task<IEnumerable<SalesOrderReportLineDto>> GetReportAsync(

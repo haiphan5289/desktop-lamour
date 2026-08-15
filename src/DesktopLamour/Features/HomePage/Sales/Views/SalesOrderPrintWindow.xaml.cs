@@ -52,7 +52,7 @@ public partial class SalesOrderPrintWindow : Window
     private static readonly double A5PageWidth  = 148 * MmToDip;
     private static readonly double A5PageHeight = 210 * MmToDip;
 
-    private static readonly int[] ProductTableColumnWidths = { 21, 152, 28, 62, 41, 69, 48, 69 };
+    private static readonly int[] ProductTableColumnWidths = { 32, 141, 28, 62, 41, 69, 48, 69 };
 
     private static readonly SolidColorBrush OuterBorderBrush = new(Color.FromRgb(0x9D, 0xC1, 0xE0));
 
@@ -61,9 +61,9 @@ public partial class SalesOrderPrintWindow : Window
         var doc = new FlowDocument
         {
             FontFamily  = new FontFamily("Segoe UI"),
-            FontSize    = 10,
+            FontSize    = 11,
             Background  = Brushes.White,
-            PagePadding = new Thickness(14),
+            PagePadding = new Thickness(16),
             PageWidth   = A5PageWidth,
             PageHeight  = A5PageHeight,
             ColumnWidth = A5PageWidth,
@@ -78,7 +78,7 @@ public partial class SalesOrderPrintWindow : Window
         {
             BorderBrush     = OuterBorderBrush,
             BorderThickness = new Thickness(1.2),
-            Padding         = new Thickness(12),
+            Padding         = new Thickness(14),
         };
         frameRow.Cells.Add(content);
         var frameGroup = new TableRowGroup();
@@ -95,36 +95,36 @@ public partial class SalesOrderPrintWindow : Window
         var logoImage = new Image
         {
             Source  = new BitmapImage(new Uri("pack://application:,,,/Assets/Images/lamour-logo.png")),
-            Width   = 110,
-            Height  = 36,
+            Width   = 120,
+            Height  = 40,
             Stretch = Stretch.Uniform,
         };
         var logoFloater = new Floater
         {
-            Width               = 125,
+            Width               = 135,
             HorizontalAlignment = HorizontalAlignment.Left,
             Margin              = new Thickness(0, 0, 10, 6),
         };
         logoFloater.Blocks.Add(new BlockUIContainer(logoImage));
 
-        var headerPara = new Paragraph { Margin = new Thickness(0, 0, 0, 8) };
+        var headerPara = new Paragraph { Margin = new Thickness(0, 0, 0, 10), LineHeight = 15 };
         headerPara.Inlines.Add(logoFloater);
-        headerPara.Inlines.Add(new Bold(new Run("CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ LAMOUR")) { FontSize = 11 });
+        headerPara.Inlines.Add(new Bold(new Run("CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ LAMOUR")) { FontSize = 13 });
         headerPara.Inlines.Add(new LineBreak());
-        headerPara.Inlines.Add(new Run("Số 110/20/38 Đường số 30, Phường An Nhơn, TP Hồ Chí Minh.") { FontSize = 9 });
+        headerPara.Inlines.Add(new Run("Số 110/20/38 Đường số 30, Phường An Nhơn, TP Hồ Chí Minh.") { FontSize = 10 });
         headerPara.Inlines.Add(new LineBreak());
-        headerPara.Inlines.Add(new Run("Mã số thuế: 0319088143") { FontSize = 9 });
+        headerPara.Inlines.Add(new Run("Mã số thuế: 0319088143") { FontSize = 10 });
         headerPara.Inlines.Add(new LineBreak());
-        headerPara.Inlines.Add(new Run("Tel: 0868858975 - Website: www.skincoachlamour.com") { FontSize = 9 });
+        headerPara.Inlines.Add(new Run("Tel: 0868858975 - Website: www.skincoachlamour.com") { FontSize = 10 });
         headerPara.Inlines.Add(new LineBreak());
-        headerPara.Inlines.Add(new Run("Số tài khoản: 0071.0007.93865 - VCB - CN Tân Sơn Nhất") { FontSize = 9 });
+        headerPara.Inlines.Add(new Run("Số tài khoản: 0071.0007.93865 - VCB - CN Tân Sơn Nhất") { FontSize = 10 });
         content.Blocks.Add(headerPara);
 
         // Title + invoice number. 3 cột: đệm rỗng | tiêu đề (giữa) | Số HĐ — cột đệm bên trái
         // rộng bằng đúng cột "Số HĐ" bên phải để tiêu đề được bao đối xứng, căn giữa đúng theo
         // cả trang thay vì chỉ giữa nửa trang (2 cột bằng nhau trước đây làm tiêu đề bị lệch trái).
         const double invoiceNoColumnWidth = 140;
-        var titleTable = new Table { Margin = new Thickness(0) };
+        var titleTable = new Table { Margin = new Thickness(0, 4, 0, 10) };
         titleTable.Columns.Add(new TableColumn { Width = new GridLength(invoiceNoColumnWidth) });
         titleTable.Columns.Add(new TableColumn());
         titleTable.Columns.Add(new TableColumn { Width = new GridLength(invoiceNoColumnWidth) });
@@ -132,12 +132,12 @@ public partial class SalesOrderPrintWindow : Window
 
         titleRow.Cells.Add(new TableCell(new Paragraph()));
 
-        titleRow.Cells.Add(new TableCell(new Paragraph(new Bold(new Run("HÓA ĐƠN BÁN HÀNG")) { FontSize = 15 })
+        titleRow.Cells.Add(new TableCell(new Paragraph(new Bold(new Run("HÓA ĐƠN BÁN HÀNG")) { FontSize = 18 })
         {
             TextAlignment = TextAlignment.Center,
         }));
 
-        var invoiceNoPara = new Paragraph { TextAlignment = TextAlignment.Right };
+        var invoiceNoPara = new Paragraph { TextAlignment = TextAlignment.Right, FontSize = 12 };
         invoiceNoPara.Inlines.Add(new Run("Số HĐ: "));
         invoiceNoPara.Inlines.Add(new Run(order.DocumentNumber) { Foreground = Brushes.Red, FontWeight = FontWeights.Bold });
         titleRow.Cells.Add(new TableCell(invoiceNoPara));
@@ -148,12 +148,12 @@ public partial class SalesOrderPrintWindow : Window
         content.Blocks.Add(titleTable);
 
         // Customer info
-        content.Blocks.Add(new Paragraph(new Run($"Tên khách hàng: {order.CustomerName}")) { FontWeight = FontWeights.Bold, Margin = new Thickness(0, 0, 0, 2) });
-        content.Blocks.Add(new Paragraph(new Run($"Điện thoại: {customerPhone}")) { Margin = new Thickness(0, 0, 0, 2) });
-        content.Blocks.Add(new Paragraph(new Run($"Địa chỉ: {customerAddress}")) { Margin = new Thickness(0, 0, 0, 2) });
+        content.Blocks.Add(new Paragraph(new Run($"Tên khách hàng: {order.CustomerName}")) { FontWeight = FontWeights.Bold, FontSize = 12, Margin = new Thickness(0, 0, 0, 4) });
+        content.Blocks.Add(new Paragraph(new Run($"Điện thoại: {customerPhone}")) { Margin = new Thickness(0, 0, 0, 4) });
+        content.Blocks.Add(new Paragraph(new Run($"Địa chỉ: {customerAddress}")) { Margin = new Thickness(0, 0, 0, 4) });
         // "PT giao hàng"/"PT thanh toán": dùng bảng 2 cột cố định thay vì nối chuỗi với khoảng
         // trắng cứng — trước đây vị trí "PT thanh toán" bị xô lệch tuỳ độ dài DeliveryMethod.
-        var deliveryPaymentTable = new Table { CellSpacing = 0, Margin = new Thickness(0) };
+        var deliveryPaymentTable = new Table { CellSpacing = 0, Margin = new Thickness(0, 0, 0, 8) };
         deliveryPaymentTable.Columns.Add(new TableColumn { Width = new GridLength(245) });
         deliveryPaymentTable.Columns.Add(new TableColumn { Width = new GridLength(245) });
         var deliveryPaymentRow = new TableRow();
@@ -205,7 +205,7 @@ public partial class SalesOrderPrintWindow : Window
         var totalPara = new Paragraph(new Bold(new Run($"Tổng tiền thanh toán : {FormatMoney(order.GrandTotal)}")))
         {
             TextAlignment = TextAlignment.Right,
-            FontSize      = 11,
+            FontSize      = 13,
             Margin        = new Thickness(0),
         };
         var totalRow = new TableRow();
@@ -214,7 +214,7 @@ public partial class SalesOrderPrintWindow : Window
             ColumnSpan      = ProductTableColumnWidths.Length,
             BorderBrush     = Brushes.Black,
             BorderThickness = new Thickness(0.5),
-            Padding         = new Thickness(5, 4, 5, 4),
+            Padding         = new Thickness(6, 6, 6, 6),
         });
         rowGroup.Rows.Add(totalRow);
 
@@ -228,7 +228,7 @@ public partial class SalesOrderPrintWindow : Window
             ColumnSpan      = ProductTableColumnWidths.Length,
             BorderBrush     = Brushes.Black,
             BorderThickness = new Thickness(0.5),
-            Padding         = new Thickness(5, 3, 5, 3),
+            Padding         = new Thickness(6, 5, 6, 5),
         });
         rowGroup.Rows.Add(noteRow);
 
@@ -238,7 +238,8 @@ public partial class SalesOrderPrintWindow : Window
         content.Blocks.Add(new Paragraph(new Run($"Ngày {order.DocumentDate.Day:D2} Tháng {order.DocumentDate.Month:D2} Năm {order.DocumentDate.Year}"))
         {
             TextAlignment = TextAlignment.Right,
-            Margin        = new Thickness(0, 4, 0, 20),
+            FontSize      = 11,
+            Margin        = new Thickness(0, 8, 0, 22),
         });
 
         var signTable = new Table { CellSpacing = 0 };
@@ -246,10 +247,10 @@ public partial class SalesOrderPrintWindow : Window
         var signRow = new TableRow();
         foreach (var label in new[] { "Thủ kho", "Người nhận hàng", "Nhân viên giao hàng", "Người viết hóa đơn" })
         {
-            signRow.Cells.Add(new TableCell(new Paragraph(new Bold(new Run(label))) { TextAlignment = TextAlignment.Center })
+            signRow.Cells.Add(new TableCell(new Paragraph(new Bold(new Run(label))) { TextAlignment = TextAlignment.Center, FontSize = 11 })
             {
                 // Extra bottom padding leaves blank space below the label for an actual signature.
-                Padding = new Thickness(3, 3, 3, 45),
+                Padding = new Thickness(3, 3, 3, 48),
             });
         }
         var signGroup = new TableRowGroup();
@@ -278,7 +279,7 @@ public partial class SalesOrderPrintWindow : Window
         {
             row.Cells.Add(new TableCell(new Paragraph(new Bold(new Run(h))) { TextAlignment = TextAlignment.Center })
             {
-                Padding         = new Thickness(3),
+                Padding         = new Thickness(4, 6, 4, 6),
                 BorderBrush     = Brushes.Black,
                 BorderThickness = new Thickness(0.5),
             });
@@ -293,7 +294,7 @@ public partial class SalesOrderPrintWindow : Window
         {
             row.Cells.Add(new TableCell(new Paragraph(new Run(v)) { TextAlignment = TextAlignment.Center })
             {
-                Padding         = new Thickness(3),
+                Padding         = new Thickness(4, 6, 4, 6),
                 BorderBrush     = Brushes.Black,
                 BorderThickness = new Thickness(0.5),
             });
@@ -308,16 +309,16 @@ public partial class SalesOrderPrintWindow : Window
     // đủ gần để hóa đơn ngắn không còn nhìn như hình chữ nhật nằm ngang.
     private static double EstimateContentHeight(int lineCount)
     {
-        const double header          = 85;  // logo + 5 dòng thông tin công ty
-        const double title           = 30;  // "HÓA ĐƠN BÁN HÀNG" + Số HĐ
-        const double customerInfo    = 70;  // Tên KH/Điện thoại/Địa chỉ + PT giao hàng-thanh toán
-        const double tableHeaderRow  = 24;
-        const double perProductRow   = 28;  // xấp xỉ, dài hơn nếu tên sản phẩm wrap 2 dòng
-        const double totalsRow       = 26;
-        const double notesRow        = 26;
-        const double dateAndSignature = 90; // dòng Ngày... + khoảng trống chữ ký có chủ đích
-        const double framePadding    = 24;  // Padding(12) x2 của outer frame
-        const double pagePadding     = 28;  // PagePadding(14) x2
+        const double header          = 96;  // logo + 5 dòng thông tin công ty (font lớn hơn 2026-08-15)
+        const double title           = 38;  // "HÓA ĐƠN BÁN HÀNG" + Số HĐ
+        const double customerInfo    = 84;  // Tên KH/Điện thoại/Địa chỉ + PT giao hàng-thanh toán
+        const double tableHeaderRow  = 30;
+        const double perProductRow   = 34;  // xấp xỉ, dài hơn nếu tên sản phẩm wrap 2 dòng
+        const double totalsRow       = 32;
+        const double notesRow        = 32;
+        const double dateAndSignature = 98; // dòng Ngày... + khoảng trống chữ ký có chủ đích
+        const double framePadding    = 28;  // Padding(14) x2 của outer frame
+        const double pagePadding     = 32;  // PagePadding(16) x2
 
         return header + title + customerInfo + tableHeaderRow + (perProductRow * lineCount)
             + totalsRow + notesRow + dateAndSignature + framePadding + pagePadding;

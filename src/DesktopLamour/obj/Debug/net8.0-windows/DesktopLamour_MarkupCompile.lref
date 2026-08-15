@@ -32,7 +32,6 @@ F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePa
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Warehouse/Views/TongHopTonKhoView.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Warehouse/Views/WarehouseReceiptFormWindow.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Warehouse/Views/WarehouseReceiptListView.xaml;;
-F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Warehouse/Views/WarehouseView.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/MainWindow/MainWindow.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Shared/AppConverters.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Shared/Controls/AppSearchableComboBox.xaml;;
@@ -53,4 +52,5 @@ F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePa
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Warehouses/Views/ExpenseCategoryFormWindow.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Warehouses/Views/ExpenseCategoryListView.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Accounting/Views/PaymentPrintWindow.xaml;;
+F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Warehouse/Views/WarehouseTransactionListView.xaml;;
 

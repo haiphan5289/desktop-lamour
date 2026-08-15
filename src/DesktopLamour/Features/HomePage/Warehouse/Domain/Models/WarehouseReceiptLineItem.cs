@@ -13,6 +13,14 @@ public partial class WarehouseReceiptLineItem : ObservableObject
     [ObservableProperty] private string           _debitAccount  = "111";
     [ObservableProperty] private string           _creditAccount = "131";
 
+    [ObservableProperty] private string _costItem            = string.Empty;
+    [ObservableProperty] private string _costObject          = string.Empty;
+    [ObservableProperty] private string _project              = string.Empty;
+    [ObservableProperty] private string _purchaseOrderNumber = string.Empty;
+    [ObservableProperty] private string _salesContractNumber = string.Empty;
+    [ObservableProperty] private string _loanContractNumber  = string.Empty;
+    [ObservableProperty] private string _statisticsCode      = string.Empty;
+
     partial void OnSelectedProductChanged(ISearchableItem? value)
     {
         if (value is WarehouseProductItem p)

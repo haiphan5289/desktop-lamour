@@ -6,7 +6,7 @@ public sealed record CreateProductInput
 {
     public required string  Code          { get; init; }
     public required string  Name          { get; init; }
-    public required int     CategoryId    { get; init; }
+    public int?             CategoryId    { get; init; }
     public required string  Unit          { get; init; }
     public required decimal CostPrice     { get; init; }
     public required decimal SellingPrice  { get; init; }
@@ -41,4 +41,5 @@ public sealed record CreateProductInput
     public string? SpecialGoodsType        { get; init; }
     public decimal LatestPurchasePrice     { get; init; }
     public bool    IsPromotionalGood       { get; init; }
+    public bool    IsDepositProduct        { get; init; }
 }

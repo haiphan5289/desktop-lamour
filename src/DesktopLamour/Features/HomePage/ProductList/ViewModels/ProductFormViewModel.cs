@@ -34,6 +34,12 @@ public partial class ProductFormViewModel : ViewModelBase
 
     private bool _isEditMode;
     private int  _editingId;
+
+    // Add mode: "Diễn giải khi mua"/"Diễn giải khi bán" tự động theo "Tên" cho tới khi user
+    // tự tay gõ khác đi — mỗi field ngừng theo dõi riêng biệt ngay khi giá trị lệch khỏi Tên.
+    private bool _purchaseDescriptionFollowsName = true;
+    private bool _saleDescriptionFollowsName     = true;
+
     private int  _pendingCategoryId;
     private int? _pendingProductUnitId;
     private int? _pendingWarehouseId;
@@ -73,6 +79,23 @@ public partial class ProductFormViewModel : ViewModelBase
     [ObservableProperty] private string? _saleDescription;
     [ObservableProperty] private int     _stockQuantity;
 
+    partial void OnNameChanged(string value)
+    {
+        if (_isEditMode) return;
+        if (_purchaseDescriptionFollowsName) PurchaseDescription = value;
+        if (_saleDescriptionFollowsName)     SaleDescription     = value;
+    }
+
+    partial void OnPurchaseDescriptionChanged(string? value)
+    {
+        if (!_isEditMode && value != Name) _purchaseDescriptionFollowsName = false;
+    }
+
+    partial void OnSaleDescriptionChanged(string? value)
+    {
+        if (!_isEditMode && value != Name) _saleDescriptionFollowsName = false;
+    }
+
     // Tab "Ngầm định"
     [ObservableProperty] private ISearchableItem? _selectedDefaultWarehouse;
     [ObservableProperty] private ISearchableItem? _selectedStockAccount;
@@ -87,6 +110,7 @@ public partial class ProductFormViewModel : ViewModelBase
     [ObservableProperty] private decimal _latestPurchasePrice;
     [ObservableProperty] private decimal _sellingPrice;
     [ObservableProperty] private bool    _isPromotionalGood;
+    [ObservableProperty] private bool    _isDepositProduct;
 
     // Tab "Thuế"
     [ObservableProperty] private VatRateType?       _vatRate;
@@ -163,6 +187,8 @@ public partial class ProductFormViewModel : ViewModelBase
         {
             _isEditMode                     = false;
             _editingId                      = 0;
+            _purchaseDescriptionFollowsName = true;
+            _saleDescriptionFollowsName     = true;
             _pendingCategoryId              = 0;
             _pendingProductUnitId           = null;
             _pendingWarehouseId             = null;
@@ -182,8 +208,9 @@ public partial class ProductFormViewModel : ViewModelBase
             WarrantyPeriod       = null;
             MinStockQuantity     = 0;
             Origin               = null;
-            PurchaseDescription  = null;
-            SaleDescription      = null;
+            // PurchaseDescription/SaleDescription không reset thủ công ở đây — dòng "Code = Name = Unit"
+            // phía trên đã trigger OnNameChanged() tự điền 2 field này về "" (theo dõi Name). Set null
+            // thủ công tại đây sẽ bị hiểu nhầm là user tự sửa (giá trị lệch khỏi Name) và tắt auto-sync.
             CostPrice            = 0;
             SellingPrice         = 0;
             StockQuantity        = 0;
@@ -205,12 +232,15 @@ public partial class ProductFormViewModel : ViewModelBase
             SpecialGoodsType               = null;
             LatestPurchasePrice            = 0;
             IsPromotionalGood              = false;
+            IsDepositProduct               = false;
         }
         else
         {
             _isEditMode                     = true;
             _editingId                      = product.Id;
-            _pendingCategoryId              = product.CategoryId;
+            _purchaseDescriptionFollowsName = false;
+            _saleDescriptionFollowsName     = false;
+            _pendingCategoryId              = product.CategoryId ?? 0;
             _pendingProductUnitId           = product.ProductUnitId;
             _pendingWarehouseId             = product.DefaultWarehouseId;
             _pendingStockAccountId          = product.StockAccountId;
@@ -245,6 +275,7 @@ public partial class ProductFormViewModel : ViewModelBase
             SpecialGoodsType     = product.SpecialGoodsType;
             LatestPurchasePrice  = product.LatestPurchasePrice;
             IsPromotionalGood    = product.IsPromotionalGood;
+            IsDepositProduct     = product.IsDepositProduct;
         }
 
         OnPropertyChanged(nameof(IsAddMode));
@@ -416,12 +447,6 @@ public partial class ProductFormViewModel : ViewModelBase
     {
         ErrorMessage = string.Empty;
 
-        if (SelectedCategory is null)
-        {
-            ErrorMessage = "Vui lòng chọn danh mục.";
-            return false;
-        }
-
         IsLoading = true;
         try
         {
@@ -431,7 +456,7 @@ public partial class ProductFormViewModel : ViewModelBase
                 {
                     Code             = Code.Trim(),
                     Name             = Name.Trim(),
-                    CategoryId       = SelectedCategory.Id,
+                    CategoryId       = SelectedCategory?.Id,
                     Unit             = (SelectedProductUnit?.Name ?? Unit).Trim(),
                     CostPrice        = CostPrice,
                     SellingPrice     = SellingPrice,
@@ -463,6 +488,7 @@ public partial class ProductFormViewModel : ViewModelBase
                     SpecialGoodsType        = SpecialGoodsType,
                     LatestPurchasePrice     = LatestPurchasePrice,
                     IsPromotionalGood       = IsPromotionalGood,
+                    IsDepositProduct        = IsDepositProduct,
                 };
                 await _createUseCase.ExecuteAsync(input, ct);
             }
@@ -473,7 +499,7 @@ public partial class ProductFormViewModel : ViewModelBase
                     Id               = _editingId,
                     Code             = Code.Trim(),
                     Name             = Name.Trim(),
-                    CategoryId       = SelectedCategory.Id,
+                    CategoryId       = SelectedCategory?.Id,
                     Unit             = (SelectedProductUnit?.Name ?? Unit).Trim(),
                     CostPrice        = CostPrice,
                     SellingPrice     = SellingPrice,
@@ -505,6 +531,7 @@ public partial class ProductFormViewModel : ViewModelBase
                     SpecialGoodsType        = SpecialGoodsType,
                     LatestPurchasePrice     = LatestPurchasePrice,
                     IsPromotionalGood       = IsPromotionalGood,
+                    IsDepositProduct        = IsDepositProduct,
                 };
                 await _updateUseCase.ExecuteAsync(input, ct);
             }

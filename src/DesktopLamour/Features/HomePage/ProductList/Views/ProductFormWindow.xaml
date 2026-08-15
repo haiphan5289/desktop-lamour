@@ -148,7 +148,7 @@
                         </StackPanel>
                     </Grid>
 
-                    <!-- Tính chất (*) + Nhóm VTHH (*) -->
+                    <!-- Tính chất (*) + Nhóm VTHH (optional, đổi 2026-08-15) -->
                     <Grid Margin="0,0,0,16">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -173,7 +173,6 @@
                         <StackPanel Grid.Column="2">
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                 <controls:AppLabel Text="Nhóm VTHH" Style="{StaticResource AppTypography.LabelSection}"/>
-                                <controls:AppLabel Text=" *" Style="{StaticResource AppTypography.LabelSection}" Foreground="{StaticResource AppColor.TextBrand}"/>
                             </StackPanel>
                             <controls:AppSearchableComboBox
                                 ItemsSource="{Binding Categories}"
@@ -252,42 +251,6 @@
                         <StackPanel Grid.Column="2">
                             <controls:AppLabel Text="Diễn giải khi bán" Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,0,6"/>
                             <controls:AppTextField Text="{Binding SaleDescription, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                        </StackPanel>
-                    </Grid>
-                </StackPanel>
-            </Border>
-
-            <!-- ══════════════ Card 2: Tồn kho ══════════════ -->
-            <Border Background="{StaticResource AppColor.BackgroundPrimary}"
-                    BorderBrush="{StaticResource AppColor.BorderThin}"
-                    BorderThickness="1"
-                    CornerRadius="{StaticResource AppRadius.Large}"
-                    Padding="20"
-                    Margin="0,0,0,16">
-                <StackPanel>
-                    <controls:AppLabel Text="Tồn kho"
-                                       Style="{StaticResource AppTypography.HeaderSection}"
-                                       Margin="0,0,0,16"/>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="24"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0">
-                            <controls:AppLabel Text="Tồn kho" Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,0,6"/>
-                            <controls:AppTextField Text="{Binding StockQuantity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                   Placeholder="VD: 100"
-                                                   IsEnabled="{Binding IsAddMode}"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="2" VerticalAlignment="Bottom">
-                            <StackPanel Orientation="Horizontal">
-                                <CheckBox IsChecked="{Binding StopTracking, Mode=TwoWay}"
-                                          VerticalAlignment="Center"
-                                          Margin="0,0,8,0"/>
-                                <controls:AppLabel Text="Ngừng theo dõi"
-                                                   Style="{StaticResource AppTypography.BodySection}"/>
-                            </StackPanel>
                         </StackPanel>
                     </Grid>
                 </StackPanel>
@@ -418,6 +381,22 @@
                                   VerticalAlignment="Center"
                                   Margin="0,0,8,0"/>
                         <controls:AppLabel Text="Là hàng khuyến mại"
+                                           Style="{StaticResource AppTypography.BodySection}"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <CheckBox IsChecked="{Binding IsDepositProduct, Mode=TwoWay}"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,8,0"/>
+                        <controls:AppLabel Text="Là sản phẩm đặt cọc"
+                                           Style="{StaticResource AppTypography.BodySection}"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <CheckBox IsChecked="{Binding StopTracking, Mode=TwoWay}"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,8,0"/>
+                        <controls:AppLabel Text="Ngừng theo dõi"
                                            Style="{StaticResource AppTypography.BodySection}"/>
                     </StackPanel>
                 </StackPanel>

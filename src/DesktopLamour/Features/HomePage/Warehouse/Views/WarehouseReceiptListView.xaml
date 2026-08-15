@@ -113,13 +113,16 @@
                                         <Style TargetType="TextBlock">
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding ReceiptType}" Value="1">
-                                                    <Setter Property="Text" Value="Nhập từ nhà cung cấp"/>
+                                                    <Setter Property="Text" Value="Thành phẩm sản xuất"/>
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding ReceiptType}" Value="2">
                                                     <Setter Property="Text" Value="Hàng bán bị trả lại"/>
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding ReceiptType}" Value="3">
-                                                    <Setter Property="Text" Value="Nhập điều chỉnh"/>
+                                                    <Setter Property="Text" Value="Khác (NVL thừa, HH thuê gia công,...)"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding ReceiptType}" Value="4">
+                                                    <Setter Property="Text" Value="Hàng nhận gia công"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
@@ -162,8 +165,8 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTextColumn Header="Khách hàng"
-                                        Binding="{Binding CustomerName}"
+                    <DataGridTextColumn Header="Đối tượng"
+                                        Binding="{Binding ObjectName}"
                                         Width="160"/>
 
                     <DataGridTextColumn Header="NV bán hàng"

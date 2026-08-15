@@ -7,8 +7,8 @@ public class Product : ISearchableItem
     public int          Id               { get; set; }
     public string       Code             { get; set; } = string.Empty;
     public string       Name             { get; set; } = string.Empty;
-    public int          CategoryId       { get; set; }
-    public string       CategoryName     { get; set; } = string.Empty;
+    public int?         CategoryId       { get; set; }
+    public string?      CategoryName     { get; set; }
     public string       Unit             { get; set; } = string.Empty;
     public decimal      CostPrice        { get; set; }
     public decimal      SellingPrice     { get; set; }
@@ -52,6 +52,7 @@ public class Product : ISearchableItem
     public string? SpecialGoodsType          { get; set; }
     public decimal LatestPurchasePrice       { get; set; }
     public bool    IsPromotionalGood         { get; set; }
+    public bool    IsDepositProduct          { get; set; }
 
     public string DisplayText => $"{Code} — {Name}";
 }

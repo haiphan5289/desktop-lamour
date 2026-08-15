@@ -99,6 +99,7 @@ public partial class WarehouseReceiptListViewModel : ViewModelBase
             ReceiptType   = r.ReceiptType,
             Status        = r.Status,
             CustomerName  = r.CustomerName,
+            SupplierName  = r.SupplierName,
             EmployeeName  = r.EmployeeName,
             DocumentDate  = r.DocumentDate,
             TotalAmount   = r.TotalAmount,

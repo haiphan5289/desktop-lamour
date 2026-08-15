@@ -13,8 +13,13 @@ public sealed class DepositProductPickerItem : ISearchableItem
     public DepositProductPickerItem(DepositResponseDto deposit) => Deposit = deposit;
 
     // Id âm để không bao giờ trùng Id sản phẩm thật (luôn dương).
+    // Ưu tiên hiển thị số chứng từ BC của đơn hàng đã tạo ra cọc này (SourceSalesOrder) — khớp
+    // với cách người dùng gọi tên chứng từ trong thực tế; fallback về số DC nội bộ nếu cọc được
+    // tạo thủ công qua màn Đặt Cọc riêng (không gắn với Sales Order nào).
+    private string DisplayNumber => Deposit.SourceSalesOrderDocumentNumber ?? Deposit.DocumentNumber;
+
     public int    Id          => -Deposit.Id;
-    public string Code        => Deposit.DocumentNumber;
+    public string Code        => DisplayNumber;
     public string Name        => "Trừ cọc";
-    public string DisplayText => $"{Deposit.DocumentNumber} — Trừ cọc (còn {Deposit.RemainingBalance:N0})";
+    public string DisplayText => $"{DisplayNumber} — Trừ cọc (còn {Deposit.RemainingBalance:N0})";
 }

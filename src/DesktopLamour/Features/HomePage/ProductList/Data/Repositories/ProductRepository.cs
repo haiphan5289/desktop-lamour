@@ -63,6 +63,7 @@ public sealed class ProductRepository : IProductRepository
             SpecialGoodsType        = input.SpecialGoodsType,
             LatestPurchasePrice     = input.LatestPurchasePrice,
             IsPromotionalGood       = input.IsPromotionalGood,
+            IsDepositProduct        = input.IsDepositProduct,
         };
         var d = await _service.CreateAsync(request, ct);
         return MapToModel(d);
@@ -106,6 +107,7 @@ public sealed class ProductRepository : IProductRepository
             SpecialGoodsType        = input.SpecialGoodsType,
             LatestPurchasePrice     = input.LatestPurchasePrice,
             IsPromotionalGood       = input.IsPromotionalGood,
+            IsDepositProduct        = input.IsDepositProduct,
         };
         var d = await _service.UpdateAsync(input.Id, request, ct);
         return MapToModel(d);
@@ -157,5 +159,6 @@ public sealed class ProductRepository : IProductRepository
         SpecialGoodsType          = d.SpecialGoodsType,
         LatestPurchasePrice       = d.LatestPurchasePrice,
         IsPromotionalGood         = d.IsPromotionalGood,
+        IsDepositProduct          = d.IsDepositProduct,
     };
 }

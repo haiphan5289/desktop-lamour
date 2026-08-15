@@ -162,7 +162,6 @@ Z:/src/DesktopLamour/obj/Debug/net8.0-windows/DesktopLamour.csproj.AssemblyRefer
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/TongHopTonKhoView.g.cs
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/WarehouseReceiptFormWindow.g.cs
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/WarehouseReceiptListView.g.cs
-/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/WarehouseView.g.cs
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/MainWindow/MainWindow.g.cs
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Shared/Controls/AppCurrencyField.g.cs
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Shared/Controls/AppLoadingOverlay.g.cs
@@ -194,7 +193,6 @@ Z:/src/DesktopLamour/obj/Debug/net8.0-windows/DesktopLamour.csproj.AssemblyRefer
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/TongHopTonKhoView.baml
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/WarehouseReceiptFormWindow.baml
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/WarehouseReceiptListView.baml
-/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/WarehouseView.baml
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/MainWindow/MainWindow.baml
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Shared/AppConverters.baml
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Shared/Controls/AppSearchableComboBox.baml
@@ -274,3 +272,5 @@ Z:/src/DesktopLamour/obj/Debug/net8.0-windows/DesktopLamour.csproj.AssemblyRefer
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouses/Views/ExpenseCategoryListView.baml
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Accounting/Views/PaymentPrintWindow.g.cs
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Accounting/Views/PaymentPrintWindow.baml
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/WarehouseTransactionListView.g.cs
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/WarehouseTransactionListView.baml

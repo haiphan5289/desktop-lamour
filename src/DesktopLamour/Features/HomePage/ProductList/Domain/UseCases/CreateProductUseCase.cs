@@ -13,8 +13,6 @@ public sealed class CreateProductUseCase : ICreateProductUseCase
     {
         if (string.IsNullOrWhiteSpace(input.Name))
             throw new ValidationException("Name", "Tên sản phẩm không được để trống.");
-        if (input.CategoryId <= 0)
-            throw new ValidationException("CategoryId", "Vui lòng chọn danh mục.");
 
         if (!string.IsNullOrWhiteSpace(input.Code))
         {

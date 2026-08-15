@@ -6,7 +6,7 @@ public class CreateProductRequestDto
 {
     [JsonPropertyName("code")]                public string  Code             { get; set; } = string.Empty;
     [JsonPropertyName("name")]                public string  Name             { get; set; } = string.Empty;
-    [JsonPropertyName("category_id")]         public int     CategoryId       { get; set; }
+    [JsonPropertyName("category_id")]         public int?    CategoryId       { get; set; }
     [JsonPropertyName("unit")]                public string  Unit             { get; set; } = string.Empty;
     [JsonPropertyName("cost_price")]          public decimal CostPrice        { get; set; }
     [JsonPropertyName("selling_price")]       public decimal SellingPrice     { get; set; }
@@ -40,4 +40,5 @@ public class CreateProductRequestDto
     [JsonPropertyName("special_goods_type")]         public string? SpecialGoodsType        { get; set; }
     [JsonPropertyName("latest_purchase_price")]      public decimal LatestPurchasePrice     { get; set; }
     [JsonPropertyName("is_promotional_good")]        public bool    IsPromotionalGood       { get; set; }
+    [JsonPropertyName("is_deposit_product")]         public bool    IsDepositProduct        { get; set; }
 }

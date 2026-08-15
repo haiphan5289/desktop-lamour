@@ -1,6 +1,6 @@
 # Sales Orders — Feature Document (App)
 
-> **Jira:** — | **Branch:** `dev` | **Generated:** 2026-05-01 | **Last updated:** 2026-08-09 (Trừ cọc tích hợp vào dropdown chọn sản phẩm)
+> **Jira:** — | **Branch:** `dev` | **Generated:** 2026-05-01 | **Last updated:** 2026-08-15 (Đặt cọc qua dòng sản phẩm trên chính XK — dropdown Trừ cọc giờ hiện số XK gốc thay vì số DC — xem `Features/Deposits/docs/deposits.md` BE cho chi tiết đầy đủ) | 2026-08-15 (đổi prefix Chứng từ bán hàng BC → XK toàn project, kể cả 14 đơn cũ đã ghi sổ) | 2026-08-09 (Trừ cọc tích hợp vào dropdown chọn sản phẩm)
 
 ---
 
@@ -14,7 +14,7 @@
   - [x] Form nhập đơn hàng với đầy đủ thông tin header (khách hàng, nhân viên bán, ngày, điều khoản TT...)
   - [x] Danh sách dòng hàng (DataGrid) với cột "Tỷ lệ CK(%)" và tính toán tự động `Amount = Quantity × UnitPrice × (1 − CK/100)`
   - [x] Footer 3 giá trị thẳng hàng: Tổng tiền hàng (gross) / Tổng tiền chiết khấu / Tổng tiền thanh toán (net)
-  - [x] Tự động sinh số chứng từ `BC{5 digits}` từ BE endpoint `GET /api/v1/sales-orders/next-code`
+  - [x] Tự động sinh số chứng từ `XK{5 digits}` từ BE endpoint `GET /api/v1/sales-orders/next-code`
   - [x] Điều hướng Prev/Next giữa các đơn hàng
   - [x] Tạo mới / Cập nhật / Xóa đơn hàng qua BE API
   - [x] Popup alert khi ghi sổ thất bại — hiện tất cả sản phẩm không đủ kho cùng lúc
@@ -34,7 +34,7 @@
 
 | Rule | Description |
 |------|-------------|
-| Số chứng từ | Lấy từ BE qua `GET /api/v1/sales-orders/next-code` khi mở form — trả `BC{5 digits}` (`BC00001`...); không còn tự tính từ full-list cache |
+| Số chứng từ | Lấy từ BE qua `GET /api/v1/sales-orders/next-code` khi mở form — trả `XK{5 digits}` (`XK00001`...); không còn tự tính từ full-list cache |
 | Khách hàng bắt buộc | `SelectedCustomer` phải được chọn trước khi save |
 | Tìm khách hàng theo SĐT | Ô "Khách hàng" (`AppSearchableComboBox`) match theo `Code`, `Name`, **và `Phone`** (2026-07-15) — gõ số điện thoại cũng lọc ra khách hàng tương ứng |
 | Hiển thị SĐT trong dropdown (2026-07-15) | Dropdown list hiện `"Mã — Tên — SĐT"` (qua `ISearchableItem.DropdownText` + `SearchableItemDropdownTextConverter`); ô input sau khi chọn vẫn gọn `"Mã — Tên"` (`DisplayText`) như cũ |
@@ -76,6 +76,8 @@
 | Drill-down kế thừa filter gốc (2026-07-31) | Ngày (Từ/Đến), Đơn vị tính, Nhóm VTHH từ `CurrentFilter` của báo cáo tổng hợp được truyền nguyên sang `SalesOrderDetailFilter` — chỉ thêm/ghi đè `product_id`/`customer_id`/`employee_id` theo dòng vừa click |
 | Sổ chi tiết chỉ có dữ liệu BÁN HÀNG, chưa gộp trả lại (2026-07-31, biết trước, chưa xử lý) | Gọi lại `IGetSalesOrderReportUseCase`/`GET /report` (endpoint cấp DÒNG, trước đó không còn ai gọi từ 2026-07-18) — endpoint này chỉ trả `SalesOrderLine`, không có `SalesReturnLine`. Vì vậy tổng số liệu ở "Sổ chi tiết" sẽ KHÔNG khớp tuyệt đối với số "Doanh thu thuần" ở báo cáo tổng hợp (vốn đã gộp cả trả lại qua `/summary-report`) nếu khách/sản phẩm đó có phát sinh trả lại trong kỳ — phạm vi đã chốt với user, có thể mở rộng sau bằng cách merge thêm `ISalesReturnRepository.GetReportLinesAsync` |
 | Trừ cọc — "sản phẩm ảo" trong dropdown (2026-08-09) | Khi chọn khách hàng → load `AvailableDeposits` (chỉ cọc `RemainingBalance > 0`) → mỗi cọc bọc thành 1 `DepositProductPickerItem : ISearchableItem` (`Id` âm để không đụng `Product.Id` thật, `DisplayText = "DC00001 — Trừ cọc (còn 2,000,000)"`), trộn **ở đầu** `Products` (trước sản phẩm thật) — cả khi gõ tìm kiếm theo mã/tên. Chọn item này ở cột Mã hàng/Tên hàng (double-click như chọn sản phẩm bình thường) → `SalesOrderLineItem.SelectedProduct` setter set `IsDepositDeductionRow=true`, `LinkedDeposit`, `ProductId=0`, zero hoá `Quantity`/`UnitPrice`/`DiscountRate`/`TaxRate`/`ReceivableAccount`/`RevenueAccount`; chọn lại 1 sản phẩm thật cho cùng dòng đó thì khôi phục về trạng thái sản phẩm bình thường |
+| Đặt cọc — tạo qua dòng sản phẩm trên chính XK (mới 2026-08-15) | Tồn tại 1 sản phẩm thật (`Product.IsDepositProduct = true`, đặt tên "Đặt cọc" — bật cờ qua tab "Ngầm định" ở popup Sửa sản phẩm) — thêm dòng này vào Sales Order như 1 sản phẩm bình thường (gõ tay "Thành tiền" = số tiền cọc), Ghi sổ xong BE tự tạo 1 `Deposit` gắn với chính đơn XK đó (`SourceSalesOrderId`). Không cần thao tác gì thêm phía WPF ngoài check cờ sản phẩm — dòng "Đặt cọc" tự bị BE loại khỏi validate/trừ tồn kho. Xem BE `Features/Deposits/docs/deposits.md` (changelog 2026-08-15) |
+| Trừ cọc — dropdown hiện số XK gốc, không phải số DC (đổi 2026-08-15) | `DepositProductPickerItem.DisplayText`/`Code` ưu tiên `Deposit.SourceSalesOrderDocumentNumber` (số XK của đơn đã tạo ra cọc) thay vì `Deposit.DocumentNumber` (DC nội bộ); fallback về DC nếu cọc tạo thủ công qua màn Đặt Cọc riêng (không có `SourceSalesOrder`) |
 | Trừ cọc — Mã hàng/Tên hàng tĩnh như sản phẩm thật | `LinkedDeposit` setter set `ProductCode = deposit.DocumentNumber`, `ProductName = "Trừ cọc"` — hiển thị y hệt 1 dòng sản phẩm (không phải combo nổi trong cell); double-click lại để đổi cọc vẫn ra đúng dropdown sản phẩm (đã lẫn sẵn các lựa chọn cọc) |
 | Trừ cọc — Thành tiền luôn âm | `SalesOrderLineItem.Amount` setter: nếu `IsDepositDeductionRow=true` thì luôn lưu `-Math.Abs(value)` bất kể user gõ dấu gì — không áp dụng logic "thành tiền thủ công"/back-calculate Đơn giá của dòng sản phẩm (vô nghĩa vì `Quantity=0`) |
 | Trừ cọc — không tính vào Tổng tiền hàng/Tổng tiền thanh toán, chỉ trừ vào Tổng thanh toán (gồm thuế) | `RecalculateTotals()`: `TotalAmount`/`TotalDiscount`/`TotalPayment`/`TotalTaxAmount` chỉ Sum trên `Lines.Where(!IsDepositDeductionRow)` (khớp cách BE tính `SalesOrder.TotalAmount`/`GrandTotal` — BE hoàn toàn không biết về Trừ cọc); riêng `GrandTotal = TotalPayment + TotalTaxAmount + Σ(dòng Trừ cọc.Amount)` (đã âm sẵn) — quyết định có chủ đích theo yêu cầu user, chấp nhận 2 số khác nhau tuỳ ô nhìn |
@@ -262,7 +264,7 @@ graph TD
 |--------|----------|--------|
 | `GET` | `/api/v1/sales-orders` | `SalesOrderResponseDto[]` |
 | `GET` | `/api/v1/sales-orders/{id}` | `SalesOrderResponseDto` / 404 |
-| `GET` | `/api/v1/sales-orders/next-code` | `{ "code": "BC00006" }` |
+| `GET` | `/api/v1/sales-orders/next-code` | `{ "code": "XK00006" }` |
 | `POST` | `/api/v1/sales-orders` | `SalesOrderResponseDto` (201) |
 | `PUT` | `/api/v1/sales-orders/{id}` | `SalesOrderResponseDto` (200) |
 | `DELETE` | `/api/v1/sales-orders/{id}` | 204 |
