@@ -19,6 +19,7 @@ public partial class WarehouseTransactionListViewModel : ViewModelBase
     private readonly INavigationService               _navigationService;
     private readonly Func<WarehouseReceiptFormWindow>  _formWindowFactory;
     private readonly Func<SalesOrderWindow>            _salesOrderWindowFactory;
+    private readonly Func<WarehouseTransactionDetailWindow> _detailWindowFactory;
     private readonly ILogger<WarehouseTransactionListViewModel> _logger;
 
     [ObservableProperty] private bool     _isLoading;
@@ -39,12 +40,14 @@ public partial class WarehouseTransactionListViewModel : ViewModelBase
         INavigationService               navigationService,
         Func<WarehouseReceiptFormWindow>  formWindowFactory,
         Func<SalesOrderWindow>            salesOrderWindowFactory,
+        Func<WarehouseTransactionDetailWindow> detailWindowFactory,
         ILogger<WarehouseTransactionListViewModel> logger)
     {
         _getUseCase              = getUseCase;
         _navigationService       = navigationService;
         _formWindowFactory       = formWindowFactory;
         _salesOrderWindowFactory = salesOrderWindowFactory;
+        _detailWindowFactory     = detailWindowFactory;
         _logger                  = logger;
     }
 
@@ -78,7 +81,7 @@ public partial class WarehouseTransactionListViewModel : ViewModelBase
     private void OpenSalesOrder()
     {
         var window = _salesOrderWindowFactory();
-        window.Initialize(null);
+        window.Initialize(null, isFromWarehouseExport: true);
         window.Owner = Application.Current.MainWindow;
         var result = window.ShowDialog();
         if (result == true)
@@ -104,7 +107,7 @@ public partial class WarehouseTransactionListViewModel : ViewModelBase
             Items.Clear();
             foreach (var t in transactions.OrderByDescending(t => t.DocumentDate))
                 Items.Add(t);
-            HasItems = Items.Count > 0;
+            HasItems     = Items.Count > 0;
             SelectedItem = Items.FirstOrDefault();
         }
         catch (OperationCanceledException) { }
@@ -118,4 +121,16 @@ public partial class WarehouseTransactionListViewModel : ViewModelBase
     }
 
     partial void OnSelectedTypeIndexChanged(int value) => LoadCommand.Execute(null);
+
+    // Double-click 1 dòng chứng từ → mở popup "Chi tiết" hiển thị các dòng hàng của chứng từ đó.
+    [RelayCommand]
+    private void ShowDetail(WarehouseTransactionResponseDto? item)
+    {
+        if (item is null) return;
+
+        var window = _detailWindowFactory();
+        window.Initialize(item);
+        window.Owner = Application.Current.MainWindow;
+        window.ShowDialog();
+    }
 }

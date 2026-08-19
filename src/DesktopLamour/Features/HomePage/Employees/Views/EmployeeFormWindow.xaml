@@ -60,15 +60,26 @@
                                        Placeholder="VD: Nguyễn Văn A"/>
             </StackPanel>
 
-            <!-- Số điện thoại (required) -->
+            <!-- Giới tính (required) -->
             <StackPanel Margin="0,0,0,16">
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                    <controls:AppLabel Text="Số điện thoại"
+                    <controls:AppLabel Text="Giới tính"
                                        Style="{StaticResource AppTypography.LabelSection}"/>
                     <controls:AppLabel Text=" *"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Foreground="{StaticResource AppColor.TextBrand}"/>
                 </StackPanel>
+                <ComboBox ItemsSource="{Binding Genders}"
+                          SelectedItem="{Binding Gender, Mode=TwoWay}"
+                          Padding="10,8"
+                          FontSize="14"/>
+            </StackPanel>
+
+            <!-- Số điện thoại (optional) -->
+            <StackPanel Margin="0,0,0,16">
+                <controls:AppLabel Text="Số điện thoại"
+                                   Style="{StaticResource AppTypography.LabelSection}"
+                                   Margin="0,0,0,6"/>
                 <controls:AppTextField Text="{Binding Phone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                        Placeholder="VD: 0912345678"/>
             </StackPanel>
@@ -141,7 +152,7 @@
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                     <controls:AppLabel Text="Mật khẩu"
                                        Style="{StaticResource AppTypography.LabelSection}"/>
-                    <controls:AppLabel Text=" (để trống = dùng số điện thoại)"
+                    <controls:AppLabel Text=" (để trống = dùng SĐT, hoặc mã NV nếu không có SĐT)"
                                        Style="{StaticResource AppTypography.BodyCaption}"
                                        Foreground="{StaticResource AppColor.TextSecondary}"
                                        Margin="4,0,0,0"

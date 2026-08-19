@@ -7,6 +7,8 @@ using DesktopLamour.Core.Navigation;
 using DesktopLamour.Core.Storage;
 using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.Realtime;
+using System.IO;
+using System.Reflection;
 using System.Windows;
 
 namespace DesktopLamour.MainWindow;
@@ -19,6 +21,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty] private object? _currentContent;
     [ObservableProperty] private bool    _isLoggedIn;
+
+    // Version build = thời điểm file DLL được build (ghi đè mỗi lần dotnet build/publish) —
+    // hiển thị trên top bar để biết bản đang chạy build lúc nào, khỏi phải hỏi qua lại khi debug.
+    public string BuildVersion { get; } =
+        File.GetLastWriteTime(Assembly.GetExecutingAssembly().Location).ToString("yyyyMMddHHmmss");
 
     public MainWindowViewModel(IAuthTokenStorage tokenStorage, INavigationService navigationService, IPostLoginSyncService postLoginSync)
     {

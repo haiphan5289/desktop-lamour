@@ -130,19 +130,12 @@
         </Border>
 
         <!-- ══════════════════════════════════════════════ -->
-        <!--  Master + Detail                                -->
+        <!--  Master (double-click 1 dòng để xem Chi tiết)   -->
         <!-- ══════════════════════════════════════════════ -->
         <Grid Grid.Row="2" Margin="24,12,24,24">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="2*"/>
-                <RowDefinition Height="10"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="6"/>
-                <RowDefinition Height="1*"/>
-            </Grid.RowDefinitions>
 
             <!-- Error banner -->
-            <Border Grid.Row="0" Panel.ZIndex="10"
+            <Border Panel.ZIndex="10"
                     Background="{StaticResource AppColor.BackgroundErrorLight}"
                     CornerRadius="8" Padding="12,10" Margin="0,0,0,12"
                     VerticalAlignment="Top"
@@ -164,10 +157,11 @@
                 </DockPanel>
             </Border>
 
-            <!-- Master grid: 1 dòng = 1 chứng từ (Nhập kho hoặc Xuất kho bán hàng) -->
-            <DataGrid Grid.Row="0"
+            <!-- Master grid: 1 dòng = 1 chứng từ (Nhập kho hoặc Xuất kho bán hàng). Double-click 1 dòng để xem Chi tiết. -->
+            <DataGrid x:Name="TransactionGrid"
                       ItemsSource="{Binding Items}"
                       SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
+                      MouseDoubleClick="TransactionGrid_MouseDoubleClick"
                       AutoGenerateColumns="False"
                       IsReadOnly="True"
                       CanUserAddRows="False"
@@ -283,7 +277,7 @@
             </DataGrid>
 
             <!-- Empty state -->
-            <StackPanel Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center"
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
                         Visibility="{Binding HasItems, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                 <TextBlock Text="📦" FontSize="48" HorizontalAlignment="Center" TextAlignment="Center"/>
                 <controls:AppLabel Text="Chưa có giao dịch nhập/xuất kho nào trong khoảng thời gian này."
@@ -292,95 +286,6 @@
                                    Margin="0,12,0,0"
                                    HorizontalAlignment="Center"/>
             </StackPanel>
-
-            <!-- Section label: Chi tiết -->
-            <StackPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Center">
-                <Border Width="3" Height="14" Background="{StaticResource AppColor.BackgroundBrand}"
-                        CornerRadius="2" Margin="0,0,8,0"/>
-                <controls:AppLabel Text="Chi tiết"
-                                   Style="{StaticResource AppTypography.LabelSection}"/>
-            </StackPanel>
-
-            <!-- Detail grid: dòng hàng của chứng từ đang chọn -->
-            <DataGrid Grid.Row="4"
-                      ItemsSource="{Binding SelectedItem.Lines}"
-                      AutoGenerateColumns="False"
-                      IsReadOnly="True"
-                      CanUserAddRows="False"
-                      CanUserDeleteRows="False"
-                      CanUserResizeColumns="True"
-                      SelectionMode="Single"
-                      HeadersVisibility="Column"
-                      GridLinesVisibility="All"
-                      VerticalGridLinesBrush="{StaticResource AppColor.BorderThin}"
-                      HorizontalGridLinesBrush="{StaticResource AppColor.BorderThin}"
-                      RowHeight="28"
-                      ColumnHeaderStyle="{StaticResource GridHeaderStyle}"
-                      CellStyle="{StaticResource VerticalCenterCellStyle}"
-                      BorderBrush="{StaticResource AppColor.BorderThin}"
-                      BorderThickness="1"
-                      RowBackground="{StaticResource AppColor.BackgroundPrimary}"
-                      AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}">
-
-                <DataGrid.Resources>
-                    <!-- Cột không có dữ liệu theo dõi (Mã quy cách/Số lô/Hạn sử dụng/Số khế ước) — tô
-                         nền xám để phân biệt với cột có dữ liệu thật, khớp cách MISA tô các cột
-                         "khóa"/không áp dụng trong ảnh tham chiếu. -->
-                    <Style x:Key="UntrackedColumnCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource VerticalCenterCellStyle}">
-                        <Setter Property="Background" Value="{StaticResource AppColor.BackgroundSecondary}"/>
-                    </Style>
-                </DataGrid.Resources>
-
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="Mã hàng"     Binding="{Binding ProductCode}"   Width="90"/>
-                    <DataGridTextColumn Header="Tên hàng"    Binding="{Binding ProductName}"   Width="180"/>
-                    <DataGridTextColumn Header="Kho"         Binding="{Binding WarehouseName}" Width="100"/>
-                    <DataGridTextColumn Header="TK Nợ"       Binding="{Binding DebitAccount}"  Width="70">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="HorizontalAlignment" Value="Center"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                    <DataGridTextColumn Header="TK Có"       Binding="{Binding CreditAccount}" Width="70">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="HorizontalAlignment" Value="Center"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                    <!-- Mã quy cách/Số lô/Hạn sử dụng/Số khế ước: hệ thống chưa theo dõi lô/hạn sử dụng — cột luôn trống, tô xám -->
-                    <DataGridTextColumn Header="Mã quy cách" Width="90"  IsReadOnly="True" CellStyle="{StaticResource UntrackedColumnCellStyle}"/>
-                    <DataGridTextColumn Header="ĐVT"         Binding="{Binding Unit}"          Width="70"/>
-                    <DataGridTextColumn Header="Số lượng"    Binding="{Binding Quantity, StringFormat=N0}" Width="80">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="HorizontalAlignment" Value="Right"/>
-                                <Setter Property="Padding" Value="0,0,6,0"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                    <DataGridTextColumn Header="Đơn giá"     Binding="{Binding UnitPrice, StringFormat=N0}" Width="100">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="HorizontalAlignment" Value="Right"/>
-                                <Setter Property="Padding" Value="0,0,6,0"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                    <DataGridTextColumn Header="Thành tiền"  Binding="{Binding Amount, StringFormat=N0}" Width="110">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="HorizontalAlignment" Value="Right"/>
-                                <Setter Property="Padding" Value="0,0,6,0"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                    <DataGridTextColumn Header="Số lô"         Width="80"  IsReadOnly="True" CellStyle="{StaticResource UntrackedColumnCellStyle}"/>
-                    <DataGridTextColumn Header="Hạn sử dụng"   Width="100" IsReadOnly="True" CellStyle="{StaticResource UntrackedColumnCellStyle}"/>
-                    <DataGridTextColumn Header="Số khế ước"    Width="90"  IsReadOnly="True" CellStyle="{StaticResource UntrackedColumnCellStyle}"/>
-                </DataGrid.Columns>
-            </DataGrid>
         </Grid>
     </Grid>
 

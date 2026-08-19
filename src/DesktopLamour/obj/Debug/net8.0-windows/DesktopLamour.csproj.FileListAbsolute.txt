@@ -260,8 +260,6 @@ Z:/src/DesktopLamour/obj/Debug/net8.0-windows/DesktopLamour.csproj.AssemblyRefer
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouses/Views/WarehouseSettingListView.g.cs
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouses/Views/WarehouseSettingFormWindow.baml
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouses/Views/WarehouseSettingListView.baml
-/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/TongHopTonKhoFilterWindow.g.cs
-/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/TongHopTonKhoFilterWindow.baml
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouses/Views/DepartmentFormWindow.g.cs
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouses/Views/DepartmentListView.g.cs
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouses/Views/ExpenseCategoryFormWindow.g.cs
@@ -274,3 +272,5 @@ Z:/src/DesktopLamour/obj/Debug/net8.0-windows/DesktopLamour.csproj.AssemblyRefer
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Accounting/Views/PaymentPrintWindow.baml
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/WarehouseTransactionListView.g.cs
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/WarehouseTransactionListView.baml
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/WarehouseTransactionDetailWindow.g.cs
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/WarehouseTransactionDetailWindow.baml

@@ -26,8 +26,14 @@ public partial class SalesOrderWindow : Window
         LinesDataGrid.AddHandler(TextBoxBase.TextChangedEvent, new TextChangedEventHandler(OnProductCellTextChanged));
     }
 
-    public void Initialize(SalesOrderResponseDto? order)
-        => _initialOrder = order;
+    public void Initialize(SalesOrderResponseDto? order, bool isFromWarehouseExport = false)
+    {
+        _initialOrder = order;
+        ViewModel.IsFromWarehouseExport = isFromWarehouseExport;
+        // Chỉ đổi gợi ý hiển thị (placeholder) khi ô Số chứng từ còn trống — không đụng số chứng
+        // từ thật, vốn luôn sinh dạng "XK{5 digits}" bất kể mở từ đâu (xem GetNextSalesOrderCodeUseCase).
+        ViewModel.DocumentNumberPlaceholder = isFromWarehouseExport ? "XK00001" : "BH00001";
+    }
 
     protected override async void OnContentRendered(EventArgs e)
     {

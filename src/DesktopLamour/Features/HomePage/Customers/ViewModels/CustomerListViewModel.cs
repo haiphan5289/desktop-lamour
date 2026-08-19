@@ -1,6 +1,9 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows;
+using System.Windows.Data;
+using ClosedXML.Excel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.Navigation;
@@ -28,7 +31,14 @@ public partial class CustomerListViewModel : ViewModelBase
     [ObservableProperty] private bool      _hasCustomers;
     [ObservableProperty] private Customer? _selectedCustomer;
 
+    // 1 ô tìm kiếm chung — khớp OR trên các trường text chính, không phân biệt hoa/thường.
+    [ObservableProperty] private string _searchText = string.Empty;
+
     public ObservableCollection<Customer> Customers { get; } = new();
+
+    // View lọc live theo các Filter* per-cột — DataGrid bind vào đây thay vì Customers trực tiếp;
+    // Customers vẫn là nguồn dữ liệu thật (Add/Remove/Clear ở Load/Duplicate/Delete không đổi).
+    public ICollectionView CustomersView { get; }
 
     public string TotalCustomersText => $"Tổng: {Customers.Count} khách hàng";
 
@@ -48,7 +58,30 @@ public partial class CustomerListViewModel : ViewModelBase
         _duplicateCustomer = duplicateCustomer;
         _importExcel       = importExcel;
         _formWindowFactory = formWindowFactory;
+
+        CustomersView = CollectionViewSource.GetDefaultView(Customers);
+        CustomersView.Filter = FilterCustomer;
     }
+
+    partial void OnSearchTextChanged(string value) => CustomersView.Refresh();
+
+    private bool FilterCustomer(object obj)
+    {
+        if (obj is not Customer c) return false;
+        if (string.IsNullOrWhiteSpace(SearchText)) return true;
+
+        return Matches(c.Code, SearchText)
+            || Matches(c.Name, SearchText)
+            || Matches(c.Address, SearchText)
+            || Matches(c.Province, SearchText)
+            || Matches(c.CustomerGroup, SearchText)
+            || Matches(c.TaxCode, SearchText)
+            || Matches(c.Phone, SearchText)
+            || Matches(c.SaleCareEmployeeName, SearchText);
+    }
+
+    private static bool Matches(string? value, string filter)
+        => string.IsNullOrWhiteSpace(filter) || (!string.IsNullOrEmpty(value) && value.Contains(filter, StringComparison.OrdinalIgnoreCase));
 
     partial void OnSelectedCustomerChanged(Customer? value)
     {
@@ -168,6 +201,67 @@ public partial class CustomerListViewModel : ViewModelBase
             ErrorMessage = $"Import thất bại: {ex.Message}";
         }
         finally { IsLoading = false; }
+    }
+
+    // Xuất đúng những dòng đang hiển thị trên lưới (đã áp bộ lọc Tìm kiếm), không phải toàn bộ
+    // Customers — khớp kỳ vọng thông thường: xuất "cái đang thấy trên màn hình".
+    [RelayCommand]
+    private void ExportExcel()
+    {
+        try
+        {
+            var dialog = new SaveFileDialog
+            {
+                Filter   = "Excel Files|*.xlsx",
+                FileName = $"KhachHang_{DateTime.Now:yyyyMMdd}.xlsx",
+            };
+            if (dialog.ShowDialog() != true) return;
+
+            using var workbook = BuildExportWorkbook();
+            workbook.SaveAs(dialog.FileName);
+
+            MessageBox.Show("Đã xuất file thành công.", "Xuất Excel",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Xuất Excel thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    // Header khớp đúng HeaderAliases mà ImportExcelCustomersUseCase (BE) đọc — file xuất ra có
+    // thể sửa rồi import lại ngay mà không cần đổi tên cột.
+    private XLWorkbook BuildExportWorkbook()
+    {
+        var workbook  = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Khách hàng");
+
+        string[] headers =
+        {
+            "Tên khách hàng", "Địa chỉ", "Tỉnh/TP", "Nhóm KH/NCC", "Mã số thuế", "Điện thoại", "Tên nhân viên",
+        };
+        for (var i = 0; i < headers.Length; i++)
+        {
+            var cell = worksheet.Cell(1, i + 1);
+            cell.Value           = headers[i];
+            cell.Style.Font.Bold = true;
+        }
+
+        var row = 2;
+        foreach (var c in CustomersView.Cast<Customer>())
+        {
+            worksheet.Cell(row, 1).Value = c.Name;
+            worksheet.Cell(row, 2).Value = c.Address;
+            worksheet.Cell(row, 3).Value = c.Province;
+            worksheet.Cell(row, 4).Value = c.CustomerGroup;
+            worksheet.Cell(row, 5).Value = c.TaxCode;
+            worksheet.Cell(row, 6).Value = c.Phone;
+            worksheet.Cell(row, 7).Value = c.SaleCareEmployeeName;
+            row++;
+        }
+
+        worksheet.Columns().AdjustToContents();
+        return workbook;
     }
 
     [RelayCommand(CanExecute = nameof(HasSelection))]

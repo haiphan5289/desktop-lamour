@@ -23,6 +23,14 @@ namespace DesktopLamour.Features.HomePage.Sales.ViewModels;
 
 public partial class SalesOrderViewModel : ViewModelBase
 {
+    // Số dòng trống nạp sẵn khi mở chứng từ mới — xem ClearForm().
+    private const int InitialEmptyLineCount = 100;
+
+    // Set bởi SalesOrderWindow.Initialize khi popup mở từ Kho → Xuất Kho ("Phiếu Xuất") — dùng để
+    // auto-fill Diễn giải mặc định "Xuất kho bán hàng" (ClearForm) và tắt auto-fill "Bán hàng {tên
+    // KH}" theo khách hàng (OnSelectedCustomerChanged) vốn chỉ hợp lý khi mở từ module Bán hàng.
+    public bool IsFromWarehouseExport { private get; set; }
+
     public event Action? OrderSaved;
     public event Action? RequestClose;
 
@@ -62,6 +70,10 @@ public partial class SalesOrderViewModel : ViewModelBase
     [ObservableProperty] private DateTime _accountingDate = DateTime.Today;
     [ObservableProperty] private DateTime _documentDate   = DateTime.Today;
     [ObservableProperty] private string   _documentNumber = "XK00001";
+    // Placeholder ô "Số chứng từ" — mặc định "BH" (mở từ module Bán hàng), đổi thành "XK" khi
+    // popup được mở từ luồng Kho → Xuất Kho (xem SalesOrderWindow.Initialize). Chỉ là gợi ý hiển
+    // thị lúc ô còn trống — không ảnh hưởng số chứng từ thật (luôn sinh dạng "XK{5 digits}").
+    [ObservableProperty] private string   _documentNumberPlaceholder = "BH00001";
 
     // ── Thông tin bổ sung (Tab 6) ─────────────────────────────────────────
     [ObservableProperty] private string? _notes;
@@ -237,7 +249,7 @@ public partial class SalesOrderViewModel : ViewModelBase
             return;
         }
 
-        if (Lines.Count(l => !l.IsDepositDeductionRow) == 0)
+        if (Lines.Count(l => !l.IsDepositDeductionRow && l.ProductId > 0) == 0)
         {
             HasError     = true;
             ErrorMessage = "Vui lòng nhập ít nhất một mặt hàng.";
@@ -277,6 +289,7 @@ public partial class SalesOrderViewModel : ViewModelBase
                 _logger.LogInformation("SalesOrder updated: {Id}", result.Id);
             }
 
+            var depositDeductionAmountForPrint = 0m;
             if (depositLine is not null)
             {
                 try
@@ -291,6 +304,9 @@ public partial class SalesOrderViewModel : ViewModelBase
                         Description    = $"Trừ cọc thanh toán đơn {result.DocumentNumber}",
                     }, ct);
                     _logger.LogInformation("DepositDeduction created for SalesOrder {Id}", result.Id);
+                    // Chỉ hiển thị dòng "Trừ Cọc" trên hóa đơn in nếu deduction thật sự đã lưu ở BE —
+                    // nếu lỗi (catch bên dưới), hóa đơn không nên hiển thị 1 khoản trừ chưa từng tồn tại.
+                    depositDeductionAmountForPrint = Math.Abs(depositLine.Amount);
                 }
                 catch (Exception depositEx)
                 {
@@ -305,7 +321,7 @@ public partial class SalesOrderViewModel : ViewModelBase
             OrderSaved?.Invoke();
             IsBusy = false;
 
-            ShowPrintPreview(result);
+            ShowPrintPreview(result, depositDeductionAmountForPrint);
 
             RequestClose?.Invoke();
         }
@@ -320,11 +336,11 @@ public partial class SalesOrderViewModel : ViewModelBase
         finally { IsBusy = false; }
     }
 
-    private void ShowPrintPreview(SalesOrderResponseDto order)
+    private void ShowPrintPreview(SalesOrderResponseDto order, decimal depositDeductionAmount = 0m)
     {
         var customer = SelectedCustomer as DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer;
         var printWindow = _printWindowFactory();
-        printWindow.Initialize(order, customer?.Phone, customer?.Address);
+        printWindow.Initialize(order, customer?.Phone, customer?.Address, depositDeductionAmount);
         printWindow.ShowDialog();
     }
 
@@ -407,14 +423,19 @@ public partial class SalesOrderViewModel : ViewModelBase
     [RelayCommand]
     private void AddLine()
     {
-        var line = new SalesOrderLineItem
+        // Dòng mới phải thực sự rỗng (không Kho/TK/Số lượng mặc định hiển thị sẵn) — các field
+        // TK/Số lượng tự điền khi user chọn 1 sản phẩm thật (xem SalesOrderLineItem.SelectedProduct).
+        // Riêng Kho không có logic tự điền trong model đó (model không biết danh sách Warehouses),
+        // nên set mặc định ở đây ngay khi ProductId chuyển từ 0 → có giá trị, để tránh warehouse_id
+        // rỗng khi Ghi sổ (dòng Đặt cọc thì ProductId luôn = 0 nên không bị set nhầm).
+        var line = new SalesOrderLineItem();
+        line.PropertyChanged += (_, e) =>
         {
-            ReceivableAccount = "131",
-            RevenueAccount    = "511",
-            Quantity          = 1,
+            OnLinesOrTotalsChanged();
+            if (e.PropertyName == nameof(SalesOrderLineItem.ProductId)
+                && line.ProductId > 0 && line.WarehouseId == 0)
+                line.SetSelectedWarehouseSilent(Warehouses.FirstOrDefault());
         };
-        line.SetSelectedWarehouseSilent(Warehouses.FirstOrDefault());
-        line.PropertyChanged += (_, _) => OnLinesOrTotalsChanged();
         Lines.Add(line);
     }
 
@@ -431,7 +452,8 @@ public partial class SalesOrderViewModel : ViewModelBase
     {
         if (value is DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer c)
         {
-            Description = $"Bán hàng {c.Name}";
+            if (!IsFromWarehouseExport)
+                Description = $"Bán hàng {c.Name}";
             if (c.SaleCareEmployeeId.HasValue)
             {
                 var matched = Employees.FirstOrDefault(e => e.Id == c.SaleCareEmployeeId.Value);
@@ -481,7 +503,7 @@ public partial class SalesOrderViewModel : ViewModelBase
     {
         SelectedCustomer = null;
         SelectedEmployee = null;
-        Description      = null;
+        Description      = IsFromWarehouseExport ? "Xuất kho bán hàng" : null;
         Reference        = null;
         PaymentTerms     = null;
         PaymentDueDays   = null;
@@ -493,6 +515,10 @@ public partial class SalesOrderViewModel : ViewModelBase
         DeliveryMethod   = null;
         PaymentMethod    = null;
         Lines.Clear();
+        // Chứng từ mới: nạp sẵn N dòng trống để user gõ liền, không cần bấm "Thêm dòng" trước
+        // (button footer đã bỏ — Thêm dòng giờ chỉ còn qua context menu chuột phải/Ctrl+Insert).
+        // Dòng trống (ProductId=0) bị lọc bỏ khi Lưu/tính Số dòng, không gửi lên BE nếu bỏ trống.
+        for (var i = 0; i < InitialEmptyLineCount; i++) AddLine();
         RecalculateTotals();
     }
 
@@ -525,6 +551,7 @@ public partial class SalesOrderViewModel : ViewModelBase
                 ProductCode       = l.ProductCode,
                 ProductName       = l.ProductName,
                 IsPromotion       = l.IsPromotion,
+                IsDepositProduct  = l.IsDepositProduct,
                 Unit              = l.Unit,
                 Quantity          = l.Quantity,
                 UnitPrice         = l.UnitPrice,
@@ -593,7 +620,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         // vốn phải khớp với cách BE tính GrandTotal của SalesOrder (chỉ từ dòng sản phẩm thật).
         var depositDeduction = Lines.Where(l => l.IsDepositDeductionRow).Sum(l => l.Amount);
         GrandTotal     = TotalPayment + TotalTaxAmount + depositDeduction;
-        LineSummary    = $"Số dòng = {Lines.Count(l => !l.IsDepositDeductionRow)}";
+        LineSummary    = $"Số dòng = {Lines.Count(l => !l.IsDepositDeductionRow && l.ProductId > 0)}";
     }
 
     private CreateSalesOrderRequestDto BuildCreateRequest() => new()
@@ -613,7 +640,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         Notes          = string.IsNullOrWhiteSpace(Notes)          ? null : Notes.Trim(),
         DeliveryMethod = string.IsNullOrWhiteSpace(DeliveryMethod) ? null : DeliveryMethod.Trim(),
         PaymentMethod  = string.IsNullOrWhiteSpace(PaymentMethod)  ? null : PaymentMethod.Trim(),
-        Lines          = Lines.Where(l => !l.IsDepositDeductionRow).Select(ToLineDto).ToList(),
+        Lines          = Lines.Where(l => !l.IsDepositDeductionRow && l.ProductId > 0).Select(ToLineDto).ToList(),
     };
 
     private UpdateSalesOrderRequestDto BuildUpdateRequest() => new()
@@ -633,7 +660,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         Notes          = string.IsNullOrWhiteSpace(Notes)          ? null : Notes.Trim(),
         DeliveryMethod = string.IsNullOrWhiteSpace(DeliveryMethod) ? null : DeliveryMethod.Trim(),
         PaymentMethod  = string.IsNullOrWhiteSpace(PaymentMethod)  ? null : PaymentMethod.Trim(),
-        Lines          = Lines.Where(l => !l.IsDepositDeductionRow).Select(ToLineDto).ToList(),
+        Lines          = Lines.Where(l => !l.IsDepositDeductionRow && l.ProductId > 0).Select(ToLineDto).ToList(),
     };
 
     private static SalesOrderLineDto ToLineDto(SalesOrderLineItem item) => new()
@@ -643,6 +670,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         ProductCode       = item.ProductCode,
         ProductName       = item.ProductName,
         IsPromotion       = item.IsPromotion,
+        IsDepositProduct  = item.IsDepositProduct,
         Unit              = item.Unit,
         Quantity          = item.Quantity,
         UnitPrice         = item.UnitPrice,
@@ -684,7 +712,8 @@ public partial class SalesOrderViewModel : ViewModelBase
     private void Print()
     {
         if (!CanPrint) return;
-        ShowPrintPreview(BuildPreviewOrderDto());
+        var depositLine = Lines.FirstOrDefault(l => l.IsDepositDeductionRow && l.LinkedDeposit is not null && l.Amount != 0);
+        ShowPrintPreview(BuildPreviewOrderDto(), depositLine is null ? 0m : Math.Abs(depositLine.Amount));
     }
 
     // Dựng SalesOrderResponseDto để in preview từ đúng dữ liệu đang hiển thị trên form (kể cả
@@ -718,7 +747,7 @@ public partial class SalesOrderViewModel : ViewModelBase
             GrandTotal     = GrandTotal,
             CreatedAt      = CurrentOrder?.CreatedAt ?? DateTime.UtcNow,
             Status         = CurrentOrder?.Status ?? 0,
-            Lines          = Lines.Where(l => !l.IsDepositDeductionRow).Select(ToLineDto).ToList(),
+            Lines          = Lines.Where(l => !l.IsDepositDeductionRow && l.ProductId > 0).Select(ToLineDto).ToList(),
         };
     }
 }

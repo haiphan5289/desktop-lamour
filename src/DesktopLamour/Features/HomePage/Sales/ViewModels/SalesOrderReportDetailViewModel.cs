@@ -12,6 +12,7 @@ using DesktopLamour.Core.Navigation;
 using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.HomePage.Sales.Domain.Models;
 using DesktopLamour.Features.HomePage.Sales.Domain.UseCases;
+using DesktopLamour.Shared.Helpers;
 using Microsoft.Win32;
 
 namespace DesktopLamour.Features.HomePage.Sales.ViewModels;
@@ -135,54 +136,7 @@ public partial class SalesOrderReportDetailViewModel : ViewModelBase, INavigatio
             };
             if (dialog.ShowDialog() != true) return;
 
-            using var workbook  = new ClosedXML.Excel.XLWorkbook();
-            var worksheet       = workbook.Worksheets.Add("Sổ chi tiết");
-
-            string[] headers =
-            {
-                "Ngày hạch toán", "Số chứng từ", "Khách hàng", "Nhân viên",
-                "Mã hàng", "Tên hàng", "ĐVT", "Số lượng", "Đơn giá",
-                "Tỷ lệ CK(%)", "Thành tiền", "Thuế suất", "Tiền thuế", "Tổng cộng",
-            };
-            for (var i = 0; i < headers.Length; i++)
-            {
-                var cell = worksheet.Cell(1, i + 1);
-                cell.Value           = headers[i];
-                cell.Style.Font.Bold = true;
-            }
-
-            var row = 2;
-            foreach (var line in Items)
-            {
-                worksheet.Cell(row, 1).Value  = line.AccountingDate.ToString("dd/MM/yyyy");
-                worksheet.Cell(row, 2).Value  = line.DocumentNumber;
-                worksheet.Cell(row, 3).Value  = line.CustomerName;
-                worksheet.Cell(row, 4).Value  = line.EmployeeName;
-                worksheet.Cell(row, 5).Value  = line.ProductCode;
-                worksheet.Cell(row, 6).Value  = line.ProductName;
-                worksheet.Cell(row, 7).Value  = line.Unit;
-                worksheet.Cell(row, 8).Value  = line.Quantity;
-                worksheet.Cell(row, 9).Value  = line.UnitPrice;
-                worksheet.Cell(row, 10).Value = line.DiscountRate;
-                worksheet.Cell(row, 11).Value = line.Amount;
-                worksheet.Cell(row, 12).Value = line.TaxRate;
-                worksheet.Cell(row, 13).Value = line.TaxAmount;
-                worksheet.Cell(row, 14).Value = line.GrandTotal;
-                row++;
-            }
-
-            worksheet.Cell(row, 6).Value            = "Tổng cộng";
-            worksheet.Cell(row, 6).Style.Font.Bold  = true;
-            worksheet.Cell(row, 8).Value             = TotalQuantity;
-            worksheet.Cell(row, 8).Style.Font.Bold   = true;
-            worksheet.Cell(row, 11).Value             = TotalAmount;
-            worksheet.Cell(row, 11).Style.Font.Bold   = true;
-            worksheet.Cell(row, 13).Value             = TotalTaxAmount;
-            worksheet.Cell(row, 13).Style.Font.Bold   = true;
-            worksheet.Cell(row, 14).Value             = TotalGrandTotal;
-            worksheet.Cell(row, 14).Style.Font.Bold   = true;
-
-            worksheet.Columns().AdjustToContents();
+            using var workbook = BuildWorkbook();
             workbook.SaveAs(dialog.FileName);
 
             MessageBox.Show("Đã xuất file thành công.", "Xuất Excel",
@@ -192,6 +146,96 @@ public partial class SalesOrderReportDetailViewModel : ViewModelBase, INavigatio
         {
             MessageBox.Show(ex.Message, "Xuất Excel thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
+    }
+
+    [RelayCommand]
+    private void SendEmail()
+    {
+        try
+        {
+            using var workbook = BuildWorkbook();
+            var path = ReportSharingHelper.SaveWorkbookToTempFile(workbook, "SoChiTietBanHang");
+            ReportSharingHelper.RevealInExplorer(path);
+            ReportSharingHelper.OpenMailClient(
+                $"Sổ chi tiết bán hàng - {Title}",
+                $"File báo cáo đã được lưu tại:\n{path}\n\nVui lòng đính kèm file này vào email trước khi gửi.");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Gửi Email thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    [RelayCommand]
+    private void SendZalo()
+    {
+        try
+        {
+            using var workbook = BuildWorkbook();
+            var path = ReportSharingHelper.SaveWorkbookToTempFile(workbook, "SoChiTietBanHang");
+            ReportSharingHelper.RevealInExplorer(path);
+            ReportSharingHelper.OpenZaloApp();
+
+            MessageBox.Show("Đã mở Zalo và thư mục chứa file báo cáo. Vui lòng kéo-thả file để đính kèm.",
+                "Gửi Zalo", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Gửi Zalo thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private ClosedXML.Excel.XLWorkbook BuildWorkbook()
+    {
+        var workbook  = new ClosedXML.Excel.XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Sổ chi tiết");
+
+        string[] headers =
+        {
+            "Ngày hạch toán", "Số chứng từ", "Khách hàng", "Nhân viên",
+            "Mã hàng", "Tên hàng", "ĐVT", "Số lượng", "Đơn giá",
+            "Tỷ lệ CK(%)", "Thành tiền", "Thuế suất", "Tiền thuế", "Tổng cộng",
+        };
+        for (var i = 0; i < headers.Length; i++)
+        {
+            var cell = worksheet.Cell(1, i + 1);
+            cell.Value           = headers[i];
+            cell.Style.Font.Bold = true;
+        }
+
+        var row = 2;
+        foreach (var line in Items)
+        {
+            worksheet.Cell(row, 1).Value  = line.AccountingDate.ToString("dd/MM/yyyy");
+            worksheet.Cell(row, 2).Value  = line.DocumentNumber;
+            worksheet.Cell(row, 3).Value  = line.CustomerName;
+            worksheet.Cell(row, 4).Value  = line.EmployeeName;
+            worksheet.Cell(row, 5).Value  = line.ProductCode;
+            worksheet.Cell(row, 6).Value  = line.ProductName;
+            worksheet.Cell(row, 7).Value  = line.Unit;
+            worksheet.Cell(row, 8).Value  = line.Quantity;
+            worksheet.Cell(row, 9).Value  = line.UnitPrice;
+            worksheet.Cell(row, 10).Value = line.DiscountRate;
+            worksheet.Cell(row, 11).Value = line.Amount;
+            worksheet.Cell(row, 12).Value = line.TaxRate;
+            worksheet.Cell(row, 13).Value = line.TaxAmount;
+            worksheet.Cell(row, 14).Value = line.GrandTotal;
+            row++;
+        }
+
+        worksheet.Cell(row, 6).Value            = "Tổng cộng";
+        worksheet.Cell(row, 6).Style.Font.Bold  = true;
+        worksheet.Cell(row, 8).Value             = TotalQuantity;
+        worksheet.Cell(row, 8).Style.Font.Bold   = true;
+        worksheet.Cell(row, 11).Value             = TotalAmount;
+        worksheet.Cell(row, 11).Style.Font.Bold   = true;
+        worksheet.Cell(row, 13).Value             = TotalTaxAmount;
+        worksheet.Cell(row, 13).Style.Font.Bold   = true;
+        worksheet.Cell(row, 14).Value             = TotalGrandTotal;
+        worksheet.Cell(row, 14).Style.Font.Bold   = true;
+
+        worksheet.Columns().AdjustToContents();
+        return workbook;
     }
 
     private FlowDocument BuildReportDocument()

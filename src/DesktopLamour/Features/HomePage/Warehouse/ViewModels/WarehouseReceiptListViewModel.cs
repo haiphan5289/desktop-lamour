@@ -1,6 +1,8 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows;
+using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.Navigation;
@@ -26,7 +28,14 @@ public partial class WarehouseReceiptListViewModel : ViewModelBase
     [ObservableProperty] private string _errorMessage = string.Empty;
     [ObservableProperty] private bool   _hasItems;
 
+    // 1 ô tìm kiếm chung — khớp OR trên các trường text chính, không phân biệt hoa/thường.
+    [ObservableProperty] private string _searchText = string.Empty;
+
     public ObservableCollection<WarehouseReceiptFlatItem> Items { get; } = new();
+
+    // View lọc live theo các Filter* per-cột — DataGrid bind vào đây thay vì Items trực tiếp;
+    // Items vẫn là nguồn dữ liệu thật (Clear/Add ở Load không đổi).
+    public ICollectionView ItemsView { get; }
 
     public WarehouseReceiptListViewModel(
         IGetWarehouseReceiptsUseCase     getUseCase,
@@ -40,7 +49,39 @@ public partial class WarehouseReceiptListViewModel : ViewModelBase
         _navigationService = navigationService;
         _formWindowFactory = formWindowFactory;
         _logger            = logger;
+
+        ItemsView = CollectionViewSource.GetDefaultView(Items);
+        ItemsView.Filter = FilterItem;
     }
+
+    partial void OnSearchTextChanged(string value) => ItemsView.Refresh();
+
+    private bool FilterItem(object obj)
+    {
+        if (obj is not WarehouseReceiptFlatItem item) return false;
+        if (string.IsNullOrWhiteSpace(SearchText)) return true;
+
+        return Matches(item.ReceiptNumber, SearchText)
+            || Matches(item.ProductCode, SearchText)
+            || Matches(item.ProductName, SearchText)
+            || Matches(ReceiptTypeLabel(item.ReceiptType), SearchText)
+            || Matches(item.ObjectName, SearchText)
+            || Matches(item.EmployeeName, SearchText);
+    }
+
+    // Khớp đúng nhãn hiển thị trong DataTrigger của WarehouseReceiptListView.xaml (cột "Loại phiếu")
+    // để filter theo text khớp với cái user nhìn thấy trên lưới, không phải giá trị int thô.
+    private static string ReceiptTypeLabel(int receiptType) => receiptType switch
+    {
+        1 => "Thành phẩm sản xuất",
+        2 => "Hàng bán bị trả lại",
+        3 => "Khác (NVL thừa, HH thuê gia công,...)",
+        4 => "Hàng nhận gia công",
+        _ => string.Empty,
+    };
+
+    private static bool Matches(string? value, string filter)
+        => string.IsNullOrWhiteSpace(filter) || (!string.IsNullOrEmpty(value) && value.Contains(filter, StringComparison.OrdinalIgnoreCase));
 
     [RelayCommand]
     private void GoBack() => _navigationService.GoBack();

@@ -3,6 +3,7 @@ using DesktopLamour.Core.Storage;
 using DesktopLamour.Features.HomePage.ProductList.Data.Cache;
 using DesktopLamour.Features.HomePage.ProductList.Data.Services.Dtos;
 using Microsoft.Extensions.Logging;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -99,6 +100,26 @@ public sealed class ProductService : IProductService
             ?? throw new InvalidOperationException("Empty response from duplicate product endpoint.");
         _cache.Upsert(created);
         return created;
+    }
+
+    public async Task<ImportProductResultDto> ImportExcelAsync(Stream fileStream, string fileName, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Importing products from Excel file {FileName}", fileName);
+        SetBearerToken();
+
+        using var content       = new MultipartFormDataContent();
+        using var streamContent = new StreamContent(fileStream);
+        streamContent.Headers.ContentType = new MediaTypeHeaderValue(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        content.Add(streamContent, "file", fileName);
+
+        var response = await _httpClient.PostAsync("/api/v1/products/import-excel", content, ct);
+        await EnsureSuccessOrThrowAsync(response, ct);
+
+        var result = await response.Content.ReadFromJsonAsync<ImportProductResultDto>(ct)
+            ?? throw new InvalidOperationException("Empty response from import-excel endpoint.");
+        _cache.Clear(); // bulk import → force next GetAllAsync to refetch the full list
+        return result;
     }
 
     private void SetBearerToken()

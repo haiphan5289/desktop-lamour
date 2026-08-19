@@ -65,7 +65,8 @@
                                Style="{StaticResource AppTypography.DisplayPage}"/>
         </StackPanel>
 
-        <!-- Filter toolbar -->
+        <!-- Filter toolbar — chuyển từ popup ra ngay màn hình: hàng 1 là Kỳ/Từ ngày/Đến ngày/Đơn vị
+             tính/Nhóm VTHH/Lọc/Xóa điều kiện, hàng 2 là danh sách kho chọn nhiều (checkbox). -->
         <Border Grid.Row="1"
                 Margin="24,16,24,0"
                 Padding="16,12"
@@ -73,16 +74,91 @@
                 BorderBrush="{StaticResource AppColor.BorderThin}"
                 BorderThickness="1"
                 CornerRadius="8">
-            <Grid>
-                <controls:AppLabel Text="{Binding FilterSummary}"
-                                   Style="{StaticResource AppTypography.BodySection}"
-                                   Foreground="{StaticResource AppColor.TextSecondary}"
-                                   VerticalAlignment="Center"/>
-                <controls:AppButton Content="🔍 Lọc"
-                                    Style="{StaticResource AppButton.Primary.Medium}"
-                                    Command="{Binding OpenFilterCommand}"
-                                    HorizontalAlignment="Right"/>
-            </Grid>
+            <StackPanel>
+                <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,12">
+                    <controls:AppLabel Text="Kỳ"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,8"/>
+                    <ComboBox ItemsSource="{Binding PeriodPresetOptions}"
+                              SelectedItem="{Binding PeriodPreset, Mode=TwoWay}"
+                              Width="130" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                              Margin="0,0,16,8"/>
+
+                    <controls:AppLabel Text="Từ ngày"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,8"/>
+                    <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}"
+                                Width="130" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                                Margin="0,0,16,8"/>
+
+                    <controls:AppLabel Text="Đến ngày"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,8"/>
+                    <DatePicker SelectedDate="{Binding ToDate, Mode=TwoWay}"
+                                Width="130" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                                Margin="0,0,16,8"/>
+
+                    <controls:AppLabel Text="Đơn vị tính"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,8"/>
+                    <controls:AppSearchableComboBox
+                        ItemsSource="{Binding ProductUnits}"
+                        SelectedItem="{Binding SelectedProductUnit, Mode=TwoWay}"
+                        Placeholder="Tất cả"
+                        IsNullable="True"
+                        Width="160" Height="36" VerticalAlignment="Center"
+                        Margin="0,0,16,8"/>
+
+                    <controls:AppLabel Text="Nhóm VTHH"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,8"/>
+                    <controls:AppSearchableComboBox
+                        ItemsSource="{Binding Categories}"
+                        SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
+                        Placeholder="Tất cả"
+                        IsNullable="True"
+                        Width="160" Height="36" VerticalAlignment="Center"
+                        Margin="0,0,16,8"/>
+
+                    <controls:AppButton Content="🔍 Lọc"
+                                        Style="{StaticResource AppButton.Primary.Medium}"
+                                        Command="{Binding LoadCommand}"
+                                        Height="36" VerticalAlignment="Center"
+                                        Margin="0,0,8,8"/>
+                    <controls:AppButton Content="Xóa điều kiện"
+                                        Style="{StaticResource AppButton.Tertiary.Medium}"
+                                        Command="{Binding ClearConditionsCommand}"
+                                        Height="36" VerticalAlignment="Center"
+                                        Margin="0,0,0,8"/>
+                </WrapPanel>
+
+                <!-- Kho — bỏ chọn tất cả = tất cả kho -->
+                <StackPanel>
+                    <controls:AppLabel Text="Kho — bỏ chọn tất cả = tất cả kho"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       Foreground="{StaticResource AppColor.TextSecondary}"
+                                       Margin="0,0,0,8"/>
+                    <ItemsControl ItemsSource="{Binding WarehouseItems}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <CheckBox Content="{Binding Name}"
+                                          IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                          Margin="0,0,20,6" VerticalAlignment="Center"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </StackPanel>
         </Border>
 
         <!-- DataGrid -->

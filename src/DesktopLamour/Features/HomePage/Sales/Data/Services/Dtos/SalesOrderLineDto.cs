@@ -11,6 +11,7 @@ public class SalesOrderLineDto
     [JsonPropertyName("product_code")]        public string  ProductCode       { get; set; } = "";
     [JsonPropertyName("product_name")]        public string  ProductName       { get; set; } = "";
     [JsonPropertyName("is_promotion")]        public bool    IsPromotion       { get; set; }
+    [JsonPropertyName("is_deposit_product")]  public bool    IsDepositProduct  { get; set; }
     [JsonPropertyName("unit")]                public string  Unit              { get; set; } = "";
     [JsonPropertyName("quantity")]            public int     Quantity          { get; set; }
     [JsonPropertyName("unit_price")]           public decimal UnitPrice         { get; set; }

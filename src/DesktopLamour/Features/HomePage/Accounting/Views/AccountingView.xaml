@@ -2,6 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+             xmlns:local="clr-namespace:DesktopLamour.Features.HomePage.Accounting.ViewModels"
              Background="{StaticResource AppColor.BackgroundSecondary}">
 
     <UserControl.Resources>
@@ -78,30 +79,72 @@
                 BorderBrush="{StaticResource AppColor.BorderThin}"
                 BorderThickness="1"
                 CornerRadius="8">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <controls:AppLabel Text="Từ ngày"
-                                   Style="{StaticResource AppTypography.BodyCaption}"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,8,0"/>
-                <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}"
-                            Width="140" Margin="0,0,16,0"/>
-                <controls:AppLabel Text="Đến ngày"
-                                   Style="{StaticResource AppTypography.BodyCaption}"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,8,0"/>
-                <DatePicker SelectedDate="{Binding ToDate, Mode=TwoWay}"
-                            Width="140" Margin="0,0,16,0"/>
-                <controls:AppButton Content="🔍 Xem báo cáo"
-                                    Style="{StaticResource AppButton.Primary.Medium}"
-                                    Command="{Binding LoadCommand}"/>
-                <controls:AppButton Content="📄 Phiếu Thu"
-                                    Style="{StaticResource AppButton.Primary.Medium}"
-                                    Command="{Binding OpenReceiptCommand}"
-                                    Margin="8,0,0,0"/>
-                <controls:AppButton Content="📄 Phiếu Chi"
-                                    Style="{StaticResource AppButton.Primary.Medium}"
-                                    Command="{Binding OpenPaymentCommand}"
-                                    Margin="8,0,0,0"/>
+            <StackPanel>
+                <!-- Hàng thao tác -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <controls:AppButton Content="📄 Phiếu Thu"
+                                        Style="{StaticResource AppButton.Primary.Medium}"
+                                        Command="{Binding OpenReceiptCommand}"
+                                        Margin="0,0,8,0"/>
+                    <controls:AppButton Content="📄 Phiếu Chi"
+                                        Style="{StaticResource AppButton.Primary.Medium}"
+                                        Command="{Binding OpenPaymentCommand}"
+                                        Margin="0,0,8,0"/>
+                    <controls:AppButton Content="📤 Xuất khẩu"
+                                        Style="{StaticResource AppButton.Secondary.Medium}"
+                                        Command="{Binding ExportExcelCommand}"/>
+                </StackPanel>
+
+                <!-- Hàng lọc — mọi ô cùng Height="36" + VerticalAlignment="Center" để nhãn và
+                     ComboBox/DatePicker canh giữa theo cùng 1 baseline (tránh nhãn bị lệch lên
+                     trên do ComboBox/DatePicker cao hơn text nhãn). -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <controls:AppLabel Text="Kỳ"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                    <ComboBox ItemsSource="{x:Static local:AccountingViewModel.PeriodOptions}"
+                              SelectedItem="{Binding SelectedPeriod, Mode=TwoWay}"
+                              Width="130" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                              Margin="0,0,16,0"/>
+
+                    <controls:AppLabel Text="Từ ngày"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                    <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}"
+                                Width="140" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                                Margin="0,0,16,0"/>
+                    <controls:AppLabel Text="Đến ngày"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                    <DatePicker SelectedDate="{Binding ToDate, Mode=TwoWay}"
+                                Width="140" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                                Margin="0,0,16,0"/>
+
+                    <controls:AppLabel Text="Trạng thái"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                    <ComboBox ItemsSource="{x:Static local:AccountingViewModel.StatusOptions}"
+                              SelectedItem="{Binding FilterStatus, Mode=TwoWay}"
+                              Width="120" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                              Margin="0,0,16,0"/>
+
+                    <controls:AppLabel Text="Loại"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                    <ComboBox ItemsSource="{x:Static local:AccountingViewModel.TypeOptions}"
+                              SelectedItem="{Binding FilterType, Mode=TwoWay}"
+                              Width="100" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                              Margin="0,0,16,0"/>
+
+                    <controls:AppButton Content="🔍 Lấy dữ liệu"
+                                        Style="{StaticResource AppButton.Primary.Medium}"
+                                        Command="{Binding LoadCommand}"/>
+                </StackPanel>
             </StackPanel>
         </Border>
 
@@ -161,7 +204,7 @@
                 </DockPanel>
             </Border>
 
-            <DataGrid ItemsSource="{Binding Items}"
+            <DataGrid ItemsSource="{Binding ItemsView}"
                       AutoGenerateColumns="False"
                       IsReadOnly="True"
                       CanUserAddRows="False"

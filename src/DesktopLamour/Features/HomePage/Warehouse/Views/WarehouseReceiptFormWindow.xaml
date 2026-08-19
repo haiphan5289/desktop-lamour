@@ -191,15 +191,16 @@
                   MaxHeight="240"
                   RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                   AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
-                  behaviors:DataGridRowNavigationBehavior.EnableArrowRowNavigation="True">
+                  behaviors:DataGridRowNavigationBehavior.EnableArrowRowNavigation="True"
+                  behaviors:DataGridLineContextMenuBehavior.EnableLineContextMenu="True">
 
             <DataGrid.Columns>
 
-                <!-- Mã/Tên hàng -->
-                <DataGridTemplateColumn Header="Mã/Tên hàng" Width="200">
+                <!-- Tên hàng -->
+                <DataGridTemplateColumn Header="Tên hàng" Width="200">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding SelectedProduct.DisplayText}"
+                            <TextBlock Text="{Binding SelectedProduct.Name}"
                                        VerticalAlignment="Center" Padding="4,0"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
@@ -213,11 +214,12 @@
                     </DataGridTemplateColumn.CellEditingTemplate>
                 </DataGridTemplateColumn>
 
-                <!-- Kho -->
+                <!-- Kho — mã kho ngầm định của sản phẩm đang chọn (HH/TB), không cho sửa tay -->
                 <DataGridTemplateColumn Header="Kho" Width="100">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock Text="Kho chính" VerticalAlignment="Center" Padding="4,0"/>
+                            <TextBlock Text="{Binding SelectedProduct.DefaultWarehouseCode}"
+                                       VerticalAlignment="Center" Padding="4,0"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
@@ -330,7 +332,8 @@
                   MaxHeight="240"
                   RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                   AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
-                  behaviors:DataGridRowNavigationBehavior.EnableArrowRowNavigation="True">
+                  behaviors:DataGridRowNavigationBehavior.EnableArrowRowNavigation="True"
+                  behaviors:DataGridLineContextMenuBehavior.EnableLineContextMenu="True">
 
             <DataGrid.Columns>
 
@@ -435,11 +438,6 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-
-                <controls:AppButton Grid.Column="0"
-                                    Content="+ Thêm dòng"
-                                    Style="{StaticResource AppButton.Tertiary.Medium}"
-                                    Command="{Binding AddLineCommand}"/>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
                     <controls:AppButton Content="Hủy bỏ"

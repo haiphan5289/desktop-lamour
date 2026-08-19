@@ -23,9 +23,10 @@ public partial class EmployeeFormViewModel : ViewModelBase
 
     // Form fields
     [ObservableProperty] private string  _name              = string.Empty;
+    [ObservableProperty] private string  _gender            = "Nam";
     [ObservableProperty] private string  _phone             = string.Empty;
     [ObservableProperty] private string  _role              = "Cashier";
-    [ObservableProperty] private string  _unit              = "Spa";
+    [ObservableProperty] private string  _unit              = "Tiệm spa";
     [ObservableProperty] private string  _jobTitle          = "Khac";
     [ObservableProperty] private string  _bankAccountNumber = string.Empty;
     [ObservableProperty] private string  _bankName          = string.Empty;
@@ -35,7 +36,12 @@ public partial class EmployeeFormViewModel : ViewModelBase
     public bool IsAddMode => !_isEditMode;
 
     public IReadOnlyList<string> Roles     { get; } = new[] { "Admin", "Cashier", "Warehouse" };
-    public IReadOnlyList<string> Units     { get; } = new[] { "Spa", "PKD", "PGD", "GD", "Kho" };
+    public IReadOnlyList<string> Genders   { get; } = new[] { "Nam", "Nữ" };
+    public IReadOnlyList<string> Units     { get; } = new[]
+    {
+        "Kho và Quỹ", "Marketting", "Phòng Đào Tạo", "Phòng Giám Đốc",
+        "Phòng Kinh Doanh", "Phòng Nhân Sự", "Tiệm spa",
+    };
     public IReadOnlyList<string> JobTitles { get; } = new[] { "Admin", "TruongPhong", "NhanVienBanHang", "NhanVienKho", "ThuNgan", "Khac" };
 
     public event Action<bool>? RequestClose;
@@ -59,8 +65,9 @@ public partial class EmployeeFormViewModel : ViewModelBase
             _editingId        = 0;
             WindowTitle       = "Thêm nhân viên";
             Name = Phone      = string.Empty;
+            Gender            = "Nam";
             Role              = "Cashier";
-            Unit              = "Spa";
+            Unit              = "Tiệm spa";
             JobTitle          = "Khac";
             BankAccountNumber = string.Empty;
             BankName          = string.Empty;
@@ -72,6 +79,7 @@ public partial class EmployeeFormViewModel : ViewModelBase
             _editingId        = employee.Id;
             WindowTitle       = "Sửa nhân viên";
             Name              = employee.Name;
+            Gender            = employee.Gender;
             Phone             = employee.Phone;
             Role              = employee.Role;
             Unit              = employee.Unit;
@@ -97,14 +105,17 @@ public partial class EmployeeFormViewModel : ViewModelBase
 
             if (!_isEditMode)
             {
+                // Số điện thoại giờ optional — nếu Phone cũng trống, BE tự fallback mật khẩu về
+                // mã nhân viên (xem CreateEmployeeUseCase). Ở đây chỉ cascade tới Phone thôi vì
+                // WPF chưa biết mã NV sẽ sinh ra trước khi gọi Create.
                 var rawPwd = string.IsNullOrWhiteSpace(Password) ? Phone.Trim() : Password.Trim();
                 await _createUseCase.ExecuteAsync(
-                    new CreateEmployeeInput(Name.Trim(), Phone.Trim(), Role, Unit, JobTitle, bankAccount, bankName, rawPwd, IsActive), ct);
+                    new CreateEmployeeInput(Name.Trim(), Gender, Phone.Trim(), Role, Unit, JobTitle, bankAccount, bankName, rawPwd, IsActive), ct);
             }
             else
             {
                 await _updateUseCase.ExecuteAsync(
-                    new UpdateEmployeeInput(_editingId, Name.Trim(), Phone.Trim(), Role, Unit, JobTitle, bankAccount, bankName,
+                    new UpdateEmployeeInput(_editingId, Name.Trim(), Gender, Phone.Trim(), Role, Unit, JobTitle, bankAccount, bankName,
                         string.IsNullOrWhiteSpace(Password) ? null : Password.Trim(), IsActive), ct);
             }
             StopDirtyTracking();

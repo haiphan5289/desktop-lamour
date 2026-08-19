@@ -62,7 +62,22 @@
 
                 <controls:AppButton Content="🏷️ Danh mục"
                                     Style="{StaticResource AppButton.Tertiary.Medium}"
-                                    Command="{Binding NavigateToCategoriesCommand}"/>
+                                    Command="{Binding NavigateToCategoriesCommand}"
+                                    Margin="0,0,8,0"/>
+
+                <controls:AppButton Content="📥 Nhập khẩu"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding ImportExcelCommand}"
+                                    Margin="0,0,8,0"/>
+
+                <controls:AppButton Content="📤 Xuất khẩu"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding ExportExcelCommand}"
+                                    Margin="0,0,16,0"/>
+
+                <controls:AppTextField Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                       Placeholder="🔍 Tìm kiếm sản phẩm..."
+                                       Width="320" Height="36"/>
 
             </StackPanel>
         </Border>
@@ -98,7 +113,7 @@
             </Border>
 
             <!-- DataGrid -->
-            <DataGrid ItemsSource="{Binding Products}"
+            <DataGrid ItemsSource="{Binding ProductsView}"
                       SelectedItem="{Binding SelectedProduct, Mode=TwoWay}"
                       AutoGenerateColumns="False"
                       IsReadOnly="True"
@@ -112,14 +127,35 @@
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
                       Visibility="{Binding HasProducts, Converter={StaticResource BoolToVisibilityConverter}}">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Mã sản phẩm"  Binding="{Binding Code}"          Width="130"/>
-                    <DataGridTextColumn Header="Tên sản phẩm" Binding="{Binding Name}"          Width="*"/>
-                    <DataGridTextColumn Header="Danh mục"     Binding="{Binding CategoryName}"  Width="130"/>
-                    <DataGridTextColumn Header="Đơn vị"       Binding="{Binding Unit}"          Width="80"/>
-                    <DataGridTextColumn Header="Giá nhập"     Binding="{Binding CostPrice, StringFormat=\{0:N0\}}"    Width="110"/>
-                    <DataGridTextColumn Header="Giá bán"      Binding="{Binding SellingPrice, StringFormat=\{0:N0\}}" Width="110"/>
-                    <DataGridTextColumn Header="Tồn kho"      Binding="{Binding StockQuantity}" Width="80"/>
-                    <DataGridCheckBoxColumn Header="Hoạt động" Binding="{Binding IsActive}"     Width="80" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Mã sản phẩm" Binding="{Binding Code}" Width="130"/>
+                    <DataGridTextColumn Header="Tên sản phẩm" Binding="{Binding Name}" Width="*"/>
+                    <DataGridTextColumn Header="Danh mục" Binding="{Binding CategoryName}" Width="130"/>
+                    <DataGridTextColumn Header="Đơn vị" Binding="{Binding Unit}" Width="80"/>
+                    <DataGridTextColumn Header="Giá nhập" Binding="{Binding CostPrice, StringFormat=\{0:N0\}}" Width="120">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextAlignment" Value="Right"/>
+                                <Setter Property="Padding" Value="6,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Giá bán" Binding="{Binding SellingPrice, StringFormat=\{0:N0\}}" Width="120">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextAlignment" Value="Right"/>
+                                <Setter Property="Padding" Value="6,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Tồn kho" Binding="{Binding StockQuantity}" Width="90">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextAlignment" Value="Right"/>
+                                <Setter Property="Padding" Value="6,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridCheckBoxColumn Header="Hoạt động" Binding="{Binding IsActive}" Width="90" IsReadOnly="True"/>
                 </DataGrid.Columns>
             </DataGrid>
 

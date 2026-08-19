@@ -57,7 +57,22 @@
 
                 <controls:AppButton Content="🗑️ Xóa"
                                     Style="{StaticResource AppButton.Destructive.Medium}"
-                                    Command="{Binding DeleteEmployeeCommand}"/>
+                                    Command="{Binding DeleteEmployeeCommand}"
+                                    Margin="0,0,8,0"/>
+
+                <controls:AppButton Content="📥 Nhập khẩu"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding ImportExcelCommand}"
+                                    Margin="0,0,8,0"/>
+
+                <controls:AppButton Content="📤 Xuất khẩu"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding ExportExcelCommand}"
+                                    Margin="0,0,16,0"/>
+
+                <controls:AppTextField Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                       Placeholder="🔍 Tìm kiếm nhân viên..."
+                                       Width="320" Height="36"/>
 
             </StackPanel>
         </Border>
@@ -93,7 +108,7 @@
             </Border>
 
             <!-- DataGrid -->
-            <DataGrid ItemsSource="{Binding Employees}"
+            <DataGrid ItemsSource="{Binding EmployeesView}"
                       SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
                       AutoGenerateColumns="False"
                       IsReadOnly="True"
@@ -107,15 +122,16 @@
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
                       Visibility="{Binding HasEmployees, Converter={StaticResource BoolToVisibilityConverter}}">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Mã NV"           Binding="{Binding Code}"              Width="90"/>
-                    <DataGridTextColumn Header="Tên nhân viên"   Binding="{Binding Name}"              Width="*"/>
-                    <DataGridTextColumn Header="Số điện thoại"   Binding="{Binding Phone}"             Width="130"/>
-                    <DataGridTextColumn Header="Chức vụ"         Binding="{Binding Role}"              Width="100"/>
-                    <DataGridTextColumn Header="Đơn vị"          Binding="{Binding Unit}"              Width="80"/>
-                    <DataGridTextColumn Header="Chức danh"       Binding="{Binding JobTitle}"          Width="140"/>
-                    <DataGridTextColumn Header="Số tài khoản"    Binding="{Binding BankAccountNumber}" Width="130"/>
-                    <DataGridTextColumn Header="Tên ngân hàng"   Binding="{Binding BankName}"          Width="130"/>
-                    <DataGridCheckBoxColumn Header="Hoạt động"   Binding="{Binding IsActive}"          Width="80" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Mã NV" Binding="{Binding Code}" Width="90"/>
+                    <DataGridTextColumn Header="Tên nhân viên" Binding="{Binding Name}" Width="*"/>
+                    <DataGridTextColumn Header="Giới tính" Binding="{Binding Gender}" Width="80"/>
+                    <DataGridTextColumn Header="Số điện thoại" Binding="{Binding Phone}" Width="130"/>
+                    <DataGridTextColumn Header="Chức vụ" Binding="{Binding Role}" Width="100"/>
+                    <DataGridTextColumn Header="Đơn vị" Binding="{Binding Unit}" Width="80"/>
+                    <DataGridTextColumn Header="Chức danh" Binding="{Binding JobTitle}" Width="140"/>
+                    <DataGridTextColumn Header="Số tài khoản" Binding="{Binding BankAccountNumber}" Width="130"/>
+                    <DataGridTextColumn Header="Tên ngân hàng" Binding="{Binding BankName}" Width="130"/>
+                    <DataGridCheckBoxColumn Header="Hoạt động" Binding="{Binding IsActive}" Width="90" IsReadOnly="True"/>
                 </DataGrid.Columns>
             </DataGrid>
 

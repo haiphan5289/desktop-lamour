@@ -16,6 +16,7 @@ public class SalesOrderLineItem : INotifyPropertyChanged
     private string           _warehouseName     = "";
     private ISearchableItem? _selectedWarehouse;
     private bool             _isPromotion;
+    private bool             _isDepositProduct;
     private string           _unit              = "";
     private int              _quantity;
     private decimal          _unitPrice;
@@ -24,8 +25,8 @@ public class SalesOrderLineItem : INotifyPropertyChanged
     private bool             _isAmountManual;
     private decimal          _taxRate;
     private decimal          _taxAmount;
-    private string           _receivableAccount = "131";
-    private string           _revenueAccount    = "511";
+    private string           _receivableAccount = "";
+    private string           _revenueAccount    = "";
     private ISearchableItem? _selectedProduct;
     private bool              _isDepositDeductionRow;
     private DepositResponseDto? _linkedDeposit;
@@ -123,6 +124,14 @@ public class SalesOrderLineItem : INotifyPropertyChanged
                 TaxRate   = SalesOrderTaxCalculator.ToPercent(p.VatRate);
             }
         }
+    }
+
+    // Denormalized từ Product.IsDepositProduct lúc chọn sản phẩm — dùng để ẩn Đơn giá/CK/Thuế
+    // suất trên hóa đơn in (xem SalesOrderPrintWindow), set trong SelectedProduct setter bên dưới.
+    public bool IsDepositProduct
+    {
+        get => _isDepositProduct;
+        set { _isDepositProduct = value; OnPropertyChanged(); }
     }
 
     public string Unit
@@ -240,6 +249,7 @@ public class SalesOrderLineItem : INotifyPropertyChanged
             {
                 // Chọn "Trừ cọc" trong dropdown sản phẩm → biến dòng này thành dòng Trừ cọc.
                 IsDepositDeductionRow = true;
+                IsDepositProduct      = false;
                 ProductId             = 0;
                 Unit                  = "";
                 Quantity              = 0;
@@ -254,6 +264,7 @@ public class SalesOrderLineItem : INotifyPropertyChanged
             {
                 // Chọn lại 1 sản phẩm thật → khôi phục dòng về trạng thái bình thường.
                 IsDepositDeductionRow = false;
+                IsDepositProduct      = p.IsDepositProduct;
                 LinkedDeposit         = null;
                 ProductId   = p.Id;
                 ProductCode = p.Code;

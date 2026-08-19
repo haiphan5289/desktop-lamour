@@ -96,14 +96,17 @@ public sealed class RealtimeSyncService : IRealtimeSyncService
         _connection.On<EmployeeResponseDto>("EmployeeCreated", _employeeCache.Upsert);
         _connection.On<EmployeeResponseDto>("EmployeeUpdated", _employeeCache.Upsert);
         _connection.On<int>("EmployeeDeleted", _employeeCache.Remove);
+        _connection.On("EmployeesBulkChanged", _employeeCache.Clear);
 
         _connection.On<ProductResponseDto>("ProductCreated", _productCache.Upsert);
         _connection.On<ProductResponseDto>("ProductUpdated", _productCache.Upsert);
         _connection.On<int>("ProductDeleted", _productCache.Remove);
+        _connection.On("ProductsBulkChanged", _productCache.Clear);
 
         _connection.On<SupplierResponseDto>("SupplierCreated", _supplierCache.Upsert);
         _connection.On<SupplierResponseDto>("SupplierUpdated", _supplierCache.Upsert);
         _connection.On<int>("SupplierDeleted", _supplierCache.Remove);
+        _connection.On("SuppliersBulkChanged", _supplierCache.Clear);
 
         _connection.On<CategoryResponseDto>("CategoryCreated", _categoryCache.Upsert);
         _connection.On<CategoryResponseDto>("CategoryUpdated", _categoryCache.Upsert);

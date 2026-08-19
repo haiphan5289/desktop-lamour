@@ -24,9 +24,12 @@ public partial class SalesOrderListViewModel : ViewModelBase
     [ObservableProperty] private string              _errorMessage   = string.Empty;
     [ObservableProperty] private bool                _hasSalesOrders;
     [ObservableProperty] private SalesOrderListItem? _selectedOrder;
-    [ObservableProperty] private string              _filterCustomer = string.Empty;
     [ObservableProperty] private DateTime?           _filterFromDate;
     [ObservableProperty] private DateTime?           _filterToDate;
+
+    // 1 ô tìm kiếm chung (AND với FilterFromDate/FilterToDate ở trên) — khớp OR trên các trường
+    // text chính, không phân biệt hoa/thường.
+    [ObservableProperty] private string _searchText = string.Empty;
 
     private readonly List<SalesOrderListItem> _allItems = new();
 
@@ -46,6 +49,11 @@ public partial class SalesOrderListViewModel : ViewModelBase
         _deleteOrder       = deleteOrder;
         _holdOrder         = holdOrder;
         _formWindowFactory = formWindowFactory;
+
+        // Mặc định mở màn hình chỉ hiện chứng từ của HÔM NAY (không dồn hết lịch sử lại) —
+        // giống MISA. Người dùng vẫn có thể đổi Từ ngày/Đến ngày để xem ngày khác.
+        _filterFromDate = DateTime.Today;
+        _filterToDate   = DateTime.Today;
     }
 
     partial void OnSelectedOrderChanged(SalesOrderListItem? value)
@@ -55,9 +63,14 @@ public partial class SalesOrderListViewModel : ViewModelBase
         HoldSalesOrderCommand.NotifyCanExecuteChanged();
     }
 
-    partial void OnFilterCustomerChanged(string value)    => ApplyFilter();
     partial void OnFilterFromDateChanged(DateTime? value) => ApplyFilter();
     partial void OnFilterToDateChanged(DateTime? value)   => ApplyFilter();
+    partial void OnSearchTextChanged(string value)        => ApplyFilter();
+
+    // Lọc đã tự áp dụng ngay khi đổi ngày/tìm kiếm (live filter) — nút "Lọc" chỉ để người dùng có
+    // affordance rõ ràng để bấm, giống hàng lọc màn Quỹ.
+    [RelayCommand]
+    private void Filter() => ApplyFilter();
 
     [RelayCommand]
     private void GoBack() => _navigationService.GoBack();
@@ -168,15 +181,19 @@ public partial class SalesOrderListViewModel : ViewModelBase
     {
         var filtered = _allItems.AsEnumerable();
 
-        if (!string.IsNullOrWhiteSpace(FilterCustomer))
-            filtered = filtered.Where(o =>
-                o.CustomerName.Contains(FilterCustomer, StringComparison.OrdinalIgnoreCase));
-
         if (FilterFromDate.HasValue)
             filtered = filtered.Where(o => o.DocumentDate.Date >= FilterFromDate.Value.Date);
 
         if (FilterToDate.HasValue)
             filtered = filtered.Where(o => o.DocumentDate.Date <= FilterToDate.Value.Date);
+
+        if (!string.IsNullOrWhiteSpace(SearchText))
+            filtered = filtered.Where(o =>
+                Matches(o.StatusLabel, SearchText) ||
+                Matches(o.DocumentNumber, SearchText) ||
+                Matches(o.CustomerName, SearchText) ||
+                Matches(o.EmployeeName, SearchText) ||
+                Matches(o.Notes, SearchText));
 
         SalesOrders.Clear();
         foreach (var item in filtered.OrderByDescending(o => o.DocumentDate))
@@ -184,4 +201,7 @@ public partial class SalesOrderListViewModel : ViewModelBase
 
         HasSalesOrders = SalesOrders.Count > 0;
     }
+
+    private static bool Matches(string? value, string filter)
+        => string.IsNullOrWhiteSpace(filter) || (!string.IsNullOrEmpty(value) && value.Contains(filter, StringComparison.OrdinalIgnoreCase));
 }

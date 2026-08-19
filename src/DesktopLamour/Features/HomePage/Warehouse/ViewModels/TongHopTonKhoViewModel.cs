@@ -4,36 +4,60 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.Navigation;
 using DesktopLamour.Core.ViewModels;
+using DesktopLamour.Features.HomePage.Categories.Domain.UseCases;
+using DesktopLamour.Features.HomePage.ProductUnits.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Warehouse.Domain.Models;
 using DesktopLamour.Features.HomePage.Warehouse.Domain.UseCases;
-using DesktopLamour.Features.HomePage.Warehouse.Views;
+using DesktopLamour.Features.HomePage.Warehouses.Domain.UseCases;
+using DesktopLamour.Shared.Controls;
+using Microsoft.Extensions.Logging;
 
 namespace DesktopLamour.Features.HomePage.Warehouse.ViewModels;
 
+// Bộ lọc hiển thị NGAY trên màn hình (không còn popup riêng — TongHopTonKhoFilterWindow đã bị
+// gỡ bỏ) để người dùng thấy và đổi điều kiện lọc trực tiếp, giống hàng lọc của các màn danh sách
+// khác trong app.
 public partial class TongHopTonKhoViewModel : ViewModelBase
 {
     private readonly INavigationService          _navigationService;
     private readonly IGetInventorySummaryUseCase _getSummary;
-    private readonly Func<TongHopTonKhoFilterWindow> _filterWindowFactory;
-
-    private InventoryFilter _filter = new();
+    private readonly IGetWarehouseSettingsUseCase _getWarehouses;
+    private readonly IGetCategoriesUseCase        _getCategories;
+    private readonly IGetProductUnitsUseCase      _getProductUnits;
+    private readonly ILogger<TongHopTonKhoViewModel> _logger;
 
     [ObservableProperty] private bool   _isLoading;
     [ObservableProperty] private bool   _hasError;
     [ObservableProperty] private string _errorMessage = string.Empty;
     [ObservableProperty] private bool   _hasItems;
-    [ObservableProperty] private string _filterSummary = "Chưa lọc — nhấn 🔍 Lọc để chọn kỳ báo cáo và điều kiện.";
+
+    [ObservableProperty] private string           _periodPreset = "Tháng này";
+    [ObservableProperty] private DateTime          _fromDate = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    [ObservableProperty] private DateTime          _toDate   = DateTime.Today;
+    [ObservableProperty] private ISearchableItem?  _selectedCategory;
+    [ObservableProperty] private ISearchableItem?  _selectedProductUnit;
+
+    public IReadOnlyList<string> PeriodPresetOptions { get; } = new[] { "Tháng này", "Quý này", "Năm này", "Tùy chọn" };
+    public IReadOnlyList<ISearchableItem> Categories   { get; private set; } = Array.Empty<ISearchableItem>();
+    public IReadOnlyList<ISearchableItem> ProductUnits { get; private set; } = Array.Empty<ISearchableItem>();
+    public ObservableCollection<WarehouseCheckItem> WarehouseItems { get; } = new();
 
     public ObservableCollection<InventorySummaryItem> Items { get; } = new();
 
     public TongHopTonKhoViewModel(
         INavigationService              navigationService,
         IGetInventorySummaryUseCase     getSummary,
-        Func<TongHopTonKhoFilterWindow> filterWindowFactory)
+        IGetWarehouseSettingsUseCase    getWarehouses,
+        IGetCategoriesUseCase           getCategories,
+        IGetProductUnitsUseCase         getProductUnits,
+        ILogger<TongHopTonKhoViewModel> logger)
     {
-        _navigationService   = navigationService;
-        _getSummary          = getSummary;
-        _filterWindowFactory = filterWindowFactory;
+        _navigationService = navigationService;
+        _getSummary        = getSummary;
+        _getWarehouses     = getWarehouses;
+        _getCategories     = getCategories;
+        _getProductUnits   = getProductUnits;
+        _logger            = logger;
     }
 
     [RelayCommand]
@@ -45,28 +69,67 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToHome() => _navigationService.NavigateToHome();
 
-    [RelayCommand]
-    private async Task OpenFilterAsync(CancellationToken ct = default)
+    // Preset chỉ tính lại From/To client-side — không tự gọi BE, người dùng vẫn bấm "Lọc".
+    partial void OnPeriodPresetChanged(string value)
     {
-        var window = _filterWindowFactory();
-        await window.InitializeAsync(_filter, ct);
-        if (window.ShowDialog() != true) return;
-
-        _filter = window.Result;
-        UpdateFilterSummary();
-        await LoadAsync(ct);
+        var today = DateTime.Today;
+        switch (value)
+        {
+            case "Tháng này":
+                FromDate = new DateTime(today.Year, today.Month, 1);
+                ToDate   = today;
+                break;
+            case "Quý này":
+                var quarterStartMonth = ((today.Month - 1) / 3) * 3 + 1;
+                FromDate = new DateTime(today.Year, quarterStartMonth, 1);
+                ToDate   = today;
+                break;
+            case "Năm này":
+                FromDate = new DateTime(today.Year, 1, 1);
+                ToDate   = today;
+                break;
+            case "Tùy chọn":
+            default:
+                break;
+        }
     }
 
-    private void UpdateFilterSummary()
+    [RelayCommand]
+    private void ClearConditions()
     {
-        var range = $"{_filter.FromDate:dd/MM/yyyy} → {_filter.ToDate:dd/MM/yyyy}";
-        var extras = new List<string>();
-        if (_filter.WarehouseIds.Count > 0) extras.Add($"{_filter.WarehouseIds.Count} kho");
-        if (_filter.CategoryId is not null) extras.Add("1 nhóm VTHH");
-        if (_filter.ProductUnitId is not null) extras.Add("1 đơn vị tính");
-        FilterSummary = extras.Count > 0
-            ? $"{range} · {string.Join(", ", extras)}"
-            : range;
+        PeriodPreset         = "Tháng này";
+        SelectedCategory     = null;
+        SelectedProductUnit  = null;
+        foreach (var w in WarehouseItems) w.IsSelected = false;
+    }
+
+    // Tải danh mục kho/nhóm VTHH/đơn vị tính cho các dropdown lọc — gọi 1 lần khi màn hình mở,
+    // trước lần LoadAsync đầu tiên.
+    [RelayCommand]
+    private async Task InitializeFiltersAsync(CancellationToken ct = default)
+    {
+        IsLoading = true;
+        try
+        {
+            var warehouseTask = _getWarehouses.ExecuteAsync(ct);
+            var categoryTask  = _getCategories.ExecuteAsync(ct);
+            var unitTask      = _getProductUnits.ExecuteAsync(ct);
+            await Task.WhenAll(warehouseTask, categoryTask, unitTask);
+
+            Categories = categoryTask.Result.Cast<ISearchableItem>().ToList().AsReadOnly();
+            OnPropertyChanged(nameof(Categories));
+            ProductUnits = unitTask.Result.Cast<ISearchableItem>().ToList().AsReadOnly();
+            OnPropertyChanged(nameof(ProductUnits));
+
+            WarehouseItems.Clear();
+            foreach (var w in warehouseTask.Result.Cast<ISearchableItem>())
+                WarehouseItems.Add(new WarehouseCheckItem(w));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load filter lookups for TongHopTonKho");
+        }
+        finally { IsLoading = false; }
     }
 
     [RelayCommand]
@@ -77,10 +140,11 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
         ErrorMessage = string.Empty;
         try
         {
-            var from = DateOnly.FromDateTime(_filter.FromDate);
-            var to   = DateOnly.FromDateTime(_filter.ToDate);
+            var from          = DateOnly.FromDateTime(FromDate);
+            var to            = DateOnly.FromDateTime(ToDate);
+            var warehouseIds  = WarehouseItems.Where(w => w.IsSelected).Select(w => w.Id).ToList();
             var data = await _getSummary.ExecuteAsync(
-                from, to, _filter.WarehouseIds, _filter.CategoryId, _filter.ProductUnitId, ct);
+                from, to, warehouseIds, SelectedCategory?.Id, SelectedProductUnit?.Id, ct);
 
             Items.Clear();
             foreach (var item in data) Items.Add(item);

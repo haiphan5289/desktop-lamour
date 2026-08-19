@@ -63,28 +63,34 @@
                 BorderBrush="{StaticResource AppColor.BorderThin}"
                 BorderThickness="1"
                 CornerRadius="8">
-            <StackPanel Orientation="Horizontal">
-                <controls:AppLabel Text="Khách hàng:"
-                                   Style="{StaticResource AppTypography.LabelSection}"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,8,0"/>
-                <controls:AppTextField Text="{Binding FilterCustomer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                       Placeholder="Tìm theo tên khách hàng"
-                                       Width="220"/>
-
+            <!-- Mọi ô cùng Height="36" + VerticalAlignment="Center" để nhãn/DatePicker/ô tìm kiếm/nút
+                 Lọc canh giữa theo cùng 1 baseline (AppButton.Primary.Medium mặc định cao 40, các ô
+                 khác 34 — lệch nhau nên phải ép về cùng chiều cao), giống màn Chứng từ bán hàng. -->
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <controls:AppLabel Text="Từ ngày:"
                                    Style="{StaticResource AppTypography.LabelSection}"
                                    VerticalAlignment="Center"
                                    Margin="20,0,8,0"/>
                 <DatePicker SelectedDate="{Binding FilterFromDate, Mode=TwoWay}"
-                            Width="130" Height="34" VerticalAlignment="Center"/>
+                            Width="130" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"/>
 
                 <controls:AppLabel Text="Đến ngày:"
                                    Style="{StaticResource AppTypography.LabelSection}"
                                    VerticalAlignment="Center"
                                    Margin="16,0,8,0"/>
                 <DatePicker SelectedDate="{Binding FilterToDate, Mode=TwoWay}"
-                            Width="130" Height="34" VerticalAlignment="Center"/>
+                            Width="130" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"/>
+
+                <controls:AppTextField Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                       Placeholder="🔍 Tìm kiếm chứng từ..."
+                                       Width="320" Height="36" VerticalAlignment="Center"
+                                       Margin="24,0,0,0"/>
+
+                <controls:AppButton Content="🔍 Lọc"
+                                    Style="{StaticResource AppButton.Primary.Medium}"
+                                    Command="{Binding FilterCommand}"
+                                    Height="36" VerticalAlignment="Center"
+                                    Margin="12,0,0,0"/>
             </StackPanel>
         </Border>
 
@@ -136,63 +142,42 @@
                       Visibility="{Binding HasSalesReturns, Converter={StaticResource BoolToVisibilityConverter}}">
                 <DataGrid.Columns>
 
-                    <DataGridTextColumn Header="Loại trả hàng"
-                                        Binding="{Binding ReturnTypeLabel}"
-                                        Width="150"/>
-
-                    <DataGridTextColumn Header="Số chứng từ"
-                                        Binding="{Binding DocumentNumber}"
-                                        Width="120"/>
+                    <DataGridTextColumn Header="Loại trả hàng" Binding="{Binding ReturnTypeLabel}" Width="150"/>
+                    <DataGridTextColumn Header="Số chứng từ" Binding="{Binding DocumentNumber}" Width="120"/>
 
                     <DataGridTextColumn Header="Ngày"
                                         Binding="{Binding DocumentDate, StringFormat=\{0:dd/MM/yyyy\}}"
                                         Width="100"/>
 
-                    <DataGridTextColumn Header="Khách hàng"
-                                        Binding="{Binding CustomerName}"
-                                        Width="*"/>
+                    <DataGridTextColumn Header="Khách hàng" Binding="{Binding CustomerName}" Width="*"/>
+                    <DataGridTextColumn Header="Nhân viên" Binding="{Binding EmployeeName}" Width="140"/>
 
-                    <DataGridTextColumn Header="Nhân viên"
-                                        Binding="{Binding EmployeeName}"
-                                        Width="140"/>
-
-                    <DataGridTextColumn Header="Tổng tiền hàng"
-                                        Binding="{Binding TotalAmount, StringFormat=\{0:N0\}}"
-                                        Width="130">
+                    <DataGridTextColumn Header="Tổng tiền hàng" Binding="{Binding TotalAmount, StringFormat=\{0:N0\}}" Width="140">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
-                                <Setter Property="HorizontalAlignment" Value="Right"/>
-                                <Setter Property="VerticalAlignment"   Value="Center"/>
-                                <Setter Property="Padding"             Value="0,0,6,0"/>
+                                <Setter Property="TextAlignment" Value="Right"/>
+                                <Setter Property="Padding" Value="6,0"/>
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
 
-                    <DataGridTextColumn Header="Tổng CK"
-                                        Binding="{Binding TotalDiscount, StringFormat=\{0:N0\}}"
-                                        Width="110">
+                    <DataGridTextColumn Header="Tổng CK" Binding="{Binding TotalDiscount, StringFormat=\{0:N0\}}" Width="120">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
-                                <Setter Property="HorizontalAlignment" Value="Right"/>
-                                <Setter Property="VerticalAlignment"   Value="Center"/>
-                                <Setter Property="Padding"             Value="0,0,6,0"/>
+                                <Setter Property="TextAlignment" Value="Right"/>
+                                <Setter Property="Padding" Value="6,0"/>
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
 
-                    <DataGridTextColumn Header="Tổng thanh toán"
-                                        Binding="{Binding TotalPayment, StringFormat=\{0:N0\}}"
-                                        Width="130">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="HorizontalAlignment" Value="Right"/>
-                                <Setter Property="VerticalAlignment"   Value="Center"/>
-                                <Setter Property="Padding"             Value="0,0,6,0"/>
-                                <Setter Property="Foreground"          Value="{StaticResource AppColor.TextBrand}"/>
-                                <Setter Property="FontWeight"          Value="SemiBold"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
+                    <DataGridTemplateColumn Header="Tổng thanh toán" Width="140">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding TotalPayment, StringFormat=\{0:N0\}}" Padding="6,0" VerticalAlignment="Center" TextAlignment="Right"
+                                           Foreground="{StaticResource AppColor.TextBrand}" FontWeight="SemiBold"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
                 </DataGrid.Columns>
             </DataGrid>

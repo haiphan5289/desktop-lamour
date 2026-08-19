@@ -44,7 +44,12 @@
             <StackPanel Orientation="Horizontal">
                 <controls:AppButton Content="+ Thêm mới"
                                     Style="{StaticResource AppButton.Primary.Medium}"
-                                    Command="{Binding OpenFormCommand}"/>
+                                    Command="{Binding OpenFormCommand}"
+                                    Margin="0,0,16,0"/>
+
+                <controls:AppTextField Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                       Placeholder="🔍 Tìm kiếm phiếu nhập kho..."
+                                       Width="320" Height="36"/>
             </StackPanel>
         </Border>
 
@@ -76,7 +81,7 @@
                 </DockPanel>
             </Border>
 
-            <DataGrid ItemsSource="{Binding Items}"
+            <DataGrid ItemsSource="{Binding ItemsView}"
                       AutoGenerateColumns="False"
                       IsReadOnly="True"
                       CanUserAddRows="False"
@@ -93,17 +98,9 @@
 
                 <DataGrid.Columns>
 
-                    <DataGridTextColumn Header="Số phiếu"
-                                        Binding="{Binding ReceiptNumber}"
-                                        Width="130"/>
-
-                    <DataGridTextColumn Header="Mã hàng"
-                                        Binding="{Binding ProductCode}"
-                                        Width="110"/>
-
-                    <DataGridTextColumn Header="Tên hàng"
-                                        Binding="{Binding ProductName}"
-                                        Width="*"/>
+                    <DataGridTextColumn Header="Số phiếu" Binding="{Binding ReceiptNumber}" Width="130"/>
+                    <DataGridTextColumn Header="Mã hàng" Binding="{Binding ProductCode}" Width="110"/>
+                    <DataGridTextColumn Header="Tên hàng" Binding="{Binding ProductName}" Width="*"/>
 
                     <DataGridTemplateColumn Header="Loại phiếu" Width="160">
                         <DataGridTemplateColumn.CellTemplate>
@@ -165,26 +162,18 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTextColumn Header="Đối tượng"
-                                        Binding="{Binding ObjectName}"
-                                        Width="160"/>
-
-                    <DataGridTextColumn Header="NV bán hàng"
-                                        Binding="{Binding EmployeeName}"
-                                        Width="140"/>
+                    <DataGridTextColumn Header="Đối tượng" Binding="{Binding ObjectName}" Width="160"/>
+                    <DataGridTextColumn Header="NV bán hàng" Binding="{Binding EmployeeName}" Width="140"/>
 
                     <DataGridTextColumn Header="Ngày chứng từ"
                                         Binding="{Binding DocumentDate, StringFormat=dd/MM/yyyy}"
                                         Width="120"/>
 
-                    <DataGridTextColumn Header="Tổng tiền"
-                                        Binding="{Binding TotalAmount, StringFormat=\{0:N0\}}"
-                                        Width="120">
+                    <DataGridTextColumn Header="Tổng tiền" Binding="{Binding TotalAmount, StringFormat=\{0:N0\}}" Width="130">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
-                                <Setter Property="HorizontalAlignment" Value="Right"/>
-                                <Setter Property="VerticalAlignment"   Value="Center"/>
-                                <Setter Property="Padding"             Value="0,0,8,0"/>
+                                <Setter Property="TextAlignment" Value="Right"/>
+                                <Setter Property="Padding" Value="6,0"/>
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>

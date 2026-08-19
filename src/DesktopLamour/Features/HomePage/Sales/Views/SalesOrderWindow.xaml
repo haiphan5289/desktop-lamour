@@ -317,7 +317,7 @@
                                        Margin="0,0,0,4"/>
                     <controls:AppTextField
                         Text="{Binding DocumentNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                        Placeholder="BH00001"/>
+                        Placeholder="{Binding DocumentNumberPlaceholder}"/>
                 </StackPanel>
             </Border>
         </Grid>
@@ -332,13 +332,7 @@
             <!-- ── Tab 1: Hàng tiền ── -->
             <TabItem Header="1. Hàng tiền">
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
                     <DataGrid x:Name="LinesDataGrid"
-                              Grid.Row="0"
                               ItemsSource="{Binding Lines}"
                               AutoGenerateColumns="False"
                               CanUserAddRows="False"
@@ -352,7 +346,8 @@
                               AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
                               PreparingCellForEdit="LinesDataGrid_PreparingCellForEdit"
                               CellEditEnding="LinesDataGrid_CellEditEnding"
-                              behaviors:DataGridRowNavigationBehavior.EnableArrowRowNavigation="True">
+                              behaviors:DataGridRowNavigationBehavior.EnableArrowRowNavigation="True"
+                              behaviors:DataGridLineContextMenuBehavior.EnableLineContextMenu="True">
                         <DataGrid.Columns>
 
                             <!-- Mã hàng — product picker (bao gồm cả lựa chọn "Trừ cọc" trộn sẵn trong Products) -->
@@ -611,17 +606,6 @@
 
                         </DataGrid.Columns>
                     </DataGrid>
-
-                    <!-- Add line footer -->
-                    <Border Grid.Row="1"
-                            BorderBrush="{StaticResource AppColor.BorderThin}"
-                            BorderThickness="0,1,0,0"
-                            Padding="12,8">
-                        <controls:AppButton Content="+ Thêm dòng"
-                                            Style="{StaticResource AppButton.Tertiary.Medium}"
-                                            Command="{Binding AddLineCommand}"
-                                            HorizontalAlignment="Left"/>
-                    </Border>
                 </Grid>
             </TabItem>
 

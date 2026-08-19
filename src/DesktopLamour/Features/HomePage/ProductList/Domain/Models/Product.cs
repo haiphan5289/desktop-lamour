@@ -36,6 +36,7 @@ public class Product : ISearchableItem
     // Tab "Ngầm định"
     public int?    DefaultWarehouseId        { get; set; }
     public string? DefaultWarehouseName      { get; set; }
+    public string? DefaultWarehouseCode      { get; set; }
     public int?    StockAccountId            { get; set; }
     public string? StockAccountCode          { get; set; }
     public int?    RevenueAccountId          { get; set; }

@@ -30,6 +30,14 @@
                                     Style="{StaticResource AppButton.Secondary.Medium}"
                                     Command="{Binding ExportExcelCommand}"
                                     Margin="0,0,8,0"/>
+                <controls:AppButton Content="✉️ Gửi Email"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding SendEmailCommand}"
+                                    Margin="0,0,8,0"/>
+                <controls:AppButton Content="💬 Zalo"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding SendZaloCommand}"
+                                    Margin="0,0,8,0"/>
                 <controls:AppButton Content="✖ Đóng"
                                     Style="{StaticResource AppButton.Tertiary.Medium}"
                                     Command="{Binding GoBackCommand}"

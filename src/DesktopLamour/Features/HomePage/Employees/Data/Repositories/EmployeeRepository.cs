@@ -3,6 +3,8 @@ using DesktopLamour.Features.HomePage.Employees.Data.Services;
 using DesktopLamour.Features.HomePage.Employees.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Employees.Domain.Models;
 using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
+using System.IO;
+using System.Linq;
 namespace DesktopLamour.Features.HomePage.Employees.Data.Repositories;
 
 public sealed class EmployeeRepository : IEmployeeRepository
@@ -27,6 +29,7 @@ public sealed class EmployeeRepository : IEmployeeRepository
         var request = new CreateEmployeeRequestDto
         {
             Name              = input.Name,
+            Gender            = input.Gender,
             Phone             = input.Phone,
             Role              = input.Role,
             Unit              = input.Unit,
@@ -44,6 +47,7 @@ public sealed class EmployeeRepository : IEmployeeRepository
         var request = new UpdateEmployeeRequestDto
         {
             Name              = input.Name,
+            Gender            = input.Gender,
             Phone             = input.Phone,
             Role              = input.Role,
             Unit              = input.Unit,
@@ -56,11 +60,22 @@ public sealed class EmployeeRepository : IEmployeeRepository
         return MapToModel(await _service.UpdateAsync(input.Id, request, ct));
     }
 
+    public async Task<ImportEmployeeResult> ImportExcelAsync(Stream fileStream, string fileName, CancellationToken ct = default)
+    {
+        var dto = await _service.ImportExcelAsync(fileStream, fileName, ct);
+        return new ImportEmployeeResult(
+            dto.Total,
+            dto.Imported,
+            dto.Skipped,
+            dto.Errors.Select(e => new ImportRowError(e.Row, e.Reason)).ToList());
+    }
+
     private static Employee MapToModel(EmployeeResponseDto d) => new()
     {
         Id                = d.Id,
         Code              = d.Code,
         Name              = d.Name,
+        Gender            = d.Gender,
         Phone             = d.Phone,
         Role              = d.Role,
         Unit              = d.Unit,

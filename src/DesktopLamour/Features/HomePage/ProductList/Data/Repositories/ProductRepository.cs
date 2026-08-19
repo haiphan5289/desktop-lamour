@@ -3,6 +3,7 @@ using DesktopLamour.Features.HomePage.ProductList.Data.Services;
 using DesktopLamour.Features.HomePage.ProductList.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.ProductList.Domain.Models;
 using DesktopLamour.Features.HomePage.ProductList.Domain.UseCases;
+using System.IO;
 namespace DesktopLamour.Features.HomePage.ProductList.Data.Repositories;
 
 public sealed class ProductRepository : IProductRepository
@@ -113,6 +114,16 @@ public sealed class ProductRepository : IProductRepository
         return MapToModel(d);
     }
 
+    public async Task<ImportProductResult> ImportExcelAsync(Stream fileStream, string fileName, CancellationToken ct = default)
+    {
+        var dto = await _service.ImportExcelAsync(fileStream, fileName, ct);
+        return new ImportProductResult(
+            dto.Total,
+            dto.Imported,
+            dto.Skipped,
+            dto.Errors.Select(e => new ImportRowError(e.Row, e.Reason)).ToList());
+    }
+
     private static Product MapToModel(ProductResponseDto d) => new()
     {
         Id               = d.Id,
@@ -143,6 +154,7 @@ public sealed class ProductRepository : IProductRepository
 
         DefaultWarehouseId        = d.DefaultWarehouseId,
         DefaultWarehouseName      = d.DefaultWarehouseName,
+        DefaultWarehouseCode      = d.DefaultWarehouseCode,
         StockAccountId            = d.StockAccountId,
         StockAccountCode          = d.StockAccountCode,
         RevenueAccountId          = d.RevenueAccountId,

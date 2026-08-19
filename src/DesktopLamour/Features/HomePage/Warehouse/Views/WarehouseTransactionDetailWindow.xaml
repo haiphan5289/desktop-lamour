@@ -1,0 +1,134 @@
+<Window x:Class="DesktopLamour.Features.HomePage.Warehouse.Views.WarehouseTransactionDetailWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+        Title="Chi tiết chứng từ"
+        Width="1180"
+        Height="560"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="CanResize"
+        Background="{StaticResource AppColor.BackgroundSecondary}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>   <!-- Header -->
+            <RowDefinition Height="*"/>      <!-- Detail grid -->
+            <RowDefinition Height="Auto"/>   <!-- Footer -->
+        </Grid.RowDefinitions>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- Header                                     -->
+        <!-- ══════════════════════════════════════════ -->
+        <Border Grid.Row="0"
+                Background="{StaticResource AppColor.BackgroundBrand}"
+                Padding="20,14">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="🧾" FontSize="22" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <StackPanel VerticalAlignment="Center">
+                    <controls:AppLabel Text="Chi tiết chứng từ"
+                                       Style="{StaticResource AppTypography.DisplaySection}"
+                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                    <controls:AppLabel Text="{Binding DocumentNumber, StringFormat='Số chứng từ: {0}'}"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       Foreground="{StaticResource AppColor.TextSecondary}"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- Detail grid: dòng hàng của chứng từ         -->
+        <!-- ══════════════════════════════════════════ -->
+        <DataGrid Grid.Row="1"
+                  Margin="20,16,20,0"
+                  ItemsSource="{Binding Lines}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  CanUserResizeColumns="True"
+                  SelectionMode="Single"
+                  HeadersVisibility="Column"
+                  GridLinesVisibility="All"
+                  VerticalGridLinesBrush="{StaticResource AppColor.BorderThin}"
+                  HorizontalGridLinesBrush="{StaticResource AppColor.BorderThin}"
+                  RowHeight="28"
+                  ColumnHeaderStyle="{StaticResource GridHeaderStyle}"
+                  CellStyle="{StaticResource VerticalCenterCellStyle}"
+                  BorderBrush="{StaticResource AppColor.BorderThin}"
+                  BorderThickness="1"
+                  RowBackground="{StaticResource AppColor.BackgroundPrimary}"
+                  AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}">
+
+            <DataGrid.Resources>
+                <!-- Cột không có dữ liệu theo dõi (Mã quy cách/Số lô/Hạn sử dụng/Số khế ước) — tô
+                     nền xám để phân biệt với cột có dữ liệu thật, khớp cách MISA tô các cột
+                     "khóa"/không áp dụng trong ảnh tham chiếu. -->
+                <Style x:Key="UntrackedColumnCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource VerticalCenterCellStyle}">
+                    <Setter Property="Background" Value="{StaticResource AppColor.BackgroundSecondary}"/>
+                </Style>
+            </DataGrid.Resources>
+
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Mã hàng"     Binding="{Binding ProductCode}"   Width="90"/>
+                <DataGridTextColumn Header="Tên hàng"    Binding="{Binding ProductName}"   Width="180"/>
+                <DataGridTextColumn Header="Kho"         Binding="{Binding WarehouseName}" Width="100"/>
+                <DataGridTextColumn Header="TK Nợ"       Binding="{Binding DebitAccount}"  Width="70">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="TK Có"       Binding="{Binding CreditAccount}" Width="70">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <!-- Mã quy cách/Số lô/Hạn sử dụng/Số khế ước: hệ thống chưa theo dõi lô/hạn sử dụng — cột luôn trống, tô xám -->
+                <DataGridTextColumn Header="Mã quy cách" Width="90"  IsReadOnly="True" CellStyle="{StaticResource UntrackedColumnCellStyle}"/>
+                <DataGridTextColumn Header="ĐVT"         Binding="{Binding Unit}"          Width="70"/>
+                <DataGridTextColumn Header="Số lượng"    Binding="{Binding Quantity, StringFormat=N0}" Width="80">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Right"/>
+                            <Setter Property="Padding" Value="0,0,6,0"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Đơn giá"     Binding="{Binding UnitPrice, StringFormat=N0}" Width="100">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Right"/>
+                            <Setter Property="Padding" Value="0,0,6,0"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Thành tiền"  Binding="{Binding Amount, StringFormat=N0}" Width="110">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Right"/>
+                            <Setter Property="Padding" Value="0,0,6,0"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Số lô"         Width="80"  IsReadOnly="True" CellStyle="{StaticResource UntrackedColumnCellStyle}"/>
+                <DataGridTextColumn Header="Hạn sử dụng"   Width="100" IsReadOnly="True" CellStyle="{StaticResource UntrackedColumnCellStyle}"/>
+                <DataGridTextColumn Header="Số khế ước"    Width="90"  IsReadOnly="True" CellStyle="{StaticResource UntrackedColumnCellStyle}"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- Footer                                     -->
+        <!-- ══════════════════════════════════════════ -->
+        <Border Grid.Row="2" Padding="20,14" HorizontalAlignment="Right">
+            <controls:AppButton Content="✖ Đóng"
+                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                Click="CloseButton_Click"/>
+        </Border>
+
+    </Grid>
+
+</Window>

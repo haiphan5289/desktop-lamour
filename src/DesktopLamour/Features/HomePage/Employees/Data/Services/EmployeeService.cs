@@ -3,6 +3,7 @@ using DesktopLamour.Core.Storage;
 using DesktopLamour.Features.HomePage.Employees.Data.Cache;
 using DesktopLamour.Features.HomePage.Employees.Data.Services.Dtos;
 using Microsoft.Extensions.Logging;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -95,6 +96,26 @@ public sealed class EmployeeService : IEmployeeService
             ?? throw new InvalidOperationException("Empty response from duplicate employee endpoint.");
         _cache.Upsert(created);
         return created;
+    }
+
+    public async Task<ImportEmployeeResultDto> ImportExcelAsync(Stream fileStream, string fileName, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Importing employees from Excel file {FileName}", fileName);
+        SetBearerToken();
+
+        using var content       = new MultipartFormDataContent();
+        using var streamContent = new StreamContent(fileStream);
+        streamContent.Headers.ContentType = new MediaTypeHeaderValue(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        content.Add(streamContent, "file", fileName);
+
+        var response = await _httpClient.PostAsync("/api/v1/employees/import-excel", content, ct);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<ImportEmployeeResultDto>(ct)
+            ?? throw new InvalidOperationException("Empty response from import-excel endpoint.");
+        _cache.Clear(); // bulk import → force next GetAllAsync to refetch the full list
+        return result;
     }
 
     private void SetBearerToken()

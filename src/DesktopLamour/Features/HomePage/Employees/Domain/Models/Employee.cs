@@ -8,9 +8,10 @@ public class Employee : ISearchableItem
     public int     Id                { get; set; }
     public string  Code              { get; set; } = string.Empty;
     public string  Name              { get; set; } = string.Empty;
+    public string  Gender            { get; set; } = "Nam";
     public string  Phone             { get; set; } = string.Empty;
     public string  Role              { get; set; } = "Cashier";
-    public string  Unit              { get; set; } = "Spa";
+    public string  Unit              { get; set; } = "Tiệm spa";
     public string  JobTitle          { get; set; } = "Khac";
     public string? BankAccountNumber { get; set; }
     public string? BankName          { get; set; }

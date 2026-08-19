@@ -24,11 +24,18 @@
                 Padding="16,8"
                 Visibility="{Binding IsLoggedIn, Converter={StaticResource BoolToVisibilityConverter}}">
             <Grid>
-                <TextBlock Text="Lamour"
-                           FontSize="16"
-                           FontWeight="Bold"
-                           Foreground="{StaticResource AppColor.TextBrand}"
-                           VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Lamour"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Foreground="{StaticResource AppColor.TextBrand}"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding BuildVersion}"
+                               FontSize="11"
+                               Foreground="{StaticResource AppColor.TextSecondary}"
+                               VerticalAlignment="Center"
+                               Margin="8,3,0,0"/>
+                </StackPanel>
                 <controls:AppButton Content="Đăng xuất"
                                     Command="{Binding LogoutCommand}"
                                     Style="{StaticResource AppButton.Secondary.Medium}"

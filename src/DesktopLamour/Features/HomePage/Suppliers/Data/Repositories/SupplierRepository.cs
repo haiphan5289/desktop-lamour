@@ -3,6 +3,8 @@ using DesktopLamour.Features.HomePage.Suppliers.Data.Services;
 using DesktopLamour.Features.HomePage.Suppliers.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Suppliers.Domain.Models;
 using DesktopLamour.Features.HomePage.Suppliers.Domain.UseCases;
+using System.IO;
+using System.Linq;
 namespace DesktopLamour.Features.HomePage.Suppliers.Data.Repositories;
 
 public sealed class SupplierRepository : ISupplierRepository
@@ -95,5 +97,15 @@ public sealed class SupplierRepository : ISupplierRepository
             TaxCode        = d.TaxCode,
             IsStopTracking = d.IsStopTracking
         };
+    }
+
+    public async Task<ImportSupplierResult> ImportExcelAsync(Stream fileStream, string fileName, CancellationToken ct = default)
+    {
+        var dto = await _service.ImportExcelAsync(fileStream, fileName, ct);
+        return new ImportSupplierResult(
+            dto.Total,
+            dto.Imported,
+            dto.Skipped,
+            dto.Errors.Select(e => new ImportRowError(e.Row, e.Reason)).ToList());
     }
 }

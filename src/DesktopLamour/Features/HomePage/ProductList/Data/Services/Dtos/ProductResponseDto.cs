@@ -34,6 +34,7 @@ public class ProductResponseDto
     // Tab "Ngầm định"
     [JsonPropertyName("default_warehouse_id")]         public int?    DefaultWarehouseId        { get; set; }
     [JsonPropertyName("default_warehouse_name")]       public string? DefaultWarehouseName      { get; set; }
+    [JsonPropertyName("default_warehouse_code")]       public string? DefaultWarehouseCode      { get; set; }
     [JsonPropertyName("stock_account_id")]             public int?    StockAccountId            { get; set; }
     [JsonPropertyName("stock_account_code")]           public string? StockAccountCode          { get; set; }
     [JsonPropertyName("revenue_account_id")]           public int?    RevenueAccountId          { get; set; }

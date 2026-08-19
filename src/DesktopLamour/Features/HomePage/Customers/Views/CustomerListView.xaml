@@ -67,9 +67,19 @@
                                     Command="{Binding DeleteCustomerCommand}"
                                     Margin="0,0,8,0"/>
 
-                <controls:AppButton Content="📥 Import Excel"
+                <controls:AppButton Content="📥 Nhập khẩu"
                                     Style="{StaticResource AppButton.Secondary.Medium}"
-                                    Command="{Binding ImportExcelCommand}"/>
+                                    Command="{Binding ImportExcelCommand}"
+                                    Margin="0,0,8,0"/>
+
+                <controls:AppButton Content="📤 Xuất khẩu"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding ExportExcelCommand}"
+                                    Margin="0,0,16,0"/>
+
+                <controls:AppTextField Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                       Placeholder="🔍 Tìm kiếm khách hàng..."
+                                       Width="320" Height="36"/>
 
             </StackPanel>
         </Border>
@@ -103,7 +113,7 @@
             </Border>
 
             <!-- DataGrid -->
-            <DataGrid ItemsSource="{Binding Customers}"
+            <DataGrid ItemsSource="{Binding CustomersView}"
                       SelectedItem="{Binding SelectedCustomer, Mode=TwoWay}"
                       AutoGenerateColumns="False"
                       IsReadOnly="True"
@@ -117,14 +127,14 @@
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
                       Visibility="{Binding HasCustomers, Converter={StaticResource BoolToVisibilityConverter}}">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Mã khách hàng"  Binding="{Binding Code}"          Width="130"/>
-                    <DataGridTextColumn Header="Tên khách hàng" Binding="{Binding Name}"           Width="*"/>
-                    <DataGridTextColumn Header="Địa chỉ"        Binding="{Binding Address}"        Width="*"/>
-                    <DataGridTextColumn Header="Tỉnh"           Binding="{Binding Province}"       Width="120"/>
-                    <DataGridTextColumn Header="Nhóm KH"        Binding="{Binding CustomerGroup}"  Width="140"/>
-                    <DataGridTextColumn Header="Mã số thuế"      Binding="{Binding TaxCode}"        Width="120"/>
-                    <DataGridTextColumn Header="Điện thoại"      Binding="{Binding Phone}"          Width="120"/>
-                    <DataGridTextColumn Header="Sale"             Binding="{Binding SaleCareEmployeeName}" Width="140"/>
+                    <DataGridTextColumn Header="Mã khách hàng" Binding="{Binding Code}" Width="130"/>
+                    <DataGridTextColumn Header="Tên khách hàng" Binding="{Binding Name}" Width="*"/>
+                    <DataGridTextColumn Header="Địa chỉ" Binding="{Binding Address}" Width="*"/>
+                    <DataGridTextColumn Header="Tỉnh" Binding="{Binding Province}" Width="120"/>
+                    <DataGridTextColumn Header="Nhóm KH" Binding="{Binding CustomerGroup}" Width="140"/>
+                    <DataGridTextColumn Header="Mã số thuế" Binding="{Binding TaxCode}" Width="120"/>
+                    <DataGridTextColumn Header="Điện thoại" Binding="{Binding Phone}" Width="120"/>
+                    <DataGridTextColumn Header="Sale" Binding="{Binding SaleCareEmployeeName}" Width="140"/>
                 </DataGrid.Columns>
             </DataGrid>
 

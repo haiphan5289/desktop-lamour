@@ -23,9 +23,12 @@ public partial class SalesReturnListViewModel : ViewModelBase
     [ObservableProperty] private string                _errorMessage    = string.Empty;
     [ObservableProperty] private bool                  _hasSalesReturns;
     [ObservableProperty] private SalesReturnListItem?  _selectedReturn;
-    [ObservableProperty] private string                _filterCustomer  = string.Empty;
     [ObservableProperty] private DateTime?             _filterFromDate;
     [ObservableProperty] private DateTime?             _filterToDate;
+
+    // 1 ô tìm kiếm chung (AND với FilterFromDate/FilterToDate ở trên) — khớp OR trên các trường
+    // text chính, không phân biệt hoa/thường.
+    [ObservableProperty] private string _searchText = string.Empty;
 
     private readonly List<SalesReturnListItem> _allItems = new();
 
@@ -51,9 +54,14 @@ public partial class SalesReturnListViewModel : ViewModelBase
         DeleteSalesReturnCommand.NotifyCanExecuteChanged();
     }
 
-    partial void OnFilterCustomerChanged(string value)    => ApplyFilter();
     partial void OnFilterFromDateChanged(DateTime? value) => ApplyFilter();
     partial void OnFilterToDateChanged(DateTime? value)   => ApplyFilter();
+    partial void OnSearchTextChanged(string value)        => ApplyFilter();
+
+    // Lọc đã tự áp dụng ngay khi đổi ngày/tìm kiếm (live filter) — nút "Lọc" chỉ để người dùng có
+    // affordance rõ ràng để bấm, giống hàng lọc màn Chứng từ bán hàng.
+    [RelayCommand]
+    private void Filter() => ApplyFilter();
 
     [RelayCommand]
     private void GoBack() => _navigationService.GoBack();
@@ -137,15 +145,18 @@ public partial class SalesReturnListViewModel : ViewModelBase
     {
         var filtered = _allItems.AsEnumerable();
 
-        if (!string.IsNullOrWhiteSpace(FilterCustomer))
-            filtered = filtered.Where(o =>
-                o.CustomerName.Contains(FilterCustomer, StringComparison.OrdinalIgnoreCase));
-
         if (FilterFromDate.HasValue)
             filtered = filtered.Where(o => o.DocumentDate.Date >= FilterFromDate.Value.Date);
 
         if (FilterToDate.HasValue)
             filtered = filtered.Where(o => o.DocumentDate.Date <= FilterToDate.Value.Date);
+
+        if (!string.IsNullOrWhiteSpace(SearchText))
+            filtered = filtered.Where(o =>
+                Matches(o.ReturnTypeLabel, SearchText) ||
+                Matches(o.DocumentNumber, SearchText) ||
+                Matches(o.CustomerName, SearchText) ||
+                Matches(o.EmployeeName, SearchText));
 
         SalesReturns.Clear();
         foreach (var item in filtered.OrderByDescending(o => o.DocumentDate))
@@ -153,4 +164,7 @@ public partial class SalesReturnListViewModel : ViewModelBase
 
         HasSalesReturns = SalesReturns.Count > 0;
     }
+
+    private static bool Matches(string? value, string filter)
+        => string.IsNullOrWhiteSpace(filter) || (!string.IsNullOrEmpty(value) && value.Contains(filter, StringComparison.OrdinalIgnoreCase));
 }

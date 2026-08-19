@@ -7,6 +7,7 @@ public class EmployeeResponseDto
     [JsonPropertyName("id")]                   public int     Id                { get; set; }
     [JsonPropertyName("code")]                 public string  Code              { get; set; } = string.Empty;
     [JsonPropertyName("name")]                 public string  Name              { get; set; } = string.Empty;
+    [JsonPropertyName("gender")]               public string  Gender            { get; set; } = string.Empty;
     [JsonPropertyName("phone")]                public string  Phone             { get; set; } = string.Empty;
     [JsonPropertyName("role")]                 public string  Role              { get; set; } = string.Empty;
     [JsonPropertyName("unit")]                 public string  Unit              { get; set; } = string.Empty;

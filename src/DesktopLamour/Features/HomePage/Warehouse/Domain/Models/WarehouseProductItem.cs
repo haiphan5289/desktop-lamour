@@ -13,10 +13,13 @@ public sealed class WarehouseProductItem : ISearchableItem
 
     public WarehouseProductItem(Product product) => _product = product;
 
-    public int     Id          => _product.Id;
-    public string  Code        => _product.Code;
-    public string  Name        => _product.Name;
-    public string  Unit        => _product.Unit;
-    public decimal CostPrice   => _product.CostPrice;
-    public string  DisplayText => $"{_product.Code} — {_product.Name}";
+    public int     Id                   => _product.Id;
+    public string  Code                 => _product.Code;
+    public string  Name                 => _product.Name;
+    public string  Unit                 => _product.Unit;
+    public decimal CostPrice            => _product.CostPrice;
+    public int     StockQuantity        => _product.StockQuantity;
+    public int?    DefaultWarehouseId   => _product.DefaultWarehouseId;
+    public string? DefaultWarehouseCode => _product.DefaultWarehouseCode;
+    public string  DisplayText          => $"{_product.Code} — {_product.Name}";
 }

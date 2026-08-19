@@ -1,5 +1,6 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 using DesktopLamour.Features.HomePage.Suppliers.Data.Services.Dtos;
+using System.IO;
 namespace DesktopLamour.Features.HomePage.Suppliers.Data.Services;
 
 public interface ISupplierService
@@ -9,4 +10,5 @@ public interface ISupplierService
     Task<SupplierResponseDto> DuplicateAsync(int supplierId, CancellationToken ct = default);
     Task<SupplierResponseDto> CreateAsync(CreateSupplierRequestDto request, CancellationToken ct = default);
     Task<SupplierResponseDto> UpdateAsync(int supplierId, UpdateSupplierRequestDto request, CancellationToken ct = default);
+    Task<ImportSupplierResultDto> ImportExcelAsync(Stream fileStream, string fileName, CancellationToken ct = default);
 }

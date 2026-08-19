@@ -9,6 +9,10 @@ public partial class TongHopTonKhoView : System.Windows.Controls.UserControl
     {
         InitializeComponent();
         DataContext = viewModel;
-        Loaded += async (_, _) => await viewModel.LoadCommand.ExecuteAsync(null);
+        Loaded += async (_, _) =>
+        {
+            await viewModel.InitializeFiltersCommand.ExecuteAsync(null);
+            await viewModel.LoadCommand.ExecuteAsync(null);
+        };
     }
 }

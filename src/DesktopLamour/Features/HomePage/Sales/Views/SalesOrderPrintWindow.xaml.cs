@@ -20,10 +20,12 @@ public partial class SalesOrderPrintWindow : Window
         InitializeComponent();
     }
 
-    public void Initialize(SalesOrderResponseDto order, string? customerPhone, string? customerAddress)
+    public void Initialize(
+        SalesOrderResponseDto order, string? customerPhone, string? customerAddress,
+        decimal depositDeductionAmount = 0m)
     {
         _order = order;
-        InvoiceViewer.Document = BuildInvoiceDocument(order, customerPhone, customerAddress);
+        InvoiceViewer.Document = BuildInvoiceDocument(order, customerPhone, customerAddress, depositDeductionAmount);
     }
 
     private void PrintButton_Click(object sender, RoutedEventArgs e)
@@ -56,7 +58,15 @@ public partial class SalesOrderPrintWindow : Window
 
     private static readonly SolidColorBrush OuterBorderBrush = new(Color.FromRgb(0x9D, 0xC1, 0xE0));
 
-    private static FlowDocument BuildInvoiceDocument(SalesOrderResponseDto order, string? customerPhone, string? customerAddress)
+    // Số dòng text trong header (tên công ty + 4 dòng thông tin) và LineHeight tương ứng — dùng để
+    // tính chiều cao vùng float của logo (xem BuildInvoiceDocument), phải khớp với số Run/LineBreak
+    // thực tế thêm vào headerPara bên dưới nếu sau này đổi nội dung header.
+    private const int HeaderTextLineCount = 5;
+    private const double HeaderLineHeight = 15;
+
+    private static FlowDocument BuildInvoiceDocument(
+        SalesOrderResponseDto order, string? customerPhone, string? customerAddress,
+        decimal depositDeductionAmount = 0m)
     {
         var doc = new FlowDocument
         {
@@ -98,16 +108,23 @@ public partial class SalesOrderPrintWindow : Window
             Width   = 120,
             Height  = 40,
             Stretch = Stretch.Uniform,
+            VerticalAlignment = VerticalAlignment.Top,
         };
+        // Floater chỉ chiếm chỗ cao bằng nội dung bên trong nó (ảnh logo = 40px) — nhưng đoạn text
+        // bên cạnh có 5 dòng × LineHeight 15 = 75px. Qua khỏi 40px của ảnh, FlowDocument coi như hết
+        // vùng float nên dòng cuối ("Số tài khoản...") bị đẩy về căn lề trái toàn Paragraph thay vì
+        // tiếp tục thụt vào ngang hàng các dòng phía trên → lệch trái. Bọc logo trong Border cao bằng
+        // đúng tổng chiều cao text (HeaderTextLineCount × LineHeight) để vùng float phủ hết cả 5 dòng.
+        var logoContainer = new Border { Child = logoImage, MinHeight = HeaderTextLineCount * HeaderLineHeight };
         var logoFloater = new Floater
         {
             Width               = 135,
             HorizontalAlignment = HorizontalAlignment.Left,
             Margin              = new Thickness(0, 0, 10, 6),
         };
-        logoFloater.Blocks.Add(new BlockUIContainer(logoImage));
+        logoFloater.Blocks.Add(new BlockUIContainer(logoContainer));
 
-        var headerPara = new Paragraph { Margin = new Thickness(0, 0, 0, 10), LineHeight = 15 };
+        var headerPara = new Paragraph { Margin = new Thickness(0, 0, 0, 10), LineHeight = HeaderLineHeight };
         headerPara.Inlines.Add(logoFloater);
         headerPara.Inlines.Add(new Bold(new Run("CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ LAMOUR")) { FontSize = 13 });
         headerPara.Inlines.Add(new LineBreak());
@@ -188,21 +205,39 @@ public partial class SalesOrderPrintWindow : Window
 
             var lineTotal = line.Amount + line.TaxAmount;
 
+            // Dòng "Đặt cọc" (sản phẩm IsDepositProduct): Đơn giá/CK/Thuế suất vô nghĩa (số tiền
+            // cọc nhập tay qua Thành tiền thủ công, không phải Quantity × UnitPrice) — để trống
+            // giống cách dòng khuyến mại ẩn các cột không áp dụng.
             rowGroup.Rows.Add(DataRow(
                 stt++.ToString(),
                 line.ProductName,
                 line.Quantity.ToString(),
-                FormatMoney(line.UnitPrice),
-                line.DiscountRate.ToString("N2", CultureInfo.GetCultureInfo("vi-VN")) + "%",
+                line.IsDepositProduct ? "" : FormatMoney(line.UnitPrice),
+                line.IsDepositProduct ? "" : line.DiscountRate.ToString("N2", CultureInfo.GetCultureInfo("vi-VN")) + "%",
                 FormatMoney(line.Amount),
-                $"{line.TaxRate:0}%",
+                line.IsDepositProduct ? "" : $"{line.TaxRate:0}%",
                 FormatMoney(lineTotal)));
         }
+
+        // Trừ Cọc — không phải 1 SalesOrderLine thật (DepositDeduction là bản ghi riêng), nên
+        // amount được truyền từ ngoài vào (dòng "Trừ cọc" đang có trên form lúc in) thay vì đọc
+        // từ order.Lines. Chỉ hiển thị Thành tiền/Tổng cộng (âm, đỏ, trong ngoặc) — các cột khác
+        // để trống vì không phải hàng hóa.
+        if (depositDeductionAmount != 0m)
+            rowGroup.Rows.Add(DepositDeductionRow(stt++, depositDeductionAmount));
 
         // Tổng tiền thanh toán + Ghi chú đơn hàng — thêm làm 2 hàng cuối của CÙNG bảng sản phẩm
         // (ColumnSpan hết các cột) thay vì 3 Table riêng biệt, để mép các hàng liền nhau, không
         // có khoảng cách/border đôi giữa bảng sản phẩm và 2 hàng này.
-        var totalPara = new Paragraph(new Bold(new Run($"Tổng tiền thanh toán : {FormatMoney(order.GrandTotal)}")))
+        //
+        // KHÔNG dùng order.GrandTotal thẳng — nó KHÔNG trừ Trừ Cọc (Deposit/DepositDeduction là
+        // record riêng, không phải SalesOrderLine, nên BE tính GrandTotal chỉ từ dòng hàng thật;
+        // xem CreateSalesOrderUseCase.GrandTotal = lines.Sum(Amount + TaxAmount)). Tự tính lại từ
+        // TotalAmount + TotalTaxAmount (2 field này luôn = tổng dòng hàng thật, khớp cả 2 nguồn gọi
+        // hàm này: response thật từ BE lúc vừa Ghi sổ, và preview dựng tại chỗ từ form chưa lưu) rồi
+        // trừ depositDeductionAmount — để tổng tiền in ra luôn khớp với dòng "Trừ Cọc" ngay phía trên.
+        var netGrandTotal = order.TotalAmount + order.TotalTaxAmount - depositDeductionAmount;
+        var totalPara = new Paragraph(new Bold(new Run($"Tổng tiền thanh toán : {FormatMoney(netGrandTotal)}")))
         {
             TextAlignment = TextAlignment.Right,
             FontSize      = 13,
@@ -265,19 +300,24 @@ public partial class SalesOrderPrintWindow : Window
         // hình ở cuối, cao bằng phần còn thiếu để bù đủ 1 trang — chỉ là ước lượng gần đúng
         // (Block/TableCell không expose được chiều cao đã render thật), không ảnh hưởng gì tới
         // hóa đơn đã dài hơn 1 trang (kẹp về 0, không âm).
-        var estimatedContentHeight = EstimateContentHeight(order.Lines.Count);
+        var estimatedContentHeight = EstimateContentHeight(order.Lines.Count + (depositDeductionAmount != 0m ? 1 : 0));
         var spacerHeight = Math.Max(0, A5PageHeight - estimatedContentHeight);
         content.Blocks.Add(new BlockUIContainer(new Border { MinHeight = spacerHeight }));
 
         return doc;
     }
 
+    // Cột "TÊN SẢN PHẨM" luôn ở index 1 trong mọi hàng của bảng sản phẩm — căn trái (chuẩn hóa
+    // đơn thông dụng), các cột còn lại (số lượng/tiền/%) căn giữa.
+    private const int ProductNameColumnIndex = 1;
+
     private static TableRow HeaderRow(params string[] headers)
     {
         var row = new TableRow { Background = Brushes.WhiteSmoke };
-        foreach (var h in headers)
+        for (var i = 0; i < headers.Length; i++)
         {
-            row.Cells.Add(new TableCell(new Paragraph(new Bold(new Run(h))) { TextAlignment = TextAlignment.Center })
+            var alignment = i == ProductNameColumnIndex ? TextAlignment.Left : TextAlignment.Center;
+            row.Cells.Add(new TableCell(new Paragraph(new Bold(new Run(headers[i]))) { TextAlignment = alignment })
             {
                 Padding         = new Thickness(4, 6, 4, 6),
                 BorderBrush     = Brushes.Black,
@@ -290,9 +330,30 @@ public partial class SalesOrderPrintWindow : Window
     private static TableRow DataRow(params string[] values)
     {
         var row = new TableRow();
-        foreach (var v in values)
+        for (var i = 0; i < values.Length; i++)
         {
-            row.Cells.Add(new TableCell(new Paragraph(new Run(v)) { TextAlignment = TextAlignment.Center })
+            var alignment = i == ProductNameColumnIndex ? TextAlignment.Left : TextAlignment.Center;
+            row.Cells.Add(new TableCell(new Paragraph(new Run(values[i])) { TextAlignment = alignment })
+            {
+                Padding         = new Thickness(4, 6, 4, 6),
+                BorderBrush     = Brushes.Black,
+                BorderThickness = new Thickness(0.5),
+            });
+        }
+        return row;
+    }
+
+    private static TableRow DepositDeductionRow(int stt, decimal amount)
+    {
+        var negativeText = $"({Math.Abs(amount).ToString("N0", CultureInfo.GetCultureInfo("vi-VN"))})";
+        var row = new TableRow();
+        var values = new[] { stt.ToString(), "Trừ Cọc", "", "", "", negativeText, "", negativeText };
+        for (var i = 0; i < values.Length; i++)
+        {
+            var isMoneyColumn = i == 5 || i == 7; // Thành tiền / Tổng cộng
+            var alignment = i == ProductNameColumnIndex ? TextAlignment.Left : TextAlignment.Center;
+            var run = new Run(values[i]) { Foreground = isMoneyColumn ? Brushes.Red : Brushes.Black };
+            row.Cells.Add(new TableCell(new Paragraph(run) { TextAlignment = alignment })
             {
                 Padding         = new Thickness(4, 6, 4, 6),
                 BorderBrush     = Brushes.Black,

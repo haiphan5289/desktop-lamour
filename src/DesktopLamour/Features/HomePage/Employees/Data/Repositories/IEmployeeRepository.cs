@@ -1,6 +1,7 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 using DesktopLamour.Features.HomePage.Employees.Domain.Models;
 using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
+using System.IO;
 namespace DesktopLamour.Features.HomePage.Employees.Data.Repositories;
 
 public interface IEmployeeRepository
@@ -10,4 +11,5 @@ public interface IEmployeeRepository
     Task<Employee> DuplicateAsync(int employeeId, CancellationToken ct = default);
     Task<Employee> CreateAsync(CreateEmployeeInput input, CancellationToken ct = default);
     Task<Employee> UpdateAsync(UpdateEmployeeInput input, CancellationToken ct = default);
+    Task<ImportEmployeeResult> ImportExcelAsync(Stream fileStream, string fileName, CancellationToken ct = default);
 }

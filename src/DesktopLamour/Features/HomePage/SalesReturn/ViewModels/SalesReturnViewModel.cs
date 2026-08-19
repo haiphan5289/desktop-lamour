@@ -20,6 +20,9 @@ namespace DesktopLamour.Features.HomePage.SalesReturn.ViewModels;
 
 public partial class SalesReturnViewModel : ViewModelBase
 {
+    // Số dòng trống nạp sẵn khi mở chứng từ mới — xem ClearForm().
+    private const int InitialEmptyLineCount = 100;
+
     public event Action? ReturnSaved;
     public event Action? RequestClose;
 
@@ -198,7 +201,7 @@ public partial class SalesReturnViewModel : ViewModelBase
             return;
         }
 
-        if (Lines.Count == 0)
+        if (Lines.Count(l => l.ProductId > 0) == 0)
         {
             HasError     = true;
             ErrorMessage = "Vui lòng nhập ít nhất một mặt hàng.";
@@ -353,6 +356,8 @@ public partial class SalesReturnViewModel : ViewModelBase
         DocumentDate     = DateTime.Today;
         DocumentNumber   = _nextDocumentNumber;
         Lines.Clear();
+        // Chứng từ mới: nạp sẵn N dòng trống để user gõ liền — xem ghi chú tương tự ở SalesOrderViewModel.
+        for (var i = 0; i < InitialEmptyLineCount; i++) AddLine();
         RecalculateTotals();
     }
 
@@ -424,7 +429,7 @@ public partial class SalesReturnViewModel : ViewModelBase
         TotalAmount   = Lines.Sum(l => l.Amount);
         TotalDiscount = Lines.Sum(l => l.DiscountAmount);
         TotalPayment  = TotalAmount - TotalDiscount;
-        LineSummary   = $"Số dòng = {Lines.Count}";
+        LineSummary   = $"Số dòng = {Lines.Count(l => l.ProductId > 0)}";
     }
 
     private CreateSalesReturnRequestDto BuildCreateRequest() => new()
@@ -437,7 +442,7 @@ public partial class SalesReturnViewModel : ViewModelBase
         Description    = string.IsNullOrWhiteSpace(Description) ? null : Description.Trim(),
         Reference      = string.IsNullOrWhiteSpace(Reference)   ? null : Reference.Trim(),
         ReturnType     = ReturnType,
-        Lines          = Lines.Select(ToLineDto).ToList(),
+        Lines          = Lines.Where(l => l.ProductId > 0).Select(ToLineDto).ToList(),
     };
 
     private UpdateSalesReturnRequestDto BuildUpdateRequest() => new()
@@ -450,7 +455,7 @@ public partial class SalesReturnViewModel : ViewModelBase
         Description    = string.IsNullOrWhiteSpace(Description) ? null : Description.Trim(),
         Reference      = string.IsNullOrWhiteSpace(Reference)   ? null : Reference.Trim(),
         ReturnType     = ReturnType,
-        Lines          = Lines.Select(ToLineDto).ToList(),
+        Lines          = Lines.Where(l => l.ProductId > 0).Select(ToLineDto).ToList(),
     };
 
     private static SalesReturnLineDto ToLineDto(SalesReturnLineItem item) => new()

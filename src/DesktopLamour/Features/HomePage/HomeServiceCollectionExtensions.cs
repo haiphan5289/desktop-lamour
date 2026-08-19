@@ -104,6 +104,7 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<IUpdateProductUseCase, UpdateProductUseCase>();
         services.AddTransient<IDeleteProductUseCase, DeleteProductUseCase>();
         services.AddTransient<IDuplicateProductUseCase, DuplicateProductUseCase>();
+        services.AddTransient<IImportExcelProductsUseCase, ImportExcelProductsUseCase>();
 
         // ── ProductList: Repository ──────────────────────────────────────────
         services.AddTransient<IProductRepository, ProductRepository>();
@@ -131,6 +132,7 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<IUpdateSupplierUseCase, UpdateSupplierUseCase>();
         services.AddTransient<IDeleteSupplierUseCase, DeleteSupplierUseCase>();
         services.AddTransient<IDuplicateSupplierUseCase, DuplicateSupplierUseCase>();
+        services.AddTransient<IImportExcelSuppliersUseCase, ImportExcelSuppliersUseCase>();
 
         // ── Suppliers: Repository ────────────────────────────────────────────
         services.AddTransient<ISupplierRepository, SupplierRepository>();
@@ -370,6 +372,7 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<IUpdateEmployeeUseCase, UpdateEmployeeUseCase>();
         services.AddTransient<IDeleteEmployeeUseCase, DeleteEmployeeUseCase>();
         services.AddTransient<IDuplicateEmployeeUseCase, DuplicateEmployeeUseCase>();
+        services.AddTransient<IImportExcelEmployeesUseCase, ImportExcelEmployeesUseCase>();
 
         // ── Employees: Repository ────────────────────────────────────────────────
         services.AddTransient<IEmployeeRepository, EmployeeRepository>();
@@ -444,9 +447,6 @@ public static class HomeServiceCollectionExtensions
         // ── Warehouse: Views + ViewModels ────────────────────────────────────────
         services.AddTransient<TongHopTonKhoView>();
         services.AddTransient<TongHopTonKhoViewModel>();
-        services.AddTransient<TongHopTonKhoFilterWindow>();
-        services.AddTransient<TongHopTonKhoFilterViewModel>();
-        services.AddTransient<Func<TongHopTonKhoFilterWindow>>(sp => () => sp.GetRequiredService<TongHopTonKhoFilterWindow>());
 
         // ── Warehouse: UseCases ──────────────────────────────────────────────────
         services.AddTransient<IGetInventorySummaryUseCase, GetInventorySummaryUseCase>();
@@ -487,6 +487,8 @@ public static class HomeServiceCollectionExtensions
         // ── WarehouseTransactions (Nhập, xuất kho — danh sách gộp): Views + ViewModels ──
         services.AddTransient<WarehouseTransactionListView>();
         services.AddTransient<WarehouseTransactionListViewModel>();
+        services.AddTransient<WarehouseTransactionDetailWindow>();
+        services.AddTransient<Func<WarehouseTransactionDetailWindow>>(sp => () => sp.GetRequiredService<WarehouseTransactionDetailWindow>());
 
         // ── WarehouseTransactions: UseCases ───────────────────────────────────────
         services.AddTransient<IGetWarehouseTransactionsUseCase, GetWarehouseTransactionsUseCase>();
