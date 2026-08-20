@@ -5,7 +5,8 @@ namespace DesktopLamour.Features.HomePage.Sales.Data.Services;
 
 public interface ISalesOrderService
 {
-    Task<IEnumerable<SalesOrderResponseDto>> GetAllAsync(CancellationToken ct = default);
+    Task<IEnumerable<SalesOrderResponseDto>> GetAllAsync(
+        DateTime? fromDate = null, DateTime? toDate = null, string? search = null, CancellationToken ct = default);
     Task<SalesOrderResponseDto?> GetByIdAsync(int id, CancellationToken ct = default);
     Task<SalesOrderResponseDto> CreateAsync(CreateSalesOrderRequestDto request, CancellationToken ct = default);
     Task<SalesOrderResponseDto> UpdateAsync(int id, UpdateSalesOrderRequestDto request, CancellationToken ct = default);

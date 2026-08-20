@@ -24,12 +24,19 @@ public sealed class SalesOrderService : ISalesOrderService
         _logger       = logger;
     }
 
-    public async Task<IEnumerable<SalesOrderResponseDto>> GetAllAsync(CancellationToken ct = default)
+    public async Task<IEnumerable<SalesOrderResponseDto>> GetAllAsync(
+        DateTime? fromDate = null, DateTime? toDate = null, string? search = null, CancellationToken ct = default)
     {
-        _logger.LogInformation("Fetching all sales orders");
+        _logger.LogInformation("Fetching sales orders (fromDate={FromDate}, toDate={ToDate}, search={Search})", fromDate, toDate, search);
         SetBearerToken();
 
-        var response = await _httpClient.GetAsync("/api/v1/sales-orders", ct);
+        var queryParams = new List<string>();
+        if (fromDate.HasValue) queryParams.Add($"from_date={fromDate.Value:yyyy-MM-dd}");
+        if (toDate.HasValue)   queryParams.Add($"to_date={toDate.Value:yyyy-MM-dd}");
+        if (!string.IsNullOrWhiteSpace(search)) queryParams.Add($"search={Uri.EscapeDataString(search)}");
+        var queryString = queryParams.Count > 0 ? $"?{string.Join("&", queryParams)}" : "";
+
+        var response = await _httpClient.GetAsync($"/api/v1/sales-orders{queryString}", ct);
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadFromJsonAsync<IEnumerable<SalesOrderResponseDto>>(ct)

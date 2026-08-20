@@ -10,8 +10,9 @@ public class SalesReturnRepository : ISalesReturnRepository
 
     public SalesReturnRepository(ISalesReturnService service) => _service = service;
 
-    public Task<IEnumerable<SalesReturnResponseDto>> GetAllAsync(CancellationToken ct = default)
-        => _service.GetAllAsync(ct);
+    public Task<IEnumerable<SalesReturnResponseDto>> GetAllAsync(
+        DateTime? fromDate = null, DateTime? toDate = null, string? search = null, CancellationToken ct = default)
+        => _service.GetAllAsync(fromDate, toDate, search, ct);
 
     public Task<SalesReturnResponseDto?> GetByIdAsync(int id, CancellationToken ct = default)
         => _service.GetByIdAsync(id, ct);

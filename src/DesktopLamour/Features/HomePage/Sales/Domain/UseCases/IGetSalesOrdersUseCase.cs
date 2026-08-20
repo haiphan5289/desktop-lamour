@@ -5,5 +5,6 @@ namespace DesktopLamour.Features.HomePage.Sales.Domain.UseCases;
 
 public interface IGetSalesOrdersUseCase
 {
-    Task<IEnumerable<SalesOrderResponseDto>> ExecuteAsync(CancellationToken ct = default);
+    Task<IEnumerable<SalesOrderResponseDto>> ExecuteAsync(
+        DateTime? fromDate = null, DateTime? toDate = null, string? search = null, CancellationToken ct = default);
 }

@@ -10,6 +10,7 @@ public class GetSalesOrdersUseCase : IGetSalesOrdersUseCase
 
     public GetSalesOrdersUseCase(ISalesOrderRepository repository) => _repository = repository;
 
-    public Task<IEnumerable<SalesOrderResponseDto>> ExecuteAsync(CancellationToken ct = default)
-        => _repository.GetAllAsync(ct);
+    public Task<IEnumerable<SalesOrderResponseDto>> ExecuteAsync(
+        DateTime? fromDate = null, DateTime? toDate = null, string? search = null, CancellationToken ct = default)
+        => _repository.GetAllAsync(fromDate, toDate, search, ct);
 }

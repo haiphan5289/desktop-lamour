@@ -8,16 +8,20 @@ using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.HomePage.Sales.Domain.Models;
 using DesktopLamour.Features.HomePage.Sales.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Sales.Views;
+using DesktopLamour.Shared.Utilities;
 
 namespace DesktopLamour.Features.HomePage.Sales.ViewModels;
 
 public partial class SalesOrderListViewModel : ViewModelBase
 {
+    private static readonly TimeSpan SearchDebounceDelay = TimeSpan.FromMilliseconds(400);
+
     private readonly INavigationService          _navigationService;
     private readonly IGetSalesOrdersUseCase      _getOrders;
     private readonly IDeleteSalesOrderUseCase    _deleteOrder;
     private readonly IHoldSalesOrderUseCase      _holdOrder;
     private readonly Func<SalesOrderWindow>      _formWindowFactory;
+    private readonly DebounceDispatcher          _searchDebounce = new();
 
     [ObservableProperty] private bool                _isLoading;
     [ObservableProperty] private bool                _hasError;
@@ -27,18 +31,15 @@ public partial class SalesOrderListViewModel : ViewModelBase
     [ObservableProperty] private DateTime?           _filterFromDate;
     [ObservableProperty] private DateTime?           _filterToDate;
 
-    // Tổng dòng footer — cộng dồn trên danh sách ĐÃ LỌC (SalesOrders), không phải _allItems, để khớp
-    // với những gì người dùng đang thấy trên lưới.
+    // Tổng dòng footer — cộng dồn trên danh sách SalesOrders đang hiển thị (đã lọc SẴN từ BE).
     [ObservableProperty] private int                 _totalCount;
     [ObservableProperty] private decimal             _totalGrossSum;
     [ObservableProperty] private decimal             _totalDiscountSum;
     [ObservableProperty] private decimal             _totalPaymentSum;
 
     // 1 ô tìm kiếm chung (AND với FilterFromDate/FilterToDate ở trên) — khớp OR trên các trường
-    // text chính, không phân biệt hoa/thường.
+    // text chính, không phân biệt hoa/thường. Lọc chạy dưới SQL (server-side) — xem LoadSalesOrdersAsync.
     [ObservableProperty] private string _searchText = string.Empty;
-
-    private readonly List<SalesOrderListItem> _allItems = new();
 
     public ObservableCollection<SalesOrderListItem> SalesOrders { get; } = new();
 
@@ -70,14 +71,19 @@ public partial class SalesOrderListViewModel : ViewModelBase
         HoldSalesOrderCommand.NotifyCanExecuteChanged();
     }
 
-    partial void OnFilterFromDateChanged(DateTime? value) => ApplyFilter();
-    partial void OnFilterToDateChanged(DateTime? value)   => ApplyFilter();
-    partial void OnSearchTextChanged(string value)        => ApplyFilter();
+    // Đổi ngày là thao tác rời rạc (không gõ liên tục như SearchText) — reload ngay, không debounce.
+    partial void OnFilterFromDateChanged(DateTime? value) => _ = LoadSalesOrdersCommand.ExecuteAsync(null);
+    partial void OnFilterToDateChanged(DateTime? value)   => _ = LoadSalesOrdersCommand.ExecuteAsync(null);
+
+    // Lọc giờ chạy dưới SQL (server-side) thay vì trong RAM — gõ liên tục sẽ bắn 1 HTTP request mỗi
+    // ký tự nếu không debounce. Chờ người dùng ngừng gõ 400ms rồi mới gọi lại API.
+    partial void OnSearchTextChanged(string value)
+        => _searchDebounce.Debounce(SearchDebounceDelay, ct => LoadSalesOrdersAsync(ct));
 
     // Lọc đã tự áp dụng ngay khi đổi ngày/tìm kiếm (live filter) — nút "Lọc" chỉ để người dùng có
     // affordance rõ ràng để bấm, giống hàng lọc màn Quỹ.
     [RelayCommand]
-    private void Filter() => ApplyFilter();
+    private async Task Filter() => await LoadSalesOrdersAsync();
 
     [RelayCommand]
     private void GoBack() => _navigationService.GoBack();
@@ -93,11 +99,19 @@ public partial class SalesOrderListViewModel : ViewModelBase
         ErrorMessage = string.Empty;
         try
         {
-            var items = await _getOrders.ExecuteAsync(ct);
-            _allItems.Clear();
-            foreach (var dto in items)
-                _allItems.Add(SalesOrderListItem.FromDto(dto));
-            ApplyFilter();
+            var items = await _getOrders.ExecuteAsync(FilterFromDate, FilterToDate, SearchText, ct);
+
+            SalesOrders.Clear();
+            foreach (var dto in items
+                         .Select(SalesOrderListItem.FromDto)
+                         .OrderByDescending(o => o.DocumentDate))
+                SalesOrders.Add(dto);
+
+            HasSalesOrders   = SalesOrders.Count > 0;
+            TotalCount       = SalesOrders.Count;
+            TotalGrossSum    = SalesOrders.Sum(o => o.TotalGross);
+            TotalDiscountSum = SalesOrders.Sum(o => o.TotalDiscount);
+            TotalPaymentSum  = SalesOrders.Sum(o => o.TotalPayment);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -140,19 +154,15 @@ public partial class SalesOrderListViewModel : ViewModelBase
     {
         if (SelectedOrder is null) return;
 
-        IsLoading = true;
         try
         {
-            var updated = await _holdOrder.ExecuteAsync(SelectedOrder.Id, ct);
-            var index = _allItems.IndexOf(SelectedOrder);
-            if (index >= 0) _allItems[index] = SalesOrderListItem.FromDto(updated);
-            ApplyFilter();
+            await _holdOrder.ExecuteAsync(SelectedOrder.Id, ct);
+            await LoadSalesOrdersAsync(ct); // tự quản lý IsLoading — reload theo đúng filter đang xem
         }
         catch (Exception ex)
         {
             MessageBox.Show(ex.Message, "Treo đơn thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
-        finally { IsLoading = false; }
     }
 
     [RelayCommand(CanExecute = nameof(HasSelection))]
@@ -168,51 +178,16 @@ public partial class SalesOrderListViewModel : ViewModelBase
 
         if (confirm != MessageBoxResult.Yes) return;
 
-        IsLoading = true;
         try
         {
             await _deleteOrder.ExecuteAsync(SelectedOrder.Id, ct);
-            _allItems.Remove(SelectedOrder);
-            ApplyFilter();
             SelectedOrder = null;
+            await LoadSalesOrdersAsync(ct); // tự quản lý IsLoading — reload theo đúng filter đang xem
         }
         catch (Exception ex)
         {
             HasError     = true;
             ErrorMessage = $"Xóa thất bại: {ex.Message}";
         }
-        finally { IsLoading = false; }
     }
-
-    private void ApplyFilter()
-    {
-        var filtered = _allItems.AsEnumerable();
-
-        if (FilterFromDate.HasValue)
-            filtered = filtered.Where(o => o.DocumentDate.Date >= FilterFromDate.Value.Date);
-
-        if (FilterToDate.HasValue)
-            filtered = filtered.Where(o => o.DocumentDate.Date <= FilterToDate.Value.Date);
-
-        if (!string.IsNullOrWhiteSpace(SearchText))
-            filtered = filtered.Where(o =>
-                Matches(o.StatusLabel, SearchText) ||
-                Matches(o.DocumentNumber, SearchText) ||
-                Matches(o.CustomerName, SearchText) ||
-                Matches(o.EmployeeName, SearchText) ||
-                Matches(o.Notes, SearchText));
-
-        SalesOrders.Clear();
-        foreach (var item in filtered.OrderByDescending(o => o.DocumentDate))
-            SalesOrders.Add(item);
-
-        HasSalesOrders   = SalesOrders.Count > 0;
-        TotalCount       = SalesOrders.Count;
-        TotalGrossSum    = SalesOrders.Sum(o => o.TotalGross);
-        TotalDiscountSum = SalesOrders.Sum(o => o.TotalDiscount);
-        TotalPaymentSum  = SalesOrders.Sum(o => o.TotalPayment);
-    }
-
-    private static bool Matches(string? value, string filter)
-        => string.IsNullOrWhiteSpace(filter) || (!string.IsNullOrEmpty(value) && value.Contains(filter, StringComparison.OrdinalIgnoreCase));
 }
