@@ -15,6 +15,7 @@ public class WarehouseTransactionResponseDto
     [JsonPropertyName("delivery_or_receiver")]  public string?  DeliveryOrReceiver { get; set; }
     [JsonPropertyName("object_name")]          public string?  ObjectName         { get; set; }
     [JsonPropertyName("has_sales_order")]      public bool     HasSalesOrder      { get; set; }
+    [JsonPropertyName("is_held")]              public bool     IsHeld             { get; set; }
     [JsonPropertyName("ledger_date")]          public DateTime LedgerDate         { get; set; }
     [JsonPropertyName("document_type_label")]  public string   DocumentTypeLabel  { get; set; } = "";
     [JsonPropertyName("lines")]                public List<WarehouseTransactionLineDto> Lines { get; set; } = new();

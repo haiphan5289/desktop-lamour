@@ -9,6 +9,6 @@ public class GetNextSalesOrderCodeUseCase : IGetNextSalesOrderCodeUseCase
 
     public GetNextSalesOrderCodeUseCase(ISalesOrderRepository repository) => _repository = repository;
 
-    public Task<string> ExecuteAsync(CancellationToken ct = default)
-        => _repository.GetNextCodeAsync(ct);
+    public Task<string> ExecuteAsync(bool isFromWarehouseExport = true, CancellationToken ct = default)
+        => _repository.GetNextCodeAsync(isFromWarehouseExport, ct);
 }

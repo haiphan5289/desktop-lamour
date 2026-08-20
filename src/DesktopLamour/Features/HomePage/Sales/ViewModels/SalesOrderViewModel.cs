@@ -26,6 +26,10 @@ public partial class SalesOrderViewModel : ViewModelBase
     // Số dòng trống nạp sẵn khi mở chứng từ mới — xem ClearForm().
     private const int InitialEmptyLineCount = 100;
 
+    // Kho mặc định khi Thêm chứng từ mới — khớp Kho ngầm định "HH" dùng cho vật tư hàng hoá
+    // (xem ProductFormViewModel.DefaultWarehouseCode) thay vì lấy đại kho đầu tiên trong danh sách.
+    private const string DefaultWarehouseCode = "HH";
+
     // Set bởi SalesOrderWindow.Initialize khi popup mở từ Kho → Xuất Kho ("Phiếu Xuất") — dùng để
     // auto-fill Diễn giải mặc định "Xuất kho bán hàng" (ClearForm) và tắt auto-fill "Bán hàng {tên
     // KH}" theo khách hàng (OnSelectedCustomerChanged) vốn chỉ hợp lý khi mở từ module Bán hàng.
@@ -170,7 +174,7 @@ public partial class SalesOrderViewModel : ViewModelBase
 
             if (order is null)
             {
-                _nextDocumentNumber = await _getNextCode.ExecuteAsync(ct);
+                _nextDocumentNumber = await _getNextCode.ExecuteAsync(IsFromWarehouseExport, ct);
                 CurrentOrder        = null;
                 ClearForm();
             }
@@ -434,7 +438,8 @@ public partial class SalesOrderViewModel : ViewModelBase
             OnLinesOrTotalsChanged();
             if (e.PropertyName == nameof(SalesOrderLineItem.ProductId)
                 && line.ProductId > 0 && line.WarehouseId == 0)
-                line.SetSelectedWarehouseSilent(Warehouses.FirstOrDefault());
+                line.SetSelectedWarehouseSilent(
+                    Warehouses.FirstOrDefault(w => w.Code == DefaultWarehouseCode) ?? Warehouses.FirstOrDefault());
         };
         Lines.Add(line);
     }
@@ -601,10 +606,23 @@ public partial class SalesOrderViewModel : ViewModelBase
         RefreshProducts(_depositPickerItems.Concat(_allProducts));
     }
 
+    // Diff Add/Remove từng phần tử thay vì Clear() rồi add lại toàn bộ — Clear() phát ra
+    // NotifyCollectionChangedAction.Reset, và ComboBox (Selector) LUÔN tự ép SelectedItem về null +
+    // đồng bộ lại Text của ô editable khi nhận Reset, kể cả khi SelectedItem vốn đã null từ trước.
+    // Vì FilterProductsByName/ByCode gọi hàm này trên MỖI keystroke, Reset liên tục xoá mất ký tự
+    // người dùng vừa gõ vào ô "Tên hàng"/"Mã hàng" (bug gõ tên hàng bị nhảy liên tục). Add/Remove
+    // từng phần tử chỉ phát granular event, không kích hoạt việc ép reset đó.
     private void RefreshProducts(IEnumerable<ISearchableItem> items)
     {
-        Products.Clear();
-        foreach (var p in items) Products.Add(p);
+        var target = items as IList<ISearchableItem> ?? items.ToList();
+
+        for (var i = Products.Count - 1; i >= 0; i--)
+            if (!target.Contains(Products[i]))
+                Products.RemoveAt(i);
+
+        for (var i = 0; i < target.Count; i++)
+            if (i >= Products.Count || !Equals(Products[i], target[i]))
+                Products.Insert(i, target[i]);
     }
 
     private void RecalculateTotals()

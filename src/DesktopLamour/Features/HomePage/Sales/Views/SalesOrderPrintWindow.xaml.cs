@@ -54,7 +54,11 @@ public partial class SalesOrderPrintWindow : Window
     private static readonly double A5PageWidth  = 148 * MmToDip;
     private static readonly double A5PageHeight = 210 * MmToDip;
 
-    private static readonly int[] ProductTableColumnWidths = { 32, 141, 28, 62, 41, 69, 48, 69 };
+    // Font size bảng tăng thêm 1 nấc (12 → 13, 2026-08-20) nên các cột số hẹp cần rộng thêm; lấy tiếp
+    // từ TÊN SẢN PHẨM (đã chấp nhận wrap nhiều dòng — xem EstimateContentHeight) vì cột này co giãn
+    // được, còn STT/CK/ĐƠN GIÁ/THÀNH TIỀN/TỔNG CỘNG chứa số/% không được xuống hàng. Tổng vẫn giữ 490
+    // để không đổi ngân sách bề ngang đã kiểm chứng vừa khít trang A5.
+    private static readonly int[] ProductTableColumnWidths = { 28, 114, 26, 66, 60, 74, 48, 74 };
 
     private static readonly SolidColorBrush OuterBorderBrush = new(Color.FromRgb(0x9D, 0xC1, 0xE0));
 
@@ -70,13 +74,18 @@ public partial class SalesOrderPrintWindow : Window
     {
         var doc = new FlowDocument
         {
-            FontFamily  = new FontFamily("Segoe UI"),
-            FontSize    = 11,
-            Background  = Brushes.White,
-            PagePadding = new Thickness(16),
-            PageWidth   = A5PageWidth,
-            PageHeight  = A5PageHeight,
-            ColumnWidth = A5PageWidth,
+            FontFamily    = new FontFamily("Segoe UI"),
+            FontSize      = 13,
+            // FlowDocument mặc định TextAlignment = Justify — mọi Paragraph không set alignment
+            // riêng (vd headerPara tên công ty, bị wrap cạnh logo) bị kéo giãn khoảng cách chữ để
+            // full-justify, gây khoảng trắng lớn bất thường giữa các từ. Các Paragraph cần Center/
+            // Right đều đã tự override bên dưới nên đặt Left ở đây là an toàn cho toàn bộ tài liệu.
+            TextAlignment = TextAlignment.Left,
+            Background    = Brushes.White,
+            PagePadding   = new Thickness(16),
+            PageWidth     = A5PageWidth,
+            PageHeight    = A5PageHeight,
+            ColumnWidth   = A5PageWidth,
         };
 
         // Outer frame — everything below is added to `content` (the bordered cell),
@@ -126,46 +135,52 @@ public partial class SalesOrderPrintWindow : Window
 
         var headerPara = new Paragraph { Margin = new Thickness(0, 0, 0, 10), LineHeight = HeaderLineHeight };
         headerPara.Inlines.Add(logoFloater);
+        // FontSize 15 gần khít bề rộng còn lại cạnh logo (Floater 135px) — chuỗi 38 ký tự này vỡ
+        // dòng thành 2 hàng. Hạ xuống 13 để chắc chắn nằm gọn 1 hàng thay vì đoán lại theo px.
         headerPara.Inlines.Add(new Bold(new Run("CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ LAMOUR")) { FontSize = 13 });
         headerPara.Inlines.Add(new LineBreak());
-        headerPara.Inlines.Add(new Run("Số 110/20/38 Đường số 30, Phường An Nhơn, TP Hồ Chí Minh.") { FontSize = 10 });
+        headerPara.Inlines.Add(new Run("Số 110/20/38 Đường số 30, Phường An Nhơn, TP Hồ Chí Minh.") { FontSize = 12 });
         headerPara.Inlines.Add(new LineBreak());
-        headerPara.Inlines.Add(new Run("Mã số thuế: 0319088143") { FontSize = 10 });
+        headerPara.Inlines.Add(new Run("Mã số thuế: 0319088143") { FontSize = 12 });
         headerPara.Inlines.Add(new LineBreak());
-        headerPara.Inlines.Add(new Run("Tel: 0868858975 - Website: www.skincoachlamour.com") { FontSize = 10 });
+        headerPara.Inlines.Add(new Run("Tel: 0868858975 - Website: www.skincoachlamour.com") { FontSize = 12 });
         headerPara.Inlines.Add(new LineBreak());
-        headerPara.Inlines.Add(new Run("Số tài khoản: 0071.0007.93865 - VCB - CN Tân Sơn Nhất") { FontSize = 10 });
+        headerPara.Inlines.Add(new Run("Số tài khoản: 0071.0007.93865 - VCB - CN Tân Sơn Nhất") { FontSize = 12 });
         content.Blocks.Add(headerPara);
 
-        // Title + invoice number. 3 cột: đệm rỗng | tiêu đề (giữa) | Số HĐ — cột đệm bên trái
-        // rộng bằng đúng cột "Số HĐ" bên phải để tiêu đề được bao đối xứng, căn giữa đúng theo
-        // cả trang thay vì chỉ giữa nửa trang (2 cột bằng nhau trước đây làm tiêu đề bị lệch trái).
-        const double invoiceNoColumnWidth = 140;
-        var titleTable = new Table { Margin = new Thickness(0, 4, 0, 10) };
-        titleTable.Columns.Add(new TableColumn { Width = new GridLength(invoiceNoColumnWidth) });
-        titleTable.Columns.Add(new TableColumn());
-        titleTable.Columns.Add(new TableColumn { Width = new GridLength(invoiceNoColumnWidth) });
-        var titleRow = new TableRow();
+        // Title + invoice number từng nằm chung 1 hàng trong bảng 3 cột (đệm | tiêu đề | Số HĐ) —
+        // cột "Số HĐ" bị ép cứng theo pixel (120 → 140) nên vẫn cắt ký tự cuối khi in thật (không
+        // tăng được PageWidth vì giấy in vật lý cố định 148mm). Từng thử tách thành 2 Paragraph trần
+        // (không bọc Table) để mỗi dòng chiếm trọn bề ngang — nhưng Paragraph (khác Table) BỊ
+        // Floater logo phía trên "tràn" vào, ăn mất phần bên trái của dòng đầu, khiến tiêu đề canh
+        // giữa bị lệch phải. Table thì luôn bỏ qua Floater và chiếm đúng Width khai báo, nên bọc lại
+        // 2 dòng vào 1 Table 1-cột full-width (không chia 3 cột như bản gốc) — vừa tránh Floater vừa
+        // không còn cột hẹp nào để mã chứng từ bị cắt.
+        const double titleTableWidth = 495;
+        var titleTable = new Table { Margin = new Thickness(0, 4, 0, 0) };
+        titleTable.Columns.Add(new TableColumn { Width = new GridLength(titleTableWidth) });
+        var titleGroup = new TableRowGroup();
 
-        titleRow.Cells.Add(new TableCell(new Paragraph()));
-
-        titleRow.Cells.Add(new TableCell(new Paragraph(new Bold(new Run("HÓA ĐƠN BÁN HÀNG")) { FontSize = 18 })
+        var titlePara = new Paragraph(new Bold(new Run("HÓA ĐƠN BÁN HÀNG")) { FontSize = 20 })
         {
             TextAlignment = TextAlignment.Center,
-        }));
+        };
+        var titleRow = new TableRow();
+        titleRow.Cells.Add(new TableCell(titlePara) { Padding = new Thickness(0, 0, 0, 2) });
+        titleGroup.Rows.Add(titleRow);
 
-        var invoiceNoPara = new Paragraph { TextAlignment = TextAlignment.Right, FontSize = 12 };
+        var invoiceNoPara = new Paragraph { TextAlignment = TextAlignment.Right, FontSize = 14 };
         invoiceNoPara.Inlines.Add(new Run("Số HĐ: "));
         invoiceNoPara.Inlines.Add(new Run(order.DocumentNumber) { Foreground = Brushes.Red, FontWeight = FontWeights.Bold });
-        titleRow.Cells.Add(new TableCell(invoiceNoPara));
+        var invoiceNoRow = new TableRow();
+        invoiceNoRow.Cells.Add(new TableCell(invoiceNoPara) { Padding = new Thickness(0, 0, 0, 10) });
+        titleGroup.Rows.Add(invoiceNoRow);
 
-        var titleGroup = new TableRowGroup();
-        titleGroup.Rows.Add(titleRow);
         titleTable.RowGroups.Add(titleGroup);
         content.Blocks.Add(titleTable);
 
         // Customer info
-        content.Blocks.Add(new Paragraph(new Run($"Tên khách hàng: {order.CustomerName}")) { FontWeight = FontWeights.Bold, FontSize = 12, Margin = new Thickness(0, 0, 0, 4) });
+        content.Blocks.Add(new Paragraph(new Run($"Tên khách hàng: {order.CustomerName}")) { FontWeight = FontWeights.Bold, FontSize = 14, Margin = new Thickness(0, 0, 0, 4) });
         content.Blocks.Add(new Paragraph(new Run($"Điện thoại: {customerPhone}")) { Margin = new Thickness(0, 0, 0, 4) });
         content.Blocks.Add(new Paragraph(new Run($"Địa chỉ: {customerAddress}")) { Margin = new Thickness(0, 0, 0, 4) });
         // "PT giao hàng"/"PT thanh toán": dùng bảng 2 cột cố định thay vì nối chuỗi với khoảng
@@ -240,7 +255,7 @@ public partial class SalesOrderPrintWindow : Window
         var totalPara = new Paragraph(new Bold(new Run($"Tổng tiền thanh toán : {FormatMoney(netGrandTotal)}")))
         {
             TextAlignment = TextAlignment.Right,
-            FontSize      = 13,
+            FontSize      = 16,
             Margin        = new Thickness(0),
         };
         var totalRow = new TableRow();
@@ -273,7 +288,7 @@ public partial class SalesOrderPrintWindow : Window
         content.Blocks.Add(new Paragraph(new Run($"Ngày {order.DocumentDate.Day:D2} Tháng {order.DocumentDate.Month:D2} Năm {order.DocumentDate.Year}"))
         {
             TextAlignment = TextAlignment.Right,
-            FontSize      = 11,
+            FontSize      = 13,
             Margin        = new Thickness(0, 8, 0, 22),
         });
 
@@ -282,7 +297,7 @@ public partial class SalesOrderPrintWindow : Window
         var signRow = new TableRow();
         foreach (var label in new[] { "Thủ kho", "Người nhận hàng", "Nhân viên giao hàng", "Người viết hóa đơn" })
         {
-            signRow.Cells.Add(new TableCell(new Paragraph(new Bold(new Run(label))) { TextAlignment = TextAlignment.Center, FontSize = 11 })
+            signRow.Cells.Add(new TableCell(new Paragraph(new Bold(new Run(label))) { TextAlignment = TextAlignment.Center, FontSize = 13 })
             {
                 // Extra bottom padding leaves blank space below the label for an actual signature.
                 Padding = new Thickness(3, 3, 3, 48),
@@ -319,7 +334,10 @@ public partial class SalesOrderPrintWindow : Window
             var alignment = i == ProductNameColumnIndex ? TextAlignment.Left : TextAlignment.Center;
             row.Cells.Add(new TableCell(new Paragraph(new Bold(new Run(headers[i]))) { TextAlignment = alignment })
             {
-                Padding         = new Thickness(4, 6, 4, 6),
+                // Padding ngang giảm còn 2 (trước 4) để bù chỗ cho font size lớn hơn (11 → 12) trong
+                // các cột hẹp cố định (CK/ĐƠN GIÁ/THÀNH TIỀN/TỔNG CỘNG) mà không phải nới thêm bề rộng
+                // cột — bảng đã gần kín bề ngang trang A5, không còn nhiều chỗ trống để nới.
+                Padding         = new Thickness(1, 6, 1, 6),
                 BorderBrush     = Brushes.Black,
                 BorderThickness = new Thickness(0.5),
             });
@@ -335,7 +353,7 @@ public partial class SalesOrderPrintWindow : Window
             var alignment = i == ProductNameColumnIndex ? TextAlignment.Left : TextAlignment.Center;
             row.Cells.Add(new TableCell(new Paragraph(new Run(values[i])) { TextAlignment = alignment })
             {
-                Padding         = new Thickness(4, 6, 4, 6),
+                Padding         = new Thickness(1, 6, 1, 6),
                 BorderBrush     = Brushes.Black,
                 BorderThickness = new Thickness(0.5),
             });
@@ -370,14 +388,14 @@ public partial class SalesOrderPrintWindow : Window
     // đủ gần để hóa đơn ngắn không còn nhìn như hình chữ nhật nằm ngang.
     private static double EstimateContentHeight(int lineCount)
     {
-        const double header          = 96;  // logo + 5 dòng thông tin công ty (font lớn hơn 2026-08-15)
-        const double title           = 38;  // "HÓA ĐƠN BÁN HÀNG" + Số HĐ
-        const double customerInfo    = 84;  // Tên KH/Điện thoại/Địa chỉ + PT giao hàng-thanh toán
-        const double tableHeaderRow  = 30;
-        const double perProductRow   = 34;  // xấp xỉ, dài hơn nếu tên sản phẩm wrap 2 dòng
-        const double totalsRow       = 32;
-        const double notesRow        = 32;
-        const double dateAndSignature = 98; // dòng Ngày... + khoảng trống chữ ký có chủ đích
+        const double header          = 112; // logo + 5 dòng thông tin công ty (font lớn hơn 2026-08-20)
+        const double title           = 42;  // "HÓA ĐƠN BÁN HÀNG" + Số HĐ
+        const double customerInfo    = 98;  // Tên KH/Điện thoại/Địa chỉ + PT giao hàng-thanh toán
+        const double tableHeaderRow  = 36;
+        const double perProductRow   = 40;  // xấp xỉ, dài hơn nếu tên sản phẩm wrap 2 dòng
+        const double totalsRow       = 38;
+        const double notesRow        = 38;
+        const double dateAndSignature = 114; // dòng Ngày... + khoảng trống chữ ký có chủ đích
         const double framePadding    = 28;  // Padding(14) x2 của outer frame
         const double pagePadding     = 32;  // PagePadding(16) x2
 

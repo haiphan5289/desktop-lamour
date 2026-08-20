@@ -27,6 +27,13 @@ public partial class SalesOrderListViewModel : ViewModelBase
     [ObservableProperty] private DateTime?           _filterFromDate;
     [ObservableProperty] private DateTime?           _filterToDate;
 
+    // Tổng dòng footer — cộng dồn trên danh sách ĐÃ LỌC (SalesOrders), không phải _allItems, để khớp
+    // với những gì người dùng đang thấy trên lưới.
+    [ObservableProperty] private int                 _totalCount;
+    [ObservableProperty] private decimal             _totalGrossSum;
+    [ObservableProperty] private decimal             _totalDiscountSum;
+    [ObservableProperty] private decimal             _totalPaymentSum;
+
     // 1 ô tìm kiếm chung (AND với FilterFromDate/FilterToDate ở trên) — khớp OR trên các trường
     // text chính, không phân biệt hoa/thường.
     [ObservableProperty] private string _searchText = string.Empty;
@@ -199,7 +206,11 @@ public partial class SalesOrderListViewModel : ViewModelBase
         foreach (var item in filtered.OrderByDescending(o => o.DocumentDate))
             SalesOrders.Add(item);
 
-        HasSalesOrders = SalesOrders.Count > 0;
+        HasSalesOrders   = SalesOrders.Count > 0;
+        TotalCount       = SalesOrders.Count;
+        TotalGrossSum    = SalesOrders.Sum(o => o.TotalGross);
+        TotalDiscountSum = SalesOrders.Sum(o => o.TotalDiscount);
+        TotalPaymentSum  = SalesOrders.Sum(o => o.TotalPayment);
     }
 
     private static bool Matches(string? value, string filter)

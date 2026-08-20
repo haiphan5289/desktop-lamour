@@ -25,9 +25,9 @@
 | Rule | Description |
 |------|-------------|
 | Tên bắt buộc | `Name` validate tại `CreateEmployeeUseCase` / `UpdateEmployeeUseCase` |
-| SĐT bắt buộc | `Phone` validate tương tự |
+| SĐT optional (2026-08-19) | `Phone` không còn required — trống vẫn Save được |
 | Đơn vị bắt buộc | `Unit` required — ComboBox chọn từ danh sách cố định |
-| Mật khẩu để trống | Khi thêm: dùng SĐT; khi sửa: giữ nguyên |
+| Mật khẩu để trống | Khi thêm: dùng SĐT, hoặc mã NV nếu SĐT cũng trống (fallback tại BE `CreateEmployeeUseCase`); khi sửa: giữ nguyên |
 | HttpClient base URL | `http://192.168.64.1:5282` (MacBook từ UTM VM) |
 
 ---
@@ -137,7 +137,8 @@ graph TD
 | Scenario | Expected Behavior | Handled? |
 |----------|------------------|----------|
 | BE không chạy | Error banner: "Không thể tải dữ liệu: ..." | ✅ |
-| Tên/SĐT trống | `ValidationException` → `ErrorMessage` trên form | ✅ |
+| Tên trống | `ValidationException` → `ErrorMessage` trên form | ✅ |
+| SĐT trống | Cho phép lưu (optional) | ✅ |
 | Xóa không tìm thấy | Error banner trên list | ✅ |
 | Confirm xóa → No | Không xóa | ✅ |
 | Mật khẩu trống (thêm mới) | Dùng SĐT làm mật khẩu | ✅ |

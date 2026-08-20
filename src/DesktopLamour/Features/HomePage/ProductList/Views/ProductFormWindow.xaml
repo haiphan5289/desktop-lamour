@@ -107,7 +107,13 @@
         <!-- ══════════════════════════════════════════════ -->
         <!--  Row 1: Form content                           -->
         <!-- ══════════════════════════════════════════════ -->
-        <ScrollViewer Grid.Row="1" Background="Transparent" VerticalScrollBarVisibility="Auto" MaxHeight="720">
+        <!-- MaxHeight giảm 720 → 520 (2026-08-20): SizeToContent="Height" + ResizeMode="NoResize" nghĩa
+             là WPF không hề biết chiều cao màn hình thật khi tính kích thước cửa sổ — ScrollViewer chỉ
+             chặn MẤT field bên trong nó, nhưng nếu header(~90) + MaxHeight(720) + hàng nút(~72) + title
+             bar vượt quá chiều cao màn hình, chính hàng nút Cất/Hủy bỏ lại bị đẩy ra ngoài màn hình, y
+             hệt lỗi ban đầu chỉ là dịch lên 1 cấp. 520 giữ tổng chiều cao cửa sổ trong khoảng an toàn
+             hơn trên màn hình nhỏ, đổi lại phải cuộn sớm hơn khi nội dung dài (chấp nhận được). -->
+        <ScrollViewer Grid.Row="1" Background="Transparent" VerticalScrollBarVisibility="Auto" MaxHeight="520">
         <StackPanel Margin="24,20,24,8">
 
             <!-- ══════════════ Card 1: Thông tin chung ══════════════ -->

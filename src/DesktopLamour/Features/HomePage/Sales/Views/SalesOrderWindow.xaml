@@ -471,7 +471,7 @@
 
                             <!-- Số lượng -->
                             <DataGridTextColumn Header="Số lượng"
-                                                Binding="{Binding Quantity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BlankToZeroConverter}}"
+                                                Binding="{Binding Quantity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=0}"
                                                 Width="75"
                                                 CellStyle="{StaticResource DisabledForDepositRow}">
                                 <DataGridTextColumn.ElementStyle>
@@ -565,7 +565,7 @@
 
                             <!-- Thuế suất -->
                             <DataGridTextColumn Header="Thuế suất"
-                                                Binding="{Binding TaxRate, StringFormat={}{0:0}%}"
+                                                Binding="{Binding TaxRate, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=0\%}"
                                                 Width="80"
                                                 IsReadOnly="True">
                                 <DataGridTextColumn.ElementStyle>
@@ -579,7 +579,7 @@
 
                             <!-- Tiền thuế -->
                             <DataGridTextColumn Header="Tiền thuế"
-                                                Binding="{Binding TaxAmount, StringFormat=N0}"
+                                                Binding="{Binding TaxAmount, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=N0}"
                                                 Width="100"
                                                 IsReadOnly="True">
                                 <DataGridTextColumn.ElementStyle>
@@ -591,15 +591,24 @@
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <!-- Remove -->
+                            <!-- Remove: ẩn nút xoá ở dòng trống (chưa chọn hàng) — không có gì để xoá -->
                             <DataGridTemplateColumn Header="" Width="40">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Button Content="✕"
-                                                Style="{StaticResource AppButton.RemoveLineIcon}"
                                                 HorizontalAlignment="Center"
                                                 Command="{Binding DataContext.RemoveLineCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                CommandParameter="{Binding}"/>
+                                                CommandParameter="{Binding}">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource AppButton.RemoveLineIcon}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ProductCode}" Value="">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>

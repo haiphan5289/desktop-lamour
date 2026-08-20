@@ -16,7 +16,20 @@ public sealed class BlankPreserveConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value is not decimal d) return value;
+        // IConvertible thay vì ép kiểu decimal cứng — cột Số lượng bind vào int (Quantity), các cột
+        // tiền/CK% khác bind vào decimal; cả hai đều cần "0 chưa nhập" hiện trống như nhau.
+        if (value is not IConvertible convertible) return value;
+
+        decimal d;
+        try
+        {
+            d = System.Convert.ToDecimal(convertible, culture);
+        }
+        catch (Exception ex) when (ex is InvalidCastException or FormatException or OverflowException)
+        {
+            return value;
+        }
+
         if (d == 0m) return string.Empty;
         var format = parameter as string ?? "N0";
         return d.ToString(format, culture);

@@ -5,7 +5,7 @@
         Title="{Binding WindowTitle}"
         WindowStyle="SingleBorderWindow"
         ResizeMode="NoResize"
-        Width="480"
+        Width="720"
         SizeToContent="Height"
         WindowStartupLocation="CenterOwner">
 
@@ -43,144 +43,177 @@
         </Border>
 
         <!-- ══════════════════════════════════════════════ -->
-        <!--  Row 1: Form content                           -->
+        <!--  Row 1: Form content — 2 cột ngang, bọc trong ScrollViewer -->
         <!-- ══════════════════════════════════════════════ -->
-        <StackPanel Grid.Row="1" Margin="24,20,24,8">
+        <!-- MaxHeight=520 (không phải chiều cao nội dung thực — nội dung form chỉ ~420px) — đây là
+             trần an toàn: SizeToContent="Height" + ResizeMode="NoResize" khiến WPF không biết chiều
+             cao màn hình thật khi dựng cửa sổ, nên nếu header(~90) + MaxHeight + hàng nút(~72) + title
+             bar vượt màn hình, chính hàng nút Lưu/Hủy bị đẩy ra ngoài — cùng lỗi ban đầu, chỉ dịch lên
+             1 cấp. Khớp trần với ProductFormWindow để nhất quán trong toàn bộ app. -->
+        <ScrollViewer Grid.Row="1" Background="Transparent" VerticalScrollBarVisibility="Auto" MaxHeight="520">
+        <StackPanel Margin="24,20,24,8">
 
-            <!-- Tên nhân viên (required) -->
-            <StackPanel Margin="0,0,0,16">
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                    <controls:AppLabel Text="Tên nhân viên"
-                                       Style="{StaticResource AppTypography.LabelSection}"/>
-                    <controls:AppLabel Text=" *"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+            <!-- Tên nhân viên (required) | Giới tính (required) -->
+            <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="24"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <controls:AppLabel Text="Tên nhân viên"
+                                           Style="{StaticResource AppTypography.LabelSection}"/>
+                        <controls:AppLabel Text=" *"
+                                           Style="{StaticResource AppTypography.LabelSection}"
+                                           Foreground="{StaticResource AppColor.TextBrand}"/>
+                    </StackPanel>
+                    <controls:AppTextField Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                           Placeholder="VD: Nguyễn Văn A"/>
                 </StackPanel>
-                <controls:AppTextField Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                       Placeholder="VD: Nguyễn Văn A"/>
-            </StackPanel>
-
-            <!-- Giới tính (required) -->
-            <StackPanel Margin="0,0,0,16">
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                    <controls:AppLabel Text="Giới tính"
-                                       Style="{StaticResource AppTypography.LabelSection}"/>
-                    <controls:AppLabel Text=" *"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                <StackPanel Grid.Column="2">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <controls:AppLabel Text="Giới tính"
+                                           Style="{StaticResource AppTypography.LabelSection}"/>
+                        <controls:AppLabel Text=" *"
+                                           Style="{StaticResource AppTypography.LabelSection}"
+                                           Foreground="{StaticResource AppColor.TextBrand}"/>
+                    </StackPanel>
+                    <ComboBox ItemsSource="{Binding Genders}"
+                              SelectedItem="{Binding Gender, Mode=TwoWay}"
+                              Padding="10,8"
+                              FontSize="14"/>
                 </StackPanel>
-                <ComboBox ItemsSource="{Binding Genders}"
-                          SelectedItem="{Binding Gender, Mode=TwoWay}"
-                          Padding="10,8"
-                          FontSize="14"/>
-            </StackPanel>
+            </Grid>
 
-            <!-- Số điện thoại (optional) -->
-            <StackPanel Margin="0,0,0,16">
-                <controls:AppLabel Text="Số điện thoại"
-                                   Style="{StaticResource AppTypography.LabelSection}"
-                                   Margin="0,0,0,6"/>
-                <controls:AppTextField Text="{Binding Phone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                       Placeholder="VD: 0912345678"/>
-            </StackPanel>
-
-            <!-- Chức vụ (required) -->
-            <StackPanel Margin="0,0,0,16">
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                    <controls:AppLabel Text="Chức vụ"
-                                       Style="{StaticResource AppTypography.LabelSection}"/>
-                    <controls:AppLabel Text=" *"
+            <!-- Số điện thoại (optional) | Chức vụ (required) -->
+            <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="24"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <controls:AppLabel Text="Số điện thoại"
                                        Style="{StaticResource AppTypography.LabelSection}"
-                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                                       Margin="0,0,0,6"/>
+                    <controls:AppTextField Text="{Binding Phone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                           Placeholder="VD: 0912345678"/>
                 </StackPanel>
-                <ComboBox ItemsSource="{Binding Roles}"
-                          SelectedItem="{Binding Role, Mode=TwoWay}"
-                          Padding="10,8"
-                          FontSize="14"/>
-            </StackPanel>
+                <StackPanel Grid.Column="2">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <controls:AppLabel Text="Chức vụ"
+                                           Style="{StaticResource AppTypography.LabelSection}"/>
+                        <controls:AppLabel Text=" *"
+                                           Style="{StaticResource AppTypography.LabelSection}"
+                                           Foreground="{StaticResource AppColor.TextBrand}"/>
+                    </StackPanel>
+                    <ComboBox ItemsSource="{Binding Roles}"
+                              SelectedItem="{Binding Role, Mode=TwoWay}"
+                              Padding="10,8"
+                              FontSize="14"/>
+                </StackPanel>
+            </Grid>
 
-            <!-- Đơn vị (required) -->
-            <StackPanel Margin="0,0,0,16">
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                    <controls:AppLabel Text="Đơn vị"
-                                       Style="{StaticResource AppTypography.LabelSection}"/>
-                    <controls:AppLabel Text=" *"
+            <!-- Đơn vị (required) | Chức danh (required) -->
+            <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="24"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <controls:AppLabel Text="Đơn vị"
+                                           Style="{StaticResource AppTypography.LabelSection}"/>
+                        <controls:AppLabel Text=" *"
+                                           Style="{StaticResource AppTypography.LabelSection}"
+                                           Foreground="{StaticResource AppColor.TextBrand}"/>
+                    </StackPanel>
+                    <ComboBox ItemsSource="{Binding Units}"
+                              SelectedItem="{Binding Unit, Mode=TwoWay}"
+                              Padding="10,8"
+                              FontSize="14"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <controls:AppLabel Text="Chức danh"
+                                           Style="{StaticResource AppTypography.LabelSection}"/>
+                        <controls:AppLabel Text=" *"
+                                           Style="{StaticResource AppTypography.LabelSection}"
+                                           Foreground="{StaticResource AppColor.TextBrand}"/>
+                    </StackPanel>
+                    <ComboBox ItemsSource="{Binding JobTitles}"
+                              SelectedItem="{Binding JobTitle, Mode=TwoWay}"
+                              Padding="10,8"
+                              FontSize="14"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Số tài khoản (optional) | Tên ngân hàng (optional) -->
+            <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="24"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <controls:AppLabel Text="Số tài khoản"
                                        Style="{StaticResource AppTypography.LabelSection}"
-                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                                       Margin="0,0,0,6"/>
+                    <controls:AppTextField Text="{Binding BankAccountNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                           Placeholder="VD: 0123456789"/>
                 </StackPanel>
-                <ComboBox ItemsSource="{Binding Units}"
-                          SelectedItem="{Binding Unit, Mode=TwoWay}"
-                          Padding="10,8"
-                          FontSize="14"/>
-            </StackPanel>
-
-            <!-- Chức danh (required) -->
-            <StackPanel Margin="0,0,0,16">
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                    <controls:AppLabel Text="Chức danh"
-                                       Style="{StaticResource AppTypography.LabelSection}"/>
-                    <controls:AppLabel Text=" *"
+                <StackPanel Grid.Column="2">
+                    <controls:AppLabel Text="Tên ngân hàng"
                                        Style="{StaticResource AppTypography.LabelSection}"
-                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                                       Margin="0,0,0,6"/>
+                    <controls:AppTextField Text="{Binding BankName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                           Placeholder="VD: Vietcombank"/>
                 </StackPanel>
-                <ComboBox ItemsSource="{Binding JobTitles}"
-                          SelectedItem="{Binding JobTitle, Mode=TwoWay}"
-                          Padding="10,8"
-                          FontSize="14"/>
-            </StackPanel>
+            </Grid>
 
-            <!-- Số tài khoản (optional) -->
-            <StackPanel Margin="0,0,0,16">
-                <controls:AppLabel Text="Số tài khoản"
-                                   Style="{StaticResource AppTypography.LabelSection}"
-                                   Margin="0,0,0,6"/>
-                <controls:AppTextField Text="{Binding BankAccountNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                       Placeholder="VD: 0123456789"/>
-            </StackPanel>
-
-            <!-- Tên ngân hàng (optional) -->
-            <StackPanel Margin="0,0,0,16">
-                <controls:AppLabel Text="Tên ngân hàng"
-                                   Style="{StaticResource AppTypography.LabelSection}"
-                                   Margin="0,0,0,6"/>
-                <controls:AppTextField Text="{Binding BankName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                       Placeholder="VD: Vietcombank"/>
-            </StackPanel>
-
-            <!-- Mật khẩu -->
-            <StackPanel Margin="0,0,0,16">
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                    <controls:AppLabel Text="Mật khẩu"
-                                       Style="{StaticResource AppTypography.LabelSection}"/>
-                    <controls:AppLabel Text=" (để trống = dùng SĐT, hoặc mã NV nếu không có SĐT)"
+            <!-- Mật khẩu | Hoạt động -->
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="24"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <controls:AppLabel Text="Mật khẩu"
+                                           Style="{StaticResource AppTypography.LabelSection}"/>
+                    </StackPanel>
+                    <controls:AppTextField Text="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                           Placeholder="••••••••"/>
+                    <controls:AppLabel Text="Để trống = dùng SĐT, hoặc mã NV nếu không có SĐT"
                                        Style="{StaticResource AppTypography.BodyCaption}"
                                        Foreground="{StaticResource AppColor.TextSecondary}"
-                                       Margin="4,0,0,0"
+                                       Margin="0,4,0,0"
                                        Visibility="{Binding IsAddMode, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                    <controls:AppLabel Text=" (để trống = không đổi)"
+                    <controls:AppLabel Text="Để trống = không đổi"
                                        Style="{StaticResource AppTypography.BodyCaption}"
                                        Foreground="{StaticResource AppColor.TextSecondary}"
-                                       Margin="4,0,0,0"
+                                       Margin="0,4,0,0"
                                        Visibility="{Binding IsAddMode, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
                 </StackPanel>
-                <controls:AppTextField Text="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                       Placeholder="••••••••"/>
-            </StackPanel>
-
-            <!-- Hoạt động -->
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                <CheckBox IsChecked="{Binding IsActive, Mode=TwoWay}"
-                          VerticalAlignment="Center"
-                          Margin="0,0,8,0"/>
-                <controls:AppLabel Text="Nhân viên đang hoạt động"
-                                   Style="{StaticResource AppTypography.BodySection}"/>
-            </StackPanel>
+                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <CheckBox IsChecked="{Binding IsActive, Mode=TwoWay}"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,8,0"/>
+                        <controls:AppLabel Text="Nhân viên đang hoạt động"
+                                           Style="{StaticResource AppTypography.BodySection}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
 
             <!-- Error message -->
             <Border Background="{StaticResource AppColor.BackgroundErrorLight}"
                     CornerRadius="8"
                     Padding="12,10"
-                    Margin="0,0,0,8"
+                    Margin="0,8,0,0"
                     Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}">
                 <controls:AppLabel Text="{Binding ErrorMessage}"
                                    Style="{StaticResource AppTypography.BodyCaption}"
@@ -188,6 +221,7 @@
             </Border>
 
         </StackPanel>
+        </ScrollViewer>
 
         <!-- ══════════════════════════════════════════════ -->
         <!--  Row 2: Action buttons                         -->

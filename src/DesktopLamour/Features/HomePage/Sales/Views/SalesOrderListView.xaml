@@ -99,12 +99,16 @@
         </Border>
 
         <!-- ══════════════════════════════════════════════ -->
-        <!--  DataGrid                                      -->
+        <!--  DataGrid + totals footer                      -->
         <!-- ══════════════════════════════════════════════ -->
         <Grid Grid.Row="3" Margin="24,12,24,24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>     <!-- DataGrid (+ overlays) -->
+                <RowDefinition Height="Auto"/>  <!-- Totals footer -->
+            </Grid.RowDefinitions>
 
             <!-- Error banner -->
-            <Border Panel.ZIndex="10"
+            <Border Grid.Row="0" Panel.ZIndex="10"
                     Background="{StaticResource AppColor.BackgroundErrorLight}"
                     CornerRadius="8"
                     Padding="12,10"
@@ -130,6 +134,7 @@
 
             <!-- DataGrid -->
             <DataGrid x:Name="OrdersGrid"
+                      Grid.Row="0"
                       ItemsSource="{Binding SalesOrders}"
                       SelectedItem="{Binding SelectedOrder, Mode=TwoWay}"
                       AutoGenerateColumns="False"
@@ -215,8 +220,62 @@
                 </DataGrid.Columns>
             </DataGrid>
 
+            <!-- ══════════════════════════════════════════════ -->
+            <!--  Totals footer — cộng dồn Tổng tiền hàng/Tổng CK/Tổng thanh toán trên danh sách đã   -->
+            <!--  lọc, canh đúng theo bề rộng cột tương ứng ở DataGrid phía trên để đọc như 1 hàng    -->
+            <!--  "Tổng cộng" gắn liền cuối lưới thay vì 1 khối tách rời.                             -->
+            <!-- ══════════════════════════════════════════════ -->
+            <Border Grid.Row="1"
+                    Background="{StaticResource AppColor.BackgroundSecondary}"
+                    BorderBrush="{StaticResource AppColor.BorderThin}"
+                    BorderThickness="1,0,1,1"
+                    Visibility="{Binding HasSalesOrders, Converter={StaticResource BoolToVisibilityConverter}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100"/>  <!-- Trạng thái -->
+                        <ColumnDefinition Width="120"/>  <!-- Số chứng từ -->
+                        <ColumnDefinition Width="100"/>  <!-- Ngày -->
+                        <ColumnDefinition Width="*"/>    <!-- Khách hàng -->
+                        <ColumnDefinition Width="140"/>  <!-- Nhân viên -->
+                        <ColumnDefinition Width="130"/>  <!-- Tổng tiền hàng -->
+                        <ColumnDefinition Width="110"/>  <!-- Tổng CK -->
+                        <ColumnDefinition Width="140"/>  <!-- Tổng thanh toán -->
+                        <ColumnDefinition Width="*"/>    <!-- Ghi chú -->
+                    </Grid.ColumnDefinitions>
+
+                    <controls:AppLabel Grid.Column="0" Grid.ColumnSpan="4"
+                                       Text="{Binding TotalCount, StringFormat='Tổng cộng: {0} chứng từ'}"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       VerticalAlignment="Center"
+                                       Padding="6,10"/>
+
+                    <TextBlock Grid.Column="5"
+                               Text="{Binding TotalGrossSum, StringFormat=\{0:N0\}}"
+                               FontWeight="Bold"
+                               TextAlignment="Right"
+                               VerticalAlignment="Center"
+                               Padding="6,10"/>
+
+                    <TextBlock Grid.Column="6"
+                               Text="{Binding TotalDiscountSum, StringFormat=\{0:N0\}}"
+                               FontWeight="Bold"
+                               TextAlignment="Right"
+                               VerticalAlignment="Center"
+                               Padding="6,10"/>
+
+                    <TextBlock Grid.Column="7"
+                               Text="{Binding TotalPaymentSum, StringFormat=\{0:N0\}}"
+                               FontWeight="Bold"
+                               TextAlignment="Right"
+                               VerticalAlignment="Center"
+                               Padding="6,10"
+                               Foreground="{StaticResource AppColor.TextBrand}"/>
+                </Grid>
+            </Border>
+
             <!-- Empty state -->
-            <StackPanel HorizontalAlignment="Center"
+            <StackPanel Grid.Row="0"
+                        HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         Visibility="{Binding HasSalesOrders, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                 <TextBlock Text="🧾" FontSize="48" HorizontalAlignment="Center" TextAlignment="Center"/>

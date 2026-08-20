@@ -81,16 +81,22 @@ public sealed class SalesOrderService : ISalesOrderService
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<string> GetNextCodeAsync(CancellationToken ct = default)
+    public async Task<string> GetNextCodeAsync(bool isFromWarehouseExport = true, CancellationToken ct = default)
     {
-        _logger.LogInformation("Fetching next sales order code");
+        _logger.LogInformation("Fetching next sales order code (warehouseExport={IsFromWarehouseExport})", isFromWarehouseExport);
         SetBearerToken();
 
-        var response = await _httpClient.GetAsync("/api/v1/sales-orders/next-code", ct);
+        // isFromWarehouseExport=false → mở từ "Bán hàng" → source=direct → BE trả prefix "BH".
+        // true (mặc định) → không truyền param, BE mặc định prefix "XK" như trước giờ.
+        var url = isFromWarehouseExport
+            ? "/api/v1/sales-orders/next-code"
+            : "/api/v1/sales-orders/next-code?source=direct";
+
+        var response = await _httpClient.GetAsync(url, ct);
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<NextCodeResponse>(ct);
-        return result?.Code ?? "XK00001";
+        return result?.Code ?? (isFromWarehouseExport ? "XK00001" : "BH00001");
     }
 
     public async Task<IEnumerable<SalesOrderReportLineDto>> GetReportAsync(

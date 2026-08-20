@@ -173,12 +173,25 @@
                       HorizontalGridLinesBrush="{StaticResource AppColor.BorderThin}"
                       RowHeight="32"
                       ColumnHeaderStyle="{StaticResource GridHeaderStyle}"
-                      CellStyle="{StaticResource VerticalCenterCellStyle}"
                       BorderBrush="{StaticResource AppColor.BorderThin}"
                       BorderThickness="1"
                       RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
                       Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibilityConverter}}">
+
+                <!-- Chứng từ bán hàng đang Treo (IsHeld) → tô nền cảnh báo cho cả dòng, khớp cách
+                     SalesOrderListView tô dòng Treo (xem DataGrid.CellStyle ở đó) — dòng Nhập kho
+                     luôn IsHeld=false nên không bị ảnh hưởng. BasedOn VerticalCenterCellStyle vì
+                     CellStyle chỉ được set 1 lần (trước đây set qua thuộc tính CellStyle= ở trên). -->
+                <DataGrid.CellStyle>
+                    <Style TargetType="DataGridCell" BasedOn="{StaticResource VerticalCenterCellStyle}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsHeld}" Value="True">
+                                <Setter Property="Background" Value="{StaticResource AppColor.BackgroundWarningLight}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.CellStyle>
 
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Ngày hạch toán"

@@ -13,8 +13,6 @@ public sealed class UpdateEmployeeUseCase : IUpdateEmployeeUseCase
     {
         if (string.IsNullOrWhiteSpace(input.Name))
             throw new ValidationException("Name", "Tên nhân viên không được để trống.");
-        if (string.IsNullOrWhiteSpace(input.Phone))
-            throw new ValidationException("Phone", "Số điện thoại không được để trống.");
 
         return await _repository.UpdateAsync(input, ct);
     }

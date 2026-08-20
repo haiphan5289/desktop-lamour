@@ -10,7 +10,7 @@ public interface ISalesOrderService
     Task<SalesOrderResponseDto> CreateAsync(CreateSalesOrderRequestDto request, CancellationToken ct = default);
     Task<SalesOrderResponseDto> UpdateAsync(int id, UpdateSalesOrderRequestDto request, CancellationToken ct = default);
     Task DeleteAsync(int id, CancellationToken ct = default);
-    Task<string> GetNextCodeAsync(CancellationToken ct = default);
+    Task<string> GetNextCodeAsync(bool isFromWarehouseExport = true, CancellationToken ct = default);
     Task<SalesOrderResponseDto> HoldAsync(int id, CancellationToken ct = default);
 
     Task<IEnumerable<SalesOrderReportLineDto>> GetReportAsync(
