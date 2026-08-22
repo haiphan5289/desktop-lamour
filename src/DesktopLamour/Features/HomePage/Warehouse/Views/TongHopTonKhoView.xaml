@@ -138,7 +138,7 @@
                 </WrapPanel>
 
                 <!-- Kho — bỏ chọn tất cả = tất cả kho -->
-                <StackPanel>
+                <StackPanel Margin="0,0,0,12">
                     <controls:AppLabel Text="Kho — bỏ chọn tất cả = tất cả kho"
                                        Style="{StaticResource AppTypography.BodyCaption}"
                                        Foreground="{StaticResource AppColor.TextSecondary}"
@@ -157,6 +157,30 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                </StackPanel>
+
+                <!-- Sản phẩm — bỏ chọn tất cả = tất cả sản phẩm -->
+                <StackPanel>
+                    <controls:AppLabel Text="Sản phẩm — bỏ chọn tất cả = tất cả sản phẩm"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       Foreground="{StaticResource AppColor.TextSecondary}"
+                                       Margin="0,0,0,8"/>
+                    <ScrollViewer MaxHeight="150" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding ProductItems}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Content="{Binding DisplayText}"
+                                              IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              Margin="0,0,20,6" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
                 </StackPanel>
             </StackPanel>
         </Border>
@@ -187,7 +211,8 @@
                 </DockPanel>
             </Border>
 
-            <DataGrid ItemsSource="{Binding Items}"
+            <DataGrid x:Name="SummaryDataGrid"
+                      ItemsSource="{Binding Items}"
                       AutoGenerateColumns="False"
                       IsReadOnly="True"
                       CanUserAddRows="False"
@@ -201,6 +226,7 @@
                       RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
                       ColumnHeaderStyle="{StaticResource CleanHeaderStyle}"
+                      MouseDoubleClick="SummaryDataGrid_MouseDoubleClick"
                       Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibilityConverter}}">
 
                 <DataGrid.Columns>

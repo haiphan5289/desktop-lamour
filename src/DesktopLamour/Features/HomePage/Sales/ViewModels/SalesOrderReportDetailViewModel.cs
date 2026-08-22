@@ -12,6 +12,7 @@ using DesktopLamour.Core.Navigation;
 using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.HomePage.Sales.Domain.Models;
 using DesktopLamour.Features.HomePage.Sales.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Sales.Views;
 using DesktopLamour.Shared.Helpers;
 using Microsoft.Win32;
 
@@ -23,6 +24,8 @@ public partial class SalesOrderReportDetailViewModel : ViewModelBase, INavigatio
 {
     private readonly IGetSalesOrderReportUseCase _getReport;
     private readonly INavigationService          _navigationService;
+    private readonly IGetSalesOrderByIdUseCase   _getOrderById;
+    private readonly Func<SalesOrderWindow>      _salesOrderWindowFactory;
 
     [ObservableProperty] private bool   _isLoading;
     [ObservableProperty] private bool   _hasError;
@@ -37,16 +40,112 @@ public partial class SalesOrderReportDetailViewModel : ViewModelBase, INavigatio
     [ObservableProperty] private decimal _totalTaxAmount;
     [ObservableProperty] private decimal _totalGrandTotal;
 
+    // ── Per-column filter row, embedded directly in each header (no popup) ─────
+    // Text columns: plain textbox, case-insensitive Contains against the cell's displayed text.
+    // Date/numeric columns: an operator combo (=, ≤, ...) + a typed value, shown side by side.
+    // Items always holds the FILTERED subset — Print/Xuất Excel/Email/Zalo iterate Items too, so
+    // they automatically reflect the active filters without any extra wiring.
+    [ObservableProperty] private string _filterDocumentNumber = string.Empty;
+    [ObservableProperty] private string _filterCustomerName   = string.Empty;
+    [ObservableProperty] private string _filterEmployeeName   = string.Empty;
+    [ObservableProperty] private string _filterProductCode    = string.Empty;
+    [ObservableProperty] private string _filterProductName    = string.Empty;
+    [ObservableProperty] private string _filterUnit           = string.Empty;
+
+    partial void OnFilterDocumentNumberChanged(string value) => ApplyFilters();
+    partial void OnFilterCustomerNameChanged(string value)   => ApplyFilters();
+    partial void OnFilterEmployeeNameChanged(string value)   => ApplyFilters();
+    partial void OnFilterProductCodeChanged(string value)    => ApplyFilters();
+    partial void OnFilterProductNameChanged(string value)    => ApplyFilters();
+    partial void OnFilterUnitChanged(string value)           => ApplyFilters();
+
+    public DateColumnFilter AccountingDateFilter { get; } = new();
+
+    public NumericColumnFilter QuantityFilter     { get; } = new();
+    public NumericColumnFilter UnitPriceFilter    { get; } = new();
+    public NumericColumnFilter DiscountRateFilter { get; } = new();
+    public NumericColumnFilter AmountFilter       { get; } = new();
+    public NumericColumnFilter TaxRateFilter      { get; } = new();
+    public NumericColumnFilter TaxAmountFilter    { get; } = new();
+    public NumericColumnFilter GrandTotalFilter   { get; } = new();
+
+    private void WireColumnFilters()
+    {
+        AccountingDateFilter.Changed = ApplyFilters;
+        QuantityFilter.Changed       = ApplyFilters;
+        UnitPriceFilter.Changed      = ApplyFilters;
+        DiscountRateFilter.Changed   = ApplyFilters;
+        AmountFilter.Changed         = ApplyFilters;
+        TaxRateFilter.Changed        = ApplyFilters;
+        TaxAmountFilter.Changed      = ApplyFilters;
+        GrandTotalFilter.Changed     = ApplyFilters;
+    }
+
+    [RelayCommand]
+    private void ClearFilters()
+    {
+        FilterDocumentNumber = FilterCustomerName = FilterEmployeeName =
+            FilterProductCode = FilterProductName = FilterUnit = string.Empty;
+
+        AccountingDateFilter.Operator = FilterOperator.Equal;
+        AccountingDateFilter.Value    = null;
+
+        foreach (var f in new[] { QuantityFilter, UnitPriceFilter, DiscountRateFilter, AmountFilter, TaxRateFilter, TaxAmountFilter, GrandTotalFilter })
+        {
+            f.Operator  = FilterOperator.LessOrEqual;
+            f.ValueText = string.Empty;
+        }
+    }
+
     public ObservableCollection<SalesOrderReportLineItem> Items { get; } = new();
+
+    // Full unfiltered dataset from the last LoadAsync — Items is derived from this via ApplyFilters.
+    private List<SalesOrderReportLineItem> _allItems = new();
 
     private SalesOrderDetailFilter? _filter;
 
     public SalesOrderReportDetailViewModel(
         IGetSalesOrderReportUseCase getReport,
-        INavigationService          navigationService)
+        INavigationService          navigationService,
+        IGetSalesOrderByIdUseCase   getOrderById,
+        Func<SalesOrderWindow>      salesOrderWindowFactory)
     {
-        _getReport         = getReport;
-        _navigationService = navigationService;
+        _getReport               = getReport;
+        _navigationService       = navigationService;
+        _getOrderById            = getOrderById;
+        _salesOrderWindowFactory = salesOrderWindowFactory;
+
+        WireColumnFilters();
+    }
+
+    // Double-click 1 dòng trong "Sổ chi tiết bán hàng" → mở lại popup "Chứng từ bán hàng" ở chế
+    // độ chỉ xem (IsReadOnly=true) — xem code-behind DetailGrid_MouseDoubleClick.
+    [RelayCommand]
+    private async Task OpenOrderAsync(SalesOrderReportLineItem? row, CancellationToken ct = default)
+    {
+        if (row is null) return;
+
+        IsLoading = true;
+        try
+        {
+            var order = await _getOrderById.ExecuteAsync(row.OrderId, ct);
+            if (order is null)
+            {
+                MessageBox.Show($"Không tìm thấy chứng từ '{row.DocumentNumber}'.", "Không tìm thấy",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var window = _salesOrderWindowFactory();
+            window.Initialize(order, isReadOnly: true);
+            window.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Không thể tải chứng từ: {ex.Message}", "Lỗi",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        finally { IsLoading = false; }
     }
 
     public void OnNavigatedTo(object? parameter)
@@ -82,16 +181,11 @@ public partial class SalesOrderReportDetailViewModel : ViewModelBase, INavigatio
                 productIds, filter.EmployeeId, filter.CustomerId,
                 filter.Unit, filter.Category, filter.FromDate, filter.ToDate);
 
-            Items.Clear();
-            foreach (var dto in lines.OrderByDescending(l => l.AccountingDate))
-                Items.Add(SalesOrderReportLineItem.FromDto(dto));
+            _allItems = lines.OrderByDescending(l => l.AccountingDate)
+                .Select(SalesOrderReportLineItem.FromDto)
+                .ToList();
 
-            HasLines        = Items.Count > 0;
-            RowCount         = Items.Count;
-            TotalQuantity    = Items.Sum(i => i.Quantity);
-            TotalAmount      = Items.Sum(i => i.Amount);
-            TotalTaxAmount   = Items.Sum(i => i.TaxAmount);
-            TotalGrandTotal  = Items.Sum(i => i.GrandTotal);
+            ApplyFilters();
         }
         catch (Exception ex)
         {
@@ -100,6 +194,41 @@ public partial class SalesOrderReportDetailViewModel : ViewModelBase, INavigatio
         }
         finally { IsLoading = false; }
     }
+
+    // Re-derives Items (and the footer totals) from _allItems using the active column filters.
+    private void ApplyFilters()
+    {
+        Items.Clear();
+        foreach (var item in _allItems.Where(MatchesAllFilters))
+            Items.Add(item);
+
+        HasLines        = Items.Count > 0;
+        RowCount        = Items.Count;
+        TotalQuantity   = Items.Sum(i => i.Quantity);
+        TotalAmount     = Items.Sum(i => i.Amount);
+        TotalTaxAmount  = Items.Sum(i => i.TaxAmount);
+        TotalGrandTotal = Items.Sum(i => i.GrandTotal);
+    }
+
+    private bool MatchesAllFilters(SalesOrderReportLineItem item)
+        => AccountingDateFilter.Matches(item.AccountingDate)
+        && Matches(FilterDocumentNumber, item.DocumentNumber)
+        && Matches(FilterCustomerName, item.CustomerName)
+        && Matches(FilterEmployeeName, item.EmployeeName)
+        && Matches(FilterProductCode, item.ProductCode)
+        && Matches(FilterProductName, item.ProductName)
+        && Matches(FilterUnit, item.Unit)
+        && QuantityFilter.Matches(item.Quantity)
+        && UnitPriceFilter.Matches(item.UnitPrice)
+        && DiscountRateFilter.Matches(item.DiscountRate)
+        && AmountFilter.Matches(item.Amount)
+        && TaxRateFilter.Matches(item.TaxRate)
+        && TaxAmountFilter.Matches(item.TaxAmount)
+        && GrandTotalFilter.Matches(item.GrandTotal);
+
+    private static bool Matches(string filter, string cellText)
+        => string.IsNullOrWhiteSpace(filter)
+        || cellText.Contains(filter.Trim(), StringComparison.OrdinalIgnoreCase);
 
     [RelayCommand]
     private void GoBack() => _navigationService.GoBack();

@@ -30,6 +30,7 @@ public sealed class WarehouseService : IWarehouseService
         IReadOnlyList<int>? warehouseIds = null,
         int? categoryId = null,
         int? productUnitId = null,
+        IReadOnlyList<int>? productIds = null,
         CancellationToken ct = default)
     {
         _logger.LogInformation("Fetching inventory summary {From} → {To}", fromDate, toDate);
@@ -42,12 +43,35 @@ public sealed class WarehouseService : IWarehouseService
             url += $"&category_id={categoryId.Value}";
         if (productUnitId.HasValue)
             url += $"&product_unit_id={productUnitId.Value}";
+        if (productIds is { Count: > 0 })
+            url += string.Concat(productIds.Select(id => $"&product_ids={id}"));
 
         var response = await _httpClient.GetAsync(url, ct);
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadFromJsonAsync<IEnumerable<InventorySummaryItemDto>>(ct)
             ?? Enumerable.Empty<InventorySummaryItemDto>();
+    }
+
+    public async Task<InventoryDetailResponseDto?> GetInventoryDetailAsync(
+        int productId,
+        DateOnly fromDate,
+        DateOnly toDate,
+        IReadOnlyList<int>? warehouseIds = null,
+        CancellationToken ct = default)
+    {
+        _logger.LogInformation("Fetching inventory detail for product {ProductId} {From} → {To}", productId, fromDate, toDate);
+        SetBearerToken();
+
+        var url = $"/api/v1/inventory/summary/{productId}/detail?from_date={fromDate:yyyy-MM-dd}&to_date={toDate:yyyy-MM-dd}";
+        if (warehouseIds is { Count: > 0 })
+            url += string.Concat(warehouseIds.Select(id => $"&warehouse_ids={id}"));
+
+        var response = await _httpClient.GetAsync(url, ct);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<InventoryDetailResponseDto>(ct);
     }
 
     private void SetBearerToken()

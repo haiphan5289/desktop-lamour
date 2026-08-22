@@ -13,6 +13,7 @@ public class ReceiptEntryItem : INotifyPropertyChanged
     private string? _subjectCode;
     private string? _subjectName;
     private string? _bankAccount;
+    private int?     _salesOrderId;
 
     public string Description
     {
@@ -54,6 +55,14 @@ public class ReceiptEntryItem : INotifyPropertyChanged
     {
         get => _bankAccount;
         set { _bankAccount = value; OnPropertyChanged(); }
+    }
+
+    // Chứng từ bán hàng gốc đang được thu tiền (từ Phiếu thu hàng loạt khách hàng) — null cho dòng
+    // thu bình thường không gắn với 1 đơn hàng cụ thể.
+    public int? SalesOrderId
+    {
+        get => _salesOrderId;
+        set { _salesOrderId = value; OnPropertyChanged(); }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

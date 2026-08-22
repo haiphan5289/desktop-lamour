@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.Navigation;
 using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.HomePage.Categories.Domain.UseCases;
+using DesktopLamour.Features.HomePage.ProductList.Domain.UseCases;
 using DesktopLamour.Features.HomePage.ProductUnits.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Warehouse.Domain.Models;
 using DesktopLamour.Features.HomePage.Warehouse.Domain.UseCases;
@@ -24,6 +25,7 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
     private readonly IGetWarehouseSettingsUseCase _getWarehouses;
     private readonly IGetCategoriesUseCase        _getCategories;
     private readonly IGetProductUnitsUseCase      _getProductUnits;
+    private readonly IGetProductsUseCase          _getProducts;
     private readonly ILogger<TongHopTonKhoViewModel> _logger;
 
     [ObservableProperty] private bool   _isLoading;
@@ -41,6 +43,7 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
     public IReadOnlyList<ISearchableItem> Categories   { get; private set; } = Array.Empty<ISearchableItem>();
     public IReadOnlyList<ISearchableItem> ProductUnits { get; private set; } = Array.Empty<ISearchableItem>();
     public ObservableCollection<WarehouseCheckItem> WarehouseItems { get; } = new();
+    public ObservableCollection<ProductCheckItem>   ProductItems   { get; } = new();
 
     public ObservableCollection<InventorySummaryItem> Items { get; } = new();
 
@@ -50,6 +53,7 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
         IGetWarehouseSettingsUseCase    getWarehouses,
         IGetCategoriesUseCase           getCategories,
         IGetProductUnitsUseCase         getProductUnits,
+        IGetProductsUseCase             getProducts,
         ILogger<TongHopTonKhoViewModel> logger)
     {
         _navigationService = navigationService;
@@ -57,6 +61,7 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
         _getWarehouses     = getWarehouses;
         _getCategories     = getCategories;
         _getProductUnits   = getProductUnits;
+        _getProducts       = getProducts;
         _logger            = logger;
     }
 
@@ -68,6 +73,27 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
 
     [RelayCommand]
     private void NavigateToHome() => _navigationService.NavigateToHome();
+
+    // Double-click 1 dòng sản phẩm → "Sổ chi tiết vật tư hàng hóa" cho riêng sản phẩm đó, kế thừa
+    // đúng khoảng ngày/kho đang lọc ở màn này.
+    [RelayCommand]
+    private void DrillDown(InventorySummaryItem? item)
+    {
+        if (item is null) return;
+
+        var selectedWarehouses = WarehouseItems.Where(w => w.IsSelected).ToList();
+        var filter = new InventoryDetailFilter
+        {
+            ProductId      = item.ProductId,
+            ProductLabel   = $"{item.Code} — {item.Name}",
+            FromDate       = FromDate,
+            ToDate         = ToDate,
+            WarehouseIds   = selectedWarehouses.Count > 0 ? selectedWarehouses.Select(w => w.Id).ToList() : null,
+            WarehouseLabel = selectedWarehouses.Count > 0 ? string.Join(", ", selectedWarehouses.Select(w => w.Name)) : null,
+        };
+
+        _navigationService.NavigateTo(NavigationRoutes.Warehouse.InventoryDetail, filter);
+    }
 
     // Preset chỉ tính lại From/To client-side — không tự gọi BE, người dùng vẫn bấm "Lọc".
     partial void OnPeriodPresetChanged(string value)
@@ -101,6 +127,7 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
         SelectedCategory     = null;
         SelectedProductUnit  = null;
         foreach (var w in WarehouseItems) w.IsSelected = false;
+        foreach (var p in ProductItems)   p.IsSelected = false;
     }
 
     // Tải danh mục kho/nhóm VTHH/đơn vị tính cho các dropdown lọc — gọi 1 lần khi màn hình mở,
@@ -114,7 +141,8 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
             var warehouseTask = _getWarehouses.ExecuteAsync(ct);
             var categoryTask  = _getCategories.ExecuteAsync(ct);
             var unitTask      = _getProductUnits.ExecuteAsync(ct);
-            await Task.WhenAll(warehouseTask, categoryTask, unitTask);
+            var productTask   = _getProducts.ExecuteAsync(ct);
+            await Task.WhenAll(warehouseTask, categoryTask, unitTask, productTask);
 
             Categories = categoryTask.Result.Cast<ISearchableItem>().ToList().AsReadOnly();
             OnPropertyChanged(nameof(Categories));
@@ -124,6 +152,10 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
             WarehouseItems.Clear();
             foreach (var w in warehouseTask.Result.Cast<ISearchableItem>())
                 WarehouseItems.Add(new WarehouseCheckItem(w));
+
+            ProductItems.Clear();
+            foreach (var p in productTask.Result.Cast<ISearchableItem>().OrderBy(p => p.Code))
+                ProductItems.Add(new ProductCheckItem(p));
         }
         catch (Exception ex)
         {
@@ -143,8 +175,9 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
             var from          = DateOnly.FromDateTime(FromDate);
             var to            = DateOnly.FromDateTime(ToDate);
             var warehouseIds  = WarehouseItems.Where(w => w.IsSelected).Select(w => w.Id).ToList();
+            var productIds    = ProductItems.Where(p => p.IsSelected).Select(p => p.Id).ToList();
             var data = await _getSummary.ExecuteAsync(
-                from, to, warehouseIds, SelectedCategory?.Id, SelectedProductUnit?.Id, ct);
+                from, to, warehouseIds, SelectedCategory?.Id, SelectedProductUnit?.Id, productIds, ct);
 
             Items.Clear();
             foreach (var item in data) Items.Add(item);

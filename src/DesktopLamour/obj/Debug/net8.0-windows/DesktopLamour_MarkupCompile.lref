@@ -1,4 +1,4 @@
-﻿/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/GeneratedInternalTypeHelper.g.cs
+﻿
 
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/Authentication/Views/LoginView.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/Authentication/Views/RegisterView.xaml;;
@@ -53,4 +53,8 @@ F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Shared/Styles/A
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Shared/Styles/AppPasswordFieldStyles.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Shared/Styles/AppTextFieldStyles.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Themes/AppTypography.xaml;;
+F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Warehouse/Views/InventoryDetailView.xaml;;
+F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Accounting/Views/BulkCustomerReceiptSearchWindow.xaml;;
+F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Accounting/Views/BulkCustomerReceiptWindow.xaml;;
+F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Shared/Controls/AppSuggestTextBox.xaml;;
 

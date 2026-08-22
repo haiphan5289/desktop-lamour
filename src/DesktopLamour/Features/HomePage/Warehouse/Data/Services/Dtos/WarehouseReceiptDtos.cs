@@ -11,6 +11,7 @@ public class WarehouseReceiptLineDto
     [JsonPropertyName("product_name")]     public string  ProductName   { get; set; } = "";
     [JsonPropertyName("warehouse_id")]     public int     WarehouseId   { get; set; }
     [JsonPropertyName("warehouse_name")]   public string  WarehouseName { get; set; } = "";
+    [JsonPropertyName("unit")]             public string  Unit          { get; set; } = "";
     [JsonPropertyName("quantity")]         public decimal Quantity      { get; set; }
     [JsonPropertyName("unit_price")]       public decimal UnitPrice     { get; set; }
     [JsonPropertyName("amount")]           public decimal Amount        { get; set; }

@@ -1,0 +1,130 @@
+<UserControl x:Class="DesktopLamour.Shared.Controls.AppSuggestTextBox"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+             x:Name="Self">
+
+    <UserControl.Resources>
+        <controls:SearchableItemDropdownTextConverter x:Key="DropdownTextConverter"/>
+    </UserControl.Resources>
+
+    <Grid>
+
+        <!-- ══ Field border ═══════════════════════════════════════════════════ -->
+        <Border x:Name="FieldBorder"
+                Height="44"
+                BorderBrush="{StaticResource AppColor.BorderRegular}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Background="{StaticResource AppColor.BackgroundPrimary}">
+
+            <Grid Margin="12,0,4,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="30"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Free-text input — Text luôn phản ánh đúng những gì user gõ, KHÔNG tự
+                     trả về gợi ý cũ khi rời ô (khác AppSearchableComboBox). -->
+                <TextBox x:Name="SearchBox"
+                         Grid.Column="0"
+                         FontFamily="Segoe UI"
+                         FontSize="14"
+                         Foreground="{StaticResource AppColor.TextPrimary}"
+                         CaretBrush="{StaticResource AppColor.TextPrimary}"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         VerticalContentAlignment="Center"/>
+
+                <!-- Placeholder overlay -->
+                <TextBlock x:Name="PlaceholderText"
+                           Grid.Column="0"
+                           FontFamily="Segoe UI"
+                           FontSize="14"
+                           Foreground="{StaticResource AppColor.TextDisabled}"
+                           VerticalAlignment="Center"
+                           IsHitTestVisible="False"/>
+
+                <!-- Arrow toggle — mở gợi ý toàn bộ Suggestions khi ô đang trống -->
+                <Button x:Name="ToggleButton"
+                        Grid.Column="1"
+                        Content="▾"
+                        FontSize="11"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Foreground="{StaticResource AppColor.TextSecondary}"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Cursor="Hand"
+                        Focusable="False"/>
+            </Grid>
+        </Border>
+
+        <!-- ══ Dropdown popup — gợi ý, click để điền, KHÔNG ép Text phải khớp ══ -->
+        <Popup x:Name="DropdownPopup"
+               PlacementTarget="{Binding ElementName=FieldBorder}"
+               Placement="Bottom"
+               StaysOpen="True"
+               AllowsTransparency="True"
+               PopupAnimation="Fade">
+
+            <Border x:Name="DropdownBorder"
+                    MinWidth="{Binding ActualWidth, ElementName=FieldBorder}"
+                    Background="{StaticResource AppColor.BackgroundPrimary}"
+                    BorderBrush="{StaticResource AppColor.BorderRegular}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Margin="0,2,0,0">
+                <Border.Effect>
+                    <DropShadowEffect Color="#000000" Opacity="0.10" BlurRadius="12" ShadowDepth="2"/>
+                </Border.Effect>
+
+                <ListBox x:Name="ItemsList"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         Padding="4"
+                         MaxHeight="200"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         FontFamily="Segoe UI"
+                         FontSize="14">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Converter={StaticResource DropdownTextConverter}}"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Padding"    Value="10,7"/>
+                            <Setter Property="Cursor"     Value="Hand"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border x:Name="Bg"
+                                                Background="{TemplateBinding Background}"
+                                                Padding="{TemplateBinding Padding}"
+                                                CornerRadius="6">
+                                            <ContentPresenter/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bg" Property="Background"
+                                                        Value="{StaticResource AppColor.BackgroundBrand}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="Bg" Property="Background"
+                                                        Value="{StaticResource AppColor.BackgroundBrand}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                </ListBox>
+            </Border>
+        </Popup>
+
+    </Grid>
+</UserControl>

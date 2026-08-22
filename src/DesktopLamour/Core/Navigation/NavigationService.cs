@@ -102,6 +102,7 @@ public class NavigationService : INavigationService
             NavigationRoutes.Warehouse.TongHopTonKho => _serviceProvider.GetService(typeof(Features.HomePage.Warehouse.Views.TongHopTonKhoView)),
             NavigationRoutes.Warehouse.PhieuNhapKho  => _serviceProvider.GetService(typeof(Features.HomePage.Warehouse.Views.WarehouseReceiptListView)),
             NavigationRoutes.Warehouse.NhapXuatKho   => _serviceProvider.GetService(typeof(Features.HomePage.Warehouse.Views.WarehouseTransactionListView)),
+            NavigationRoutes.Warehouse.InventoryDetail => _serviceProvider.GetService(typeof(Features.HomePage.Warehouse.Views.InventoryDetailView)),
             NavigationRoutes.Sales.Hub             => _serviceProvider.GetService(typeof(Features.HomePage.Sales.Views.SalesView)),
             NavigationRoutes.SalesOrders.List      => _serviceProvider.GetService(typeof(Features.HomePage.Sales.Views.SalesOrderListView)),
             NavigationRoutes.SalesOrders.Report    => _serviceProvider.GetService(typeof(Features.HomePage.Sales.Views.SalesOrderReportView)),

@@ -206,19 +206,21 @@
                     </DataGridTemplateColumn.CellTemplate>
                     <DataGridTemplateColumn.CellEditingTemplate>
                         <DataTemplate>
-                            <ComboBox ItemsSource="{Binding DataContext.Products, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                      SelectedItem="{Binding SelectedProduct, Mode=TwoWay}"
-                                      DisplayMemberPath="DisplayText"
-                                      IsEditable="True"/>
+                            <controls:AppSearchableComboBox
+                                ItemsSource="{Binding DataContext.Products, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                SelectedItem="{Binding SelectedProduct, Mode=TwoWay}"
+                                Placeholder="Chọn sản phẩm"
+                                IsNullable="True"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellEditingTemplate>
                 </DataGridTemplateColumn>
 
-                <!-- Kho — mã kho ngầm định của sản phẩm đang chọn (HH/TB), không cho sửa tay -->
+                <!-- Kho — mã kho ngầm định của sản phẩm đang chọn (HH/TB), không cho sửa tay.
+                     Chưa gán kho ngầm định thì hiển thị/lưu fallback "HH" (Id=4). -->
                 <DataGridTemplateColumn Header="Kho" Width="100">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding SelectedProduct.DefaultWarehouseCode}"
+                            <TextBlock Text="{Binding SelectedProduct.DefaultWarehouseCode, TargetNullValue=HH}"
                                        VerticalAlignment="Center" Padding="4,0"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
@@ -444,7 +446,7 @@
                                         Style="{StaticResource AppButton.Tertiary.Medium}"
                                         Command="{Binding CancelCommand}"
                                         Margin="0,0,10,0"/>
-                    <controls:AppButton Content="💾 Lưu nháp"
+                    <controls:AppButton Content="💾 Cất"
                                         Style="{StaticResource AppButton.Primary.Medium}"
                                         Command="{Binding SaveCommand}"
                                         Width="130"/>

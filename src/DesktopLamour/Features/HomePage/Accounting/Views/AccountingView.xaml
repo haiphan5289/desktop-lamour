@@ -90,6 +90,10 @@
                                         Style="{StaticResource AppButton.Primary.Medium}"
                                         Command="{Binding OpenPaymentCommand}"
                                         Margin="0,0,8,0"/>
+                    <controls:AppButton Content="📄 Phiếu Thu Hàng Loạt"
+                                        Style="{StaticResource AppButton.Primary.Medium}"
+                                        Command="{Binding OpenBulkCustomerReceiptCommand}"
+                                        Margin="0,0,8,0"/>
                     <controls:AppButton Content="📤 Xuất khẩu"
                                         Style="{StaticResource AppButton.Secondary.Medium}"
                                         Command="{Binding ExportExcelCommand}"/>

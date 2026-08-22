@@ -81,6 +81,50 @@ public sealed class ReceiptService : IReceiptService
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<string> GetNextCodeAsync(CancellationToken ct = default)
+    {
+        _logger.LogInformation("Fetching next receipt code from API");
+        SetBearerToken();
+
+        var response = await _httpClient.GetAsync("/api/v1/accounting/receipts/next-code", ct);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<NextCodeResponse>(ct);
+        return result?.Code ?? "PT00001";
+    }
+
+    public async Task<IEnumerable<OutstandingSalesOrderDto>> GetOutstandingSalesOrdersAsync(
+        DateOnly fromDate, DateOnly toDate, int? employeeId = null, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Fetching outstanding sales orders {From} → {To}", fromDate, toDate);
+        SetBearerToken();
+
+        var url = $"/api/v1/accounting/receipts/outstanding-orders?from_date={fromDate:yyyy-MM-dd}&to_date={toDate:yyyy-MM-dd}";
+        if (employeeId.HasValue)
+            url += $"&employee_id={employeeId.Value}";
+
+        var response = await _httpClient.GetAsync(url, ct);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<IEnumerable<OutstandingSalesOrderDto>>(ct)
+            ?? Enumerable.Empty<OutstandingSalesOrderDto>();
+    }
+
+    public async Task<CreateBulkCustomerReceiptResponseDto> CreateBulkAsync(
+        CreateBulkCustomerReceiptRequestDto request, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Creating bulk customer receipt covering {Count} sales orders", request.Lines.Count);
+        SetBearerToken();
+
+        var response = await _httpClient.PostAsJsonAsync("/api/v1/accounting/receipts/bulk", request, ct);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<CreateBulkCustomerReceiptResponseDto>(ct)
+            ?? throw new InvalidOperationException("Empty response from create bulk receipt endpoint.");
+    }
+
+    private record NextCodeResponse(string Code);
+
     private void SetBearerToken()
     {
         var token = _tokenStorage.GetToken();

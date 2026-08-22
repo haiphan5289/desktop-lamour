@@ -225,9 +225,9 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
                 Lines          = filledLines.Select(l => new CreateWarehouseReceiptLineDto
                 {
                     ProductId           = l.SelectedProduct!.Id,
-                    // Kho ngầm định của sản phẩm (HH/TB, xem cột "Kho") — fallback Kho chính (Id=1)
-                    // nếu sản phẩm chưa gán kho ngầm định (trước đây hardcode =1 cho mọi dòng).
-                    WarehouseId         = (l.SelectedProduct as WarehouseProductItem)?.DefaultWarehouseId ?? 1,
+                    // Kho ngầm định của sản phẩm (HH/TB, xem cột "Kho") — fallback kho "HH" (Id=4)
+                    // nếu sản phẩm chưa gán kho ngầm định.
+                    WarehouseId         = (l.SelectedProduct as WarehouseProductItem)?.DefaultWarehouseId ?? 4,
                     Quantity            = l.Quantity,
                     UnitPrice           = l.UnitPrice,
                     Amount              = l.Amount,

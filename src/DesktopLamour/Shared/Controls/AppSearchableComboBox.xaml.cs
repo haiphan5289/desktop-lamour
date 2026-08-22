@@ -39,6 +39,22 @@ public partial class AppSearchableComboBox : UserControl
             typeof(AppSearchableComboBox),
             new PropertyMetadata(null, OnAddCommandChanged));
 
+    // Bắn khi user THẬT SỰ chọn 1 item (click item trong dropdown) — không bắn khi chỉ gõ tay
+    // (SelectedItem bị set null trong OnSearchTextChanged, không đi qua SelectItem). Bubble lên để
+    // container (ví dụ DataGrid chứa control này trong CellEditingTemplate) có thể bắt và tự
+    // CommitEdit ngay — một số bản dựng WPF không refresh các cell khác cùng dòng trong lúc dòng
+    // còn ở trạng thái edit của riêng cell này, khiến các cột phụ thuộc SelectedItem (ví dụ tự điền
+    // ĐVT/Đơn giá/TK khi chọn sản phẩm) trông như chưa cập nhật cho tới khi rời cell.
+    public static readonly RoutedEvent SelectionCommittedEvent =
+        EventManager.RegisterRoutedEvent(nameof(SelectionCommitted), RoutingStrategy.Bubble,
+            typeof(RoutedEventHandler), typeof(AppSearchableComboBox));
+
+    public event RoutedEventHandler SelectionCommitted
+    {
+        add => AddHandler(SelectionCommittedEvent, value);
+        remove => RemoveHandler(SelectionCommittedEvent, value);
+    }
+
     // ─── Public API ───────────────────────────────────────────────────────────
 
     public IEnumerable? ItemsSource
@@ -228,6 +244,7 @@ public partial class AppSearchableComboBox : UserControl
         DropdownPopup.IsOpen = false;
         UpdatePlaceholder();
         UpdateClearButton();
+        RaiseEvent(new RoutedEventArgs(SelectionCommittedEvent, this));
     }
 
     private void PopulateFiltered(string query)

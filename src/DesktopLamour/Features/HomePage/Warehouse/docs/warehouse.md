@@ -287,3 +287,17 @@ Không đổi BE, không đổi migration.
 - Thêm `VerticalCenterCellStyle` (`DataGridCell.VerticalContentAlignment="Center"`) áp qua `CellStyle` cho cả master grid và detail grid — cách chuẩn để căn giữa dọc toàn bộ ô mà không phải sửa từng `ElementStyle`. `UntrackedColumnCellStyle` (4 cột xám) `BasedOn` style này để vừa giữ nền xám vừa căn giữa dọc.
 - User phản hồi tiếp với ảnh chụp toolbar bộ lọc (Từ/Đến/Loại) — `DatePicker`/`ComboBox` hiển thị ngày kiểu Mỹ (`7/15/2026`) và text dồn trái, không đồng bộ với format `dd/MM/yyyy` dùng trong lưới. Thêm style `ToolbarDatePicker`/`ToolbarComboBox` (`HorizontalContentAlignment="Center"`, viền `AppColor.BorderRegular`) + `Language="vi-VN"` trên 2 `DatePicker` để hiển thị đúng định dạng ngày Việt Nam thay vì theo culture mặc định của máy.
 - User xác nhận "ok, it is good" — kết thúc lượt polish "Kho" cho phần này.
+
+---
+
+## Changelog — 2026-08-22: fix "Phiếu nhập kho" (`WarehouseReceiptFormWindow`) — ô "Tên hàng" không gợi ý + fallback kho ngầm định
+
+> Doc này chưa có mục riêng cho `WarehouseReceiptFormWindow`/`WarehouseReceipts` (xem ghi chú "doc đã cũ" ở changelog 2026-08-15 đầu tiên) — ghi tạm ở đây vì đây là nơi gần nhất đang track module Kho phía WPF. User báo bug qua `/ct-be-to-desktop`: "gõ tên sản phẩm không thấy hiện list sản phẩm" ở popup "Phiếu nhập kho".
+
+- **Cột "Tên hàng" trong `WarehouseReceiptFormWindow.xaml`** dùng `ComboBox` thường (`IsEditable="True"`) cho `CellEditingTemplate` — không tự lọc theo text gõ và không tự mở dropdown khi gõ (chỉ nhảy tới item khớp gần nhất trong list hiện có sẵn, phải bấm mũi tên/F4 mới thấy list đầy đủ), khác với 2 field cạnh đó ("Đối tượng", "NV bán hàng") đã dùng đúng `controls:AppSearchableComboBox` (có search-as-you-type). Fix: đổi cột "Tên hàng" sang `AppSearchableComboBox` (`ItemsSource="{Binding DataContext.Products,...}"`, `SelectedItem="{Binding SelectedProduct}"`, `IsNullable="True"`) — không cần sửa BE, `GET /api/v1/products` đã trả đủ list, WPF vẫn load-all-rồi-filter-client-side như các field khác.
+- **Fallback kho ngầm định đổi `Id=1` ("Kho chính"/`KHO01`) → `Id=4` ("HH"/"Hàng hoá")**: theo yêu cầu, khi sản phẩm chưa gán kho ngầm định (`Product.DefaultWarehouseId` là `int?`, có thể null) thì dòng phiếu nhập nên fallback về kho "HH" thay vì "Kho chính". `WarehouseReceiptFormViewModel.SaveAsync`: `WarehouseId = (SelectedProduct as WarehouseProductItem)?.DefaultWarehouseId ?? 1` → `?? 4`. Cột "Kho" trên UI (`TextBlock` bind `SelectedProduct.DefaultWarehouseCode`) thêm `TargetNullValue=HH` để hiển thị khớp đúng giá trị sẽ thực sự được lưu khi Ghi sổ, tránh trường hợp ô để trống trong lúc nhập nhưng lại lưu "HH" phía sau (gây hiểu nhầm là chưa gán kho). Warehouse `Id=4`/`Code="HH"` seed sẵn ở BE (`WarehouseConfiguration.HasData`, cùng `Id=1` "Kho chính" và `Id=5` "TB").
+- Không cần EF migration, không đổi contract API — thuần WPF-side. WPF build 0 lỗi. Chưa test thật trên UTM (chỉ build được từ máy Mac, không chạy được WPF UI) — cần user tự verify trên UTM.
+
+---
+
+*Updated 2026-08-22: fix "Phiếu nhập kho" — cột "Tên hàng" migrate sang `AppSearchableComboBox` + fallback kho ngầm định đổi sang "HH"*

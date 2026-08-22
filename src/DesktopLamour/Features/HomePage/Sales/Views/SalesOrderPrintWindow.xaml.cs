@@ -181,7 +181,10 @@ public partial class SalesOrderPrintWindow : Window
 
         // Customer info
         content.Blocks.Add(new Paragraph(new Run($"Tên khách hàng: {order.CustomerName}")) { FontWeight = FontWeights.Bold, FontSize = 14, Margin = new Thickness(0, 0, 0, 4) });
-        content.Blocks.Add(new Paragraph(new Run($"Điện thoại: {customerPhone}")) { Margin = new Thickness(0, 0, 0, 4) });
+        // Ẩn hẳn dòng "Điện thoại" (không chỉ để trống sau dấu ":") khi tên khách hàng đã bị gõ
+        // đè khác tên thật — customerPhone truyền vào null trong trường hợp đó (xem ShowPrintPreview).
+        if (!string.IsNullOrWhiteSpace(customerPhone))
+            content.Blocks.Add(new Paragraph(new Run($"Điện thoại: {customerPhone}")) { Margin = new Thickness(0, 0, 0, 4) });
         content.Blocks.Add(new Paragraph(new Run($"Địa chỉ: {customerAddress}")) { Margin = new Thickness(0, 0, 0, 4) });
         // "PT giao hàng"/"PT thanh toán": dùng bảng 2 cột cố định thay vì nối chuỗi với khoảng
         // trắng cứng — trước đây vị trí "PT thanh toán" bị xô lệch tuỳ độ dài DeliveryMethod.

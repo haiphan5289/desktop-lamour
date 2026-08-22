@@ -13,4 +13,5 @@ public class ReceiptEntryDto
     [JsonPropertyName("subject_code")]   public string? SubjectCode   { get; set; }
     [JsonPropertyName("subject_name")]   public string? SubjectName   { get; set; }
     [JsonPropertyName("bank_account")]   public string? BankAccount   { get; set; }
+    [JsonPropertyName("sales_order_id")] public int?    SalesOrderId  { get; set; }
 }

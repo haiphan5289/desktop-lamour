@@ -38,6 +38,17 @@ public class SalesOrderLineItem : INotifyPropertyChanged
         set { _isDepositDeductionRow = value; OnPropertyChanged(); }
     }
 
+    // Dòng "Trừ cọc" nạp lại từ 1 DepositDeduction đã ghi sổ ở BE (xem
+    // SalesOrderViewModel.PopulateFormFromCurrentAsync) — chỉ hiển thị cho đúng tổng thanh toán,
+    // không cho sửa/xóa để tránh gọi lại CreateDepositDeductionUseCase và tạo bản ghi trùng lặp.
+    // Đổi khoản trừ cọc phải làm qua màn Đặt Cọc/Trừ Cọc riêng.
+    public bool IsLocked
+    {
+        get => _isLocked;
+        set { _isLocked = value; OnPropertyChanged(); }
+    }
+    private bool _isLocked;
+
     // Cọc được chọn để trừ cho dòng này — chỉ có ý nghĩa khi IsDepositDeductionRow = true.
     // Hiển thị y hệt 1 dòng sản phẩm bình thường: Mã hàng = số chứng từ cọc, Tên hàng = "Trừ cọc".
     public DepositResponseDto? LinkedDeposit
@@ -173,16 +184,28 @@ public class SalesOrderLineItem : INotifyPropertyChanged
             {
                 _amount = -Math.Abs(value);
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(DisplayAmount));
                 RecalculateTax();
                 return;
             }
 
             _amount = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(DisplayAmount));
             SetIsAmountManual(true);
             TryBackCalculateUnitPrice();
             RecalculateTax();
         }
+    }
+
+    // Ô "Thành tiền" trên grid bind vào đây thay vì thẳng Amount — dòng Trừ cọc cần user LUÔN
+    // thấy số dương (khớp cách họ gõ vào), dù Amount lưu nội bộ ở dạng âm để cộng dồn đúng vào
+    // GrandTotal (RecalculateTotals). Set lại đi qua Amount setter ở trên nên vẫn tự âm hoá đúng —
+    // không cần logic riêng. Dòng sản phẩm thường không đổi hành vi (DisplayAmount == Amount).
+    public decimal DisplayAmount
+    {
+        get => _isDepositDeductionRow ? Math.Abs(_amount) : _amount;
+        set => Amount = value;
     }
 
     // Đơn giá = Thành tiền ÷ (SL × (1-CK%/100)). Không chia được (SL=0, CK%=100%) hoặc
@@ -209,6 +232,7 @@ public class SalesOrderLineItem : INotifyPropertyChanged
     {
         _amount = amount;
         OnPropertyChanged(nameof(Amount));
+        OnPropertyChanged(nameof(DisplayAmount));
         SetIsAmountManual(isAmountManual);
         RecalculateTax();
     }
@@ -292,6 +316,7 @@ public class SalesOrderLineItem : INotifyPropertyChanged
         SetIsAmountManual(false);
         _amount = Quantity * UnitPrice * (1 - Math.Max(0, Math.Min(100, DiscountRate)) / 100m);
         OnPropertyChanged(nameof(Amount));
+        OnPropertyChanged(nameof(DisplayAmount));
         RecalculateTax();
     }
 

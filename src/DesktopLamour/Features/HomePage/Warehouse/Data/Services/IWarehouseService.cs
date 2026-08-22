@@ -11,5 +11,13 @@ public interface IWarehouseService
         IReadOnlyList<int>? warehouseIds = null,
         int? categoryId = null,
         int? productUnitId = null,
+        IReadOnlyList<int>? productIds = null,
+        CancellationToken ct = default);
+
+    Task<InventoryDetailResponseDto?> GetInventoryDetailAsync(
+        int productId,
+        DateOnly fromDate,
+        DateOnly toDate,
+        IReadOnlyList<int>? warehouseIds = null,
         CancellationToken ct = default);
 }

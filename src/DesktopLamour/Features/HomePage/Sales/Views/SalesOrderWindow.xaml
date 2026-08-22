@@ -20,6 +20,19 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+
+        <!-- Khoá cứng dòng "Trừ cọc" đã nạp lại từ chứng từ đã lưu (IsLocked) — khác dòng Trừ cọc
+             mới đang gõ (chỉ IsDepositDeductionRow=True, IsLocked=False, vẫn sửa được Mã/Tên/Thành
+             tiền). Áp cho đúng 3 cột mà DisabledForDepositRow bỏ qua (Mã hàng/Tên hàng/Thành tiền)
+             vì dòng Trừ cọc mới cần sửa được các cột này. -->
+        <Style x:Key="DisabledWhenLocked" TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsLocked}" Value="True">
+                    <Setter Property="IsEnabled" Value="False"/>
+                    <Setter Property="Background" Value="{StaticResource AppColor.BackgroundSecondary}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
 
     <Grid>
@@ -53,7 +66,7 @@
                         <controls:AppLabel Text="Chứng từ bán hàng"
                                            Style="{StaticResource AppTypography.DisplaySection}"
                                            Foreground="{StaticResource AppColor.TextBrand}"/>
-                        <controls:AppLabel Text="Bán hàng hóa, dịch vụ trong nước chưa thu tiền"
+                        <controls:AppLabel Text="{Binding HeaderSubtitle}"
                                            Style="{StaticResource AppTypography.BodyCaption}"
                                            Foreground="{StaticResource AppColor.TextSecondary}"/>
                     </StackPanel>
@@ -115,16 +128,21 @@
                             BorderBrush="{StaticResource AppColor.BorderThin}"
                             BorderThickness="1" CornerRadius="6" Padding="4">
                         <StackPanel Orientation="Horizontal">
-                            <controls:AppButton Content="🗑️ Xóa"
-                                                Style="{StaticResource AppButton.Destructive.Medium}"
-                                                Command="{Binding DeleteCommand}"
-                                                Margin="0"/>
-                            <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
-                            <controls:AppButton Content="↩️ Hoàn"
-                                                Style="{StaticResource AppButton.Tertiary.Medium}"
-                                                Command="{Binding CancelCommand}"
-                                                Margin="0"/>
-                            <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
+                            <!-- Ghi sổ/Xóa/Hoàn ẩn hoàn toàn ở chế độ chỉ xem (SalesOrderWindow mở
+                                 read-only từ Sổ chi tiết bán hàng) — chỉ giữ In Hoá Đơn/Đóng. -->
+                            <StackPanel Orientation="Horizontal"
+                                        Visibility="{Binding IsEditable, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <controls:AppButton Content="🗑️ Xóa"
+                                                    Style="{StaticResource AppButton.Destructive.Medium}"
+                                                    Command="{Binding DeleteCommand}"
+                                                    Margin="0"/>
+                                <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
+                                <controls:AppButton Content="↩️ Hoàn"
+                                                    Style="{StaticResource AppButton.Tertiary.Medium}"
+                                                    Command="{Binding CancelCommand}"
+                                                    Margin="0"/>
+                                <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
+                            </StackPanel>
                             <controls:AppButton Content="🖨️ In Hoá Đơn"
                                                 Style="{StaticResource AppButton.Tertiary.Medium}"
                                                 Command="{Binding PrintCommand}"
@@ -137,12 +155,12 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Status actions (only for existing orders) -->
+                    <!-- Status actions — chỉ hiện khi đơn đã tồn tại VÀ không phải chế độ chỉ xem -->
                     <Border Background="{StaticResource AppColor.BackgroundSecondary}"
                             BorderBrush="{StaticResource AppColor.BorderThin}"
                             BorderThickness="1" CornerRadius="6" Padding="4"
                             Margin="8,0,0,0"
-                            Visibility="{Binding HasExistingOrder, Converter={StaticResource BoolToVisibilityConverter}}">
+                            Visibility="{Binding ShowHoldSection, Converter={StaticResource BoolToVisibilityConverter}}">
                         <StackPanel Orientation="Horizontal">
                             <controls:AppButton Content="⏸ Treo"
                                                 Style="{StaticResource AppButton.Secondary.Medium}"
@@ -159,14 +177,15 @@
                                     Command="{Binding SaveCommand}"
                                     FontWeight="SemiBold"
                                     MinWidth="120"
-                                    Padding="16,8"/>
+                                    Padding="16,8"
+                                    Visibility="{Binding IsEditable, Converter={StaticResource BoolToVisibilityConverter}}"/>
             </Grid>
         </Border>
 
         <!-- ══════════════════════════════════════════════════════════ -->
         <!-- Form — Thông tin chung + Chứng từ                         -->
         <!-- ══════════════════════════════════════════════════════════ -->
-        <Grid Grid.Row="2" Margin="16,12,16,0">
+        <Grid Grid.Row="2" Margin="16,12,16,0" IsEnabled="{Binding IsEditable}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="16"/>
@@ -190,15 +209,22 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="8"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Khách hàng -->
+                    <!-- Khách hàng — 2 ô cùng hàng: Mã số khách hàng (chọn khách hàng thật, set
+                         CustomerId cho công nợ/báo cáo) + Tên Khách hàng (gợi ý theo tên nhưng
+                         cho gõ đè tự do, chỉ ảnh hưởng hiển thị/in, không đổi CustomerId). -->
                     <Grid Grid.Row="0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="120"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <controls:AppLabel Grid.Column="0" Text="Khách hàng"
+                        <controls:AppLabel Grid.Column="0" Text="Mã số KH"
                                            Style="{StaticResource AppTypography.LabelSection}"
                                            VerticalAlignment="Center"/>
                         <controls:AppSearchableComboBox Grid.Column="1"
@@ -207,10 +233,33 @@
                             Placeholder="Chọn khách hàng"
                             IsNullable="True"
                             AddCommand="{Binding AddCustomerCommand}"/>
+                        <controls:AppLabel Grid.Column="3" Text="Tên Khách hàng"
+                                           Style="{StaticResource AppTypography.LabelSection}"
+                                           VerticalAlignment="Center"/>
+                        <controls:AppSuggestTextBox Grid.Column="4"
+                            Text="{Binding CustomerNameText, Mode=TwoWay}"
+                            Suggestions="{Binding Customers}"
+                            Placeholder="Tên khách hàng hiển thị trên hoá đơn"
+                            SuggestionPickedCommand="{Binding CustomerNameSuggestionPickedCommand}"/>
+                    </Grid>
+
+                    <!-- Địa chỉ — mặc định lấy Customer.Address khi chọn khách hàng, cho sửa tự
+                         do (không đổi Customer thật), truyền qua in hoá đơn giống Tên Khách hàng. -->
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <controls:AppLabel Grid.Column="0" Text="Địa chỉ"
+                                           Style="{StaticResource AppTypography.LabelSection}"
+                                           VerticalAlignment="Center"/>
+                        <controls:AppTextField Grid.Column="1"
+                            Text="{Binding CustomerAddressText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            Placeholder="Địa chỉ khách hàng hiển thị trên hoá đơn"/>
                     </Grid>
 
                     <!-- Diễn giải -->
-                    <Grid Grid.Row="2">
+                    <Grid Grid.Row="4">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="120"/>
                             <ColumnDefinition Width="*"/>
@@ -224,7 +273,7 @@
                     </Grid>
 
                     <!-- NV bán hàng -->
-                    <Grid Grid.Row="4">
+                    <Grid Grid.Row="6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="120"/>
                             <ColumnDefinition Width="*"/>
@@ -240,8 +289,9 @@
                             AddCommand="{Binding AddEmployeeCommand}"/>
                     </Grid>
 
-                    <!-- Tham chiếu -->
-                    <Grid Grid.Row="6">
+                    <!-- Tham chiếu — ẩn khỏi UI theo yêu cầu, giữ nguyên Reference/binding ở BE
+                         (không xoá dữ liệu, chỉ không hiển thị/sửa được ở popup này nữa). -->
+                    <Grid Grid.Row="8" Visibility="Collapsed">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="120"/>
                             <ColumnDefinition Width="*"/>
@@ -255,7 +305,7 @@
                     </Grid>
 
                     <!-- Điều khoản thanh toán -->
-                    <Grid Grid.Row="8">
+                    <Grid Grid.Row="10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="120"/>
                             <ColumnDefinition Width="*"/>
@@ -327,7 +377,8 @@
         <!-- ══════════════════════════════════════════════════════════ -->
         <TabControl Grid.Row="3" Margin="16,8,16,0"
                     BorderBrush="{StaticResource AppColor.BorderThin}"
-                    BorderThickness="1">
+                    BorderThickness="1"
+                    IsEnabled="{Binding IsEditable}">
 
             <!-- ── Tab 1: Hàng tiền ── -->
             <TabItem Header="1. Hàng tiền">
@@ -344,14 +395,12 @@
                               BorderThickness="0"
                               RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                               AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
-                              PreparingCellForEdit="LinesDataGrid_PreparingCellForEdit"
-                              CellEditEnding="LinesDataGrid_CellEditEnding"
                               behaviors:DataGridRowNavigationBehavior.EnableArrowRowNavigation="True"
                               behaviors:DataGridLineContextMenuBehavior.EnableLineContextMenu="True">
                         <DataGrid.Columns>
 
                             <!-- Mã hàng — product picker (bao gồm cả lựa chọn "Trừ cọc" trộn sẵn trong Products) -->
-                            <DataGridTemplateColumn Header="Mã hàng" Width="140">
+                            <DataGridTemplateColumn Header="Mã hàng" Width="140" CellStyle="{StaticResource DisabledWhenLocked}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding ProductCode}"
@@ -361,18 +410,17 @@
                                 </DataGridTemplateColumn.CellTemplate>
                                 <DataGridTemplateColumn.CellEditingTemplate>
                                     <DataTemplate>
-                                        <ComboBox ItemsSource="{Binding DataContext.Products, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                  SelectedItem="{Binding SelectedProduct, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                  DisplayMemberPath="DisplayText"
-                                                  IsEditable="True"
-                                                  IsTextSearchEnabled="False"
-                                                  VerticalContentAlignment="Center"/>
+                                        <controls:AppSearchableComboBox
+                                            ItemsSource="{Binding DataContext.Products, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            SelectedItem="{Binding SelectedProduct, Mode=TwoWay}"
+                                            Placeholder="Chọn sản phẩm"
+                                            IsNullable="True"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellEditingTemplate>
                             </DataGridTemplateColumn>
 
                             <!-- Tên hàng — filter by name with dropdown (bao gồm cả lựa chọn "Trừ cọc") -->
-                            <DataGridTemplateColumn Header="Tên hàng" Width="*">
+                            <DataGridTemplateColumn Header="Tên hàng" Width="*" CellStyle="{StaticResource DisabledWhenLocked}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding ProductName}"
@@ -382,12 +430,11 @@
                                 </DataGridTemplateColumn.CellTemplate>
                                 <DataGridTemplateColumn.CellEditingTemplate>
                                     <DataTemplate>
-                                        <ComboBox ItemsSource="{Binding DataContext.Products, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                  SelectedItem="{Binding SelectedProduct, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                  DisplayMemberPath="DisplayText"
-                                                  IsEditable="True"
-                                                  IsTextSearchEnabled="False"
-                                                  VerticalContentAlignment="Center"/>
+                                        <controls:AppSearchableComboBox
+                                            ItemsSource="{Binding DataContext.Products, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            SelectedItem="{Binding SelectedProduct, Mode=TwoWay}"
+                                            Placeholder="Chọn sản phẩm"
+                                            IsNullable="True"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellEditingTemplate>
                             </DataGridTemplateColumn>
@@ -411,24 +458,20 @@
                                 </DataGridTemplateColumn.CellEditingTemplate>
                             </DataGridTemplateColumn>
 
-                            <!-- Hàng KM -->
-                            <DataGridCheckBoxColumn Header="Hàng KM"
-                                                    Binding="{Binding IsPromotion, Mode=TwoWay}"
-                                                    Width="70"
-                                                    CellStyle="{StaticResource DisabledForDepositRow}">
-                                <DataGridCheckBoxColumn.ElementStyle>
-                                    <Style TargetType="CheckBox">
-                                        <Setter Property="HorizontalAlignment" Value="Center"/>
-                                        <Setter Property="VerticalAlignment"   Value="Center"/>
-                                    </Style>
-                                </DataGridCheckBoxColumn.ElementStyle>
-                                <DataGridCheckBoxColumn.EditingElementStyle>
-                                    <Style TargetType="CheckBox">
-                                        <Setter Property="HorizontalAlignment" Value="Center"/>
-                                        <Setter Property="VerticalAlignment"   Value="Center"/>
-                                    </Style>
-                                </DataGridCheckBoxColumn.EditingElementStyle>
-                            </DataGridCheckBoxColumn>
+                            <!-- Hàng KM — CheckBox đặt thẳng trong CellTemplate (không phải
+                                 DataGridCheckBoxColumn) để bấm 1 lần là tick + commit ngay, không
+                                 cần cell đã là current cell trước — tránh lỗi kinh điển của
+                                 DataGridCheckBoxColumn: click đầu chỉ chọn cell, giá trị không
+                                 thật sự đổi ở ViewModel (Thành tiền/Tổng tiền không cập nhật). -->
+                            <DataGridTemplateColumn Header="Hàng KM" Width="70" CellStyle="{StaticResource DisabledForDepositRow}">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding IsPromotion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
 
                             <!-- TK công nợ -->
                             <DataGridTextColumn Header="TK công nợ"
@@ -538,9 +581,11 @@
                             </DataGridTextColumn>
 
                             <!-- Thành tiền: cho gõ tay để override — dòng tự chuyển sang chế độ thủ công
-                                 (BE dùng thẳng giá trị này); sửa lại Đơn giá/SL/CK% sẽ tự tắt chế độ này. -->
+                                 (BE dùng thẳng giá trị này); sửa lại Đơn giá/SL/CK% sẽ tự tắt chế độ này.
+                                 Bind DisplayAmount (không phải Amount thẳng) — dòng Trừ cọc cần luôn hiện
+                                 số dương như lúc user gõ, dù Amount lưu âm nội bộ để cộng vào GrandTotal. -->
                             <DataGridTextColumn Header="Thành tiền"
-                                                Binding="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=N0}"
+                                                Binding="{Binding DisplayAmount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=N0}"
                                                 Width="110">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
@@ -558,16 +603,33 @@
                                                 <Setter Property="IsEnabled" Value="False"/>
                                                 <Setter Property="Background" Value="{StaticResource AppColor.BackgroundSecondary}"/>
                                             </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsLocked}" Value="True">
+                                                <Setter Property="IsEnabled" Value="False"/>
+                                                <Setter Property="Background" Value="{StaticResource AppColor.BackgroundSecondary}"/>
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </DataGridTextColumn.CellStyle>
                             </DataGridTextColumn>
 
-                            <!-- Thuế suất -->
+                            <!-- Thuế suất — TaxRate đã là số phần trăm nguyên (5/8/10), KHÔNG phải
+                                 phân số 0-1, nên ConverterParameter phải giữ đúng "0\%" (dấu \ để
+                                 .NET hiểu % là ký tự literal, không nhân giá trị lên 100 lần —
+                                 xem System.Decimal.ToString custom format). Phải viết Binding dạng
+                                 mở rộng (property-element) thay vì cú pháp rút gọn {Binding ...}
+                                 — cú pháp rút gọn parse ConverterParameter theo ngữ pháp
+                                 MarkupExtension, nơi dấu \ bị nuốt mất trước khi tới Converter,
+                                 khiến "0\%" thành "0%" và TaxRate=8 hiện thành "800%" (bug đã gặp
+                                 thực tế). Dạng mở rộng gán ConverterParameter như 1 attribute XML
+                                 thường — không có luật escape \ — nên "0\%" giữ nguyên 3 ký tự. -->
                             <DataGridTextColumn Header="Thuế suất"
-                                                Binding="{Binding TaxRate, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=0\%}"
                                                 Width="80"
                                                 IsReadOnly="True">
+                                <DataGridTextColumn.Binding>
+                                    <Binding Path="TaxRate"
+                                             Converter="{StaticResource BlankPreserveConverter}"
+                                             ConverterParameter="0\%"/>
+                                </DataGridTextColumn.Binding>
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="HorizontalAlignment" Value="Right"/>

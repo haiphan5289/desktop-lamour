@@ -36,6 +36,18 @@ public sealed class WarehouseReceiptService : IWarehouseReceiptService
             ?? Enumerable.Empty<WarehouseReceiptResponseDto>();
     }
 
+    public async Task<WarehouseReceiptResponseDto?> GetByIdAsync(int id, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Fetching warehouse receipt {Id} from API", id);
+        SetBearerToken();
+
+        var response = await _httpClient.GetAsync($"/api/v1/warehouse-receipts/{id}", ct);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<WarehouseReceiptResponseDto>(ct);
+    }
+
     public async Task<WarehouseReceiptResponseDto> CreateAsync(
         CreateWarehouseReceiptRequestDto request,
         CancellationToken ct = default)

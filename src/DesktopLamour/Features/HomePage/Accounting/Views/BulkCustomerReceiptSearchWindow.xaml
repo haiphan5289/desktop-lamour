@@ -1,0 +1,122 @@
+<Window x:Class="DesktopLamour.Features.HomePage.Accounting.Views.BulkCustomerReceiptSearchWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+        Title="Thu tiền khách hàng hàng loạt"
+        Width="960" Height="640"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource AppColor.BackgroundSecondary}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <controls:AppLoadingOverlay Grid.RowSpan="4" IsLoading="{Binding IsLoading}"/>
+
+        <controls:AppLabel Grid.Row="0" Text="Thu tiền khách hàng hàng loạt"
+                           Style="{StaticResource AppTypography.DisplaySection}"
+                           Margin="20,16,20,0"/>
+
+        <!-- Filter -->
+        <Border Grid.Row="1" Margin="20,12,20,0" Padding="16,12"
+                Background="{StaticResource AppColor.BackgroundPrimary}"
+                BorderBrush="{StaticResource AppColor.BorderThin}"
+                BorderThickness="1" CornerRadius="8">
+            <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <controls:AppLabel Text="Phương thức:" VerticalAlignment="Center" Margin="0,0,8,8"/>
+                <RadioButton Content="Tiền mặt" GroupName="PaymentMethod" VerticalAlignment="Center" Margin="0,0,12,8"
+                             IsChecked="{Binding PaymentMethod, Converter={StaticResource StringEqualityConverter}, ConverterParameter=Cash111}"/>
+                <RadioButton Content="Tiền gửi" GroupName="PaymentMethod" VerticalAlignment="Center" Margin="0,0,16,8"
+                             IsChecked="{Binding PaymentMethod, Converter={StaticResource StringEqualityConverter}, ConverterParameter=Bank112}"/>
+
+                <controls:AppLabel Text="TK ngân hàng:" VerticalAlignment="Center" Margin="0,0,8,8"
+                                   Visibility="{Binding PaymentMethod, Converter={StaticResource StringEqualsToVisibilityConverter}, ConverterParameter=Bank112}"/>
+                <TextBox Text="{Binding BankAccount, UpdateSourceTrigger=PropertyChanged}"
+                         Width="140" Height="32" VerticalContentAlignment="Center" Margin="0,0,16,8"
+                         Visibility="{Binding PaymentMethod, Converter={StaticResource StringEqualsToVisibilityConverter}, ConverterParameter=Bank112}"/>
+
+                <controls:AppLabel Text="Khoảng thời gian" VerticalAlignment="Center" Margin="0,0,8,8"/>
+                <ComboBox ItemsSource="{Binding PeriodOptions}" SelectedItem="{Binding SelectedPeriod, Mode=TwoWay}"
+                          Width="120" Height="32" VerticalContentAlignment="Center" Margin="0,0,16,8"/>
+
+                <controls:AppLabel Text="Từ" VerticalAlignment="Center" Margin="0,0,8,8"/>
+                <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}" Width="120" Height="32" Margin="0,0,16,8"/>
+
+                <controls:AppLabel Text="Đến" VerticalAlignment="Center" Margin="0,0,8,8"/>
+                <DatePicker SelectedDate="{Binding ToDate, Mode=TwoWay}" Width="120" Height="32" Margin="0,0,16,8"/>
+
+                <controls:AppLabel Text="NV bán hàng" VerticalAlignment="Center" Margin="0,0,8,8"/>
+                <controls:AppSearchableComboBox ItemsSource="{Binding Employees}"
+                                                SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
+                                                Placeholder="Tất cả" IsNullable="True"
+                                                Width="180" Height="32" Margin="0,0,16,8"/>
+
+                <controls:AppButton Content="🔍 Lấy dữ liệu" Style="{StaticResource AppButton.Primary.Medium}"
+                                    Command="{Binding LoadCommand}" Height="32" Margin="0,0,0,8"/>
+            </WrapPanel>
+        </Border>
+
+        <!-- Grid -->
+        <Grid Grid.Row="2" Margin="20,12,20,0">
+            <Border Panel.ZIndex="10" Background="{StaticResource AppColor.BackgroundErrorLight}"
+                    CornerRadius="8" Padding="12,10" Margin="0,0,0,12" VerticalAlignment="Top"
+                    Visibility="{Binding HasError, Converter={StaticResource BoolToVisibilityConverter}}">
+                <controls:AppLabel Text="{Binding ErrorMessage}" Style="{StaticResource AppTypography.BodyCaption}"
+                                   Foreground="{StaticResource AppColor.TextError}"/>
+            </Border>
+
+            <DataGrid ItemsSource="{Binding Items}"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False" CanUserDeleteRows="False"
+                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                      BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="1"
+                      RowBackground="{StaticResource AppColor.BackgroundPrimary}"
+                      AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                      Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibilityConverter}}">
+                <DataGrid.Columns>
+                    <DataGridCheckBoxColumn Header="" Binding="{Binding IsSelected, Mode=TwoWay}" Width="36">
+                        <DataGridCheckBoxColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding DataContext.AreAllSelected,
+                                          RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"/>
+                            </DataTemplate>
+                        </DataGridCheckBoxColumn.HeaderTemplate>
+                    </DataGridCheckBoxColumn>
+                    <DataGridTextColumn Header="Ngày chứng từ" Binding="{Binding AccountingDate, StringFormat=dd/MM/yyyy}" Width="100" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Số chứng từ"   Binding="{Binding DocumentNumber}" Width="100" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Mã khách hàng" Binding="{Binding CustomerCode}"   Width="100" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Tên khách hàng" Binding="{Binding CustomerName}"  Width="200" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Diễn giải"     Binding="{Binding Description}"    Width="*"   IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Còn nợ" Binding="{Binding RemainingAmount, StringFormat=\{0:N0\}}" Width="110" IsReadOnly="True">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                <Setter Property="Padding" Value="0,0,8,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <controls:AppLabel Text="Không có chứng từ nào còn nợ trong khoảng ngày đã chọn."
+                               Style="{StaticResource AppTypography.BodyCaption}"
+                               Foreground="{StaticResource AppColor.TextSecondary}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Visibility="{Binding HasItems, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
+        </Grid>
+
+        <!-- Footer -->
+        <Border Grid.Row="3" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,1,0,0" Padding="20,12">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <controls:AppButton Content="Hủy bỏ" Style="{StaticResource AppButton.Tertiary.Medium}"
+                                    Click="CancelButton_Click" Margin="0,0,8,0"/>
+                <controls:AppButton Content="✔ Thu tiền" Style="{StaticResource AppButton.Primary.Medium}"
+                                    Command="{Binding CollectCommand}"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

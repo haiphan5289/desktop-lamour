@@ -52,9 +52,10 @@ public static class NavigationRoutes
 
     public static class Warehouse
     {
-        public const string TongHopTonKho = "TongHopTonKhoView";
-        public const string PhieuNhapKho  = "WarehouseReceiptListView";
-        public const string NhapXuatKho   = "WarehouseTransactionListView";
+        public const string TongHopTonKho  = "TongHopTonKhoView";
+        public const string PhieuNhapKho   = "WarehouseReceiptListView";
+        public const string NhapXuatKho    = "WarehouseTransactionListView";
+        public const string InventoryDetail = "InventoryDetailView";
     }
 
     public static class Warehouses

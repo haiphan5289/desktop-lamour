@@ -11,5 +11,6 @@ public interface IGetInventorySummaryUseCase
         IReadOnlyList<int>? warehouseIds = null,
         int? categoryId = null,
         int? productUnitId = null,
+        IReadOnlyList<int>? productIds = null,
         CancellationToken ct = default);
 }

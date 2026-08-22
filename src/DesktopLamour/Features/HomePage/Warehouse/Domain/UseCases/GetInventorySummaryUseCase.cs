@@ -17,6 +17,7 @@ public sealed class GetInventorySummaryUseCase : IGetInventorySummaryUseCase
         IReadOnlyList<int>? warehouseIds = null,
         int? categoryId = null,
         int? productUnitId = null,
+        IReadOnlyList<int>? productIds = null,
         CancellationToken ct = default)
-        => _repository.GetSummaryAsync(fromDate, toDate, warehouseIds, categoryId, productUnitId, ct);
+        => _repository.GetSummaryAsync(fromDate, toDate, warehouseIds, categoryId, productUnitId, productIds, ct);
 }

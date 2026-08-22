@@ -23,6 +23,7 @@ public partial class AccountingViewModel : ViewModelBase
     private readonly IGetCashLedgerUseCase _getCashLedger;
     private readonly Func<ReceiptWindow>   _receiptWindowFactory;
     private readonly Func<PaymentWindow>   _paymentWindowFactory;
+    private readonly Func<BulkCustomerReceiptSearchWindow> _bulkReceiptSearchWindowFactory;
 
     [ObservableProperty] private bool    _isLoading;
     [ObservableProperty] private bool    _hasError;
@@ -57,12 +58,14 @@ public partial class AccountingViewModel : ViewModelBase
         INavigationService   navigationService,
         IGetCashLedgerUseCase getCashLedger,
         Func<ReceiptWindow>   receiptWindowFactory,
-        Func<PaymentWindow>   paymentWindowFactory)
+        Func<PaymentWindow>   paymentWindowFactory,
+        Func<BulkCustomerReceiptSearchWindow> bulkReceiptSearchWindowFactory)
     {
         _navigationService    = navigationService;
         _getCashLedger        = getCashLedger;
         _receiptWindowFactory = receiptWindowFactory;
         _paymentWindowFactory = paymentWindowFactory;
+        _bulkReceiptSearchWindowFactory = bulkReceiptSearchWindowFactory;
 
         ItemsView = CollectionViewSource.GetDefaultView(Items);
         ItemsView.Filter = FilterEntry;
@@ -155,6 +158,15 @@ public partial class AccountingViewModel : ViewModelBase
         window.Owner = Application.Current.MainWindow;
         window.ViewModel.PaymentSaved += () => _ = LoadAsync(CancellationToken.None);
         window.Show();
+    }
+
+    [RelayCommand]
+    private void OpenBulkCustomerReceipt()
+    {
+        var window = _bulkReceiptSearchWindowFactory();
+        window.Owner = Application.Current.MainWindow;
+        window.ShowDialog();
+        _ = LoadAsync(CancellationToken.None);
     }
 
     [RelayCommand]

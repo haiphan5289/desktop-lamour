@@ -399,6 +399,10 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<PaymentWindow>();
         services.AddTransient<PaymentViewModel>();
         services.AddTransient<PaymentPrintWindow>();
+        services.AddTransient<BulkCustomerReceiptSearchWindow>();
+        services.AddTransient<BulkCustomerReceiptSearchViewModel>();
+        services.AddTransient<BulkCustomerReceiptWindow>();
+        services.AddTransient<BulkCustomerReceiptViewModel>();
 
         // ── Accounting: UseCases ─────────────────────────────────────────────────
         services.AddTransient<IGetCashLedgerUseCase, GetCashLedgerUseCase>();
@@ -407,6 +411,9 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<ICreateReceiptUseCase, CreateReceiptUseCase>();
         services.AddTransient<IUpdateReceiptUseCase, UpdateReceiptUseCase>();
         services.AddTransient<IDeleteReceiptUseCase, DeleteReceiptUseCase>();
+        services.AddTransient<IGetNextReceiptCodeUseCase, GetNextReceiptCodeUseCase>();
+        services.AddTransient<IGetOutstandingSalesOrdersUseCase, GetOutstandingSalesOrdersUseCase>();
+        services.AddTransient<ICreateBulkCustomerReceiptUseCase, CreateBulkCustomerReceiptUseCase>();
         services.AddTransient<IGetPaymentsUseCase, GetPaymentsUseCase>();
         services.AddTransient<IGetPaymentByIdUseCase, GetPaymentByIdUseCase>();
         services.AddTransient<ICreatePaymentUseCase, CreatePaymentUseCase>();
@@ -443,13 +450,18 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<Func<ReceiptWindow>>(sp => () => sp.GetRequiredService<ReceiptWindow>());
         services.AddTransient<Func<PaymentWindow>>(sp => () => sp.GetRequiredService<PaymentWindow>());
         services.AddTransient<Func<PaymentPrintWindow>>(sp => () => sp.GetRequiredService<PaymentPrintWindow>());
+        services.AddTransient<Func<BulkCustomerReceiptSearchWindow>>(sp => () => sp.GetRequiredService<BulkCustomerReceiptSearchWindow>());
+        services.AddTransient<Func<BulkCustomerReceiptWindow>>(sp => () => sp.GetRequiredService<BulkCustomerReceiptWindow>());
 
         // ── Warehouse: Views + ViewModels ────────────────────────────────────────
         services.AddTransient<TongHopTonKhoView>();
         services.AddTransient<TongHopTonKhoViewModel>();
+        services.AddTransient<InventoryDetailView>();
+        services.AddTransient<InventoryDetailViewModel>();
 
         // ── Warehouse: UseCases ──────────────────────────────────────────────────
         services.AddTransient<IGetInventorySummaryUseCase, GetInventorySummaryUseCase>();
+        services.AddTransient<IGetInventoryDetailByProductUseCase, GetInventoryDetailByProductUseCase>();
 
         // ── Warehouse: Repository ────────────────────────────────────────────────
         services.AddTransient<IWarehouseRepository, WarehouseRepository>();
@@ -470,6 +482,7 @@ public static class HomeServiceCollectionExtensions
 
         // ── WarehouseReceipts: UseCases ──────────────────────────────────────────
         services.AddTransient<IGetWarehouseReceiptsUseCase, GetWarehouseReceiptsUseCase>();
+        services.AddTransient<IGetWarehouseReceiptByIdUseCase, GetWarehouseReceiptByIdUseCase>();
         services.AddTransient<ICreateWarehouseReceiptUseCase, CreateWarehouseReceiptUseCase>();
         services.AddTransient<IConfirmWarehouseReceiptUseCase, ConfirmWarehouseReceiptUseCase>();
 
@@ -518,6 +531,7 @@ public static class HomeServiceCollectionExtensions
 
         // ── Sales: UseCases ──────────────────────────────────────────────────────
         services.AddTransient<IGetSalesOrdersUseCase, GetSalesOrdersUseCase>();
+        services.AddTransient<IGetSalesOrderByIdUseCase, GetSalesOrderByIdUseCase>();
         services.AddTransient<ICreateSalesOrderUseCase, CreateSalesOrderUseCase>();
         services.AddTransient<IUpdateSalesOrderUseCase, UpdateSalesOrderUseCase>();
         services.AddTransient<IDeleteSalesOrderUseCase, DeleteSalesOrderUseCase>();

@@ -6,6 +6,7 @@
     <converters:BoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter" Invert="True"/>
     <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
     <converters:StringEqualityConverter x:Key="StringEqualityConverter"/>
+    <converters:StringEqualsToVisibilityConverter x:Key="StringEqualsToVisibilityConverter"/>
     <converters:VatRateDisplayConverter x:Key="VatRateDisplayConverter"/>
     <converters:TaxReductionStatusDisplayConverter x:Key="TaxReductionStatusDisplayConverter"/>
     <converters:ProductNatureDisplayConverter x:Key="ProductNatureDisplayConverter"/>
@@ -14,5 +15,7 @@
     <converters:BlankToZeroConverter x:Key="BlankToZeroConverter"/>
     <converters:BlankPreserveConverter x:Key="BlankPreserveConverter"/>
     <converters:CashLedgerStatusDisplayConverter x:Key="CashLedgerStatusDisplayConverter"/>
+    <converters:FilterOperatorLabelConverter x:Key="FilterOperatorLabelConverter"/>
+    <converters:FilterOperatorSymbolConverter x:Key="FilterOperatorSymbolConverter"/>
 
 </ResourceDictionary>

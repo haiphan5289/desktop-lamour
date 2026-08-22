@@ -24,6 +24,7 @@ public partial class ReceiptViewModel : ViewModelBase
     private readonly ICreateReceiptUseCase    _createReceipt;
     private readonly IUpdateReceiptUseCase    _updateReceipt;
     private readonly IDeleteReceiptUseCase    _deleteReceipt;
+    private readonly IGetNextReceiptCodeUseCase _getNextCode;
     private readonly IGetCustomersUseCase     _getCustomers;
     private readonly IGetEmployeesUseCase     _getEmployees;
     private readonly Func<EmployeeFormWindow> _employeeFormWindowFactory;
@@ -82,6 +83,7 @@ public partial class ReceiptViewModel : ViewModelBase
         ICreateReceiptUseCase    createReceipt,
         IUpdateReceiptUseCase    updateReceipt,
         IDeleteReceiptUseCase    deleteReceipt,
+        IGetNextReceiptCodeUseCase getNextCode,
         IGetCustomersUseCase     getCustomers,
         IGetEmployeesUseCase     getEmployees,
         Func<EmployeeFormWindow> employeeFormWindowFactory,
@@ -93,6 +95,7 @@ public partial class ReceiptViewModel : ViewModelBase
         _createReceipt             = createReceipt;
         _updateReceipt             = updateReceipt;
         _deleteReceipt             = deleteReceipt;
+        _getNextCode               = getNextCode;
         _getCustomers              = getCustomers;
         _getEmployees              = getEmployees;
         _employeeFormWindowFactory = employeeFormWindowFactory;
@@ -163,12 +166,24 @@ public partial class ReceiptViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void AddNew()
+    private async Task AddNewAsync(CancellationToken ct = default)
     {
         CurrentReceipt        = null;
         _currentIndex         = -1;
         IsEditing             = true;
         ClearForm();
+
+        // Số chứng từ tự sinh dạng PT{5 số} — khớp GetNextSalesOrderCodeUseCase; ClearForm() đã set
+        // placeholder tĩnh, ở đây gọi BE lấy số thật ngay khi mở form Thêm mới. Giữ nguyên placeholder
+        // nếu gọi lỗi (offline...) thay vì chặn user nhập tay.
+        try
+        {
+            DocumentNumber = await _getNextCode.ExecuteAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not fetch next receipt code, keeping placeholder");
+        }
     }
 
     [RelayCommand]
@@ -384,6 +399,7 @@ public partial class ReceiptViewModel : ViewModelBase
                 SubjectCode   = e.SubjectCode,
                 SubjectName   = e.SubjectName,
                 BankAccount   = e.BankAccount,
+                SalesOrderId  = e.SalesOrderId,
             };
             item.PropertyChanged += (_, _) => RecalculateTotals();
             Entries.Add(item);
@@ -437,6 +453,7 @@ public partial class ReceiptViewModel : ViewModelBase
         SubjectCode   = item.SubjectCode,
         SubjectName   = item.SubjectName,
         BankAccount   = item.BankAccount,
+        SalesOrderId  = item.SalesOrderId,
     };
 
     private void NavigateToReceipt(int id)

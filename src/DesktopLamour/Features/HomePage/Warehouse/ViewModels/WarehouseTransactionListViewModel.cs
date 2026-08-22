@@ -5,6 +5,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.Navigation;
 using DesktopLamour.Core.ViewModels;
+using DesktopLamour.Features.HomePage.Customers.Domain.Models;
+using DesktopLamour.Features.HomePage.Customers.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Sales.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Sales.Views;
 using DesktopLamour.Features.HomePage.Warehouse.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Warehouse.Domain.UseCases;
@@ -16,9 +19,12 @@ namespace DesktopLamour.Features.HomePage.Warehouse.ViewModels;
 public partial class WarehouseTransactionListViewModel : ViewModelBase
 {
     private readonly IGetWarehouseTransactionsUseCase _getUseCase;
+    private readonly IGetSalesOrderByIdUseCase        _getSalesOrderById;
+    private readonly IGetCustomersUseCase             _getCustomers;
     private readonly INavigationService               _navigationService;
     private readonly Func<WarehouseReceiptFormWindow>  _formWindowFactory;
     private readonly Func<SalesOrderWindow>            _salesOrderWindowFactory;
+    private readonly Func<SalesOrderPrintWindow>       _printWindowFactory;
     private readonly Func<WarehouseTransactionDetailWindow> _detailWindowFactory;
     private readonly ILogger<WarehouseTransactionListViewModel> _logger;
 
@@ -37,16 +43,22 @@ public partial class WarehouseTransactionListViewModel : ViewModelBase
 
     public WarehouseTransactionListViewModel(
         IGetWarehouseTransactionsUseCase getUseCase,
+        IGetSalesOrderByIdUseCase        getSalesOrderById,
+        IGetCustomersUseCase             getCustomers,
         INavigationService               navigationService,
         Func<WarehouseReceiptFormWindow>  formWindowFactory,
         Func<SalesOrderWindow>            salesOrderWindowFactory,
+        Func<SalesOrderPrintWindow>       printWindowFactory,
         Func<WarehouseTransactionDetailWindow> detailWindowFactory,
         ILogger<WarehouseTransactionListViewModel> logger)
     {
         _getUseCase              = getUseCase;
+        _getSalesOrderById       = getSalesOrderById;
+        _getCustomers            = getCustomers;
         _navigationService       = navigationService;
         _formWindowFactory       = formWindowFactory;
         _salesOrderWindowFactory = salesOrderWindowFactory;
+        _printWindowFactory      = printWindowFactory;
         _detailWindowFactory     = detailWindowFactory;
         _logger                  = logger;
     }
@@ -122,11 +134,54 @@ public partial class WarehouseTransactionListViewModel : ViewModelBase
 
     partial void OnSelectedTypeIndexChanged(int value) => LoadCommand.Execute(null);
 
-    // Double-click 1 dòng chứng từ → mở popup "Chi tiết" hiển thị các dòng hàng của chứng từ đó.
+    // Double-click 1 dòng chứng từ:
+    // - Dòng Xuất kho (TransactionType="Export") LUÔN phát sinh từ 1 Sales Order đã ghi sổ (số
+    //   chứng từ mang prefix XK — xem GetWarehouseTransactionsUseCase.MapSalesOrder phía BE) →
+    //   mở thẳng popup "In Hóa Đơn" (SalesOrderPrintWindow), y hệt nút 🖨 bên trong popup "Thêm
+    //   chứng từ bán hàng" — từ màn Kho user cần xem/in lại hóa đơn nhanh, không cần mở form sửa.
+    //   (Đã thử mở SalesOrderWindow (form sửa) trước đó theo yêu cầu — user phản hồi muốn thẳng
+    //   màn in hóa đơn thay vì form sửa, nên đổi lại theo hướng này.)
+    // - Dòng Nhập kho (TransactionType="Import") không có Sales Order gốc → giữ nguyên popup
+    //   "Chi tiết" cũ (WarehouseTransactionDetailWindow).
     [RelayCommand]
-    private void ShowDetail(WarehouseTransactionResponseDto? item)
+    private async Task ShowDetailAsync(WarehouseTransactionResponseDto? item, CancellationToken ct = default)
     {
         if (item is null) return;
+
+        if (item.TransactionType.Equals("Export", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var order = await _getSalesOrderById.ExecuteAsync(item.Id, ct);
+                if (order is null)
+                {
+                    MessageBox.Show($"Không tìm thấy chứng từ bán hàng '{item.DocumentNumber}'.", "Lỗi",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // SalesOrderResponseDto không mang Phone/Address khách hàng (chỉ CustomerId/Name)
+                // — tra thêm qua danh sách khách hàng để hóa đơn in đủ thông tin, giống cách
+                // SalesOrderViewModel.ShowPrintPreview lấy Phone/Address từ SelectedCustomer.
+                var customers = await _getCustomers.ExecuteAsync(ct);
+                var customer  = customers.FirstOrDefault(c => c.Id == order.CustomerId);
+
+                var printWindow = _printWindowFactory();
+                // Trừ cọc không được lưu lại trên SalesOrder đã ghi sổ (chỉ gửi riêng qua
+                // DepositDeduction — xem sales.md), nên không tái tạo được số trừ cọc gốc ở đây;
+                // hóa đơn in từ màn Kho tạm thời không hiện dòng trừ cọc (depositDeductionAmount=0).
+                printWindow.Initialize(order, customer?.Phone, customer?.Address);
+                printWindow.Owner = Application.Current.MainWindow;
+                printWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load sales order {DocumentNumber} for print from Kho screen", item.DocumentNumber);
+                MessageBox.Show($"Không thể tải hóa đơn: {ex.Message}", "Lỗi",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            return;
+        }
 
         var window = _detailWindowFactory();
         window.Initialize(item);

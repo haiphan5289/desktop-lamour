@@ -9,6 +9,8 @@ public class UpdateSalesOrderRequestDto
     [JsonPropertyName("accounting_date")]   public DateTime AccountingDate { get; set; }
     [JsonPropertyName("document_date")]     public DateTime DocumentDate   { get; set; }
     [JsonPropertyName("customer_id")]       public int      CustomerId     { get; set; }
+    [JsonPropertyName("customer_name_override")] public string? CustomerNameOverride { get; set; }
+    [JsonPropertyName("customer_address_override")] public string? CustomerAddressOverride { get; set; }
     [JsonPropertyName("employee_id")]       public int?     EmployeeId     { get; set; }
     [JsonPropertyName("description")]       public string?  Description    { get; set; }
     [JsonPropertyName("reference")]         public string?  Reference      { get; set; }

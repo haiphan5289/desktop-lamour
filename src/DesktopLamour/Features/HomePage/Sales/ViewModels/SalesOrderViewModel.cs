@@ -35,6 +35,24 @@ public partial class SalesOrderViewModel : ViewModelBase
     // KH}" theo khách hàng (OnSelectedCustomerChanged) vốn chỉ hợp lý khi mở từ module Bán hàng.
     public bool IsFromWarehouseExport { private get; set; }
 
+    // Set bởi SalesOrderWindow.Initialize khi mở popup ở chế độ chỉ xem (double-click 1 dòng từ
+    // "Sổ chi tiết bán hàng") — disable toàn bộ field nhập liệu + ẩn các nút hành động thay đổi
+    // dữ liệu (Ghi sổ/Xóa/Treo/Hoàn), chỉ giữ In Hoá Đơn/Đóng.
+    [ObservableProperty] private bool _isReadOnly;
+
+    partial void OnIsReadOnlyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsEditable));
+        OnPropertyChanged(nameof(ShowHoldSection));
+        OnPropertyChanged(nameof(HeaderSubtitle));
+    }
+
+    public bool IsEditable => !IsReadOnly;
+    public bool ShowHoldSection => HasExistingOrder && !IsReadOnly;
+    public string HeaderSubtitle => IsReadOnly
+        ? "Xem chi tiết chứng từ (chỉ đọc)"
+        : "Bán hàng hóa, dịch vụ trong nước chưa thu tiền";
+
     public event Action? OrderSaved;
     public event Action? RequestClose;
 
@@ -49,6 +67,7 @@ public partial class SalesOrderViewModel : ViewModelBase
     private readonly IGetWarehouseSettingsUseCase   _getWarehouses;
     private readonly IGetDepositsByCustomerUseCase  _getDepositsByCustomer;
     private readonly ICreateDepositDeductionUseCase _createDepositDeduction;
+    private readonly IGetDepositDeductionsUseCase   _getDepositDeductions;
     private readonly Func<EmployeeFormWindow>       _employeeFormWindowFactory;
     private readonly Func<CustomerFormWindow>       _customerFormWindowFactory;
     private readonly Func<SalesOrderPrintWindow>    _printWindowFactory;
@@ -61,6 +80,15 @@ public partial class SalesOrderViewModel : ViewModelBase
 
     // ── Header — Thông tin chung ──────────────────────────────────────────
     [ObservableProperty] private ISearchableItem? _selectedCustomer;
+    // "Tên Khách hàng" — mặc định = Customer.Name khi chọn "Mã số khách hàng", nhưng cho gõ đè
+    // tuỳ ý (không đổi CustomerId/công nợ). Gửi lên BE làm CustomerNameOverride, in hoá đơn dùng
+    // giá trị này thay Customer.Name thật. Xem AppSuggestTextBox — control tự viết riêng cho field
+    // này, gợi ý theo tên nhưng không tự trả về tên cũ khi rời ô như AppSearchableComboBox.
+    [ObservableProperty] private string?          _customerNameText;
+    // "Địa chỉ" — cùng cơ chế CustomerNameText: mặc định = Customer.Address, cho sửa tự do, gửi
+    // BE làm CustomerAddressOverride, in hoá đơn dùng giá trị này. Không cần gợi ý/search (chỉ là
+    // AppTextField thường) — khác CustomerNameText.
+    [ObservableProperty] private string?          _customerAddressText;
     [ObservableProperty] private string?          _description;
     [ObservableProperty] private string?          _reference;
     [ObservableProperty] private ISearchableItem? _selectedEmployee;
@@ -103,6 +131,7 @@ public partial class SalesOrderViewModel : ViewModelBase
     {
         StatusLabel = value?.Status switch { 1 => "⏸ Treo", _ => "📄 Ghi sổ" };
         OnPropertyChanged(nameof(HasExistingOrder));
+        OnPropertyChanged(nameof(ShowHoldSection));
         HoldCommand.NotifyCanExecuteChanged();
         PrintCommand.NotifyCanExecuteChanged();
     }
@@ -130,6 +159,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         IGetWarehouseSettingsUseCase   getWarehouses,
         IGetDepositsByCustomerUseCase  getDepositsByCustomer,
         ICreateDepositDeductionUseCase createDepositDeduction,
+        IGetDepositDeductionsUseCase   getDepositDeductions,
         Func<EmployeeFormWindow>       employeeFormWindowFactory,
         Func<CustomerFormWindow>       customerFormWindowFactory,
         Func<SalesOrderPrintWindow>    printWindowFactory,
@@ -146,6 +176,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         _getWarehouses              = getWarehouses;
         _getDepositsByCustomer      = getDepositsByCustomer;
         _createDepositDeduction     = createDepositDeduction;
+        _getDepositDeductions       = getDepositDeductions;
         _employeeFormWindowFactory  = employeeFormWindowFactory;
         _customerFormWindowFactory  = customerFormWindowFactory;
         _printWindowFactory         = printWindowFactory;
@@ -155,9 +186,14 @@ public partial class SalesOrderViewModel : ViewModelBase
     }
 
     // Recalc tổng tiền + re-evaluate PrintCommand (in được ngay khi đã có dữ liệu sản phẩm,
-    // kể cả chứng từ chưa Ghi sổ) mỗi khi dòng thêm/bớt hoặc 1 field trên dòng đổi.
+    // kể cả chứng từ chưa Ghi sổ) mỗi khi dòng thêm/bớt hoặc 1 field trên dòng đổi. Đồng thời xoá
+    // banner lỗi cũ (ví dụ "không đủ tồn kho") — lỗi đó gắn với trạng thái Lines LÚC Ghi sổ thất
+    // bại, sửa/xoá dòng xong mà banner còn hiển thị y nguyên (dù đã đúng) gây hiểu nhầm là chưa
+    // sửa được. Ghi sổ lần sau (SaveAsync) tự validate lại và set lại HasError nếu vẫn còn lỗi.
     private void OnLinesOrTotalsChanged()
     {
+        HasError     = false;
+        ErrorMessage = string.Empty;
         RecalculateTotals();
         PrintCommand.NotifyCanExecuteChanged();
     }
@@ -181,7 +217,7 @@ public partial class SalesOrderViewModel : ViewModelBase
             else
             {
                 CurrentOrder = order;
-                PopulateFormFromCurrent();
+                await PopulateFormFromCurrentAsync(ct);
             }
         }
         catch (Exception ex)
@@ -344,7 +380,11 @@ public partial class SalesOrderViewModel : ViewModelBase
     {
         var customer = SelectedCustomer as DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer;
         var printWindow = _printWindowFactory();
-        printWindow.Initialize(order, customer?.Phone, customer?.Address, depositDeductionAmount);
+        // Tên khách hàng bị gõ đè khác tên thật (CustomerNameOverride có giá trị) → ẩn SĐT trên
+        // hoá đơn, vì SĐT thật không còn khớp với tên đang hiển thị. Địa chỉ dùng order.CustomerAddress
+        // (đã resolve override) thay vì lấy thẳng customer?.Address.
+        var phone = string.IsNullOrWhiteSpace(order.CustomerNameOverride) ? customer?.Phone : null;
+        printWindow.Initialize(order, phone, order.CustomerAddress, depositDeductionAmount);
         printWindow.ShowDialog();
     }
 
@@ -379,13 +419,13 @@ public partial class SalesOrderViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void Cancel()
+    private async Task CancelAsync(CancellationToken ct = default)
     {
         HasError = false;
         if (CurrentOrder is null)
             ClearForm();
         else
-            PopulateFormFromCurrent();
+            await PopulateFormFromCurrentAsync(ct);
     }
 
     [RelayCommand]
@@ -427,26 +467,54 @@ public partial class SalesOrderViewModel : ViewModelBase
     [RelayCommand]
     private void AddLine()
     {
-        // Dòng mới phải thực sự rỗng (không Kho/TK/Số lượng mặc định hiển thị sẵn) — các field
-        // TK/Số lượng tự điền khi user chọn 1 sản phẩm thật (xem SalesOrderLineItem.SelectedProduct).
-        // Riêng Kho không có logic tự điền trong model đó (model không biết danh sách Warehouses),
-        // nên set mặc định ở đây ngay khi ProductId chuyển từ 0 → có giá trị, để tránh warehouse_id
-        // rỗng khi Ghi sổ (dòng Đặt cọc thì ProductId luôn = 0 nên không bị set nhầm).
         var line = new SalesOrderLineItem();
+        AttachLineHandlers(line);
+        Lines.Add(line);
+    }
+
+    // Dòng mới phải thực sự rỗng (không Kho/TK/Số lượng mặc định hiển thị sẵn) — các field TK/Số
+    // lượng tự điền khi user chọn 1 sản phẩm thật (xem SalesOrderLineItem.SelectedProduct). Riêng
+    // Kho không có logic tự điền trong model đó (model không biết danh sách Warehouses), nên set
+    // mặc định ở đây ngay khi ProductId chuyển từ 0 → có giá trị, để tránh warehouse_id rỗng khi
+    // Ghi sổ (dòng Đặt cọc thì ProductId luôn = 0 nên không bị set nhầm). Dùng chung cho dòng mới
+    // (AddLine) và dòng nạp lại từ chứng từ đã lưu (PopulateFormFromCurrentAsync) — cả 2 nơi đều
+    // cần gợi ý Thành tiền khi user đổi 1 dòng sang chọn "Trừ cọc".
+    private void AttachLineHandlers(SalesOrderLineItem line)
+    {
         line.PropertyChanged += (_, e) =>
         {
             OnLinesOrTotalsChanged();
+
             if (e.PropertyName == nameof(SalesOrderLineItem.ProductId)
                 && line.ProductId > 0 && line.WarehouseId == 0)
                 line.SetSelectedWarehouseSilent(
                     Warehouses.FirstOrDefault(w => w.Code == DefaultWarehouseCode) ?? Warehouses.FirstOrDefault());
+
+            // Vừa chọn "Trừ cọc" cho dòng này (Thành tiền còn 0, chưa gõ tay) — gợi ý sẵn số tiền
+            // trừ = min(số dư còn lại của cọc, tổng tiền chứng từ đang cần thanh toán). User vẫn
+            // sửa lại được nếu muốn trừ ít hơn số gợi ý. Bắt ở LinkedDeposit (không phải
+            // SelectedProduct) vì SelectedProduct phát PropertyChanged NGAY khi gán, trước khi
+            // nhánh DepositProductPickerItem trong setter kịp gán LinkedDeposit.
+            if (e.PropertyName == nameof(SalesOrderLineItem.LinkedDeposit)
+                && line.IsDepositDeductionRow && line.LinkedDeposit is not null && line.Amount == 0)
+            {
+                var amountDue = TotalPayment + TotalTaxAmount;
+                line.Amount = Math.Max(0, Math.Min(line.LinkedDeposit.RemainingBalance, amountDue));
+            }
         };
-        Lines.Add(line);
     }
 
     [RelayCommand]
     private void RemoveLine(SalesOrderLineItem line)
     {
+        if (line.IsLocked)
+        {
+            MessageBox.Show(
+                "Dòng \"Trừ cọc\" này đã được ghi sổ, không thể xoá ở đây. Muốn hoàn lại khoản trừ cọc, hãy thực hiện qua màn Đặt Cọc/Trừ Cọc.",
+                "Không thể xoá", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
         Lines.Remove(line);
         RecalculateTotals();
     }
@@ -457,8 +525,9 @@ public partial class SalesOrderViewModel : ViewModelBase
     {
         if (value is DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer c)
         {
-            if (!IsFromWarehouseExport)
-                Description = $"Bán hàng {c.Name}";
+            // CustomerNameText đổi → tự kích OnCustomerNameTextChanged → tự điền Diễn giải.
+            CustomerNameText    = c.Name;
+            CustomerAddressText = c.Address;
             if (c.SaleCareEmployeeId.HasValue)
             {
                 var matched = Employees.FirstOrDefault(e => e.Id == c.SaleCareEmployeeId.Value);
@@ -476,6 +545,23 @@ public partial class SalesOrderViewModel : ViewModelBase
             OnPropertyChanged(nameof(AvailableDeposits));
             ResetProductFilter();
         }
+    }
+
+    // "Tên Khách hàng" đổi (do chọn "Mã số khách hàng" HOẶC do user gõ đè tự do) → luôn đè lại
+    // Diễn giải theo tên mới nhất, khớp hành vi cũ của OnSelectedCustomerChanged.
+    partial void OnCustomerNameTextChanged(string? value)
+    {
+        if (IsFromWarehouseExport || string.IsNullOrWhiteSpace(value)) return;
+        Description = $"Bán hàng {value}";
+    }
+
+    // User bấm chọn 1 gợi ý trong AppSuggestTextBox ("Tên Khách hàng") — đồng bộ lại "Mã số khách
+    // hàng" (SelectedCustomer/CustomerId) về đúng khách hàng đó, không chỉ đổi text hiển thị.
+    [RelayCommand]
+    private void CustomerNameSuggestionPicked(ISearchableItem item)
+    {
+        if (SelectedCustomer?.Id != item.Id)
+            SelectedCustomer = item;
     }
 
     private async Task LoadAvailableDepositsAsync(int customerId)
@@ -507,6 +593,8 @@ public partial class SalesOrderViewModel : ViewModelBase
     private void ClearForm()
     {
         SelectedCustomer = null;
+        CustomerNameText    = null;
+        CustomerAddressText = null;
         SelectedEmployee = null;
         Description      = IsFromWarehouseExport ? "Xuất kho bán hàng" : null;
         Reference        = null;
@@ -529,11 +617,15 @@ public partial class SalesOrderViewModel : ViewModelBase
 
     private string GenerateNextDocumentNumber() => _nextDocumentNumber;
 
-    private void PopulateFormFromCurrent()
+    private async Task PopulateFormFromCurrentAsync(CancellationToken ct = default)
     {
         if (CurrentOrder is null) return;
 
         SelectedCustomer = Customers.FirstOrDefault(c => c.Id == CurrentOrder.CustomerId);
+        // Đè lại sau SelectedCustomer — tránh bị OnSelectedCustomerChanged/OnCustomerNameTextChanged
+        // tự điền đè mất giá trị override + Diễn giải đã lưu ở BE.
+        CustomerNameText    = CurrentOrder.CustomerNameOverride ?? CurrentOrder.CustomerName;
+        CustomerAddressText = CurrentOrder.CustomerAddressOverride ?? CurrentOrder.CustomerAddress;
         SelectedEmployee = Employees.FirstOrDefault(e => e.Id == CurrentOrder.EmployeeId);
         Description      = CurrentOrder.Description;
         Reference        = CurrentOrder.Reference;
@@ -571,58 +663,50 @@ public partial class SalesOrderViewModel : ViewModelBase
             item.LoadAmount(l.Amount, l.IsAmountManual);
             item.SetSelectedProductSilent(_allProducts.FirstOrDefault(p => p.Id == l.ProductId));
             item.SetSelectedWarehouseSilent(Warehouses.FirstOrDefault(w => w.Id == l.WarehouseId));
-            item.PropertyChanged += (_, _) => OnLinesOrTotalsChanged();
+            AttachLineHandlers(item);
             Lines.Add(item);
+        }
+
+        // Nạp lại "Trừ cọc" đã ghi sổ ở BE (DepositDeduction, không phải SalesOrderLine) — nếu
+        // không, GrandTotal tính lại ở dưới sẽ là tổng TRƯỚC khi trừ cọc (khớp cách BE lưu
+        // SalesOrder.GrandTotal — xem CreateSalesOrderUseCase — nhưng sai với số khách thực trả).
+        // Dòng nạp lại này bị khoá (IsLocked) — không cho sửa/xoá để tránh gọi lại
+        // CreateDepositDeductionUseCase lúc Lưu và tạo bản ghi trừ cọc trùng lặp.
+        try
+        {
+            var deductions = await _getDepositDeductions.ExecuteAsync(
+                customerId: null, employeeId: null, salesOrderId: CurrentOrder.Id,
+                fromDate: null, toDate: null, ct);
+
+            foreach (var d in deductions)
+            {
+                var lockedLine = new SalesOrderLineItem
+                {
+                    IsDepositDeductionRow = true,
+                    IsLocked              = true,
+                    ProductCode           = d.DepositDocumentNumber,
+                    ProductName           = "Trừ cọc",
+                };
+                lockedLine.LoadAmount(-d.Amount, isAmountManual: false);
+                Lines.Add(lockedLine);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not reload deposit deductions for SalesOrder {Id}", CurrentOrder.Id);
         }
 
         RecalculateTotals();
     }
 
-    public void FilterProductsByCode(string? text)
-    {
-        var filteredProducts = string.IsNullOrWhiteSpace(text)
-            ? _allProducts
-            : _allProducts.Where(p => p.Code.Contains(text, StringComparison.OrdinalIgnoreCase));
-        var filteredDeposits = string.IsNullOrWhiteSpace(text)
-            ? _depositPickerItems
-            : _depositPickerItems.Where(d => d.Code.Contains(text, StringComparison.OrdinalIgnoreCase));
-        RefreshProducts(filteredDeposits.Concat(filteredProducts));
-    }
-
-    public void FilterProductsByName(string? text)
-    {
-        var filteredProducts = string.IsNullOrWhiteSpace(text)
-            ? _allProducts
-            : _allProducts.Where(p => p.Name.Contains(text, StringComparison.OrdinalIgnoreCase));
-        var filteredDeposits = string.IsNullOrWhiteSpace(text)
-            ? _depositPickerItems
-            : _depositPickerItems.Where(d => d.Name.Contains(text, StringComparison.OrdinalIgnoreCase));
-        RefreshProducts(filteredDeposits.Concat(filteredProducts));
-    }
-
     // "Trừ cọc" luôn hiển thị ở đầu danh sách (trước sản phẩm thật) khi khách hàng có cọc khả dụng.
+    // AppSearchableComboBox tự lọc theo Code/Name khi user gõ (xem PopulateFiltered) nên Products
+    // chỉ cần giữ đúng danh sách đầy đủ — không cần lọc lại mỗi keystroke như ComboBox cũ.
     public void ResetProductFilter()
     {
-        RefreshProducts(_depositPickerItems.Concat(_allProducts));
-    }
-
-    // Diff Add/Remove từng phần tử thay vì Clear() rồi add lại toàn bộ — Clear() phát ra
-    // NotifyCollectionChangedAction.Reset, và ComboBox (Selector) LUÔN tự ép SelectedItem về null +
-    // đồng bộ lại Text của ô editable khi nhận Reset, kể cả khi SelectedItem vốn đã null từ trước.
-    // Vì FilterProductsByName/ByCode gọi hàm này trên MỖI keystroke, Reset liên tục xoá mất ký tự
-    // người dùng vừa gõ vào ô "Tên hàng"/"Mã hàng" (bug gõ tên hàng bị nhảy liên tục). Add/Remove
-    // từng phần tử chỉ phát granular event, không kích hoạt việc ép reset đó.
-    private void RefreshProducts(IEnumerable<ISearchableItem> items)
-    {
-        var target = items as IList<ISearchableItem> ?? items.ToList();
-
-        for (var i = Products.Count - 1; i >= 0; i--)
-            if (!target.Contains(Products[i]))
-                Products.RemoveAt(i);
-
-        for (var i = 0; i < target.Count; i++)
-            if (i >= Products.Count || !Equals(Products[i], target[i]))
-                Products.Insert(i, target[i]);
+        Products.Clear();
+        foreach (var item in _depositPickerItems.Concat(_allProducts))
+            Products.Add(item);
     }
 
     private void RecalculateTotals()
@@ -641,12 +725,37 @@ public partial class SalesOrderViewModel : ViewModelBase
         LineSummary    = $"Số dòng = {Lines.Count(l => !l.IsDepositDeductionRow && l.ProductId > 0)}";
     }
 
+    // null = không override, hiển thị/in luôn theo Customer.Name thật (tự đổi theo nếu khách hàng
+    // được đổi tên sau này). Chỉ gửi lên BE khi CustomerNameText thực sự khác tên thật đang chọn.
+    private string? ResolveCustomerNameOverride()
+    {
+        var text = CustomerNameText?.Trim();
+        if (string.IsNullOrWhiteSpace(text)) return null;
+        if (SelectedCustomer is DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer c
+            && string.Equals(text, c.Name, StringComparison.Ordinal))
+            return null;
+        return text;
+    }
+
+    // Cùng logic ResolveCustomerNameOverride nhưng cho Địa chỉ.
+    private string? ResolveCustomerAddressOverride()
+    {
+        var text = CustomerAddressText?.Trim();
+        if (string.IsNullOrWhiteSpace(text)) return null;
+        if (SelectedCustomer is DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer c
+            && string.Equals(text, c.Address, StringComparison.Ordinal))
+            return null;
+        return text;
+    }
+
     private CreateSalesOrderRequestDto BuildCreateRequest() => new()
     {
         DocumentNumber = DocumentNumber.Trim(),
         AccountingDate = DateTime.SpecifyKind(AccountingDate.Date, DateTimeKind.Unspecified),
         DocumentDate   = DateTime.SpecifyKind(DocumentDate.Date,   DateTimeKind.Unspecified),
         CustomerId     = SelectedCustomer!.Id,
+        CustomerNameOverride    = ResolveCustomerNameOverride(),
+        CustomerAddressOverride = ResolveCustomerAddressOverride(),
         EmployeeId     = SelectedEmployee?.Id,
         Description    = string.IsNullOrWhiteSpace(Description)    ? null : Description.Trim(),
         Reference      = string.IsNullOrWhiteSpace(Reference)      ? null : Reference.Trim(),
@@ -667,6 +776,8 @@ public partial class SalesOrderViewModel : ViewModelBase
         AccountingDate = DateTime.SpecifyKind(AccountingDate.Date, DateTimeKind.Unspecified),
         DocumentDate   = DateTime.SpecifyKind(DocumentDate.Date,   DateTimeKind.Unspecified),
         CustomerId     = SelectedCustomer!.Id,
+        CustomerNameOverride    = ResolveCustomerNameOverride(),
+        CustomerAddressOverride = ResolveCustomerAddressOverride(),
         EmployeeId     = SelectedEmployee?.Id,
         Description    = string.IsNullOrWhiteSpace(Description)    ? null : Description.Trim(),
         Reference      = string.IsNullOrWhiteSpace(Reference)      ? null : Reference.Trim(),
@@ -749,7 +860,13 @@ public partial class SalesOrderViewModel : ViewModelBase
             AccountingDate = AccountingDate,
             DocumentDate   = DocumentDate,
             CustomerId     = customer?.Id ?? 0,
-            CustomerName   = customer?.Name ?? "",
+            // Ưu tiên CustomerNameText/CustomerAddressText (có thể đã bị user gõ đè) — không lấy
+            // thẳng customer?.Name/Address. CustomerNameOverride cần có ở đây để ShowPrintPreview
+            // biết có nên ẩn SĐT không, dù đây là DTO dựng tạm (chưa lưu BE).
+            CustomerName   = string.IsNullOrWhiteSpace(CustomerNameText) ? (customer?.Name ?? "") : CustomerNameText,
+            CustomerNameOverride    = ResolveCustomerNameOverride(),
+            CustomerAddress = string.IsNullOrWhiteSpace(CustomerAddressText) ? (customer?.Address ?? "") : CustomerAddressText,
+            CustomerAddressOverride = ResolveCustomerAddressOverride(),
             EmployeeId     = employee?.Id,
             EmployeeName   = employee?.Name,
             Description    = Description,
