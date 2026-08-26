@@ -28,4 +28,7 @@ public class SalesReturnRepository : ISalesReturnRepository
 
     public Task<string> GetNextCodeAsync(CancellationToken ct = default)
         => _service.GetNextCodeAsync(ct);
+
+    public Task<CreateWarehouseReceiptResultDto> CreateWarehouseReceiptAsync(int id, CancellationToken ct = default)
+        => _service.CreateWarehouseReceiptAsync(id, ct);
 }

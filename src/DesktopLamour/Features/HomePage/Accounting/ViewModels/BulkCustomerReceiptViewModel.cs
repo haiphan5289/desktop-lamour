@@ -14,14 +14,16 @@ using Microsoft.Extensions.Logging;
 namespace DesktopLamour.Features.HomePage.Accounting.ViewModels;
 
 // Popup 2/2 của "Phiếu Thu Hàng Loạt" — xác nhận danh sách đơn đã chọn ở popup tìm kiếm, cho sửa
-// Số tiền từng dòng (thu 1 phần), chọn NV thu nợ, rồi Cất — mỗi khách hàng khác nhau trong danh
-// sách sinh ra 1 Receipt riêng (BE: CreateBulkCustomerReceiptUseCase gom theo CustomerId).
+// Số tiền từng dòng (thu 1 phần), chọn NV thu nợ, rồi Cất. 2026-08-26 (so ảnh mẫu MISA): tạo
+// ĐÚNG 1 Receipt duy nhất cho toàn bộ danh sách (khác nhiều khách hàng vẫn chung 1 phiếu) — không
+// còn group theo CustomerId ra nhiều phiếu như bản trước (xem CreateBulkCustomerReceiptUseCase BE).
 public partial class BulkCustomerReceiptViewModel : ViewModelBase
 {
     public event Action? RequestClose;
 
     private readonly ICreateBulkCustomerReceiptUseCase _createBulk;
     private readonly IGetEmployeesUseCase              _getEmployees;
+    private readonly IGetNextReceiptCodeUseCase        _getNextCode;
     private readonly ILogger<BulkCustomerReceiptViewModel> _logger;
 
     private string  _debitAccount = "Cash111";
@@ -31,12 +33,24 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
     [ObservableProperty] private bool   _hasError;
     [ObservableProperty] private string _errorMessage = string.Empty;
 
+    // ── Thông tin chung — khớp ảnh mẫu MISA ─────────────────────────────────
+    [ObservableProperty] private string  _payerName = string.Empty;
+    [ObservableProperty] private string? _address;
+    [ObservableProperty] private string? _attachment;
+    [ObservableProperty] private ISearchableItem? _selectedCollectorEmployee;
+    // "Tham chiếu" — tự nối danh sách Số chứng từ (BH...) của các đơn đã chọn, chỉ để xem, không sửa tay.
+    [ObservableProperty] private string  _reference = string.Empty;
+
     [ObservableProperty] private DateTime _accountingDate = DateTime.Today;
     [ObservableProperty] private DateTime _documentDate   = DateTime.Today;
-    [ObservableProperty] private ISearchableItem? _selectedCollectorEmployee;
+    // Dự đoán số chứng từ tiếp theo để hiển thị trước khi lưu — BE tự gán số thật lúc Cất (giống
+    // GenerateNextDocumentNumber() ở các form khác), có thể lệch nếu có phiếu khác vừa tạo song song.
+    [ObservableProperty] private string   _documentNumber = "";
 
     [ObservableProperty] private decimal _totalAmount;
     [ObservableProperty] private string  _lineSummary = "Số dòng = 0";
+
+    public string ReasonLabel => "Thu tiền khách hàng";
 
     public IReadOnlyList<ISearchableItem> Employees { get; private set; } = Array.Empty<ISearchableItem>();
     public ObservableCollection<BulkReceiptLineItem> Lines { get; } = new();
@@ -44,10 +58,12 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
     public BulkCustomerReceiptViewModel(
         ICreateBulkCustomerReceiptUseCase createBulk,
         IGetEmployeesUseCase              getEmployees,
+        IGetNextReceiptCodeUseCase        getNextCode,
         ILogger<BulkCustomerReceiptViewModel> logger)
     {
         _createBulk    = createBulk;
         _getEmployees  = getEmployees;
+        _getNextCode   = getNextCode;
         _logger        = logger;
     }
 
@@ -58,16 +74,29 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
         _debitAccount = debitAccount;
         _bankAccount  = bankAccount;
 
+        var debitDisplay = debitAccount switch
+        {
+            "Bank112" => "112",
+            _         => "111",
+        };
+
         Lines.Clear();
         foreach (var s in selected)
         {
-            var line = new BulkReceiptLineItem(s);
+            var line = new BulkReceiptLineItem(s)
+            {
+                DebitAccountDisplay  = debitDisplay,
+                CreditAccountDisplay = "131",
+            };
             line.PropertyChanged += (_, _) => RecalculateTotal();
             Lines.Add(line);
         }
         RecalculateTotal();
 
+        Reference = string.Join(", ", Lines.Select(l => l.DocumentNumber).Distinct());
+
         _ = LoadEmployeesAsync(collectorEmployeeId);
+        _ = LoadNextCodeAsync();
     }
 
     private async Task LoadEmployeesAsync(int? preselectId)
@@ -85,6 +114,20 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
         {
             _logger.LogWarning(ex, "Could not load employees for BulkCustomerReceipt confirm popup");
         }
+    }
+
+    private async Task LoadNextCodeAsync()
+    {
+        try { DocumentNumber = await _getNextCode.ExecuteAsync(); }
+        catch (Exception ex) { _logger.LogWarning(ex, "Could not predict next receipt code for BulkCustomerReceipt"); }
+    }
+
+    partial void OnSelectedCollectorEmployeeChanged(ISearchableItem? value)
+    {
+        // Khớp ảnh mẫu MISA: "Người nộp" = tên nhân viên thu (không phải tên khách hàng, vì phiếu
+        // gộp nhiều khách hàng khác nhau) — chỉ auto-fill nếu user chưa tự gõ gì khác.
+        if (value is not null && string.IsNullOrWhiteSpace(PayerName))
+            PayerName = value.Name;
     }
 
     private void RecalculateTotal()
@@ -119,6 +162,9 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
                 DebitAccount        = _debitAccount,
                 BankAccount         = _bankAccount,
                 CollectorEmployeeId = SelectedCollectorEmployee?.Id,
+                PayerName           = string.IsNullOrWhiteSpace(PayerName) ? null : PayerName.Trim(),
+                Address             = string.IsNullOrWhiteSpace(Address)   ? null : Address.Trim(),
+                Attachment          = string.IsNullOrWhiteSpace(Attachment) ? null : Attachment.Trim(),
                 Lines = Lines.Select(l => new BulkReceiptLineRequestDto
                 {
                     SalesOrderId = l.SalesOrderId,
@@ -126,10 +172,9 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
                 }).ToList(),
             };
 
-            var result  = await _createBulk.ExecuteAsync(request, ct);
-            var numbers = string.Join(", ", result.Receipts.Select(r => r.DocumentNumber));
-            MessageBox.Show($"Đã tạo {result.Receipts.Count} phiếu thu: {numbers}", "Thu tiền thành công",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+            var result = await _createBulk.ExecuteAsync(request, ct);
+            MessageBox.Show($"Đã tạo phiếu thu {result.Receipt.DocumentNumber} ({Lines.Count} dòng, tổng {TotalAmount:N0}).",
+                "Thu tiền thành công", MessageBoxButton.OK, MessageBoxImage.Information);
 
             RequestClose?.Invoke();
         }

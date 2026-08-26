@@ -15,6 +15,7 @@ using DesktopLamour.Features.HomePage.Sales.Domain.Models;
 using DesktopLamour.Features.HomePage.Sales.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Sales.Views;
 using DesktopLamour.Shared.Helpers;
+using DesktopLamour.Shared.Models;
 using Microsoft.Win32;
 
 namespace DesktopLamour.Features.HomePage.Sales.ViewModels;
@@ -40,6 +41,21 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
     [ObservableProperty] private decimal _totalNetRevenue;
 
     [ObservableProperty] private bool _isUnitColumnVisible;
+
+    // Filter riêng từng cột (embedded ngay trong header DataGrid, không popup) — khớp pattern có
+    // sẵn ở SalesOrderReportDetailViewModel/AccountingViewModel (Shared/Models/ColumnFilterModels.cs).
+    // Cột text dùng Contains-match string; cột số dùng NumericColumnFilter (toán tử + giá trị).
+    [ObservableProperty] private string _filterProductCode = string.Empty;
+    [ObservableProperty] private string _filterProductName = string.Empty;
+    [ObservableProperty] private string _filterUnit         = string.Empty;
+
+    public NumericColumnFilter QuantitySoldFilter   { get; } = new();
+    public NumericColumnFilter SalesAmountFilter     { get; } = new();
+    public NumericColumnFilter DiscountAmountFilter  { get; } = new();
+    public NumericColumnFilter ReturnQuantityFilter  { get; } = new();
+    public NumericColumnFilter ReturnValueFilter     { get; } = new();
+    public NumericColumnFilter DiscountValueFilter   { get; } = new();
+    public NumericColumnFilter NetRevenueFilter      { get; } = new();
 
     public ObservableCollection<SalesOrderSummaryLineItem> Items { get; } = new();
 
@@ -95,7 +111,54 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
         _getSummaryReport          = getSummaryReport;
         _navigationService         = navigationService;
         _reportFilterWindowFactory = reportFilterWindowFactory;
+
+        WireColumnFilters();
     }
+
+    // RowsView bị thay bằng 1 ListCollectionView MỚI mỗi lần RebuildDisplayRows() chạy (regroup
+    // theo loại báo cáo) — nên .Changed ở đây gọi RowsView.Refresh() thay vì lưu tham chiếu view
+    // cũ, luôn trỏ đúng instance hiện tại qua property RowsView.
+    private void WireColumnFilters()
+    {
+        QuantitySoldFilter.Changed   = RefreshFilteredView;
+        SalesAmountFilter.Changed    = RefreshFilteredView;
+        DiscountAmountFilter.Changed = RefreshFilteredView;
+        ReturnQuantityFilter.Changed = RefreshFilteredView;
+        ReturnValueFilter.Changed    = RefreshFilteredView;
+        DiscountValueFilter.Changed  = RefreshFilteredView;
+        NetRevenueFilter.Changed     = RefreshFilteredView;
+    }
+
+    partial void OnFilterProductCodeChanged(string value) => RefreshFilteredView();
+    partial void OnFilterProductNameChanged(string value) => RefreshFilteredView();
+    partial void OnFilterUnitChanged(string value) => RefreshFilteredView();
+
+    // Grid re-đánh giá FilterRow qua RowsView.Refresh(); footer Số dòng/Total* cũng phải tính lại
+    // trên đúng tập đã lọc đó (RecalculateTotals đọc lại _displayRows.Where(FilterRow)).
+    private void RefreshFilteredView()
+    {
+        RowsView.Refresh();
+        RecalculateTotals();
+    }
+
+    private bool FilterRow(object obj)
+    {
+        if (obj is not ReportDisplayRow row) return false;
+
+        return Matches(row.ProductCode, FilterProductCode)
+            && Matches(row.ProductName, FilterProductName)
+            && Matches(row.Unit, FilterUnit)
+            && QuantitySoldFilter.Matches(row.QuantitySold)
+            && SalesAmountFilter.Matches(row.SalesAmount)
+            && DiscountAmountFilter.Matches(row.DiscountAmount)
+            && ReturnQuantityFilter.Matches(row.ReturnQuantity)
+            && ReturnValueFilter.Matches(row.ReturnValue)
+            && DiscountValueFilter.Matches(row.DiscountValue)
+            && NetRevenueFilter.Matches(row.NetRevenue);
+    }
+
+    private static bool Matches(string? value, string filter)
+        => string.IsNullOrWhiteSpace(filter) || (!string.IsNullOrEmpty(value) && value.Contains(filter, StringComparison.OrdinalIgnoreCase));
 
     public void OnNavigatedTo(object? parameter)
     {
@@ -127,8 +190,8 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
                 Items.Add(SalesOrderSummaryLineItem.FromDto(dto));
 
             HasLines = Items.Count > 0;
-            RecalculateTotals();
             RebuildDisplayRows();
+            RecalculateTotals();
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -139,14 +202,20 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
         finally { IsLoading = false; }
     }
 
+    // Tính trên _displayRows ĐÃ QUA FilterRow — khớp pattern SalesOrderReportDetailViewModel.ApplyFilters
+    // (RowCount/Total* luôn phản ánh đúng tập đang hiển thị sau khi lọc, không phải toàn bộ dữ liệu gốc).
+    // Trên dữ liệu chưa lọc, tổng theo _displayRows (đã group) bằng hệt tổng theo Items (chưa group)
+    // vì Aggregate() chỉ cộng dồn cùng field — không đổi hành vi khi chưa áp filter nào.
     private void RecalculateTotals()
     {
-        TotalQuantitySold   = Items.Sum(i => i.QuantitySold);
-        TotalSalesAmount    = Items.Sum(i => i.SalesAmount);
-        TotalDiscountAmount = Items.Sum(i => i.DiscountAmount);
-        TotalReturnQuantity = Items.Sum(i => i.ReturnQuantity);
-        TotalReturnValue    = Items.Sum(i => i.ReturnValue);
-        TotalNetRevenue     = Items.Sum(i => i.NetRevenue);
+        var rows = _displayRows.Where(FilterRow).ToList();
+        RowCount             = rows.Count;
+        TotalQuantitySold    = rows.Sum(r => r.QuantitySold);
+        TotalSalesAmount     = rows.Sum(r => r.SalesAmount);
+        TotalDiscountAmount  = rows.Sum(r => r.DiscountAmount);
+        TotalReturnQuantity  = rows.Sum(r => r.ReturnQuantity);
+        TotalReturnValue     = rows.Sum(r => r.ReturnValue);
+        TotalNetRevenue      = rows.Sum(r => r.NetRevenue);
     }
 
     private static string ColumnLabelFor(SummaryDimension d) => d switch
@@ -202,6 +271,7 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
         _displayRows = orderedRows;
 
         var view = new ListCollectionView(_displayRows);
+        view.Filter = FilterRow;
         if (dimensions.Length == 2)
         {
             view.GroupDescriptions.Add(new PropertyGroupDescription(nameof(ReportDisplayRow.GroupKey)));
@@ -214,7 +284,6 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
         }
 
         RowsView  = view;
-        RowCount  = _displayRows.Count;
     }
 
     private List<ReportDisplayRow> BuildExportRows()

@@ -100,6 +100,18 @@ public sealed class SalesReturnService : ISalesReturnService
         return result?.Code ?? "BTL00001";
     }
 
+    public async Task<CreateWarehouseReceiptResultDto> CreateWarehouseReceiptAsync(int id, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Creating warehouse receipt from sales return {Id}", id);
+        SetBearerToken();
+
+        var response = await _httpClient.PostAsync($"/api/v1/sales-returns/{id}/create-warehouse-receipt", null, ct);
+        await EnsureSuccessOrThrowAsync(response, ct);
+
+        return await response.Content.ReadFromJsonAsync<CreateWarehouseReceiptResultDto>(ct)
+            ?? throw new InvalidOperationException("Empty response from create-warehouse-receipt endpoint.");
+    }
+
     private void SetBearerToken()
     {
         var token = _tokenStorage.GetToken();

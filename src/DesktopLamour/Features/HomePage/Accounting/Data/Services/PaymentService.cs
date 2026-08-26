@@ -51,7 +51,7 @@ public sealed class PaymentService : IPaymentService
 
     public async Task<PaymentResponseDto> CreateAsync(CreatePaymentRequestDto request, CancellationToken ct = default)
     {
-        _logger.LogInformation("Creating payment for supplier {SupplierId}", request.SupplierId);
+        _logger.LogInformation("Creating payment for {PartnerType} {PartnerId}", request.PartnerType, request.PartnerId);
         SetBearerToken();
 
         var response = await _httpClient.PostAsJsonAsync("/api/v1/accounting/payments", request, ct);
@@ -104,6 +104,18 @@ public sealed class PaymentService : IPaymentService
 
         return await response.Content.ReadFromJsonAsync<PaymentResponseDto>(ct)
             ?? throw new InvalidOperationException("Empty response from confirm payment endpoint.");
+    }
+
+    public async Task<PaymentResponseDto> UnconfirmAsync(int id, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Unconfirming payment {Id}", id);
+        SetBearerToken();
+
+        var response = await _httpClient.PostAsync($"/api/v1/accounting/payments/{id}/unconfirm", null, ct);
+        await EnsureSuccessOrThrowAsync(response, ct);
+
+        return await response.Content.ReadFromJsonAsync<PaymentResponseDto>(ct)
+            ?? throw new InvalidOperationException("Empty response from unconfirm payment endpoint.");
     }
 
     public async Task<PaymentResponseDto> TreoAsync(int id, CancellationToken ct = default)

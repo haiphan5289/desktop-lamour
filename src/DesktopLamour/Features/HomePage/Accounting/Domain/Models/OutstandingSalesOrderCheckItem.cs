@@ -16,6 +16,9 @@ public partial class OutstandingSalesOrderCheckItem : ObservableObject
     public string   CustomerName    => Order.CustomerName;
     public string?  Description     => Order.Description;
     public decimal  RemainingAmount => Order.RemainingAmount;
+    public decimal  GrandTotal      => Order.GrandTotal;
+    public string?  PaymentTerms    => Order.PaymentTerms;
+    public DateTime? PaymentDueDate => Order.PaymentDueDate;
 
     [ObservableProperty] private bool _isSelected;
 

@@ -35,6 +35,21 @@ public partial class EmployeeListViewModel : ViewModelBase
     // 1 ô tìm kiếm chung — khớp OR trên các trường text chính, không phân biệt hoa/thường.
     [ObservableProperty] private string _searchText = string.Empty;
 
+    // Filter riêng từng cột (embedded ngay trong header DataGrid, không popup) — khớp pattern có
+    // sẵn ở AccountingViewModel/SalesOrderReportDetailViewModel (Shared/Models/ColumnFilterModels.cs).
+    // Toàn bộ cột ở màn này là text nên chỉ cần Contains-match, không cần NumericColumnFilter/
+    // DateColumnFilter. AND với nhau và với SearchText (ô tìm kiếm chung) — khác SearchText (OR
+    // trên nhiều field), các Filter* dưới đây match đúng field của cột đó.
+    [ObservableProperty] private string _filterCode              = string.Empty;
+    [ObservableProperty] private string _filterName               = string.Empty;
+    [ObservableProperty] private string _filterGender             = string.Empty;
+    [ObservableProperty] private string _filterPhone              = string.Empty;
+    [ObservableProperty] private string _filterRole               = string.Empty;
+    [ObservableProperty] private string _filterUnit               = string.Empty;
+    [ObservableProperty] private string _filterJobTitle           = string.Empty;
+    [ObservableProperty] private string _filterBankAccountNumber  = string.Empty;
+    [ObservableProperty] private string _filterBankName           = string.Empty;
+
     public ObservableCollection<Employee> Employees { get; } = new();
 
     // View lọc live theo các Filter* per-cột — DataGrid bind vào đây thay vì Employees trực tiếp;
@@ -64,12 +79,22 @@ public partial class EmployeeListViewModel : ViewModelBase
 
     partial void OnSearchTextChanged(string value) => EmployeesView.Refresh();
 
+    partial void OnFilterCodeChanged(string value) => EmployeesView.Refresh();
+    partial void OnFilterNameChanged(string value) => EmployeesView.Refresh();
+    partial void OnFilterGenderChanged(string value) => EmployeesView.Refresh();
+    partial void OnFilterPhoneChanged(string value) => EmployeesView.Refresh();
+    partial void OnFilterRoleChanged(string value) => EmployeesView.Refresh();
+    partial void OnFilterUnitChanged(string value) => EmployeesView.Refresh();
+    partial void OnFilterJobTitleChanged(string value) => EmployeesView.Refresh();
+    partial void OnFilterBankAccountNumberChanged(string value) => EmployeesView.Refresh();
+    partial void OnFilterBankNameChanged(string value) => EmployeesView.Refresh();
+
     private bool FilterEmployee(object obj)
     {
         if (obj is not Employee e) return false;
-        if (string.IsNullOrWhiteSpace(SearchText)) return true;
 
-        return Matches(e.Code, SearchText)
+        var matchesSearch = string.IsNullOrWhiteSpace(SearchText)
+            || Matches(e.Code, SearchText)
             || Matches(e.Name, SearchText)
             || Matches(e.Gender, SearchText)
             || Matches(e.Phone, SearchText)
@@ -78,6 +103,17 @@ public partial class EmployeeListViewModel : ViewModelBase
             || Matches(e.JobTitle, SearchText)
             || Matches(e.BankAccountNumber, SearchText)
             || Matches(e.BankName, SearchText);
+
+        return matchesSearch
+            && Matches(e.Code, FilterCode)
+            && Matches(e.Name, FilterName)
+            && Matches(e.Gender, FilterGender)
+            && Matches(e.Phone, FilterPhone)
+            && Matches(e.Role, FilterRole)
+            && Matches(e.Unit, FilterUnit)
+            && Matches(e.JobTitle, FilterJobTitle)
+            && Matches(e.BankAccountNumber, FilterBankAccountNumber)
+            && Matches(e.BankName, FilterBankName);
     }
 
     private static bool Matches(string? value, string filter)

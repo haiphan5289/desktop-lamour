@@ -4,6 +4,37 @@
 > Module: Accounting (WPF)
 > Created: 2026-04-29 (parallel to Phiếu Thu)
 > **Major update: 2026-08-10** — Draft/Confirm lifecycle, TK Nợ/TK Có → Tài khoản kế toán (FK thật), Khoản mục CP, toolbar/tab UI khớp ảnh mẫu MISA, In phiếu.
+> **2026-08-26** — "Đối tượng" mở rộng đa loại: Nhà cung cấp / Khách hàng / Nhân viên (trước đây chỉ Supplier).
+> **2026-08-26 (tiếp, so ảnh mẫu MISA)** — bỏ combo "Loại đối tượng" thừa (không khớp ảnh mẫu), auto-copy Đối tượng xuống dòng hạch toán, thêm cột "Đối tượng" (mã) trong grid + đổi thứ tự cột, thêm nút "↩️ Hoàn", context menu Ctrl+Insert/Ctrl+Delete/Ctrl+F trên grid.
+
+## "Đối tượng" đa loại (2026-08-26)
+
+"Đối tượng" là **1 ô tìm kiếm chung** (`PartnerCombo`, `AppSearchableComboBox`) cho cả Nhà cung cấp/Khách hàng/Nhân viên — `PartnerItems` = `Suppliers.Concat(Customers).Concat(Employees)` (cả 3 đều implement `ISearchableItem` sẵn). **Không có** combo "chọn loại đối tượng" riêng — bản đầu có thêm combo này nhưng sau khi so ảnh mẫu MISA (chỉ 1 ô lookup duy nhất, gõ mã gì cũng tìm ra, không bắt chọn loại trước) đã bỏ đi cho khớp UX thật.
+
+`SelectedPartner` (ISearchableItem?, đổi tên từ `SelectedSupplier`) — auto-populate `Address` khi chọn phân biệt theo type cụ thể (`Supplier`/`Customer` có field Address, `Employee` thì không, giữ nguyên `Address` hiện tại). `PartnerType` gửi lên BE (`ResolvePartnerType`, static helper trong `PaymentViewModel`) suy ra từ **kiểu runtime** của object đã chọn (`is Customer`/`is Employee`/mặc định `Supplier`) — không lưu type trên ViewModel, không cần user chọn.
+
+Khi đổi "Đối tượng" ở header, `OnSelectedPartnerChanged` đồng bộ luôn `SubjectCode`/`SubjectName` xuống **mọi dòng hạch toán hiện có** trong `Entries`; `AddEntry()` cũng mặc định `SubjectCode`/`SubjectName` theo `SelectedPartner` cho dòng mới — khớp ảnh mẫu MISA (dòng grid có "Đối tượng"/"Tên đối tượng" trùng khớp header).
+
+BE lưu polymorphic (`PartnerType` + `PartnerId` + `PartnerName` cache) — xem chi tiết thiết kế BE: `be-window-lamour/src/Lamour.Application/Features/Accounting/docs/phieu-chi.md` (mục "Đối tượng đa loại"). DTO đổi `supplier_id`/`supplier_name` → `partner_type`/`partner_id`/`partner_name`.
+
+## "Hoàn" (Unconfirm) — mới (2026-08-26)
+
+Nút toolbar **"↩️ Hoàn"** (`UnconfirmCommand`, `CanExecute = CanUnconfirm` — chỉ bật khi `CurrentPayment.Status == "Confirmed"`) — đưa phiếu đã Ghi số quay lại `Treo`, khớp nút "Hoàn" trong ảnh mẫu MISA (trước đây hoàn toàn không có, Confirmed là bất biến tuyệt đối). Gọi `IUnconfirmPaymentUseCase` → `PaymentService.UnconfirmAsync` → `POST {id}/unconfirm`. Sau khi Hoàn thành công: reload danh sách + điều hướng tới phiếu (giờ ở trạng thái Treo) — **không** đóng window (khác `ConfirmAsync`/`TreoAsync`, để user xem/sửa lại ngay).
+
+## Context menu trên grid "Hạch toán" — mới (2026-08-26)
+
+Gắn `DataGridLineContextMenuBehavior` (đã có sẵn, dùng chung với SalesOrder/SalesReturn/WarehouseReceipt) vào grid dòng hạch toán:
+
+```xml
+behaviors:DataGridLineContextMenuBehavior.EnableLineContextMenu="True"
+behaviors:DataGridLineContextMenuBehavior.AddCommandName="AddEntryCommand"
+behaviors:DataGridLineContextMenuBehavior.RemoveCommandName="RemoveEntryCommand"
+behaviors:DataGridLineContextMenuBehavior.ShowProductStockMenuItem="False"
+```
+
+Behavior gốc code cứng `AddLineCommand`/`RemoveLineCommand` + khái niệm "sản phẩm/tồn kho" (Ctrl+F2) — không hợp với Payment (dùng tên command khác, dòng hạch toán không phải sản phẩm). Đã thêm 3 attached property mới (`AddCommandName`/`RemoveCommandName`/`ShowProductStockMenuItem`, default giữ nguyên hành vi cũ cho 3 form kia) để tái dùng thay vì viết lại từ đầu. Kết quả trên Phiếu Chi: **Thêm dòng (Ctrl+Insert) / Xóa dòng (Ctrl+Delete) / Sao chép dữ liệu cho các dòng dưới / Tìm kiếm (Ctrl+F)** — khớp phần lớn menu ảnh mẫu MISA, **trừ** "Định khoản"/"Xem số dư tài khoản..."/"Cắt mẫu" (không có logic/data backing, cố tình không làm placeholder giả — theo đúng nguyên tắc "ẩn action không có thật" đã áp dụng cho toolbar 2026-08-10).
+
+**Không đổi:** `PaymentEntryItem.SubjectCode`/`SubjectName` (cột "Đối tượng"/"Tên đối tượng" trong grid dòng hạch toán) — free-text, tự copy từ header nhưng sửa tay được, khác hoàn toàn với field "Đối tượng" ở header.
 
 ## User Flow
 
@@ -30,14 +61,14 @@ Draft ────────► Draft ────────► Confirmed (b
 Title: "Phiếu chi - CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ LAMOUR"
 Size: 1100×760, WindowStartupLocation=CenterOwner
 
-┌─ Toolbar (4 nhóm, chỉ giữ action có logic thật) ───────────────────────┐
-│ [◀Trước|Sau▶]  [💾Cất|➕Thêm|✏️Sửa|🗑️Xóa|📑Ghi số]  [🔄Nạp]  [🖨️In|✖️Đóng] │
-└──────────────────────────────────────────────────────────────────────┘
+┌─ Toolbar (4 nhóm, chỉ giữ action có logic thật) ─────────────────────────────────┐
+│ [◀Trước|Sau▶]  [➕Thêm|✏️Sửa|🗑️Xóa|📌Treo|📑Ghi số|↩️Hoàn]  [🔄Làm mới]  [🖨️In|✖️Đóng] │
+└───────────────────────────────────────────────────────────────────────────────┘
   (Đã bỏ: Sửa nhanh / Tiện ích / Mẫu / Giúp — không có logic thật, ẩn hẳn
-   thay vì hiện placeholder "đang phát triển")
+   thay vì hiện placeholder "đang phát triển". "↩️ Hoàn" mới 2026-08-26.)
 
 ┌─ Thông tin chung ─────────────────┐  ┌─ Chứng từ ──────┐
-│ Đối tượng   [Supplier ComboBox]   │  │ Ngày hạch toán   │
+│ Đối tượng   [1 ô tìm chung NCC/KH/NV] │ │ Ngày hạch toán   │
 │ Người nhận  [TextBox — auto]      │  │ Ngày chứng từ    │
 │ Địa chỉ     [TextBox]             │  │ Số chứng từ      │
 │ Lý do chi   [ComboBox] [TextBox — chi tiết, VD "thuê lái xe 21/7"] │
@@ -45,15 +76,16 @@ Size: 1100×760, WindowStartupLocation=CenterOwner
 │ Tham chiếu  [TextBox] 🔍                                            │
 └───────────────────────────────────┘  └──────────────────┘
 
-┌─ Tab: [1. Hạch toán] [2. Thuế] ─────────────────────────┐
-│ (style AppTabControl.Modern — giống popup "Thêm VTHH")  │
-│ DataGrid: Diễn giải | TK Nợ | TK Có | Tên đối tượng |   │
-│           TK ngân hàng | Khoản mục CP | Số tiền         │
-│  → TK Nợ/TK Có/Khoản mục CP là ComboBox LUÔN HIỆN SẴN   │
-│    trong ô (không phải "click để sửa") — xem bug story  │
-└──────────────────────────────────────────────────────────┘
+┌─ Tab: [1. Hạch toán] [2. Thuế] ───────────────────────────────────┐
+│ (style AppTabControl.Modern — giống popup "Thêm VTHH")            │
+│ DataGrid: Diễn giải | TK Nợ | TK Có | Số tiền | Đối tượng |       │
+│           Tên đối tượng | TK ngân hàng | Khoản mục CP             │
+│  → TK Nợ/TK Có/Khoản mục CP là ComboBox LUÔN HIỆN SẴN             │
+│    trong ô (không phải "click để sửa") — xem bug story            │
+│  → Right-click / Ctrl+Insert/Ctrl+Delete/Ctrl+F — xem context menu│
+└────────────────────────────────────────────────────────────────────┘
 
-Footer: F9-Thêm nhanh, F3-Tìm nhanh  |  Số dòng=N  |  Tổng tiền: {total}
+Footer: F9-Thêm nhanh, F3-Tìm nhanh, Ctrl+F-Tìm kiếm, Ctrl+Insert-Thêm dòng, Ctrl+Delete-Xóa dòng | Số dòng=N | Tổng tiền: {total}
 ```
 
 ## ⚠️ Bug story: ComboBox trong DataGrid (đọc trước khi sửa cột TK Nợ/TK Có/Khoản mục CP)
@@ -147,7 +179,7 @@ PaymentViewModel              CRUD + Confirm + Print, CanEdit gate theo Status
         ↓
 ICreatePaymentUseCase / IUpdatePaymentUseCase / IDeletePaymentUseCase
 IGetPaymentsUseCase / IGetPaymentByIdUseCase / IDuplicatePaymentUseCase
-IConfirmPaymentUseCase        ← mới
+IConfirmPaymentUseCase / IUnconfirmPaymentUseCase   ← Unconfirm mới 2026-08-26
         ↓
 PaymentService                HttpClient → http://192.168.64.1:5282
                                EnsureSuccessOrThrowAsync (đọc {"error":...})
@@ -161,17 +193,24 @@ Features/HomePage/Accounting/
     Dtos/PaymentEntryDto.cs           — + debit/credit_account_id/code/description, expense_category_id/name
     Dtos/{Create,Update}PaymentRequestDto.cs — + reason_detail
     Dtos/PaymentResponseDto.cs        — + reason_detail, status, confirmed_at
-    IPaymentService.cs / PaymentService.cs — + ConfirmAsync, EnsureSuccessOrThrowAsync
+    IPaymentService.cs / PaymentService.cs — + ConfirmAsync/UnconfirmAsync, EnsureSuccessOrThrowAsync
   Data/Storage/
     ILastUsedPaymentAccountsStore.cs / LastUsedPaymentAccountsStore.cs  — mới
   Domain/Models/PaymentEntryItem.cs   — SelectedDebitAccount/SelectedCreditAccount (ISearchableItem?),
                                          SelectedExpenseCategory (ExpenseCategory?) — không còn Id/Name riêng
   Domain/UseCases/
     IConfirmPaymentUseCase.cs / ConfirmPaymentUseCase.cs  — mới
-  ViewModels/PaymentViewModel.cs      — CanEdit, ConfirmCommand, EditCommand, PrintCommand, AttachEntryHandlers
-  Views/PaymentWindow.xaml(.cs)       — toolbar 4 nhóm, tab Hạch toán/Thuế, F9/F3, grid ComboBox always-visible
+    IUnconfirmPaymentUseCase.cs / UnconfirmPaymentUseCase.cs  — mới (2026-08-26)
+  ViewModels/PaymentViewModel.cs      — CanEdit, ConfirmCommand, UnconfirmCommand, EditCommand, PrintCommand,
+                                         SelectedPartner/PartnerItems (Đối tượng đa loại), ResolvePartnerType
+  Views/PaymentWindow.xaml(.cs)       — toolbar 4 nhóm (+ Hoàn), tab Hạch toán/Thuế, F9/F3,
+                                         grid ComboBox always-visible + context menu (Ctrl+Insert/Delete/F)
   Views/PaymentPrintWindow.xaml(.cs)  — mới
   docs/phieu-chi.md                   — file này
+
+Shared/Behaviors/DataGridLineContextMenuBehavior.cs — + AddCommandName/RemoveCommandName/
+                                                        ShowProductStockMenuItem (2026-08-26, để Payment
+                                                        tái dùng — xem mục "Context menu" ở trên)
 ```
 
 ## Backend API Endpoints
@@ -183,7 +222,8 @@ POST   /api/v1/accounting/payments
 PUT    /api/v1/accounting/payments/{id}
 DELETE /api/v1/accounting/payments/{id}
 POST   /api/v1/accounting/payments/{id}/duplicate
-POST   /api/v1/accounting/payments/{id}/confirm      ← mới
+POST   /api/v1/accounting/payments/{id}/confirm
+POST   /api/v1/accounting/payments/{id}/unconfirm    ← mới (2026-08-26)
 ```
 
 Chi tiết business rule/migration đầy đủ xem doc BE: `be-window-lamour/src/Lamour.Application/Features/Accounting/docs/phieu-chi.md`.
@@ -195,10 +235,11 @@ Phiếu Thu (`ReceiptWindow`) **chưa** được áp dụng các thay đổi 202
 ## Known Limitations / Future Work
 
 - Tab "2. Thuế" chỉ là placeholder rỗng.
-- Cột "Mục thu/chi", "Đối tượng THCP", "Công trình" (thấy trong ảnh mẫu MISA) — chưa làm, chưa có data model, đã quyết định bỏ qua lần này.
-- Chưa migrate Phiếu Thu sang cùng pattern Draft/Confirm + AccountSetting FK.
+- Cột "Mục thu/chi", "Đối tượng THCP", "Công trình", "Đơn vị", "Đơn đặt hàng", "Đơn mua hàng", "Hợp đồng mua", "Hợp đồng bán" (thấy trong ảnh mẫu MISA) — chưa làm, chưa có data model, đã quyết định bỏ qua.
+- Context menu grid "Hạch toán" (2026-08-26) thiếu "Định khoản"/"Xem số dư tài khoản..."/"Cắt mẫu" so với ảnh mẫu — không có logic/data backing (VD "số dư tài khoản" cần tra cứu số dư luỹ kế theo tài khoản, chưa có UseCase nào), cố tình bỏ qua thay vì làm placeholder giả.
+- Chưa migrate Phiếu Thu sang cùng pattern Draft/Confirm + AccountSetting FK + "Đối tượng" đa loại + Hoàn.
 - `ILastUsedPaymentAccountsStore` chỉ lưu RAM, mất khi tắt app.
-- Chưa có unit test cho lifecycle Draft/Confirm mới.
+- Chưa có unit test cho lifecycle Draft/Confirm/Unconfirm mới.
 
 ## Testing Checklist
 
@@ -209,3 +250,7 @@ Phiếu Thu (`ReceiptWindow`) **chưa** được áp dụng các thay đổi 202
 - [ ] Sửa phiếu đã Ghi số → verify bị chặn với thông báo rõ ràng
 - [ ] F9 thêm dòng nhanh, F3 focus vào Đối tượng
 - [ ] In phiếu → verify layout A5 đúng, có đủ Khoản mục CP trong bảng in
+- [ ] Chọn "Đối tượng" là Nhân viên/Khách hàng (không chỉ Supplier) → lưu → tải lại đúng
+- [ ] Đổi "Đối tượng" ở header → verify SubjectCode/SubjectName tự đồng bộ xuống các dòng hạch toán hiện có
+- [ ] Ghi số xong bấm "↩️ Hoàn" → verify về Treo, CashTransaction biến mất khỏi Quỹ, sửa lại được
+- [ ] Ctrl+Insert/Ctrl+Delete/Ctrl+F trên grid Hạch toán hoạt động đúng (không có Ctrl+F2)

@@ -124,12 +124,18 @@
 
         <!-- Footer -->
         <Border Grid.Row="3" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,1,0,0" Padding="20,12">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <controls:AppButton Content="Hủy bỏ" Style="{StaticResource AppButton.Tertiary.Medium}"
-                                    Click="CancelButton_Click" Margin="0,0,8,0"/>
-                <controls:AppButton Content="✔ Thu tiền" Style="{StaticResource AppButton.Primary.Medium}"
-                                    Command="{Binding CollectCommand}"/>
-            </StackPanel>
+            <Grid>
+                <controls:AppLabel Text="{Binding LineSummary}"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   Foreground="{StaticResource AppColor.TextSecondary}"
+                                   VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <controls:AppButton Content="Hủy bỏ" Style="{StaticResource AppButton.Tertiary.Medium}"
+                                        Click="CancelButton_Click" Margin="0,0,8,0"/>
+                    <controls:AppButton Content="✔ Thu tiền" Style="{StaticResource AppButton.Primary.Medium}"
+                                        Command="{Binding CollectCommand}"/>
+                </StackPanel>
+            </Grid>
         </Border>
     </Grid>
 </Window>

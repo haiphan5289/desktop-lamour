@@ -30,6 +30,35 @@ public static class DataGridLineContextMenuBehavior
     public static void SetEnableLineContextMenu(DependencyObject obj, bool value)
         => obj.SetValue(EnableLineContextMenuProperty, value);
 
+    // Cho phép form không phải "dòng sản phẩm" (VD Payment — dòng hạch toán, không có
+    // Product/ProductId/tồn kho) tái dùng behavior này: đổi tên command Thêm/Xóa dòng và
+    // tắt hẳn mục "Xem số tồn vật tư" (không có khái niệm sản phẩm để tra). Mặc định giữ
+    // nguyên hành vi cũ (AddLineCommand/RemoveLineCommand, có mục Xem số tồn vật tư) cho
+    // SalesOrder/SalesReturn/WarehouseReceipt.
+    public static readonly DependencyProperty AddCommandNameProperty =
+        DependencyProperty.RegisterAttached(
+            "AddCommandName", typeof(string), typeof(DataGridLineContextMenuBehavior),
+            new PropertyMetadata("AddLineCommand"));
+
+    public static string GetAddCommandName(DependencyObject obj) => (string)obj.GetValue(AddCommandNameProperty);
+    public static void SetAddCommandName(DependencyObject obj, string value) => obj.SetValue(AddCommandNameProperty, value);
+
+    public static readonly DependencyProperty RemoveCommandNameProperty =
+        DependencyProperty.RegisterAttached(
+            "RemoveCommandName", typeof(string), typeof(DataGridLineContextMenuBehavior),
+            new PropertyMetadata("RemoveLineCommand"));
+
+    public static string GetRemoveCommandName(DependencyObject obj) => (string)obj.GetValue(RemoveCommandNameProperty);
+    public static void SetRemoveCommandName(DependencyObject obj, string value) => obj.SetValue(RemoveCommandNameProperty, value);
+
+    public static readonly DependencyProperty ShowProductStockMenuItemProperty =
+        DependencyProperty.RegisterAttached(
+            "ShowProductStockMenuItem", typeof(bool), typeof(DataGridLineContextMenuBehavior),
+            new PropertyMetadata(true));
+
+    public static bool GetShowProductStockMenuItem(DependencyObject obj) => (bool)obj.GetValue(ShowProductStockMenuItemProperty);
+    public static void SetShowProductStockMenuItem(DependencyObject obj, bool value) => obj.SetValue(ShowProductStockMenuItemProperty, value);
+
     // Lưu vị trí tìm kiếm gần nhất mỗi grid, để Ctrl+F lặp lại thì nhảy tới kết quả tiếp theo
     // thay vì luôn quay lại kết quả đầu tiên. ConditionalWeakTable (thay vì Dictionary thường)
     // để không giữ DataGrid/Window sống mãi sau khi user đóng form — các form này mở/đóng lặp
@@ -63,7 +92,9 @@ public static class DataGridLineContextMenuBehavior
         menu.Items.Add(MenuItem("Sao chép dữ liệu cho các dòng phía dưới", null, (_, _) => CopyValueDown(grid)));
         menu.Items.Add(new Separator());
         menu.Items.Add(MenuItem("Tìm kiếm...", "Ctrl+F", (_, _) => ShowFindDialog(grid)));
-        menu.Items.Add(MenuItem("Xem số tồn vật tư...", "Ctrl+F2", (_, _) => ShowProductStock(grid)));
+
+        if (GetShowProductStockMenuItem(grid))
+            menu.Items.Add(MenuItem("Xem số tồn vật tư...", "Ctrl+F2", (_, _) => ShowProductStock(grid)));
 
         return menu;
     }
@@ -94,7 +125,7 @@ public static class DataGridLineContextMenuBehavior
                 ShowFindDialog(grid);
                 e.Handled = true;
                 break;
-            case Key.F2:
+            case Key.F2 when GetShowProductStockMenuItem(grid):
                 ShowProductStock(grid);
                 e.Handled = true;
                 break;
@@ -105,7 +136,7 @@ public static class DataGridLineContextMenuBehavior
 
     private static void AddLine(DataGrid grid)
     {
-        var command = GetCommand(grid.DataContext, "AddLineCommand");
+        var command = GetCommand(grid.DataContext, GetAddCommandName(grid));
         if (command?.CanExecute(null) == true) command.Execute(null);
     }
 
@@ -114,7 +145,7 @@ public static class DataGridLineContextMenuBehavior
         var line = grid.CurrentCell.Item ?? grid.SelectedItem;
         if (line is null) return;
 
-        var command = GetCommand(grid.DataContext, "RemoveLineCommand");
+        var command = GetCommand(grid.DataContext, GetRemoveCommandName(grid));
         if (command?.CanExecute(line) == true) command.Execute(line);
     }
 

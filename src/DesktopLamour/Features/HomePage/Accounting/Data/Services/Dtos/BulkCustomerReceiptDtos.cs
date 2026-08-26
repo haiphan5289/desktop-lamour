@@ -14,6 +14,9 @@ public class OutstandingSalesOrderDto
     [JsonPropertyName("customer_name")]    public string   CustomerName    { get; set; } = "";
     [JsonPropertyName("description")]      public string?  Description     { get; set; }
     [JsonPropertyName("remaining_amount")] public decimal  RemainingAmount { get; set; }
+    [JsonPropertyName("grand_total")]      public decimal  GrandTotal      { get; set; }
+    [JsonPropertyName("payment_terms")]    public string?  PaymentTerms    { get; set; }
+    [JsonPropertyName("payment_due_date")] public DateTime? PaymentDueDate { get; set; }
 }
 
 public class BulkReceiptLineRequestDto
@@ -29,10 +32,14 @@ public class CreateBulkCustomerReceiptRequestDto
     [JsonPropertyName("debit_account")]         public string   DebitAccount        { get; set; } = "Cash111";
     [JsonPropertyName("bank_account")]          public string?  BankAccount         { get; set; }
     [JsonPropertyName("collector_employee_id")] public int?     CollectorEmployeeId { get; set; }
+    [JsonPropertyName("payer_name")]            public string?  PayerName           { get; set; }
+    [JsonPropertyName("address")]               public string?  Address             { get; set; }
+    [JsonPropertyName("attachment")]            public string?  Attachment          { get; set; }
     [JsonPropertyName("lines")]                 public List<BulkReceiptLineRequestDto> Lines { get; set; } = new();
 }
 
+// 1 phiếu thu duy nhất (khớp ảnh mẫu MISA — không còn group theo khách hàng ra nhiều phiếu).
 public class CreateBulkCustomerReceiptResponseDto
 {
-    [JsonPropertyName("receipts")] public List<ReceiptResponseDto> Receipts { get; set; } = new();
+    [JsonPropertyName("receipt")] public ReceiptResponseDto Receipt { get; set; } = new();
 }

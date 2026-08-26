@@ -121,16 +121,121 @@
                       RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
                       Visibility="{Binding HasEmployees, Converter={StaticResource BoolToVisibilityConverter}}">
+                <!-- Header co giãn hết chiều rộng cột để chứa ô lọc bên dưới tên cột (không popup) -->
+                <DataGrid.ColumnHeaderStyle>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    </Style>
+                </DataGrid.ColumnHeaderStyle>
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Mã NV" Binding="{Binding Code}" Width="90"/>
-                    <DataGridTextColumn Header="Tên nhân viên" Binding="{Binding Name}" Width="*"/>
-                    <DataGridTextColumn Header="Giới tính" Binding="{Binding Gender}" Width="80"/>
-                    <DataGridTextColumn Header="Số điện thoại" Binding="{Binding Phone}" Width="130"/>
-                    <DataGridTextColumn Header="Chức vụ" Binding="{Binding Role}" Width="100"/>
-                    <DataGridTextColumn Header="Đơn vị" Binding="{Binding Unit}" Width="80"/>
-                    <DataGridTextColumn Header="Chức danh" Binding="{Binding JobTitle}" Width="140"/>
-                    <DataGridTextColumn Header="Số tài khoản" Binding="{Binding BankAccountNumber}" Width="130"/>
-                    <DataGridTextColumn Header="Tên ngân hàng" Binding="{Binding BankName}" Width="130"/>
+                    <DataGridTextColumn Header="Mã NV" Binding="{Binding Code}" Width="90">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Mã NV" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                            Text="{Binding DataContext.FilterCode, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Tên nhân viên" Binding="{Binding Name}" Width="*">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Tên nhân viên" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                            Text="{Binding DataContext.FilterName, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Giới tính" Binding="{Binding Gender}" Width="80">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Giới tính" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                            Text="{Binding DataContext.FilterGender, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Số điện thoại" Binding="{Binding Phone}" Width="130">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Số điện thoại" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                            Text="{Binding DataContext.FilterPhone, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Chức vụ" Binding="{Binding Role}" Width="100">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Chức vụ" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                            Text="{Binding DataContext.FilterRole, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Đơn vị" Binding="{Binding Unit}" Width="80">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Đơn vị" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                            Text="{Binding DataContext.FilterUnit, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Chức danh" Binding="{Binding JobTitle}" Width="140">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Chức danh" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                            Text="{Binding DataContext.FilterJobTitle, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Số tài khoản" Binding="{Binding BankAccountNumber}" Width="130">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Số tài khoản" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                            Text="{Binding DataContext.FilterBankAccountNumber, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Tên ngân hàng" Binding="{Binding BankName}" Width="130">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Tên ngân hàng" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                            Text="{Binding DataContext.FilterBankName, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
                     <DataGridCheckBoxColumn Header="Hoạt động" Binding="{Binding IsActive}" Width="90" IsReadOnly="True"/>
                 </DataGrid.Columns>
             </DataGrid>

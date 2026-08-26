@@ -4,6 +4,7 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.ViewModels;
+using DesktopLamour.Features.HomePage.AccountSettings.Domain.UseCases;
 using DesktopLamour.Features.HomePage.SalesReturn.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.SalesReturn.Domain.Models;
 using DesktopLamour.Features.HomePage.SalesReturn.Domain.UseCases;
@@ -34,6 +35,9 @@ public partial class SalesReturnViewModel : ViewModelBase
     private readonly IGetEmployeesUseCase           _getEmployees;
     private readonly IGetProductsUseCase            _getProducts;
     private readonly IGetWarehouseSettingsUseCase   _getWarehouses;
+    private readonly IGetAccountSettingsUseCase     _getAccountSettings;
+    private readonly IGetDepartmentsUseCase         _getDepartments;
+    private readonly ICreateSalesReturnWarehouseReceiptUseCase _createWarehouseReceipt;
     private readonly Func<EmployeeFormWindow>       _employeeFormWindowFactory;
     private readonly Func<CustomerFormWindow>       _customerFormWindowFactory;
     private readonly ILogger<SalesReturnViewModel>  _logger;
@@ -54,7 +58,23 @@ public partial class SalesReturnViewModel : ViewModelBase
     [ObservableProperty] private string _returnTypeLabel = "Giảm trừ công nợ";
 
     partial void OnReturnTypeChanged(int value)
-        => ReturnTypeLabel = value == 1 ? "Trả lại tiền mặt" : "Giảm trừ công nợ";
+    {
+        ReturnTypeLabel = value == 1 ? "Trả lại tiền mặt" : "Giảm trừ công nợ";
+        OnPropertyChanged(nameof(SelectedReturnType));
+    }
+
+    // Bridge cho ComboBox "Loại trả hàng" trong XAML (SelectedItem cần đúng kiểu ReturnTypeItem,
+    // không bind thẳng được vào ReturnType vì đó là int) — trước đây XAML bind
+    // "SelectedReturnType" nhưng property này chưa từng tồn tại, khiến dropdown không hoạt động.
+    public ReturnTypeItem SelectedReturnType
+    {
+        get => ReturnTypes.FirstOrDefault(t => t.Value == ReturnType) ?? ReturnTypes[0];
+        set
+        {
+            if (value is not null && value.Value != ReturnType)
+                ReturnType = value.Value;
+        }
+    }
 
     // ── Chứng từ ──────────────────────────────────────────────────────────
     [ObservableProperty] private DateTime _accountingDate = DateTime.Today;
@@ -78,6 +98,8 @@ public partial class SalesReturnViewModel : ViewModelBase
     public IReadOnlyList<ISearchableItem> Employees { get; private set; } = Array.Empty<ISearchableItem>();
     public ObservableCollection<ISearchableItem> Products { get; } = new();
     public IReadOnlyList<ISearchableItem> Warehouses { get; private set; } = Array.Empty<ISearchableItem>();
+    public IReadOnlyList<ISearchableItem> AccountSettings { get; private set; } = Array.Empty<ISearchableItem>();
+    public IReadOnlyList<ISearchableItem> Departments { get; private set; } = Array.Empty<ISearchableItem>();
     private readonly List<ISearchableItem> _allProducts = new();
 
     public IReadOnlyList<ReturnTypeItem> ReturnTypes { get; } = new[]
@@ -97,6 +119,9 @@ public partial class SalesReturnViewModel : ViewModelBase
         IGetEmployeesUseCase           getEmployees,
         IGetProductsUseCase            getProducts,
         IGetWarehouseSettingsUseCase   getWarehouses,
+        IGetAccountSettingsUseCase     getAccountSettings,
+        IGetDepartmentsUseCase         getDepartments,
+        ICreateSalesReturnWarehouseReceiptUseCase createWarehouseReceipt,
         Func<EmployeeFormWindow>       employeeFormWindowFactory,
         Func<CustomerFormWindow>       customerFormWindowFactory,
         ILogger<SalesReturnViewModel>  logger)
@@ -109,6 +134,9 @@ public partial class SalesReturnViewModel : ViewModelBase
         _getEmployees              = getEmployees;
         _getProducts               = getProducts;
         _getWarehouses             = getWarehouses;
+        _getAccountSettings        = getAccountSettings;
+        _getDepartments            = getDepartments;
+        _createWarehouseReceipt    = createWarehouseReceipt;
         _employeeFormWindowFactory = employeeFormWindowFactory;
         _customerFormWindowFactory = customerFormWindowFactory;
         _logger                    = logger;
@@ -149,12 +177,21 @@ public partial class SalesReturnViewModel : ViewModelBase
 
     private async Task LoadLookupsAsync(CancellationToken ct)
     {
-        var customerTask  = _getCustomers.ExecuteAsync(ct);
-        var employeeTask  = _getEmployees.ExecuteAsync(ct);
-        var productTask   = _getProducts.ExecuteAsync(ct);
-        var warehouseTask = _getWarehouses.ExecuteAsync(ct);
+        var customerTask       = _getCustomers.ExecuteAsync(ct);
+        var employeeTask       = _getEmployees.ExecuteAsync(ct);
+        var productTask        = _getProducts.ExecuteAsync(ct);
+        var warehouseTask      = _getWarehouses.ExecuteAsync(ct);
+        var accountSettingTask = _getAccountSettings.ExecuteAsync(ct);
+        var departmentTask     = _getDepartments.ExecuteAsync(ct);
 
-        await Task.WhenAll(customerTask, employeeTask, productTask, warehouseTask);
+        await Task.WhenAll(customerTask, employeeTask, productTask, warehouseTask, accountSettingTask, departmentTask);
+
+        if (departmentTask.IsCompletedSuccessfully)
+        {
+            Departments = departmentTask.Result.Cast<ISearchableItem>().ToList().AsReadOnly();
+            OnPropertyChanged(nameof(Departments));
+        }
+        else _logger.LogWarning(departmentTask.Exception, "Could not preload departments");
 
         if (warehouseTask.IsCompletedSuccessfully)
         {
@@ -162,6 +199,13 @@ public partial class SalesReturnViewModel : ViewModelBase
             OnPropertyChanged(nameof(Warehouses));
         }
         else _logger.LogWarning(warehouseTask.Exception, "Could not preload warehouses");
+
+        if (accountSettingTask.IsCompletedSuccessfully)
+        {
+            AccountSettings = accountSettingTask.Result.Cast<ISearchableItem>().ToList().AsReadOnly();
+            OnPropertyChanged(nameof(AccountSettings));
+        }
+        else _logger.LogWarning(accountSettingTask.Exception, "Could not preload account settings");
 
         if (customerTask.IsCompletedSuccessfully)
         {
@@ -269,6 +313,37 @@ public partial class SalesReturnViewModel : ViewModelBase
         finally { IsBusy = false; }
     }
 
+    // "Lập PN" — chỉ dùng được sau khi chứng từ đã Ghi sổ (có CurrentReturn.Id). Tự động tạo VÀ
+    // ghi sổ (Confirmed) luôn 1 Phiếu Nhập Kho liên kết — xem
+    // CreateSalesReturnWarehouseReceiptUseCase (BE) để biết vì sao không đụng lại tồn kho.
+    [RelayCommand]
+    private async Task CreateWarehouseReceiptAsync(CancellationToken ct = default)
+    {
+        if (CurrentReturn is null)
+        {
+            MessageBox.Show(
+                "Vui lòng Ghi sổ chứng từ trước khi lập phiếu nhập kho.",
+                "Chưa thể lập PN", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            var result = await _createWarehouseReceipt.ExecuteAsync(CurrentReturn.Id, ct);
+            MessageBox.Show(
+                $"Đã lập và ghi sổ phiếu nhập kho {result.ReceiptNumber}.",
+                "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create warehouse receipt from sales return {Id}", CurrentReturn.Id);
+            MessageBox.Show(ex.Message, "Không thể lập phiếu nhập kho", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        finally { IsBusy = false; }
+    }
+
     [RelayCommand]
     private void Cancel()
     {
@@ -326,6 +401,15 @@ public partial class SalesReturnViewModel : ViewModelBase
             Quantity        = 1,
         };
         line.SetSelectedWarehouseSilent(Warehouses.FirstOrDefault());
+        // Set theo mã đã có ở trên (fallback string, phòng khi danh mục tài khoản chưa tải/không
+        // khớp mã nào) — setter chỉ ghi đè ReturnAccount/DebtAccount/DiscountAccount khi tìm thấy
+        // match, không xoá mất giá trị mặc định nếu AccountSettings rỗng.
+        line.SetSelectedReturnAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == line.ReturnAccount));
+        line.SetSelectedDebtAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == line.DebtAccount));
+        line.SetSelectedDiscountAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == line.DiscountAccount));
+        line.SetSelectedTaxAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == line.TaxAccount));
+        line.SetSelectedCostAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == line.CostAccount));
+        line.SetSelectedCogsAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == line.CogsAccount));
         line.PropertyChanged += (_, _) => RecalculateTotals();
         Lines.Add(line);
     }
@@ -390,9 +474,21 @@ public partial class SalesReturnViewModel : ViewModelBase
                 UnitPrice        = l.UnitPrice,
                 DiscountRate     = l.DiscountRate,
                 SalesOrderNumber = l.SalesOrderNumber,
+                TaxRate          = l.TaxRate,
+                TaxAccount       = l.TaxAccount,
+                CostAccount      = l.CostAccount,
+                CogsAccount      = l.CogsAccount,
+                CostPrice        = l.CostPrice,
             };
             item.SetSelectedProductSilent(_allProducts.FirstOrDefault(p => p.Id == l.ProductId));
             item.SetSelectedWarehouseSilent(Warehouses.FirstOrDefault(w => w.Id == l.WarehouseId));
+            item.SetSelectedReturnAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == l.ReturnAccount));
+            item.SetSelectedDebtAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == l.DebtAccount));
+            item.SetSelectedDiscountAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == l.DiscountAccount));
+            item.SetSelectedTaxAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == l.TaxAccount));
+            item.SetSelectedCostAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == l.CostAccount));
+            item.SetSelectedCogsAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == l.CogsAccount));
+            item.SetSelectedDepartmentSilent(Departments.FirstOrDefault(d => d.Id == l.DepartmentId));
             item.PropertyChanged += (_, _) => RecalculateTotals();
             Lines.Add(item);
         }
@@ -474,6 +570,14 @@ public partial class SalesReturnViewModel : ViewModelBase
         DiscountRate     = item.DiscountRate,
         DiscountAmount   = item.DiscountAmount,
         SalesOrderNumber = item.SalesOrderNumber,
+        TaxRate          = item.TaxRate,
+        TaxAmount        = item.TaxAmount,
+        TaxAccount       = item.TaxAccount,
+        CostAccount      = item.CostAccount,
+        CogsAccount      = item.CogsAccount,
+        CostPrice        = item.CostPrice,
+        CostAmount       = item.CostAmount,
+        DepartmentId     = item.DepartmentId,
     };
 }
 

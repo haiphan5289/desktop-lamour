@@ -14,10 +14,10 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>   <!-- Header -->
             <RowDefinition Height="Auto"/>   <!-- Toolbar -->
-            <RowDefinition Height="Auto"/>   <!-- Form -->
-            <RowDefinition Height="*"/>      <!-- Tab area -->
+            <RowDefinition Height="*"/>      <!-- Document-type tabs (Giảm trừ công nợ / Phiếu nhập / Hóa đơn) -->
             <RowDefinition Height="Auto"/>   <!-- Error banner -->
             <RowDefinition Height="Auto"/>   <!-- Footer totals -->
+            <RowDefinition Height="Auto"/>   <!-- Status bar (phím tắt) -->
         </Grid.RowDefinitions>
 
         <!-- Loading overlay -->
@@ -67,6 +67,11 @@
                                                 Command="{Binding DeleteCommand}"
                                                 Margin="0"/>
                             <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
+                            <controls:AppButton Content="🧾 Lập PN"
+                                                Style="{StaticResource AppButton.Secondary.Medium}"
+                                                Command="{Binding CreateWarehouseReceiptCommand}"
+                                                Margin="0"/>
+                            <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
                             <controls:AppButton Content="✖️ Đóng"
                                                 Style="{StaticResource AppButton.Tertiary.Medium}"
                                                 Click="CloseButton_Click"
@@ -87,9 +92,23 @@
         </Border>
 
         <!-- ══════════════════════════════════════════════════════════ -->
+        <!-- Document-type tabs — Giảm trừ công nợ (nội dung thật) /   -->
+        <!-- Phiếu nhập / Hóa đơn (chưa triển khai, chứng từ liên kết) -->
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <TabControl Grid.Row="2" Margin="16,8,16,0"
+                    BorderBrush="{StaticResource AppColor.BorderThin}"
+                    BorderThickness="1">
+        <TabItem Header="Giảm trừ công nợ">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>   <!-- Form -->
+                <RowDefinition Height="*"/>      <!-- Inner tabs -->
+            </Grid.RowDefinitions>
+
+        <!-- ══════════════════════════════════════════════════════════ -->
         <!-- Form — Thông tin chung + Chứng từ                         -->
         <!-- ══════════════════════════════════════════════════════════ -->
-        <Grid Grid.Row="2" Margin="16,12,16,0">
+        <Grid Grid.Row="0" Margin="16,12,16,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="16"/>
@@ -115,13 +134,19 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Khách hàng -->
+                    <!-- Khách hàng — Mã khách hàng (chọn thật, set CustomerId) + Tên khách hàng
+                         (chỉ hiển thị, đồng bộ theo SelectedCustomer — BE SalesReturn chưa có field
+                         override tên như SalesOrder.CustomerNameOverride nên không cho gõ đè tự do,
+                         tránh mất dữ liệu người dùng gõ khi Ghi sổ). -->
                     <Grid Grid.Row="0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="130"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <controls:AppLabel Grid.Column="0" Text="Khách hàng"
+                        <controls:AppLabel Grid.Column="0" Text="Mã khách hàng"
                                            Style="{StaticResource AppTypography.LabelSection}"
                                            VerticalAlignment="Center"/>
                         <controls:AppSearchableComboBox Grid.Column="1"
@@ -130,6 +155,13 @@
                             Placeholder="Chọn khách hàng"
                             IsNullable="True"
                             AddCommand="{Binding AddCustomerCommand}"/>
+                        <controls:AppLabel Grid.Column="3" Text="Tên khách hàng"
+                                           Style="{StaticResource AppTypography.LabelSection}"
+                                           VerticalAlignment="Center"/>
+                        <controls:AppTextField Grid.Column="4"
+                            Text="{Binding SelectedCustomer.Name, Mode=OneWay}"
+                            IsReadOnly="True"
+                            Placeholder="—"/>
                     </Grid>
 
                     <!-- Diễn giải -->
@@ -226,9 +258,9 @@
         </Grid>
 
         <!-- ══════════════════════════════════════════════════════════ -->
-        <!-- Tab area                                                   -->
+        <!-- Inner tabs — Hàng tiền / Thuế / Giá vốn / Thống kê / ...   -->
         <!-- ══════════════════════════════════════════════════════════ -->
-        <TabControl Grid.Row="3" Margin="16,8,16,0"
+        <TabControl Grid.Row="1" Margin="16,8,16,0"
                     BorderBrush="{StaticResource AppColor.BorderThin}"
                     BorderThickness="1">
 
@@ -314,20 +346,62 @@
                                 </DataGridTemplateColumn.CellEditingTemplate>
                             </DataGridTemplateColumn>
 
-                            <!-- TK trả lại (5212) -->
-                            <DataGridTextColumn Header="TK trả lại"
-                                                Binding="{Binding ReturnAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                Width="90"/>
+                            <!-- TK trả lại (5212) — combo tra cứu danh mục tài khoản (AccountSetting) -->
+                            <DataGridTemplateColumn Header="TK trả lại" Width="140">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding ReturnAccount}"
+                                                   VerticalAlignment="Center"
+                                                   Padding="4,0"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate>
+                                        <ComboBox ItemsSource="{Binding DataContext.AccountSettings, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  SelectedItem="{Binding SelectedReturnAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  DisplayMemberPath="DisplayText"
+                                                  VerticalContentAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                            </DataGridTemplateColumn>
 
-                            <!-- TK công nợ (131) -->
-                            <DataGridTextColumn Header="TK công nợ"
-                                                Binding="{Binding DebtAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                Width="90"/>
+                            <!-- TK công nợ (131) — combo tra cứu danh mục tài khoản -->
+                            <DataGridTemplateColumn Header="TK công nợ" Width="140">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding DebtAccount}"
+                                                   VerticalAlignment="Center"
+                                                   Padding="4,0"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate>
+                                        <ComboBox ItemsSource="{Binding DataContext.AccountSettings, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  SelectedItem="{Binding SelectedDebtAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  DisplayMemberPath="DisplayText"
+                                                  VerticalContentAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                            </DataGridTemplateColumn>
 
-                            <!-- TK CK (5211) -->
-                            <DataGridTextColumn Header="TK CK"
-                                                Binding="{Binding DiscountAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                Width="75"/>
+                            <!-- TK CK (5211) — combo tra cứu danh mục tài khoản -->
+                            <DataGridTemplateColumn Header="TK CK" Width="140">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding DiscountAccount}"
+                                                   VerticalAlignment="Center"
+                                                   Padding="4,0"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate>
+                                        <ComboBox ItemsSource="{Binding DataContext.AccountSettings, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  SelectedItem="{Binding SelectedDiscountAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  DisplayMemberPath="DisplayText"
+                                                  VerticalContentAlignment="Center"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                            </DataGridTemplateColumn>
 
                             <!-- Số CT bán hàng -->
                             <DataGridTextColumn Header="Số CT bán hàng"
@@ -427,29 +501,210 @@
                 </Grid>
             </TabItem>
 
-            <!-- ── Stub tabs ── -->
+            <!-- ── Tab 2: Thuế ── -->
             <TabItem Header="2. Thuế">
-                <controls:AppLabel Text="(Không áp dụng)"
-                                   Style="{StaticResource AppTypography.BodySection}"
-                                   Foreground="{StaticResource AppColor.TextSecondary}"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"/>
+                <DataGrid ItemsSource="{Binding Lines}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          CanUserResizeColumns="True"
+                          SelectionMode="Single"
+                          HeadersVisibility="Column"
+                          GridLinesVisibility="Horizontal"
+                          BorderThickness="0"
+                          RowBackground="{StaticResource AppColor.BackgroundPrimary}"
+                          AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Mã hàng" Binding="{Binding ProductCode}" Width="90" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Tên hàng" Binding="{Binding ProductName}" Width="*" IsReadOnly="True"/>
+
+                        <!-- Diễn giải thuế — tự sinh theo tên hàng, không lưu riêng ở BE -->
+                        <DataGridTextColumn Header="Diễn giải thuế" Width="200" IsReadOnly="True">
+                            <DataGridTextColumn.Binding>
+                                <Binding Path="ProductName" StringFormat="Thuế GTGT - {0}"/>
+                            </DataGridTextColumn.Binding>
+                        </DataGridTextColumn>
+
+                        <!-- % thuế GTGT — luôn lấy từ Product.VatRate (xem SelectedProduct), BE cũng
+                             tự tính lại giống SalesOrder, không cho gõ tay để tránh lệch dữ liệu. -->
+                        <DataGridTextColumn Header="% thuế GTGT" Width="90" IsReadOnly="True">
+                            <DataGridTextColumn.Binding>
+                                <Binding Path="TaxRate" StringFormat="{}{0:N0}%"/>
+                            </DataGridTextColumn.Binding>
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Right"/>
+                                    <Setter Property="VerticalAlignment"   Value="Center"/>
+                                    <Setter Property="Padding"             Value="0,0,6,0"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <DataGridTextColumn Header="Tiền thuế GTGT"
+                                            Binding="{Binding TaxAmount, StringFormat=N0}"
+                                            Width="120" IsReadOnly="True">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Right"/>
+                                    <Setter Property="VerticalAlignment"   Value="Center"/>
+                                    <Setter Property="Padding"             Value="0,0,6,0"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <!-- TK thuế GTGT (33311) — combo tra cứu danh mục tài khoản -->
+                        <DataGridTemplateColumn Header="TK thuế GTGT" Width="150">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding TaxAccount}" VerticalAlignment="Center" Padding="4,0"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding DataContext.AccountSettings, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                              SelectedItem="{Binding SelectedTaxAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              DisplayMemberPath="DisplayText"
+                                              VerticalContentAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
             </TabItem>
 
+            <!-- ── Tab 3: Giá vốn ── -->
             <TabItem Header="3. Giá vốn">
-                <controls:AppLabel Text="(Chưa triển khai)"
-                                   Style="{StaticResource AppTypography.BodySection}"
-                                   Foreground="{StaticResource AppColor.TextSecondary}"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"/>
+                <DataGrid ItemsSource="{Binding Lines}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          CanUserResizeColumns="True"
+                          SelectionMode="Single"
+                          HeadersVisibility="Column"
+                          GridLinesVisibility="Horizontal"
+                          BorderThickness="0"
+                          RowBackground="{StaticResource AppColor.BackgroundPrimary}"
+                          AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Mã hàng" Binding="{Binding ProductCode}" Width="90" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Tên hàng" Binding="{Binding ProductName}" Width="*" IsReadOnly="True"/>
+
+                        <!-- Kho — chỉ hiển thị, sửa thật ở tab "1. Hàng tiền" (cùng WarehouseId) -->
+                        <DataGridTextColumn Header="Kho" Binding="{Binding WarehouseName}" Width="100" IsReadOnly="True"/>
+
+                        <!-- TK kho (1561) — combo tra cứu danh mục tài khoản -->
+                        <DataGridTemplateColumn Header="TK kho" Width="150">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding CostAccount}" VerticalAlignment="Center" Padding="4,0"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding DataContext.AccountSettings, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                              SelectedItem="{Binding SelectedCostAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              DisplayMemberPath="DisplayText"
+                                              VerticalContentAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- TK giá vốn (632) — combo tra cứu danh mục tài khoản -->
+                        <DataGridTemplateColumn Header="TK giá vốn" Width="150">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding CogsAccount}" VerticalAlignment="Center" Padding="4,0"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding DataContext.AccountSettings, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                              SelectedItem="{Binding SelectedCogsAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              DisplayMemberPath="DisplayText"
+                                              VerticalContentAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTextColumn Header="ĐVT" Binding="{Binding Unit}" Width="60" IsReadOnly="True"/>
+
+                        <!-- Đơn giá vốn — luôn lấy từ Product.CostPrice (xem SelectedProduct) -->
+                        <DataGridTextColumn Header="Đơn giá vốn"
+                                            Binding="{Binding CostPrice, StringFormat=N0}"
+                                            Width="100" IsReadOnly="True">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Right"/>
+                                    <Setter Property="VerticalAlignment"   Value="Center"/>
+                                    <Setter Property="Padding"             Value="0,0,6,0"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <DataGridTextColumn Header="Số lượng" Binding="{Binding Quantity}" Width="75" IsReadOnly="True">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Right"/>
+                                    <Setter Property="VerticalAlignment"   Value="Center"/>
+                                    <Setter Property="Padding"             Value="0,0,6,0"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <DataGridTextColumn Header="Tiền vốn"
+                                            Binding="{Binding CostAmount, StringFormat=N0}"
+                                            Width="110" IsReadOnly="True">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Right"/>
+                                    <Setter Property="VerticalAlignment"   Value="Center"/>
+                                    <Setter Property="Padding"             Value="0,0,6,0"/>
+                                    <Setter Property="Foreground"          Value="{StaticResource AppColor.TextBrand}"/>
+                                    <Setter Property="FontWeight"          Value="SemiBold"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
             </TabItem>
 
+            <!-- ── Tab 4: Thống kê — chỉ "Đơn vị" (Department có sẵn); 6 field còn lại của MISA
+                 (Công trình, Đơn đặt hàng, Hợp đồng bán, Đối tượng THCP, Số khế ước, Mã thống kê)
+                 không có master data trong hệ thống, bỏ qua theo yêu cầu. ── -->
             <TabItem Header="4. Thống kê">
-                <controls:AppLabel Text="(Chưa triển khai)"
-                                   Style="{StaticResource AppTypography.BodySection}"
-                                   Foreground="{StaticResource AppColor.TextSecondary}"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"/>
+                <DataGrid ItemsSource="{Binding Lines}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          CanUserResizeColumns="True"
+                          SelectionMode="Single"
+                          HeadersVisibility="Column"
+                          GridLinesVisibility="Horizontal"
+                          BorderThickness="0"
+                          RowBackground="{StaticResource AppColor.BackgroundPrimary}"
+                          AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Mã hàng" Binding="{Binding ProductCode}" Width="90" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Tên hàng" Binding="{Binding ProductName}" Width="*" IsReadOnly="True"/>
+
+                        <!-- Đơn vị — combo tra cứu Department -->
+                        <DataGridTemplateColumn Header="Đơn vị" Width="180">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding SelectedDepartment.Name}" VerticalAlignment="Center" Padding="4,0"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding DataContext.Departments, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                              SelectedItem="{Binding SelectedDepartment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              DisplayMemberPath="DisplayText"
+                                              VerticalContentAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
             </TabItem>
 
             <TabItem Header="5. Thông tin bổ sung">
@@ -476,11 +731,32 @@
             </TabItem>
 
         </TabControl>
+        </Grid>
+        </TabItem>
+
+        <!-- ── Stub: Phiếu nhập / Hóa đơn — chứng từ liên kết, chưa triển khai ── -->
+        <TabItem Header="Phiếu nhập">
+            <controls:AppLabel Text="(Chưa triển khai)"
+                               Style="{StaticResource AppTypography.BodySection}"
+                               Foreground="{StaticResource AppColor.TextSecondary}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+        </TabItem>
+
+        <TabItem Header="Hóa đơn">
+            <controls:AppLabel Text="(Chưa triển khai)"
+                               Style="{StaticResource AppTypography.BodySection}"
+                               Foreground="{StaticResource AppColor.TextSecondary}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+        </TabItem>
+
+        </TabControl>
 
         <!-- ══════════════════════════════════════════════════════════ -->
         <!-- Error banner                                               -->
         <!-- ══════════════════════════════════════════════════════════ -->
-        <Border Grid.Row="4"
+        <Border Grid.Row="3"
                 Margin="16,4,16,0"
                 Padding="12,8"
                 Background="{StaticResource AppColor.BackgroundErrorLight}"
@@ -494,7 +770,7 @@
         <!-- ══════════════════════════════════════════════════════════ -->
         <!-- Footer — totals                                            -->
         <!-- ══════════════════════════════════════════════════════════ -->
-        <Border Grid.Row="5"
+        <Border Grid.Row="4"
                 BorderBrush="{StaticResource AppColor.BorderThin}"
                 BorderThickness="0,1,0,0"
                 Padding="16,10"
@@ -550,6 +826,22 @@
                                        Foreground="{StaticResource AppColor.TextBrand}"/>
                 </StackPanel>
             </Grid>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <!-- Status bar — phím tắt trên lưới dòng hàng (khớp             -->
+        <!-- DataGridLineContextMenuBehavior, không phải phím trong ảnh   -->
+        <!-- gốc vì F3/F6 chưa được wire trong control này)              -->
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="5"
+                Background="{StaticResource AppColor.BackgroundSecondary}"
+                BorderBrush="{StaticResource AppColor.BorderThin}"
+                BorderThickness="0,1,0,0"
+                Padding="16,6">
+            <controls:AppLabel
+                Text="Ctrl+F - Tìm kiếm, Ctrl+F2 - Xem tồn kho, Ctrl+Insert - Thêm dòng, Ctrl+Delete - Xóa dòng"
+                Style="{StaticResource AppTypography.BodyCaption}"
+                Foreground="{StaticResource AppColor.TextSecondary}"/>
         </Border>
 
     </Grid>

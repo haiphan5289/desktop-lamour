@@ -12,5 +12,6 @@ public interface IPaymentService
     Task DeleteAsync(int id, CancellationToken ct = default);
     Task<PaymentResponseDto> DuplicateAsync(int id, CancellationToken ct = default);
     Task<PaymentResponseDto> ConfirmAsync(int id, CancellationToken ct = default);
+    Task<PaymentResponseDto> UnconfirmAsync(int id, CancellationToken ct = default);
     Task<PaymentResponseDto> TreoAsync(int id, CancellationToken ct = default);
 }

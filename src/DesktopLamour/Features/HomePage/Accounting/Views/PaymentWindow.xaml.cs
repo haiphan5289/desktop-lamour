@@ -32,7 +32,7 @@ public partial class PaymentWindow : Window
     private void PaymentWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key != Key.F3) return;
-        SupplierCombo.Focus();
+        PartnerCombo.Focus();
         e.Handled = true;
     }
 }

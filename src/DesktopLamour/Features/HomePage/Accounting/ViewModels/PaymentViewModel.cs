@@ -10,6 +10,7 @@ using DesktopLamour.Features.HomePage.Accounting.Data.Storage;
 using DesktopLamour.Features.HomePage.Accounting.Domain.Models;
 using DesktopLamour.Features.HomePage.Accounting.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Accounting.Views;
+using DesktopLamour.Features.HomePage.Customers.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Employees.Views;
 using DesktopLamour.Features.HomePage.Suppliers.Domain.UseCases;
@@ -30,8 +31,10 @@ public partial class PaymentViewModel : ViewModelBase
     private readonly IUpdatePaymentUseCase        _updatePayment;
     private readonly IDeletePaymentUseCase        _deletePayment;
     private readonly IConfirmPaymentUseCase       _confirmPayment;
+    private readonly IUnconfirmPaymentUseCase     _unconfirmPayment;
     private readonly ISetPaymentTreoUseCase       _setPaymentTreo;
     private readonly IGetSuppliersUseCase         _getSuppliers;
+    private readonly IGetCustomersUseCase         _getCustomers;
     private readonly IGetEmployeesUseCase         _getEmployees;
     private readonly IGetExpenseCategoriesUseCase _getExpenseCategories;
     private readonly IGetAccountSettingsUseCase   _getAccountSettings;
@@ -47,7 +50,8 @@ public partial class PaymentViewModel : ViewModelBase
     [ObservableProperty] private bool    _isEditing;
 
     // ── Header — Thông tin chung ──────────────────────────────────────────
-    [ObservableProperty] private ISearchableItem? _selectedSupplier;
+    [ObservableProperty] private ISearchableItem? _selectedPartner;
+    [ObservableProperty] private IReadOnlyList<ISearchableItem> _partnerItems = Array.Empty<ISearchableItem>();
     [ObservableProperty] private string  _payeeName             = string.Empty;
     [ObservableProperty] private string? _address;
     [ObservableProperty] private string  _selectedPaymentReason = "ChiKhac";
@@ -72,6 +76,7 @@ public partial class PaymentViewModel : ViewModelBase
     public ObservableCollection<PaymentEntryItem> Entries { get; } = new();
 
     public IReadOnlyList<ISearchableItem> Suppliers { get; private set; } = Array.Empty<ISearchableItem>();
+    public IReadOnlyList<ISearchableItem> Customers { get; private set; } = Array.Empty<ISearchableItem>();
     public IReadOnlyList<ISearchableItem> Employees { get; private set; } = Array.Empty<ISearchableItem>();
     public IReadOnlyList<ISearchableItem> AccountSettings { get; private set; } = Array.Empty<ISearchableItem>();
     public IReadOnlyList<ExpenseCategory> ExpenseCategories { get; private set; }
@@ -85,6 +90,7 @@ public partial class PaymentViewModel : ViewModelBase
     // Chỉ Nháp (hoặc phiếu mới, chưa lưu) mới cho phép sửa — phiếu đã Ghi số là bất biến.
     public bool CanEdit => CurrentPayment is null || CurrentPayment.Status != "Confirmed";
     public bool CanPrint => CurrentPayment is not null;
+    public bool CanUnconfirm => CurrentPayment is not null && CurrentPayment.Status == "Confirmed";
 
     private List<PaymentResponseDto> _receiptListCache = new();
     private int _currentIndex = -1;
@@ -96,8 +102,10 @@ public partial class PaymentViewModel : ViewModelBase
         IUpdatePaymentUseCase        updatePayment,
         IDeletePaymentUseCase        deletePayment,
         IConfirmPaymentUseCase       confirmPayment,
+        IUnconfirmPaymentUseCase     unconfirmPayment,
         ISetPaymentTreoUseCase       setPaymentTreo,
         IGetSuppliersUseCase         getSuppliers,
+        IGetCustomersUseCase         getCustomers,
         IGetEmployeesUseCase         getEmployees,
         IGetExpenseCategoriesUseCase getExpenseCategories,
         IGetAccountSettingsUseCase   getAccountSettings,
@@ -112,8 +120,10 @@ public partial class PaymentViewModel : ViewModelBase
         _updatePayment             = updatePayment;
         _deletePayment             = deletePayment;
         _confirmPayment            = confirmPayment;
+        _unconfirmPayment          = unconfirmPayment;
         _setPaymentTreo            = setPaymentTreo;
         _getSuppliers              = getSuppliers;
+        _getCustomers              = getCustomers;
         _getEmployees              = getEmployees;
         _getExpenseCategories      = getExpenseCategories;
         _getAccountSettings        = getAccountSettings;
@@ -137,20 +147,27 @@ public partial class PaymentViewModel : ViewModelBase
     {
         try
         {
-            var customers        = await _getSuppliers.ExecuteAsync(ct);
+            var suppliers        = await _getSuppliers.ExecuteAsync(ct);
+            var customers        = await _getCustomers.ExecuteAsync(ct);
             var employees        = await _getEmployees.ExecuteAsync(ct);
             var expenseCategories = await _getExpenseCategories.ExecuteAsync(ct);
             var accountSettings  = await _getAccountSettings.ExecuteAsync(ct);
 
-            Suppliers         = customers.Cast<ISearchableItem>().ToList().AsReadOnly();
+            Suppliers         = suppliers.Cast<ISearchableItem>().ToList().AsReadOnly();
+            Customers         = customers.Cast<ISearchableItem>().ToList().AsReadOnly();
             Employees         = employees.Cast<ISearchableItem>().ToList().AsReadOnly();
             ExpenseCategories = expenseCategories.ToList().AsReadOnly();
             AccountSettings   = accountSettings.Cast<ISearchableItem>().ToList().AsReadOnly();
 
             OnPropertyChanged(nameof(Suppliers));
+            OnPropertyChanged(nameof(Customers));
             OnPropertyChanged(nameof(Employees));
             OnPropertyChanged(nameof(ExpenseCategories));
             OnPropertyChanged(nameof(AccountSettings));
+
+            // "Đối tượng" — 1 ô tìm kiếm chung cho cả 3 loại (khớp ảnh mẫu MISA: không có combo
+            // "chọn loại đối tượng" riêng, gõ mã gì cũng tìm ra đúng nguồn tương ứng).
+            PartnerItems = Suppliers.Concat(Customers).Concat(Employees).ToList();
         }
         catch (Exception ex)
         {
@@ -298,16 +315,42 @@ public partial class PaymentViewModel : ViewModelBase
         finally { IsBusy = false; }
     }
 
+    // "↩️ Hoàn" (MISA) — hủy Ghi số, đưa phiếu về Treo (mirror UnconfirmWarehouseReceiptUseCase).
+    [RelayCommand(CanExecute = nameof(CanUnconfirm))]
+    private async Task UnconfirmAsync(CancellationToken ct = default)
+    {
+        if (CurrentPayment is null || CurrentPayment.Status != "Confirmed") return;
+
+        HasError     = false;
+        ErrorMessage = string.Empty;
+        IsBusy       = true;
+        try
+        {
+            var reverted = await _unconfirmPayment.ExecuteAsync(CurrentPayment.Id, ct);
+            _logger.LogInformation("Payment unconfirmed: {Id}", reverted.Id);
+            await LoadPaymentsAsync(ct);
+            NavigateToPayment(reverted.Id);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to unconfirm payment");
+            HasError     = true;
+            ErrorMessage = ex.Message;
+        }
+        finally { IsBusy = false; }
+    }
+
     /// Lưu (create/update), trả về Id của phiếu vừa lưu — hoặc null nếu lưu thất bại.
     private async Task<int?> PersistAsync(CancellationToken ct)
     {
         HasError     = false;
         ErrorMessage = string.Empty;
 
-        if (SelectedSupplier is null)
+        if (SelectedPartner is null)
         {
             HasError     = true;
-            ErrorMessage = "Vui lòng chọn đối tượng (nhà cung cấp).";
+            ErrorMessage = "Vui lòng chọn đối tượng.";
             return null;
         }
 
@@ -419,6 +462,8 @@ public partial class PaymentViewModel : ViewModelBase
         {
             SelectedDebitAccount  = AccountSettings.FirstOrDefault(a => a.Id == _lastUsedAccounts.LastDebitAccountId),
             SelectedCreditAccount = AccountSettings.FirstOrDefault(a => a.Id == _lastUsedAccounts.LastCreditAccountId),
+            SubjectCode           = SelectedPartner?.Code,
+            SubjectName           = SelectedPartner?.Name,
         };
         AttachEntryHandlers(entry);
         Entries.Add(entry);
@@ -459,25 +504,46 @@ public partial class PaymentViewModel : ViewModelBase
 
     // ── Partial property change hooks ─────────────────────────────────────
 
-    partial void OnSelectedSupplierChanged(ISearchableItem? value)
+    partial void OnSelectedPartnerChanged(ISearchableItem? value)
     {
         if (value is not null)
         {
             PayeeName = value.Name;
 
-            // Auto-populate Address from Supplier
-            if (value is DesktopLamour.Features.HomePage.Suppliers.Domain.Models.Supplier customer)
+            // Auto-populate Address — chỉ Supplier/Customer có field Address, Employee thì không.
+            Address = value switch
             {
-                Address = customer.Address;
+                DesktopLamour.Features.HomePage.Suppliers.Domain.Models.Supplier supplier => supplier.Address,
+                DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer customer => customer.Address,
+                _ => Address,
+            };
+
+            // Khớp ảnh mẫu MISA — đổi "Đối tượng" ở header đồng bộ luôn "Đối tượng"/"Tên đối tượng"
+            // xuống mọi dòng hạch toán hiện có (dòng mới thêm sau đó cũng mặc định theo AddEntry()).
+            foreach (var entry in Entries)
+            {
+                entry.SubjectCode = value.Code;
+                entry.SubjectName = value.Name;
             }
         }
     }
+
+    // "Đối tượng" là 1 ô tìm kiếm chung (PartnerItems gộp Suppliers/Customers/Employees) — loại
+    // được suy ra từ kiểu runtime của object đã chọn, không cần combo "chọn loại" riêng cho user.
+    private static string ResolvePartnerType(ISearchableItem partner) => partner switch
+    {
+        DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer => "Customer",
+        DesktopLamour.Features.HomePage.Employees.Domain.Models.Employee => "Employee",
+        _ => "Supplier",
+    };
 
     partial void OnCurrentPaymentChanged(PaymentResponseDto? value)
     {
         OnPropertyChanged(nameof(CanEdit));
         OnPropertyChanged(nameof(CanPrint));
+        OnPropertyChanged(nameof(CanUnconfirm));
         PrintCommand.NotifyCanExecuteChanged();
+        UnconfirmCommand.NotifyCanExecuteChanged();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
@@ -504,7 +570,7 @@ public partial class PaymentViewModel : ViewModelBase
 
     private void ClearForm()
     {
-        SelectedSupplier          = null;
+        SelectedPartner           = null;
         PayeeName                 = string.Empty;
         Address                   = null;
         SelectedPaymentReason     = "ChiKhac";
@@ -535,7 +601,12 @@ public partial class PaymentViewModel : ViewModelBase
     {
         if (CurrentPayment is null) return;
 
-        SelectedSupplier          = Suppliers.FirstOrDefault(c => c.Id == CurrentPayment.SupplierId);
+        SelectedPartner           = CurrentPayment.PartnerType switch
+        {
+            "Customer" => Customers.FirstOrDefault(c => c.Id == CurrentPayment.PartnerId),
+            "Employee" => Employees.FirstOrDefault(c => c.Id == CurrentPayment.PartnerId),
+            _          => Suppliers.FirstOrDefault(c => c.Id == CurrentPayment.PartnerId),
+        };
         PayeeName                 = CurrentPayment.PayeeName;
         Address                   = CurrentPayment.Address;
         SelectedPaymentReason     = CurrentPayment.PaymentReason;
@@ -576,7 +647,8 @@ public partial class PaymentViewModel : ViewModelBase
 
     private CreatePaymentRequestDto BuildCreateRequest() => new()
     {
-        SupplierId          = SelectedSupplier!.Id,
+        PartnerType          = ResolvePartnerType(SelectedPartner!),
+        PartnerId            = SelectedPartner!.Id,
         PayeeName           = PayeeName.Trim(),
         Address             = string.IsNullOrWhiteSpace(Address)         ? null : Address.Trim(),
         PaymentReason       = SelectedPaymentReason,
@@ -592,7 +664,8 @@ public partial class PaymentViewModel : ViewModelBase
 
     private UpdatePaymentRequestDto BuildUpdateRequest() => new()
     {
-        SupplierId          = SelectedSupplier!.Id,
+        PartnerType          = ResolvePartnerType(SelectedPartner!),
+        PartnerId            = SelectedPartner!.Id,
         PayeeName           = PayeeName.Trim(),
         Address             = string.IsNullOrWhiteSpace(Address)         ? null : Address.Trim(),
         PaymentReason       = SelectedPaymentReason,

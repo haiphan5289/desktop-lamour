@@ -29,6 +29,7 @@ public partial class BulkCustomerReceiptSearchViewModel : ViewModelBase
     [ObservableProperty] private bool   _hasError;
     [ObservableProperty] private string _errorMessage = string.Empty;
     [ObservableProperty] private bool   _hasItems;
+    [ObservableProperty] private string _lineSummary = "Số dòng = 0";
 
     // "Cash111" (Tiền mặt) hoặc "Bank112" (Tiền gửi) — khớp thẳng giá trị AccountCode enum, áp dụng
     // cho toàn bộ phiếu sẽ tạo ở popup xác nhận. Radio button bind qua StringEqualityConverter.
@@ -121,7 +122,8 @@ public partial class BulkCustomerReceiptSearchViewModel : ViewModelBase
             AreAllSelected = false;
             Items.Clear();
             foreach (var order in data) Items.Add(new OutstandingSalesOrderCheckItem(order));
-            HasItems = Items.Count > 0;
+            HasItems    = Items.Count > 0;
+            LineSummary = $"Số dòng = {Items.Count}";
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)

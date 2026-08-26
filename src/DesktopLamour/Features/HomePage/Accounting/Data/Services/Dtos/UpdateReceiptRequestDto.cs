@@ -5,7 +5,7 @@ namespace DesktopLamour.Features.HomePage.Accounting.Data.Services.Dtos;
 
 public class UpdateReceiptRequestDto
 {
-    [JsonPropertyName("customer_id")]           public int      CustomerId          { get; set; }
+    [JsonPropertyName("customer_id")]           public int?     CustomerId          { get; set; }
     [JsonPropertyName("payer_name")]            public string   PayerName           { get; set; } = "";
     [JsonPropertyName("address")]               public string?  Address             { get; set; }
     [JsonPropertyName("payment_reason")]        public string   PaymentReason       { get; set; } = "ThuKhac";

@@ -20,4 +20,16 @@ public class SalesReturnLineDto
     [JsonPropertyName("discount_rate")]       public decimal DiscountRate    { get; set; }
     [JsonPropertyName("discount_amount")]     public decimal DiscountAmount  { get; set; }
     [JsonPropertyName("sales_order_number")]  public string? SalesOrderNumber { get; set; }
+
+    [JsonPropertyName("tax_rate")]            public decimal TaxRate         { get; set; }
+    [JsonPropertyName("tax_amount")]          public decimal TaxAmount       { get; set; }
+    [JsonPropertyName("tax_account")]         public string  TaxAccount      { get; set; } = "33311";
+
+    [JsonPropertyName("cost_account")]        public string  CostAccount     { get; set; } = "1561";
+    [JsonPropertyName("cogs_account")]        public string  CogsAccount     { get; set; } = "632";
+    [JsonPropertyName("cost_price")]          public decimal CostPrice       { get; set; }
+    [JsonPropertyName("cost_amount")]         public decimal CostAmount      { get; set; }
+
+    [JsonPropertyName("department_id")]       public int?    DepartmentId    { get; set; }
+    [JsonPropertyName("department_name")]     public string? DepartmentName  { get; set; }
 }

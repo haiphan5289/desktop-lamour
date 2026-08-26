@@ -421,6 +421,7 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<IDeletePaymentUseCase, DeletePaymentUseCase>();
         services.AddTransient<IDuplicatePaymentUseCase, DuplicatePaymentUseCase>();
         services.AddTransient<IConfirmPaymentUseCase, ConfirmPaymentUseCase>();
+        services.AddTransient<IUnconfirmPaymentUseCase, UnconfirmPaymentUseCase>();
         services.AddTransient<ISetPaymentTreoUseCase, SetPaymentTreoUseCase>();
         services.AddSingleton<ILastUsedPaymentAccountsStore, LastUsedPaymentAccountsStore>();
 
@@ -608,6 +609,7 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<IUpdateSalesReturnUseCase, UpdateSalesReturnUseCase>();
         services.AddTransient<IDeleteSalesReturnUseCase, DeleteSalesReturnUseCase>();
         services.AddTransient<IGetNextSalesReturnCodeUseCase, GetNextSalesReturnCodeUseCase>();
+        services.AddTransient<ICreateSalesReturnWarehouseReceiptUseCase, CreateSalesReturnWarehouseReceiptUseCase>();
 
         // ── SalesReturn: Repository ──────────────────────────────────────────────
         services.AddTransient<ISalesReturnRepository, SalesReturnRepository>();
