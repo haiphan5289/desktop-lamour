@@ -4,6 +4,49 @@
              xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
              Background="{StaticResource AppColor.BackgroundSecondary}">
 
+    <UserControl.Resources>
+
+        <!-- Thẻ nghiệp vụ — nền trắng bo góc lớn, đổ bóng nhẹ để nổi khối trên nền xám, viền +
+             bóng đậm hơn hẳn khi hover (thay cho hiệu ứng đổi viền xám đơn điệu trước đây) để
+             người dùng thấy rõ đang có thể bấm. -->
+        <Style x:Key="SalesTile" TargetType="Border">
+            <Setter Property="Width" Value="220"/>
+            <Setter Property="Height" Value="66"/>
+            <Setter Property="Background" Value="{StaticResource AppColor.BackgroundPrimary}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AppColor.BorderThin}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource AppRadius.Large}"/>
+            <Setter Property="Margin" Value="0,0,14,14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="#1A1A1A" Opacity="0.06" BlurRadius="10" ShadowDepth="2" Direction="270"/>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderBrush" Value="{StaticResource AppColor.BorderActive}"/>
+                    <Setter Property="Effect">
+                        <Setter.Value>
+                            <DropShadowEffect Color="#F28A00" Opacity="0.30" BlurRadius="18" ShadowDepth="4" Direction="270"/>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Khung tròn nền cam nhạt sau icon — thay emoji trơ trên nền trắng bằng 1 "badge" tròn,
+             khớp phong cách dashboard hiện đại; dùng đúng tông brand đã có sẵn (BackgroundBrand),
+             không thêm màu mới ngoài bảng màu hiện tại của app. -->
+        <Style x:Key="SalesTileIconBadge" TargetType="Border">
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="CornerRadius" Value="{StaticResource AppRadius.Full}"/>
+            <Setter Property="Background" Value="{StaticResource AppColor.BackgroundBrand}"/>
+        </Style>
+
+    </UserControl.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -11,7 +54,7 @@
         </Grid.RowDefinitions>
 
         <!-- Page header -->
-        <StackPanel Grid.Row="0" Margin="24,16,24,0">
+        <StackPanel Grid.Row="0" Margin="24,20,24,0">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <controls:AppButton Content="← Quay lại"
                                     Style="{StaticResource AppButton.Tertiary.Medium}"
@@ -31,397 +74,101 @@
 
         <!-- Navigation tiles -->
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="24,12,24,16">
+            <StackPanel Margin="24,16,24,20">
 
                 <controls:AppLabel Text="Nghiệp vụ bán hàng"
                                    Style="{StaticResource AppTypography.BodyCaption}"
                                    Foreground="{StaticResource AppColor.TextSecondary}"
-                                   Margin="0,0,0,8"/>
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,12"/>
                 <WrapPanel>
 
                     <!-- Chứng từ bán hàng -->
-                    <Border Width="210" Height="52"
-                            BorderThickness="1"
-                            CornerRadius="{StaticResource AppRadius.Large}"
-                            Margin="0,0,12,10"
-                            Cursor="Hand">
-                        <Border.Style>
-                            <Style TargetType="Border">
-                                <Setter Property="Background" Value="{StaticResource AppColor.BackgroundPrimary}"/>
-                                <Setter Property="BorderBrush" Value="{StaticResource AppColor.BorderThin}"/>
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="BorderBrush" Value="{StaticResource AppColor.TextSecondary}"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Border.Style>
+                    <Border Style="{StaticResource SalesTile}">
                         <Border.InputBindings>
                             <MouseBinding MouseAction="LeftClick" Command="{Binding NavigateToSalesOrdersCommand}"/>
                         </Border.InputBindings>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <TextBlock Text="🛒" FontSize="20" VerticalAlignment="Center"/>
+                            <Border Style="{StaticResource SalesTileIconBadge}">
+                                <TextBlock Text="🛒" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
                             <controls:AppLabel Text="Chứng từ bán hàng"
                                                Style="{StaticResource AppTypography.LabelSection}"
-                                               Margin="8,0,0,0"
+                                               FontWeight="SemiBold"
+                                               Margin="12,0,0,0"
                                                VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
 
                     <!-- Hàng bán bị trả lại -->
-                    <Border Width="210" Height="52"
-                            BorderThickness="1"
-                            CornerRadius="{StaticResource AppRadius.Large}"
-                            Margin="0,0,12,10"
-                            Cursor="Hand">
-                        <Border.Style>
-                            <Style TargetType="Border">
-                                <Setter Property="Background" Value="{StaticResource AppColor.BackgroundPrimary}"/>
-                                <Setter Property="BorderBrush" Value="{StaticResource AppColor.BorderThin}"/>
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="BorderBrush" Value="{StaticResource AppColor.TextSecondary}"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Border.Style>
+                    <Border Style="{StaticResource SalesTile}">
                         <Border.InputBindings>
                             <MouseBinding MouseAction="LeftClick" Command="{Binding NavigateToSalesReturnsCommand}"/>
                         </Border.InputBindings>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <TextBlock Text="↩️" FontSize="20" VerticalAlignment="Center"/>
+                            <Border Style="{StaticResource SalesTileIconBadge}">
+                                <TextBlock Text="↩️" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
                             <controls:AppLabel Text="Hàng bán bị trả lại"
                                                Style="{StaticResource AppTypography.LabelSection}"
-                                               Margin="8,0,0,0"
+                                               FontWeight="SemiBold"
+                                               Margin="12,0,0,0"
+                                               VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Báo cáo -->
+                    <Border Style="{StaticResource SalesTile}">
+                        <Border.InputBindings>
+                            <MouseBinding MouseAction="LeftClick" Command="{Binding OpenReportCommand}"/>
+                        </Border.InputBindings>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Border Style="{StaticResource SalesTileIconBadge}">
+                                <TextBlock Text="📊" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <controls:AppLabel Text="Báo cáo"
+                                               Style="{StaticResource AppTypography.LabelSection}"
+                                               FontWeight="SemiBold"
+                                               Margin="12,0,0,0"
                                                VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
 
                     <!-- Phiếu cọc -->
-                    <Border Width="210" Height="52"
-                            BorderThickness="1"
-                            CornerRadius="{StaticResource AppRadius.Large}"
-                            Margin="0,0,12,10"
-                            Cursor="Hand">
-                        <Border.Style>
-                            <Style TargetType="Border">
-                                <Setter Property="Background" Value="{StaticResource AppColor.BackgroundPrimary}"/>
-                                <Setter Property="BorderBrush" Value="{StaticResource AppColor.BorderThin}"/>
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="BorderBrush" Value="{StaticResource AppColor.TextSecondary}"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Border.Style>
+                    <Border Style="{StaticResource SalesTile}">
                         <Border.InputBindings>
                             <MouseBinding MouseAction="LeftClick" Command="{Binding OpenDepositCommand}"/>
                         </Border.InputBindings>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <TextBlock Text="💰" FontSize="20" VerticalAlignment="Center"/>
+                            <Border Style="{StaticResource SalesTileIconBadge}">
+                                <TextBlock Text="💰" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
                             <controls:AppLabel Text="Phiếu cọc"
                                                Style="{StaticResource AppTypography.LabelSection}"
-                                               Margin="8,0,0,0"
+                                               FontWeight="SemiBold"
+                                               Margin="12,0,0,0"
                                                VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
 
                     <!-- Báo cáo trừ cọc -->
-                    <Border Width="210" Height="52"
-                            BorderThickness="1"
-                            CornerRadius="{StaticResource AppRadius.Large}"
-                            Margin="0,0,12,10"
-                            Cursor="Hand">
-                        <Border.Style>
-                            <Style TargetType="Border">
-                                <Setter Property="Background" Value="{StaticResource AppColor.BackgroundPrimary}"/>
-                                <Setter Property="BorderBrush" Value="{StaticResource AppColor.BorderThin}"/>
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="BorderBrush" Value="{StaticResource AppColor.TextSecondary}"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Border.Style>
+                    <Border Style="{StaticResource SalesTile}">
                         <Border.InputBindings>
                             <MouseBinding MouseAction="LeftClick" Command="{Binding NavigateToDepositDeductionReportCommand}"/>
                         </Border.InputBindings>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <TextBlock Text="📉" FontSize="20" VerticalAlignment="Center"/>
+                            <Border Style="{StaticResource SalesTileIconBadge}">
+                                <TextBlock Text="📉" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
                             <controls:AppLabel Text="Báo cáo trừ cọc"
                                                Style="{StaticResource AppTypography.LabelSection}"
-                                               Margin="8,0,0,0"
+                                               FontWeight="SemiBold"
+                                               Margin="12,0,0,0"
                                                VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
 
                 </WrapPanel>
-
-                <!-- ══════════════════════════════════════════════ -->
-                <!--  Report panel — "Báo cáo theo Mặt hàng" (đầu tháng đến hôm nay), thu gọn được -->
-                <!-- ══════════════════════════════════════════════ -->
-                <Border Margin="0,8,0,0"
-                        Padding="16,12"
-                        Background="{StaticResource AppColor.BackgroundPrimary}"
-                        BorderBrush="{StaticResource AppColor.BorderThin}"
-                        BorderThickness="1"
-                        CornerRadius="8">
-                    <StackPanel>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <controls:AppLabel Grid.Column="0"
-                                               Text="📊 Báo cáo bán hàng theo Mặt hàng"
-                                               Style="{StaticResource AppTypography.LabelSection}"
-                                               VerticalAlignment="Center"/>
-                            <controls:AppButton Grid.Column="1"
-                                                Style="{StaticResource AppButton.Tertiary.Medium}"
-                                                Command="{Binding ToggleReportPanelCommand}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="▲ Thu gọn"
-                                               Visibility="{Binding IsReportPanelExpanded, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                    <TextBlock Text="▼ Mở rộng"
-                                               Visibility="{Binding IsReportPanelExpanded, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
-                                </StackPanel>
-                            </controls:AppButton>
-                        </Grid>
-
-                        <StackPanel Margin="0,12,0,0"
-                                    Visibility="{Binding IsReportPanelExpanded, Converter={StaticResource BoolToVisibilityConverter}}">
-
-                            <!-- ══════════════════════════════════════ -->
-                            <!--  Filter form — 1 hàng duy nhất (wrap nếu hẹp), gọn hơn bản Grid    -->
-                            <!--  nhiều hàng trước đó (chuyển từ popup SalesOrderReportFilterWindow -->
-                            <!--  cũ), khớp phong cách "Filter bar" của SalesOrderListView.xaml     -->
-                            <!-- ══════════════════════════════════════ -->
-                            <!-- Mỗi field bọc riêng trong 1 StackPanel ngang — WrapPanel chỉ xuống
-                                 hàng giữa CÁC StackPanel này, không bao giờ tách rời label khỏi control
-                                 của chính nó (bug trước đó: "Nhân viên:" ở cuối 1 hàng, ô combo rớt
-                                 xuống hàng dưới một mình vì WrapPanel coi label/control là 2 item rời). -->
-                            <WrapPanel Margin="0,0,0,16">
-                                <StackPanel Orientation="Horizontal" Margin="0,0,24,12">
-                                    <controls:AppLabel Text="Kỳ báo cáo:"
-                                                       Style="{StaticResource AppTypography.LabelSection}"
-                                                       VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                    <ComboBox Width="160" Height="44" VerticalContentAlignment="Center"
-                                              ItemsSource="{Binding Periods}"
-                                              SelectedItem="{Binding SelectedPeriod, Mode=TwoWay}"/>
-                                </StackPanel>
-
-                                <StackPanel Orientation="Horizontal" Margin="0,0,24,12">
-                                    <controls:AppLabel Text="Từ:"
-                                                       Style="{StaticResource AppTypography.LabelSection}"
-                                                       VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                    <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}"
-                                                Width="130" Height="44" VerticalContentAlignment="Center"/>
-                                </StackPanel>
-
-                                <StackPanel Orientation="Horizontal" Margin="0,0,24,12">
-                                    <controls:AppLabel Text="Đến:"
-                                                       Style="{StaticResource AppTypography.LabelSection}"
-                                                       VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                    <DatePicker SelectedDate="{Binding ToDate, Mode=TwoWay}"
-                                                Width="130" Height="44" VerticalContentAlignment="Center"/>
-                                </StackPanel>
-
-                                <StackPanel Orientation="Horizontal" Margin="0,0,24,12">
-                                    <controls:AppLabel Text="Đơn vị tính:"
-                                                       Style="{StaticResource AppTypography.LabelSection}"
-                                                       VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                    <ComboBox Width="135" Height="44" VerticalContentAlignment="Center"
-                                              ItemsSource="{Binding Units}"
-                                              SelectedItem="{Binding SelectedUnit, Mode=TwoWay}"/>
-                                </StackPanel>
-
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                                    <controls:AppLabel Text="Nhóm VTHH:"
-                                                       Style="{StaticResource AppTypography.LabelSection}"
-                                                       VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                    <ComboBox Width="135" Height="44" VerticalContentAlignment="Center"
-                                              ItemsSource="{Binding Categories}"
-                                              SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"/>
-                                </StackPanel>
-
-                                <StackPanel Orientation="Horizontal" Margin="0,0,24,0">
-                                    <controls:AppLabel Text="Nhân viên:"
-                                                       Style="{StaticResource AppTypography.LabelSection}"
-                                                       VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                    <controls:AppSearchableComboBox Width="200" Height="44"
-                                        ItemsSource="{Binding Employees}"
-                                        SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
-                                        Placeholder="Tất cả"
-                                        IsNullable="True"/>
-                                </StackPanel>
-
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
-                                    <controls:AppLabel Text="Khách hàng:"
-                                                       Style="{StaticResource AppTypography.LabelSection}"
-                                                       VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                    <controls:AppSearchableComboBox Width="200" Height="44"
-                                        ItemsSource="{Binding Customers}"
-                                        SelectedItem="{Binding SelectedCustomer, Mode=TwoWay}"
-                                        Placeholder="Tất cả"
-                                        IsNullable="True"/>
-                                </StackPanel>
-                            </WrapPanel>
-
-                            <!-- Mặt hàng — checklist multi-select. Ẩn theo yêu cầu (2026-08-22) — giữ
-                                 nguyên field/logic trong SalesViewModel, chỉ ẩn khỏi UI nên có thể mở
-                                 lại dễ dàng sau này (bỏ Visibility="Collapsed" là xong). -->
-                            <StackPanel Visibility="Collapsed">
-                                <DockPanel Margin="0,0,0,6">
-                                    <controls:AppLabel DockPanel.Dock="Left" Text="Mặt hàng"
-                                                       Style="{StaticResource AppTypography.LabelSection}"/>
-                                    <CheckBox DockPanel.Dock="Right" Content="Chọn tất cả"
-                                              IsChecked="{Binding AreAllProductsSelected, Mode=TwoWay}"
-                                              HorizontalAlignment="Right"/>
-                                </DockPanel>
-                                <DataGrid ItemsSource="{Binding ProductItems}"
-                                          AutoGenerateColumns="False"
-                                          CanUserAddRows="False"
-                                          CanUserDeleteRows="False"
-                                          HeadersVisibility="Column"
-                                          GridLinesVisibility="Horizontal"
-                                          SelectionMode="Extended"
-                                          MaxHeight="160"
-                                          BorderBrush="{StaticResource AppColor.BorderThin}"
-                                          BorderThickness="1"
-                                          RowBackground="{StaticResource AppColor.BackgroundPrimary}"
-                                          AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
-                                          ScrollViewer.VerticalScrollBarVisibility="Auto">
-                                    <DataGrid.Columns>
-                                        <DataGridCheckBoxColumn Header="" Binding="{Binding IsSelected, Mode=TwoWay}" Width="40"/>
-                                        <DataGridTextColumn Header="Mã hàng" Binding="{Binding Code}" Width="140" IsReadOnly="True"/>
-                                        <DataGridTextColumn Header="Tên hàng" Binding="{Binding Name}" Width="*" IsReadOnly="True"/>
-                                    </DataGrid.Columns>
-                                </DataGrid>
-                            </StackPanel>
-
-                            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
-                                <controls:AppButton Content="🔍 Lọc"
-                                                    Style="{StaticResource AppButton.Primary.Medium}"
-                                                    Command="{Binding LoadReportPanelCommand}"
-                                                    Margin="0,0,8,0"/>
-                                <controls:AppButton Content="Xóa điều kiện"
-                                                    Style="{StaticResource AppButton.Tertiary.Medium}"
-                                                    Command="{Binding ClearReportFiltersCommand}"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
-
-                <!-- ══════════════════════════════════════════════ -->
-                <!--  Report results — section RIÊNG khỏi card filter phía trên, để có vùng cuộn -->
-                <!--  riêng thay vì bị gò trong cùng 1 card với form lọc (2026-08-22).            -->
-                <!-- ══════════════════════════════════════════════ -->
-                <Border Margin="0,12,0,0"
-                        Padding="16,12"
-                        Background="{StaticResource AppColor.BackgroundPrimary}"
-                        BorderBrush="{StaticResource AppColor.BorderThin}"
-                        BorderThickness="1"
-                        CornerRadius="8"
-                        Visibility="{Binding IsReportPanelExpanded, Converter={StaticResource BoolToVisibilityConverter}}">
-
-                    <Grid MinHeight="60">
-
-                            <controls:AppLoadingOverlay IsLoading="{Binding IsReportLoading}"/>
-
-                            <controls:AppLabel Text="{Binding ReportErrorMessage}"
-                                               Style="{StaticResource AppTypography.BodyCaption}"
-                                               Foreground="{StaticResource AppColor.TextError}"
-                                               Visibility="{Binding HasReportError, Converter={StaticResource BoolToVisibilityConverter}}"/>
-
-                            <controls:AppLabel Text="Không có dữ liệu khớp bộ lọc."
-                                               Style="{StaticResource AppTypography.BodyCaption}"
-                                               Foreground="{StaticResource AppColor.TextSecondary}"
-                                               Visibility="{Binding HasReportRows, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
-
-                            <DataGrid x:Name="ReportRowsGrid"
-                                      ItemsSource="{Binding ReportRows}"
-                                      AutoGenerateColumns="False"
-                                      IsReadOnly="True"
-                                      CanUserAddRows="False"
-                                      CanUserDeleteRows="False"
-                                      CanUserSortColumns="False"
-                                      SelectionMode="Single"
-                                      HeadersVisibility="Column"
-                                      GridLinesVisibility="Horizontal"
-                                      MaxHeight="420"
-                                      BorderBrush="{StaticResource AppColor.BorderThin}"
-                                      BorderThickness="1"
-                                      RowBackground="{StaticResource AppColor.BackgroundPrimary}"
-                                      AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
-                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                      MouseDoubleClick="ReportRowsGrid_MouseDoubleClick"
-                                      Visibility="{Binding HasReportRows, Converter={StaticResource BoolToVisibilityConverter}}">
-                                <DataGrid.Columns>
-
-                                    <DataGridTextColumn Header="Mã hàng" Binding="{Binding ProductCode}" Width="90"/>
-                                    <DataGridTextColumn Header="Tên hàng" Binding="{Binding ProductName}" Width="*"/>
-                                    <DataGridTextColumn Header="ĐVT" Binding="{Binding Unit}" Width="70"/>
-
-                                    <DataGridTextColumn Header="SL bán" Binding="{Binding QuantitySold}" Width="80">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="TextAlignment" Value="Right"/>
-                                                <Setter Property="Padding" Value="6,0"/>
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-
-                                    <DataGridTextColumn Header="Doanh số bán" Binding="{Binding SalesAmount, StringFormat=\{0:N0\}}" Width="120">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="TextAlignment" Value="Right"/>
-                                                <Setter Property="Padding" Value="6,0"/>
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-
-                                    <DataGridTextColumn Header="Chiết khấu" Binding="{Binding DiscountAmount, StringFormat=\{0:N0\}}" Width="110">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="TextAlignment" Value="Right"/>
-                                                <Setter Property="Padding" Value="6,0"/>
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-
-                                    <DataGridTextColumn Header="SL trả lại" Binding="{Binding ReturnQuantity}" Width="90">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="TextAlignment" Value="Right"/>
-                                                <Setter Property="Padding" Value="6,0"/>
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-
-                                    <DataGridTextColumn Header="GT trả lại" Binding="{Binding ReturnValue, StringFormat=\{0:N0\}}" Width="110">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="TextAlignment" Value="Right"/>
-                                                <Setter Property="Padding" Value="6,0"/>
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-
-                                    <DataGridTextColumn Header="Doanh thu thuần" Binding="{Binding NetRevenue, StringFormat=\{0:N0\}}" Width="140">
-                                        <DataGridTextColumn.ElementStyle>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="TextAlignment"  Value="Right"/>
-                                                <Setter Property="Padding"        Value="6,0"/>
-                                                <Setter Property="Foreground"     Value="{StaticResource AppColor.TextBrand}"/>
-                                                <Setter Property="FontWeight"     Value="SemiBold"/>
-                                            </Style>
-                                        </DataGridTextColumn.ElementStyle>
-                                    </DataGridTextColumn>
-
-                                </DataGrid.Columns>
-                            </DataGrid>
-                    </Grid>
-                </Border>
 
             </StackPanel>
         </ScrollViewer>
