@@ -25,6 +25,8 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
 
     private readonly ICreateWarehouseReceiptUseCase       _createUseCase;
     private readonly IConfirmWarehouseReceiptUseCase      _confirmUseCase;
+    private readonly IUpdateWarehouseReceiptUseCase       _updateUseCase;
+    private readonly IUnconfirmWarehouseReceiptUseCase    _unconfirmUseCase;
     private readonly IGetCustomersUseCase                 _getCustomers;
     private readonly IGetSuppliersUseCase                 _getSuppliers;
     private readonly IGetEmployeesUseCase                 _getEmployees;
@@ -42,6 +44,24 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
     [ObservableProperty] private string   _deliveryPerson  = string.Empty;
     [ObservableProperty] private string   _reference       = string.Empty;
     [ObservableProperty] private decimal  _totalAmount;
+
+    // Sửa phiếu đã tồn tại (mở từ "Nhập, Xuất Kho" → click 1 dòng NK): ReceiptId != null.
+    // Tạo mới: ReceiptId == null (giữ nguyên hành vi cũ — Save = Create + Confirm gộp).
+    [ObservableProperty] private int?     _receiptId;
+    [ObservableProperty] private string   _receiptNumber = string.Empty;
+    [ObservableProperty] private string   _status        = "Draft";
+
+    private WarehouseReceiptResponseDto? _existingReceipt;
+
+    public bool IsConfirmed => Status == "Confirmed";
+    public bool IsEditable  => !IsConfirmed;
+
+    partial void OnStatusChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsConfirmed));
+        OnPropertyChanged(nameof(IsEditable));
+        UnconfirmCommand.NotifyCanExecuteChanged();
+    }
 
     // 0-based index for ComboBox binding; maps to ReceiptType 1, 2, 3, 4
     [ObservableProperty] private int _selectedReceiptTypeIndex;
@@ -65,6 +85,8 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
     public WarehouseReceiptFormViewModel(
         ICreateWarehouseReceiptUseCase       createUseCase,
         IConfirmWarehouseReceiptUseCase      confirmUseCase,
+        IUpdateWarehouseReceiptUseCase       updateUseCase,
+        IUnconfirmWarehouseReceiptUseCase    unconfirmUseCase,
         IGetCustomersUseCase                 getCustomers,
         IGetSuppliersUseCase                 getSuppliers,
         IGetEmployeesUseCase                 getEmployees,
@@ -75,6 +97,8 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
     {
         _createUseCase             = createUseCase;
         _confirmUseCase            = confirmUseCase;
+        _updateUseCase             = updateUseCase;
+        _unconfirmUseCase          = unconfirmUseCase;
         _getCustomers              = getCustomers;
         _getSuppliers              = getSuppliers;
         _getEmployees              = getEmployees;
@@ -83,6 +107,10 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
         _customerFormWindowFactory = customerFormWindowFactory;
         _logger                    = logger;
     }
+
+    // Gọi trước LoadAsync() để mở form ở chế độ Sửa (phiếu đã tồn tại, mở từ "Nhập, Xuất Kho").
+    // Không gọi (hoặc truyền null) → form tạo mới như cũ.
+    public void Initialize(WarehouseReceiptResponseDto? existing) => _existingReceipt = existing;
 
     public async Task LoadAsync(CancellationToken ct = default)
     {
@@ -108,11 +136,64 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
             _logger.LogWarning(ex, "Could not preload lookup data for WarehouseReceiptForm");
         }
 
-        // Form này luôn là tạo mới (không có luồng Sửa phiếu đã lưu) — nạp sẵn N dòng trống để
-        // user gõ liền, không cần bấm "Thêm dòng" trước (button footer đã bỏ).
+        if (_existingReceipt is { } existing)
+        {
+            PopulateFromExisting(existing);
+        }
+
+        // Nạp sẵn N dòng trống để user gõ liền, không cần bấm "Thêm dòng" trước (button footer
+        // đã bỏ) — áp dụng cho cả tạo mới lẫn sửa (cho phép thêm hàng hóa khi đang sửa).
         for (var i = 0; i < InitialEmptyLineCount; i++) AddLine();
 
+        RecalculateTotal();
         BeginDirtyTracking();
+    }
+
+    private void PopulateFromExisting(WarehouseReceiptResponseDto existing)
+    {
+        ReceiptId      = existing.Id;
+        ReceiptNumber  = existing.ReceiptNumber;
+        Status         = existing.Status;
+
+        SelectedReceiptTypeIndex = existing.ReceiptType - 1;
+        AccountingDate           = existing.AccountingDate;
+        DocumentDate             = existing.DocumentDate;
+        Description              = existing.Description    ?? string.Empty;
+        DeliveryPerson           = existing.DeliveryPerson  ?? string.Empty;
+        Reference                = existing.Reference       ?? string.Empty;
+
+        if (existing.CustomerId is int customerId)
+            SelectedObject = Objects.FirstOrDefault(o => o.Id == customerId && o is not WarehouseObjectItem);
+        else if (existing.SupplierId is int supplierId)
+            SelectedObject = Objects.FirstOrDefault(o => o.Id == supplierId && o is WarehouseObjectItem { Type: WarehouseObjectType.Supplier });
+
+        if (existing.EmployeeId is int employeeId)
+            SelectedEmployee = Employees.FirstOrDefault(e => e.Id == employeeId);
+
+        foreach (var lineDto in existing.Lines)
+        {
+            var line = new WarehouseReceiptLineItem();
+            line.PropertyChanged += (_, _) => { RecalculateTotal(); IsDirty = true; };
+
+            // Set SelectedProduct trước — trigger OnSelectedProductChanged tự điền giá trị mặc
+            // định (Quantity=1/TK Nợ=111/TK Có=131); set lại các field bên dưới với dữ liệu thật
+            // đã lưu để ghi đè mặc định đó.
+            line.SelectedProduct = Products.FirstOrDefault(p => p.Id == lineDto.ProductId);
+            line.Quantity        = lineDto.Quantity;
+            line.UnitPrice        = lineDto.UnitPrice;
+            line.DebitAccount     = lineDto.DebitAccount;
+            line.CreditAccount    = lineDto.CreditAccount;
+            line.CostItem              = lineDto.CostItem              ?? string.Empty;
+            line.CostObject            = lineDto.CostObject            ?? string.Empty;
+            line.Project                = lineDto.Project               ?? string.Empty;
+            line.PurchaseOrderNumber   = lineDto.PurchaseOrderNumber   ?? string.Empty;
+            line.SalesContractNumber   = lineDto.SalesContractNumber   ?? string.Empty;
+            line.LoanContractNumber    = lineDto.LoanContractNumber    ?? string.Empty;
+            line.StatisticsCode        = lineDto.StatisticsCode        ?? string.Empty;
+            line.Amount                = lineDto.Amount;
+
+            Lines.Add(line);
+        }
     }
 
     private void RebuildObjects()
@@ -211,41 +292,74 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
                 ? SelectedObject?.Id
                 : null;
 
-            var request = new CreateWarehouseReceiptRequestDto
+            var accountingDateUtc = DateTime.SpecifyKind(AccountingDate.Date, DateTimeKind.Unspecified);
+            var documentDateUtc   = DateTime.SpecifyKind(DocumentDate.Date,   DateTimeKind.Unspecified);
+            var description       = string.IsNullOrWhiteSpace(Description)    ? null : Description.Trim();
+            var deliveryPerson    = string.IsNullOrWhiteSpace(DeliveryPerson) ? null : DeliveryPerson.Trim();
+            var reference         = string.IsNullOrWhiteSpace(Reference)      ? null : Reference.Trim();
+            var lineDtos          = filledLines.Select(l => new CreateWarehouseReceiptLineDto
             {
-                ReceiptType    = SelectedReceiptType,
-                CustomerId     = selectedCustomerId,
-                SupplierId     = selectedSupplierId,
-                EmployeeId     = SelectedEmployee?.Id,
-                AccountingDate = DateTime.SpecifyKind(AccountingDate.Date, DateTimeKind.Unspecified),
-                DocumentDate   = DateTime.SpecifyKind(DocumentDate.Date,   DateTimeKind.Unspecified),
-                Description    = string.IsNullOrWhiteSpace(Description)    ? null : Description.Trim(),
-                DeliveryPerson = string.IsNullOrWhiteSpace(DeliveryPerson) ? null : DeliveryPerson.Trim(),
-                Reference      = string.IsNullOrWhiteSpace(Reference)      ? null : Reference.Trim(),
-                Lines          = filledLines.Select(l => new CreateWarehouseReceiptLineDto
-                {
-                    ProductId           = l.SelectedProduct!.Id,
-                    // Kho ngầm định của sản phẩm (HH/TB, xem cột "Kho") — fallback kho "HH" (Id=4)
-                    // nếu sản phẩm chưa gán kho ngầm định.
-                    WarehouseId         = (l.SelectedProduct as WarehouseProductItem)?.DefaultWarehouseId ?? 4,
-                    Quantity            = l.Quantity,
-                    UnitPrice           = l.UnitPrice,
-                    Amount              = l.Amount,
-                    DebitAccount        = l.DebitAccount,
-                    CreditAccount       = l.CreditAccount,
-                    CostItem            = string.IsNullOrWhiteSpace(l.CostItem)            ? null : l.CostItem.Trim(),
-                    CostObject          = string.IsNullOrWhiteSpace(l.CostObject)          ? null : l.CostObject.Trim(),
-                    Project             = string.IsNullOrWhiteSpace(l.Project)             ? null : l.Project.Trim(),
-                    PurchaseOrderNumber = string.IsNullOrWhiteSpace(l.PurchaseOrderNumber) ? null : l.PurchaseOrderNumber.Trim(),
-                    SalesContractNumber = string.IsNullOrWhiteSpace(l.SalesContractNumber) ? null : l.SalesContractNumber.Trim(),
-                    LoanContractNumber  = string.IsNullOrWhiteSpace(l.LoanContractNumber)  ? null : l.LoanContractNumber.Trim(),
-                    StatisticsCode      = string.IsNullOrWhiteSpace(l.StatisticsCode)      ? null : l.StatisticsCode.Trim(),
-                }).ToList()
-            };
+                ProductId           = l.SelectedProduct!.Id,
+                // Kho ngầm định của sản phẩm (HH/TB, xem cột "Kho") — fallback kho "HH" (Id=4)
+                // nếu sản phẩm chưa gán kho ngầm định.
+                WarehouseId         = (l.SelectedProduct as WarehouseProductItem)?.DefaultWarehouseId ?? 4,
+                Quantity            = l.Quantity,
+                UnitPrice           = l.UnitPrice,
+                Amount              = l.Amount,
+                DebitAccount        = l.DebitAccount,
+                CreditAccount       = l.CreditAccount,
+                CostItem            = string.IsNullOrWhiteSpace(l.CostItem)            ? null : l.CostItem.Trim(),
+                CostObject          = string.IsNullOrWhiteSpace(l.CostObject)          ? null : l.CostObject.Trim(),
+                Project             = string.IsNullOrWhiteSpace(l.Project)             ? null : l.Project.Trim(),
+                PurchaseOrderNumber = string.IsNullOrWhiteSpace(l.PurchaseOrderNumber) ? null : l.PurchaseOrderNumber.Trim(),
+                SalesContractNumber = string.IsNullOrWhiteSpace(l.SalesContractNumber) ? null : l.SalesContractNumber.Trim(),
+                LoanContractNumber  = string.IsNullOrWhiteSpace(l.LoanContractNumber)  ? null : l.LoanContractNumber.Trim(),
+                StatisticsCode      = string.IsNullOrWhiteSpace(l.StatisticsCode)      ? null : l.StatisticsCode.Trim(),
+            }).ToList();
 
-            var result = await _createUseCase.ExecuteAsync(request, ct);
-            await _confirmUseCase.ExecuteAsync(result.Id, ct);
-            _logger.LogInformation("Warehouse receipt created and confirmed: {ReceiptNumber}", result.ReceiptNumber);
+            if (ReceiptId is int id)
+            {
+                // Sửa phiếu đã tồn tại (chỉ khả thi sau khi "Bỏ ghi" — phiếu về Draft) — Update
+                // rồi Ghi sổ lại, cùng ý nghĩa với "Save = Create + Confirm" ở nhánh tạo mới.
+                var updateRequest = new UpdateWarehouseReceiptRequestDto
+                {
+                    ReceiptType    = SelectedReceiptType,
+                    CustomerId     = selectedCustomerId,
+                    SupplierId     = selectedSupplierId,
+                    EmployeeId     = SelectedEmployee?.Id,
+                    AccountingDate = accountingDateUtc,
+                    DocumentDate   = documentDateUtc,
+                    Description    = description,
+                    DeliveryPerson = deliveryPerson,
+                    Reference      = reference,
+                    Lines          = lineDtos,
+                };
+
+                await _updateUseCase.ExecuteAsync(id, updateRequest, ct);
+                var confirmed = await _confirmUseCase.ExecuteAsync(id, ct);
+                _logger.LogInformation("Warehouse receipt updated and re-confirmed: {ReceiptNumber}", confirmed.ReceiptNumber);
+            }
+            else
+            {
+                var request = new CreateWarehouseReceiptRequestDto
+                {
+                    ReceiptType    = SelectedReceiptType,
+                    CustomerId     = selectedCustomerId,
+                    SupplierId     = selectedSupplierId,
+                    EmployeeId     = SelectedEmployee?.Id,
+                    AccountingDate = accountingDateUtc,
+                    DocumentDate   = documentDateUtc,
+                    Description    = description,
+                    DeliveryPerson = deliveryPerson,
+                    Reference      = reference,
+                    Lines          = lineDtos,
+                };
+
+                var result = await _createUseCase.ExecuteAsync(request, ct);
+                await _confirmUseCase.ExecuteAsync(result.Id, ct);
+                _logger.LogInformation("Warehouse receipt created and confirmed: {ReceiptNumber}", result.ReceiptNumber);
+            }
+
             StopDirtyTracking();
             RequestClose?.Invoke(true);
         }
@@ -253,6 +367,37 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to create warehouse receipt");
+            HasError     = true;
+            ErrorMessage = ex.Message;
+        }
+        finally { IsLoading = false; }
+    }
+
+    [RelayCommand(CanExecute = nameof(IsConfirmed))]
+    private async Task UnconfirmAsync(CancellationToken ct = default)
+    {
+        if (ReceiptId is not int id) return;
+
+        var r = MessageBox.Show(
+            "Bạn có chắc muốn bỏ ghi sổ phiếu này? Sau khi bỏ ghi, phiếu sẽ quay về trạng thái nháp để chỉnh sửa.",
+            "Xác nhận bỏ ghi",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (r != MessageBoxResult.Yes) return;
+
+        HasError     = false;
+        ErrorMessage = string.Empty;
+        IsLoading    = true;
+        try
+        {
+            var result = await _unconfirmUseCase.ExecuteAsync(id, ct);
+            Status = result.Status;
+            _logger.LogInformation("Unconfirmed warehouse receipt {ReceiptNumber}", result.ReceiptNumber);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to unconfirm warehouse receipt {Id}", id);
             HasError     = true;
             ErrorMessage = ex.Message;
         }

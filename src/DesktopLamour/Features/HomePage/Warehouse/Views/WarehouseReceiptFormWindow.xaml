@@ -29,23 +29,41 @@
         <Border Grid.Row="0"
                 Background="{StaticResource AppColor.BackgroundBrand}"
                 Padding="20,14">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="📥" FontSize="22" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                <StackPanel VerticalAlignment="Center">
-                    <controls:AppLabel Text="Phiếu Nhập Kho"
-                                       Style="{StaticResource AppTypography.DisplaySection}"
-                                       Foreground="{StaticResource AppColor.TextBrand}"/>
-                    <controls:AppLabel Text="Lập phiếu nhập kho hàng hóa"
-                                       Style="{StaticResource AppTypography.BodyCaption}"
-                                       Foreground="{StaticResource AppColor.TextSecondary}"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Phiếu đã ghi sổ: cho "Bỏ ghi" ngay trên header để mở khóa form về Draft. -->
+                <controls:AppButton Grid.Column="0"
+                                    Content="↩ Bỏ ghi"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding UnconfirmCommand}"
+                                    Visibility="{Binding IsConfirmed, Converter={StaticResource BoolToVisibilityConverter}}"
+                                    VerticalAlignment="Center"
+                                    Margin="0,0,14,0"/>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <TextBlock Text="📥" FontSize="22" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <StackPanel VerticalAlignment="Center">
+                        <controls:AppLabel Text="Phiếu Nhập Kho"
+                                           Style="{StaticResource AppTypography.DisplaySection}"
+                                           Foreground="{StaticResource AppColor.TextBrand}"/>
+                        <controls:AppLabel Text="Lập phiếu nhập kho hàng hóa"
+                                           Style="{StaticResource AppTypography.BodyCaption}"
+                                           Foreground="{StaticResource AppColor.TextSecondary}"/>
+                    </StackPanel>
                 </StackPanel>
-            </StackPanel>
+            </Grid>
         </Border>
 
         <!-- ══════════════════════════════════════════ -->
         <!-- Form                                       -->
         <!-- ══════════════════════════════════════════ -->
-        <Grid Grid.Row="1" Margin="20,16,20,0">
+        <!-- Khóa toàn bộ field khi đang xem phiếu đã ghi sổ (Status=Confirmed) — phải "Bỏ ghi"
+             trước mới sửa được, xem WarehouseReceiptFormViewModel.IsEditable. -->
+        <Grid Grid.Row="1" Margin="20,16,20,0" IsEnabled="{Binding IsEditable}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="10"/>
@@ -83,14 +101,14 @@
                     <controls:AppLabel Text="Ngày hạch toán"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Margin="0,0,0,5"/>
-                    <DatePicker SelectedDate="{Binding AccountingDate, Mode=TwoWay}" Height="34"/>
+                    <DatePicker SelectedDate="{Binding AccountingDate, Mode=TwoWay}" Height="34" VerticalContentAlignment="Center"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="4">
                     <controls:AppLabel Text="Ngày chứng từ"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Margin="0,0,0,5"/>
-                    <DatePicker SelectedDate="{Binding DocumentDate, Mode=TwoWay}" Height="34"/>
+                    <DatePicker SelectedDate="{Binding DocumentDate, Mode=TwoWay}" Height="34" VerticalContentAlignment="Center"/>
                 </StackPanel>
             </Grid>
 
@@ -174,7 +192,7 @@
         <!-- ══════════════════════════════════════════ -->
         <!-- Hàng hóa — Tab "Hàng tiền" / "Thống kê"    -->
         <!-- ══════════════════════════════════════════ -->
-        <TabControl Grid.Row="2" Margin="20,6,20,0">
+        <TabControl Grid.Row="2" Margin="20,6,20,0" IsEnabled="{Binding IsEditable}">
 
         <TabItem Header="1. Hàng tiền">
         <DataGrid ItemsSource="{Binding Lines}"
@@ -236,9 +254,10 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <!-- Số lượng -->
+                <!-- Số lượng — 0 hiện trống (chưa nhập) thay vì "0" chình ình, khớp cách SalesOrderWindow
+                     hiển thị dòng trống chưa chọn sản phẩm. -->
                 <DataGridTextColumn Header="Số lượng"
-                                    Binding="{Binding Quantity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    Binding="{Binding Quantity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=0}"
                                     Width="90">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
@@ -449,6 +468,7 @@
                     <controls:AppButton Content="💾 Cất"
                                         Style="{StaticResource AppButton.Primary.Medium}"
                                         Command="{Binding SaveCommand}"
+                                        Visibility="{Binding IsEditable, Converter={StaticResource BoolToVisibilityConverter}}"
                                         Width="130"/>
                 </StackPanel>
             </Grid>

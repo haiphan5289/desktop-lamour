@@ -1,7 +1,7 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 using System.Globalization;
 using System.Windows.Data;
-using DesktopLamour.Features.HomePage.Sales.Domain.Models;
+using DesktopLamour.Shared.Models;
 
 namespace DesktopLamour.Shared.Converters;
 

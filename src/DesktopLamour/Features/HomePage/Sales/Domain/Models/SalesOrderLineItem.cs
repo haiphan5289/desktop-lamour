@@ -1,7 +1,6 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using DesktopLamour.Features.HomePage.Deposits.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.ProductList.Domain.Models;
 using DesktopLamour.Shared.Controls;
 
@@ -29,7 +28,7 @@ public class SalesOrderLineItem : INotifyPropertyChanged
     private string           _revenueAccount    = "";
     private ISearchableItem? _selectedProduct;
     private bool              _isDepositDeductionRow;
-    private DepositResponseDto? _linkedDeposit;
+    private decimal           _availableDepositBalance;
 
     // Dòng ảo "Trừ cọc" — không phải sản phẩm thật, không gửi lên BE như 1 SalesOrderLine.
     public bool IsDepositDeductionRow
@@ -49,21 +48,13 @@ public class SalesOrderLineItem : INotifyPropertyChanged
     }
     private bool _isLocked;
 
-    // Cọc được chọn để trừ cho dòng này — chỉ có ý nghĩa khi IsDepositDeductionRow = true.
-    // Hiển thị y hệt 1 dòng sản phẩm bình thường: Mã hàng = số chứng từ cọc, Tên hàng = "Trừ cọc".
-    public DepositResponseDto? LinkedDeposit
+    // Tổng số dư cọc khả dụng của khách hàng tại thời điểm chọn "Trừ cọc" — chỉ có ý nghĩa khi
+    // IsDepositDeductionRow = true. Dùng để gợi ý/validate số tiền trừ ở client; BE mới là nơi
+    // quyết định thật (tự phân bổ FIFO qua nhiều Deposit khi Ghi sổ — xem CreateDepositDeductionUseCase).
+    public decimal AvailableDepositBalance
     {
-        get => _linkedDeposit;
-        set
-        {
-            _linkedDeposit = value;
-            OnPropertyChanged();
-            if (value is not null)
-            {
-                ProductCode = value.DocumentNumber;
-                ProductName = "Trừ cọc";
-            }
-        }
+        get => _availableDepositBalance;
+        set { _availableDepositBalance = value; OnPropertyChanged(); }
     }
 
     public int ProductId
@@ -269,12 +260,15 @@ public class SalesOrderLineItem : INotifyPropertyChanged
             _selectedProduct = value;
             OnPropertyChanged();
 
-            if (value is DepositProductPickerItem depositItem)
+            if (value is TruCocPickerItem trucoc)
             {
-                // Chọn "Trừ cọc" trong dropdown sản phẩm → biến dòng này thành dòng Trừ cọc.
+                // Chọn "Trừ cọc" trong dropdown sản phẩm → biến dòng này thành dòng Trừ cọc. Không
+                // còn gắn với 1 Deposit cụ thể nữa — BE tự phân bổ FIFO qua nhiều Deposit khi Ghi sổ.
                 IsDepositDeductionRow = true;
                 IsDepositProduct      = false;
                 ProductId             = 0;
+                ProductCode           = "";
+                ProductName           = "Trừ cọc";
                 Unit                  = "";
                 Quantity              = 0;
                 UnitPrice             = 0;
@@ -282,14 +276,16 @@ public class SalesOrderLineItem : INotifyPropertyChanged
                 TaxRate               = 0;
                 ReceivableAccount     = "";
                 RevenueAccount        = "";
-                LinkedDeposit         = depositItem.Deposit; // set sau cùng — tự gán ProductCode/ProductName
+                // Đặt sau cùng — bắt ở PropertyChanged(AvailableDepositBalance) để gợi ý Thành tiền
+                // (xem SalesOrderViewModel.AttachLineHandlers), giống cách LinkedDeposit từng làm.
+                AvailableDepositBalance = trucoc.TotalRemainingBalance;
             }
             else if (value is Product p)
             {
                 // Chọn lại 1 sản phẩm thật → khôi phục dòng về trạng thái bình thường.
-                IsDepositDeductionRow = false;
-                IsDepositProduct      = p.IsDepositProduct;
-                LinkedDeposit         = null;
+                IsDepositDeductionRow   = false;
+                IsDepositProduct        = p.IsDepositProduct;
+                AvailableDepositBalance = 0;
                 ProductId   = p.Id;
                 ProductCode = p.Code;
                 ProductName = p.Name;

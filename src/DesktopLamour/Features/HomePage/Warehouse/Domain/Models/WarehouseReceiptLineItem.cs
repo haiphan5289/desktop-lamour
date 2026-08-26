@@ -7,11 +7,11 @@ namespace DesktopLamour.Features.HomePage.Warehouse.Domain.Models;
 public partial class WarehouseReceiptLineItem : ObservableObject
 {
     [ObservableProperty] private ISearchableItem? _selectedProduct;
-    [ObservableProperty] private decimal          _quantity    = 1;
+    [ObservableProperty] private decimal          _quantity;
     [ObservableProperty] private decimal          _unitPrice;
     [ObservableProperty] private decimal          _amount;
-    [ObservableProperty] private string           _debitAccount  = "111";
-    [ObservableProperty] private string           _creditAccount = "131";
+    [ObservableProperty] private string           _debitAccount  = string.Empty;
+    [ObservableProperty] private string           _creditAccount = string.Empty;
 
     [ObservableProperty] private string _costItem            = string.Empty;
     [ObservableProperty] private string _costObject          = string.Empty;
@@ -21,10 +21,17 @@ public partial class WarehouseReceiptLineItem : ObservableObject
     [ObservableProperty] private string _loanContractNumber  = string.Empty;
     [ObservableProperty] private string _statisticsCode      = string.Empty;
 
+    // Dòng mới phải thực sự rỗng (không Số lượng/TK mặc định hiển thị sẵn) — Số lượng/TK Nợ/TK Có
+    // chỉ tự điền khi user chọn 1 sản phẩm thật, giống pattern SelectedProduct của SalesOrderLineItem.
     partial void OnSelectedProductChanged(ISearchableItem? value)
     {
         if (value is WarehouseProductItem p)
-            UnitPrice = p.CostPrice;
+        {
+            UnitPrice     = p.CostPrice;
+            Quantity      = 1;
+            DebitAccount  = "111";
+            CreditAccount = "131";
+        }
     }
 
     partial void OnQuantityChanged(decimal value)

@@ -12,6 +12,7 @@ using DesktopLamour.Features.HomePage.Sales.Views;
 using DesktopLamour.Features.HomePage.Warehouse.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Warehouse.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Warehouse.Views;
+using DesktopLamour.Shared.Models;
 using Microsoft.Extensions.Logging;
 
 namespace DesktopLamour.Features.HomePage.Warehouse.ViewModels;
@@ -20,12 +21,12 @@ public partial class WarehouseTransactionListViewModel : ViewModelBase
 {
     private readonly IGetWarehouseTransactionsUseCase _getUseCase;
     private readonly IGetSalesOrderByIdUseCase        _getSalesOrderById;
+    private readonly IGetWarehouseReceiptByIdUseCase  _getWarehouseReceiptById;
     private readonly IGetCustomersUseCase             _getCustomers;
     private readonly INavigationService               _navigationService;
     private readonly Func<WarehouseReceiptFormWindow>  _formWindowFactory;
     private readonly Func<SalesOrderWindow>            _salesOrderWindowFactory;
     private readonly Func<SalesOrderPrintWindow>       _printWindowFactory;
-    private readonly Func<WarehouseTransactionDetailWindow> _detailWindowFactory;
     private readonly ILogger<WarehouseTransactionListViewModel> _logger;
 
     [ObservableProperty] private bool     _isLoading;
@@ -39,28 +40,64 @@ public partial class WarehouseTransactionListViewModel : ViewModelBase
     // 0 = Tất cả, 1 = Nhập kho, 2 = Xuất kho
     [ObservableProperty] private int _selectedTypeIndex;
 
+    // ── Per-column filter row, embedded directly in each header (no popup) ─────
+    // Text columns: plain textbox, case-insensitive Contains against the cell's displayed text.
+    // Date/numeric columns: an operator combo (=, ≤, ...) + a typed value, shown side by side.
+    // Same pattern as SalesOrderReportDetailViewModel — see docs on ColumnFilterModels.
+    [ObservableProperty] private string _filterDocumentNumber      = string.Empty;
+    [ObservableProperty] private string _filterDescription         = string.Empty;
+    [ObservableProperty] private string _filterDeliveryOrReceiver  = string.Empty;
+    [ObservableProperty] private string _filterObjectName          = string.Empty;
+    [ObservableProperty] private string _filterHasSalesOrder       = string.Empty;
+    [ObservableProperty] private string _filterDocumentTypeLabel   = string.Empty;
+
+    partial void OnFilterDocumentNumberChanged(string value)     => ApplyFilters();
+    partial void OnFilterDescriptionChanged(string value)        => ApplyFilters();
+    partial void OnFilterDeliveryOrReceiverChanged(string value) => ApplyFilters();
+    partial void OnFilterObjectNameChanged(string value)         => ApplyFilters();
+    partial void OnFilterHasSalesOrderChanged(string value)      => ApplyFilters();
+    partial void OnFilterDocumentTypeLabelChanged(string value)  => ApplyFilters();
+
+    public DateColumnFilter    AccountingDateFilter { get; } = new();
+    public DateColumnFilter    DocumentDateFilter   { get; } = new();
+    public DateColumnFilter    LedgerDateFilter     { get; } = new();
+    public NumericColumnFilter TotalAmountFilter    { get; } = new();
+
+    private void WireColumnFilters()
+    {
+        AccountingDateFilter.Changed = ApplyFilters;
+        DocumentDateFilter.Changed   = ApplyFilters;
+        LedgerDateFilter.Changed     = ApplyFilters;
+        TotalAmountFilter.Changed    = ApplyFilters;
+    }
+
     public ObservableCollection<WarehouseTransactionResponseDto> Items { get; } = new();
+
+    // Full unfiltered dataset from the last LoadAsync — Items is derived from this via ApplyFilters.
+    private List<WarehouseTransactionResponseDto> _allItems = new();
 
     public WarehouseTransactionListViewModel(
         IGetWarehouseTransactionsUseCase getUseCase,
         IGetSalesOrderByIdUseCase        getSalesOrderById,
+        IGetWarehouseReceiptByIdUseCase  getWarehouseReceiptById,
         IGetCustomersUseCase             getCustomers,
         INavigationService               navigationService,
         Func<WarehouseReceiptFormWindow>  formWindowFactory,
         Func<SalesOrderWindow>            salesOrderWindowFactory,
         Func<SalesOrderPrintWindow>       printWindowFactory,
-        Func<WarehouseTransactionDetailWindow> detailWindowFactory,
         ILogger<WarehouseTransactionListViewModel> logger)
     {
         _getUseCase              = getUseCase;
         _getSalesOrderById       = getSalesOrderById;
+        _getWarehouseReceiptById = getWarehouseReceiptById;
         _getCustomers            = getCustomers;
         _navigationService       = navigationService;
         _formWindowFactory       = formWindowFactory;
         _salesOrderWindowFactory = salesOrderWindowFactory;
         _printWindowFactory      = printWindowFactory;
-        _detailWindowFactory     = detailWindowFactory;
         _logger                  = logger;
+
+        WireColumnFilters();
     }
 
     [RelayCommand]
@@ -116,10 +153,8 @@ public partial class WarehouseTransactionListViewModel : ViewModelBase
             };
 
             var transactions = await _getUseCase.ExecuteAsync(FromDate, ToDate, type, ct);
-            Items.Clear();
-            foreach (var t in transactions.OrderByDescending(t => t.DocumentDate))
-                Items.Add(t);
-            HasItems     = Items.Count > 0;
+            _allItems = transactions.OrderByDescending(t => t.DocumentDate).ToList();
+            ApplyFilters();
             SelectedItem = Items.FirstOrDefault();
         }
         catch (OperationCanceledException) { }
@@ -132,6 +167,32 @@ public partial class WarehouseTransactionListViewModel : ViewModelBase
         finally { IsLoading = false; }
     }
 
+    // Re-derives Items from _allItems using the active column filters.
+    private void ApplyFilters()
+    {
+        Items.Clear();
+        foreach (var item in _allItems.Where(MatchesAllFilters))
+            Items.Add(item);
+
+        HasItems = Items.Count > 0;
+    }
+
+    private bool MatchesAllFilters(WarehouseTransactionResponseDto item)
+        => AccountingDateFilter.Matches(item.AccountingDate)
+        && DocumentDateFilter.Matches(item.DocumentDate)
+        && Matches(FilterDocumentNumber, item.DocumentNumber)
+        && Matches(FilterDescription, item.Description ?? string.Empty)
+        && TotalAmountFilter.Matches(item.TotalAmount)
+        && Matches(FilterDeliveryOrReceiver, item.DeliveryOrReceiver ?? string.Empty)
+        && Matches(FilterObjectName, item.ObjectName ?? string.Empty)
+        && Matches(FilterHasSalesOrder, item.HasSalesOrder ? "✓ Đã lập" : string.Empty)
+        && LedgerDateFilter.Matches(item.LedgerDate)
+        && Matches(FilterDocumentTypeLabel, item.DocumentTypeLabel);
+
+    private static bool Matches(string filter, string cellText)
+        => string.IsNullOrWhiteSpace(filter)
+        || cellText.Contains(filter.Trim(), StringComparison.OrdinalIgnoreCase);
+
     partial void OnSelectedTypeIndexChanged(int value) => LoadCommand.Execute(null);
 
     // Double-click 1 dòng chứng từ:
@@ -141,8 +202,9 @@ public partial class WarehouseTransactionListViewModel : ViewModelBase
     //   chứng từ bán hàng" — từ màn Kho user cần xem/in lại hóa đơn nhanh, không cần mở form sửa.
     //   (Đã thử mở SalesOrderWindow (form sửa) trước đó theo yêu cầu — user phản hồi muốn thẳng
     //   màn in hóa đơn thay vì form sửa, nên đổi lại theo hướng này.)
-    // - Dòng Nhập kho (TransactionType="Import") không có Sales Order gốc → giữ nguyên popup
-    //   "Chi tiết" cũ (WarehouseTransactionDetailWindow).
+    // - Dòng Nhập kho (TransactionType="Import") → mở thẳng phiếu nhập kho thật
+    //   (WarehouseReceiptFormWindow, Id trùng với WarehouseReceipt.Id) thay vì popup chỉ-xem cũ —
+    //   cho phép "Bỏ ghi" rồi sửa rồi "Ghi sổ" lại ngay từ đây.
     [RelayCommand]
     private async Task ShowDetailAsync(WarehouseTransactionResponseDto? item, CancellationToken ct = default)
     {
@@ -183,9 +245,28 @@ public partial class WarehouseTransactionListViewModel : ViewModelBase
             return;
         }
 
-        var window = _detailWindowFactory();
-        window.Initialize(item);
-        window.Owner = Application.Current.MainWindow;
-        window.ShowDialog();
+        try
+        {
+            var receipt = await _getWarehouseReceiptById.ExecuteAsync(item.Id, ct);
+            if (receipt is null)
+            {
+                MessageBox.Show($"Không tìm thấy phiếu nhập kho '{item.DocumentNumber}'.", "Lỗi",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var window = _formWindowFactory();
+            window.Initialize(receipt);
+            window.Owner = Application.Current.MainWindow;
+            var result = window.ShowDialog();
+            if (result == true)
+                LoadCommand.Execute(null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load warehouse receipt {DocumentNumber} for edit from Kho screen", item.DocumentNumber);
+            MessageBox.Show($"Không thể tải phiếu nhập kho: {ex.Message}", "Lỗi",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 }

@@ -1,4 +1,5 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
+using DesktopLamour.Features.HomePage.Warehouse.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Warehouse.ViewModels;
 using System.ComponentModel;
 using System.Windows;
@@ -16,6 +17,10 @@ public partial class WarehouseReceiptFormWindow : Window
         DataContext = viewModel;
         viewModel.RequestClose += result => { DialogResult = result; };
     }
+
+    // Mở form ở chế độ Sửa 1 phiếu đã tồn tại (vd. click 1 dòng NK từ "Nhập, Xuất Kho").
+    // Không gọi (hoặc truyền null) → form tạo mới như cũ.
+    public void Initialize(WarehouseReceiptResponseDto? existing) => ViewModel.Initialize(existing);
 
     protected override void OnClosing(CancelEventArgs e)
     {

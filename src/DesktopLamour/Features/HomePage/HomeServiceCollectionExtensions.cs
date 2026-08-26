@@ -485,6 +485,8 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<IGetWarehouseReceiptByIdUseCase, GetWarehouseReceiptByIdUseCase>();
         services.AddTransient<ICreateWarehouseReceiptUseCase, CreateWarehouseReceiptUseCase>();
         services.AddTransient<IConfirmWarehouseReceiptUseCase, ConfirmWarehouseReceiptUseCase>();
+        services.AddTransient<IUpdateWarehouseReceiptUseCase, UpdateWarehouseReceiptUseCase>();
+        services.AddTransient<IUnconfirmWarehouseReceiptUseCase, UnconfirmWarehouseReceiptUseCase>();
 
         // ── WarehouseReceipts: Service + typed HttpClient ────────────────────────
         services.AddHttpClient<IWarehouseReceiptService, WarehouseReceiptService>(client =>

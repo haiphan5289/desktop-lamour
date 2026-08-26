@@ -48,17 +48,16 @@ public sealed class DepositDeductionService : IDepositDeductionService
             ?? Enumerable.Empty<DepositDeductionResponseDto>();
     }
 
-    public async Task<DepositDeductionResponseDto> CreateAsync(CreateDepositDeductionRequestDto request, CancellationToken ct = default)
+    public async Task<IEnumerable<DepositDeductionResponseDto>> CreateAsync(CreateDepositDeductionRequestDto request, CancellationToken ct = default)
     {
-        _logger.LogInformation("Creating deposit deduction for deposit {DepositId}, sales order {SalesOrderId}",
-            request.DepositId, request.SalesOrderId);
+        _logger.LogInformation("Creating deposit deduction for sales order {SalesOrderId}", request.SalesOrderId);
         SetBearerToken();
 
         var response = await _httpClient.PostAsJsonAsync("/api/v1/deposit-deductions", request, ct);
         await EnsureSuccessOrThrowAsync(response, ct);
 
-        return await response.Content.ReadFromJsonAsync<DepositDeductionResponseDto>(ct)
-            ?? throw new InvalidOperationException("Empty response from create deposit deduction endpoint.");
+        return await response.Content.ReadFromJsonAsync<IEnumerable<DepositDeductionResponseDto>>(ct)
+            ?? Enumerable.Empty<DepositDeductionResponseDto>();
     }
 
     public async Task DeleteAsync(int id, CancellationToken ct = default)

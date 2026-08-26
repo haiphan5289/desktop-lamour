@@ -14,6 +14,7 @@ using DesktopLamour.Features.HomePage.Sales.Domain.Models;
 using DesktopLamour.Features.HomePage.Sales.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Sales.Views;
 using DesktopLamour.Shared.Helpers;
+using DesktopLamour.Shared.Models;
 using Microsoft.Win32;
 
 namespace DesktopLamour.Features.HomePage.Sales.ViewModels;

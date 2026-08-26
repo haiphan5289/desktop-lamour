@@ -5,5 +5,5 @@ namespace DesktopLamour.Features.HomePage.Deposits.Domain.UseCases;
 
 public interface ICreateDepositDeductionUseCase
 {
-    Task<DepositDeductionResponseDto> ExecuteAsync(CreateDepositDeductionRequestDto request, CancellationToken ct = default);
+    Task<IEnumerable<DepositDeductionResponseDto>> ExecuteAsync(CreateDepositDeductionRequestDto request, CancellationToken ct = default);
 }

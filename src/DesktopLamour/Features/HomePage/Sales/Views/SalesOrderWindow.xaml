@@ -338,7 +338,7 @@
                                            VerticalAlignment="Center"/>
                         <DatePicker Grid.Column="9"
                                     SelectedDate="{Binding PaymentDueDate, Mode=TwoWay}"
-                                    Height="34" VerticalAlignment="Center"/>
+                                    Height="34" VerticalAlignment="Center" VerticalContentAlignment="Center"/>
                     </Grid>
                 </Grid>
             </Border>
@@ -354,13 +354,13 @@
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Margin="0,0,0,4"/>
                     <DatePicker SelectedDate="{Binding AccountingDate, Mode=TwoWay}"
-                                Height="34" Margin="0,0,0,10"/>
+                                Height="34" VerticalContentAlignment="Center" Margin="0,0,0,10"/>
 
                     <controls:AppLabel Text="Ngày chứng từ"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Margin="0,0,0,4"/>
                     <DatePicker SelectedDate="{Binding DocumentDate, Mode=TwoWay}"
-                                Height="34" Margin="0,0,0,10"/>
+                                Height="34" VerticalContentAlignment="Center" Margin="0,0,0,10"/>
 
                     <controls:AppLabel Text="Số chứng từ"
                                        Style="{StaticResource AppTypography.LabelSection}"
@@ -395,12 +395,16 @@
                               BorderThickness="0"
                               RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                               AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                              ScrollViewer.VerticalScrollBarVisibility="Auto"
                               behaviors:DataGridRowNavigationBehavior.EnableArrowRowNavigation="True"
                               behaviors:DataGridLineContextMenuBehavior.EnableLineContextMenu="True">
                         <DataGrid.Columns>
 
-                            <!-- Mã hàng — product picker (bao gồm cả lựa chọn "Trừ cọc" trộn sẵn trong Products) -->
-                            <DataGridTemplateColumn Header="Mã hàng" Width="140" CellStyle="{StaticResource DisabledWhenLocked}">
+                            <!-- Mã hàng — product picker (bao gồm cả lựa chọn "Trừ cọc" trộn sẵn trong Products).
+                                 Width="Auto" (MinWidth giữ như cũ) để cột tự giãn khi ProductCode hiện text
+                                 dài dạng "🔖 Trừ cọc — {số tiền}", tránh bị cắt chữ. -->
+                            <DataGridTemplateColumn Header="Mã hàng" Width="Auto" MinWidth="140" CellStyle="{StaticResource DisabledWhenLocked}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding ProductCode}"

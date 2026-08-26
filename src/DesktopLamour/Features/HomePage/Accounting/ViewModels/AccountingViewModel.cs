@@ -13,6 +13,7 @@ using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.HomePage.Accounting.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Accounting.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Accounting.Views;
+using DesktopLamour.Shared.Models;
 using Microsoft.Win32;
 
 namespace DesktopLamour.Features.HomePage.Accounting.ViewModels;
@@ -50,6 +51,46 @@ public partial class AccountingViewModel : ViewModelBase
     [ObservableProperty] private string _filterStatus = "Tất cả";
     [ObservableProperty] private string _filterType    = "Tất cả";
 
+    // ── Per-column filter row, embedded directly in each DataGrid column header (no popup) ────
+    // Same visual pattern as SalesOrderReportDetailView: text columns get a plain Contains
+    // textbox, date/numeric columns get an operator combo (=, ≤, ...) + typed value. These apply
+    // on top of the existing FilterStatus/FilterType toolbar filters via the same ItemsView
+    // (CollectionView) filter predicate — FilterEntry — so ItemsView.Refresh() plays the role
+    // ApplyFilters() plays on the Sales screen (Items itself is not re-populated here).
+    // "Trạng thái" column filter is named FilterStatusText (not FilterStatus) to avoid clashing
+    // with the existing toolbar dropdown FilterStatus (exact match vs. this Contains match).
+    [ObservableProperty] private string _filterReceiptNumber  = string.Empty;
+    [ObservableProperty] private string _filterPaymentNumber  = string.Empty;
+    [ObservableProperty] private string _filterStatusText     = string.Empty;
+    [ObservableProperty] private string _filterDescription    = string.Empty;
+    [ObservableProperty] private string _filterAccount        = string.Empty;
+    [ObservableProperty] private string _filterCounterAccount = string.Empty;
+    [ObservableProperty] private string _filterPersonName     = string.Empty;
+
+    partial void OnFilterReceiptNumberChanged(string value)  => ItemsView.Refresh();
+    partial void OnFilterPaymentNumberChanged(string value)  => ItemsView.Refresh();
+    partial void OnFilterStatusTextChanged(string value)     => ItemsView.Refresh();
+    partial void OnFilterDescriptionChanged(string value)    => ItemsView.Refresh();
+    partial void OnFilterAccountChanged(string value)        => ItemsView.Refresh();
+    partial void OnFilterCounterAccountChanged(string value) => ItemsView.Refresh();
+    partial void OnFilterPersonNameChanged(string value)     => ItemsView.Refresh();
+
+    public DateColumnFilter AccountingDateFilter { get; } = new();
+    public DateColumnFilter DocumentDateFilter   { get; } = new();
+
+    public NumericColumnFilter DebitAmountFilter  { get; } = new();
+    public NumericColumnFilter CreditAmountFilter { get; } = new();
+    public NumericColumnFilter BalanceFilter      { get; } = new();
+
+    private void WireColumnFilters()
+    {
+        AccountingDateFilter.Changed = ItemsView.Refresh;
+        DocumentDateFilter.Changed   = ItemsView.Refresh;
+        DebitAmountFilter.Changed    = ItemsView.Refresh;
+        CreditAmountFilter.Changed   = ItemsView.Refresh;
+        BalanceFilter.Changed        = ItemsView.Refresh;
+    }
+
     public ObservableCollection<CashLedgerEntryDto> Items { get; } = new();
 
     public ICollectionView ItemsView { get; }
@@ -69,6 +110,8 @@ public partial class AccountingViewModel : ViewModelBase
 
         ItemsView = CollectionViewSource.GetDefaultView(Items);
         ItemsView.Filter = FilterEntry;
+
+        WireColumnFilters();
     }
 
     partial void OnFilterStatusChanged(string value) => ItemsView.Refresh();
@@ -118,23 +161,36 @@ public partial class AccountingViewModel : ViewModelBase
     {
         if (obj is not CashLedgerEntryDto entry) return false;
 
-        if (FilterStatus != "Tất cả")
+        var statusLabel = entry.Status switch
         {
-            var statusLabel = entry.Status switch
-            {
-                "Draft"     => "Nháp",
-                "Treo"      => "Treo",
-                "Confirmed" => "Đã ghi sổ",
-                _           => entry.Status,
-            };
-            if (statusLabel != FilterStatus) return false;
-        }
+            "Draft"     => "Nháp",
+            "Treo"      => "Treo",
+            "Confirmed" => "Đã ghi sổ",
+            _           => entry.Status,
+        };
+
+        if (FilterStatus != "Tất cả" && statusLabel != FilterStatus) return false;
 
         if (FilterType == "Thu" && string.IsNullOrEmpty(entry.ReceiptNumber)) return false;
         if (FilterType == "Chi" && string.IsNullOrEmpty(entry.PaymentNumber)) return false;
 
-        return true;
+        return AccountingDateFilter.Matches(entry.AccountingDate)
+            && DocumentDateFilter.Matches(entry.DocumentDate)
+            && Matches(FilterReceiptNumber, entry.ReceiptNumber ?? "")
+            && Matches(FilterPaymentNumber, entry.PaymentNumber ?? "")
+            && Matches(FilterStatusText, statusLabel)
+            && Matches(FilterDescription, entry.Description)
+            && Matches(FilterAccount, entry.Account)
+            && Matches(FilterCounterAccount, entry.CounterAccount)
+            && DebitAmountFilter.Matches(entry.DebitAmount)
+            && CreditAmountFilter.Matches(entry.CreditAmount)
+            && BalanceFilter.Matches(entry.Balance)
+            && Matches(FilterPersonName, entry.PersonName ?? "");
     }
+
+    private static bool Matches(string filter, string cellText)
+        => string.IsNullOrWhiteSpace(filter)
+        || cellText.Contains(filter.Trim(), StringComparison.OrdinalIgnoreCase);
 
     [RelayCommand]
     private void GoBack() => _navigationService.GoBack();

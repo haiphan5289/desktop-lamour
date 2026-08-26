@@ -74,6 +74,33 @@ public sealed class WarehouseReceiptService : IWarehouseReceiptService
             ?? throw new InvalidOperationException("Empty response from confirm warehouse receipt endpoint.");
     }
 
+    public async Task<WarehouseReceiptResponseDto> UpdateAsync(
+        int id,
+        UpdateWarehouseReceiptRequestDto request,
+        CancellationToken ct = default)
+    {
+        _logger.LogInformation("Updating warehouse receipt {Id}", id);
+        SetBearerToken();
+
+        var response = await _httpClient.PutAsJsonAsync($"/api/v1/warehouse-receipts/{id}", request, ct);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<WarehouseReceiptResponseDto>(ct)
+            ?? throw new InvalidOperationException("Empty response from update warehouse receipt endpoint.");
+    }
+
+    public async Task<WarehouseReceiptResponseDto> UnconfirmAsync(int id, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Unconfirming warehouse receipt {Id}", id);
+        SetBearerToken();
+
+        var response = await _httpClient.PostAsync($"/api/v1/warehouse-receipts/{id}/unconfirm", null, ct);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<WarehouseReceiptResponseDto>(ct)
+            ?? throw new InvalidOperationException("Empty response from unconfirm warehouse receipt endpoint.");
+    }
+
     private void SetBearerToken()
     {
         var token = _tokenStorage.GetToken();

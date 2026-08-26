@@ -118,6 +118,11 @@ public partial class AppSearchableComboBox : UserControl
     private static void OnSelectedItemChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is not AppSearchableComboBox combo) return;
+        // Đang ở giữa 1 thao tác text tự quản lý Text rồi (OnSearchTextChanged xoá SelectedItem khi
+        // user gõ tay, SelectItem/OnClearClick set Text riêng ngay sau) — nếu ghi đè Text ở đây nữa
+        // sẽ tạo TextChanged lồng nhau, xoá mất ký tự user vừa gõ (rõ nhất khi gõ tiếng Việt vì 1 từ
+        // có dấu cần ghép nhiều keystroke, mất ký tự đầu là vỡ cả từ). Bỏ qua, để caller tự lo Text.
+        if (combo._suppressTextChange) return;
         combo._suppressTextChange = true;
         if (combo.SearchBox is not null)
             combo.SearchBox.Text = (e.NewValue as ISearchableItem)?.DisplayText ?? string.Empty;

@@ -344,13 +344,13 @@
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Margin="0,0,0,4"/>
                     <DatePicker SelectedDate="{Binding AccountingDate, Mode=TwoWay}"
-                                Height="34" Margin="0,0,0,10"/>
+                                Height="34" VerticalContentAlignment="Center" Margin="0,0,0,10"/>
 
                     <controls:AppLabel Text="Ngày chứng từ"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Margin="0,0,0,4"/>
                     <DatePicker SelectedDate="{Binding DocumentDate, Mode=TwoWay}"
-                                Height="34" Margin="0,0,0,10"/>
+                                Height="34" VerticalContentAlignment="Center" Margin="0,0,0,10"/>
 
                     <controls:AppLabel Text="Số chứng từ"
                                        Style="{StaticResource AppTypography.LabelSection}"

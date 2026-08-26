@@ -26,37 +26,50 @@
                 Background="{StaticResource AppColor.BackgroundPrimary}"
                 BorderBrush="{StaticResource AppColor.BorderThin}"
                 BorderThickness="1" CornerRadius="8">
+            <!-- Mỗi cặp Label + control nằm chung 1 StackPanel để WrapPanel chỉ xuống dòng giữa
+                 các cặp, không tách rời label khỏi control của nó khi thu hẹp cửa sổ. -->
             <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <controls:AppLabel Text="Phương thức:" VerticalAlignment="Center" Margin="0,0,8,8"/>
-                <RadioButton Content="Tiền mặt" GroupName="PaymentMethod" VerticalAlignment="Center" Margin="0,0,12,8"
-                             IsChecked="{Binding PaymentMethod, Converter={StaticResource StringEqualityConverter}, ConverterParameter=Cash111}"/>
-                <RadioButton Content="Tiền gửi" GroupName="PaymentMethod" VerticalAlignment="Center" Margin="0,0,16,8"
-                             IsChecked="{Binding PaymentMethod, Converter={StaticResource StringEqualityConverter}, ConverterParameter=Bank112}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,16,8">
+                    <controls:AppLabel Text="Phương thức:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <RadioButton Content="Tiền mặt" GroupName="PaymentMethod" VerticalAlignment="Center" Margin="0,0,12,0"
+                                 IsChecked="{Binding PaymentMethod, Converter={StaticResource StringEqualityConverter}, ConverterParameter=Cash111}"/>
+                    <RadioButton Content="Tiền gửi" GroupName="PaymentMethod" VerticalAlignment="Center"
+                                 IsChecked="{Binding PaymentMethod, Converter={StaticResource StringEqualityConverter}, ConverterParameter=Bank112}"/>
+                </StackPanel>
 
-                <controls:AppLabel Text="TK ngân hàng:" VerticalAlignment="Center" Margin="0,0,8,8"
-                                   Visibility="{Binding PaymentMethod, Converter={StaticResource StringEqualsToVisibilityConverter}, ConverterParameter=Bank112}"/>
-                <TextBox Text="{Binding BankAccount, UpdateSourceTrigger=PropertyChanged}"
-                         Width="140" Height="32" VerticalContentAlignment="Center" Margin="0,0,16,8"
-                         Visibility="{Binding PaymentMethod, Converter={StaticResource StringEqualsToVisibilityConverter}, ConverterParameter=Bank112}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,16,8"
+                            Visibility="{Binding PaymentMethod, Converter={StaticResource StringEqualsToVisibilityConverter}, ConverterParameter=Bank112}">
+                    <controls:AppLabel Text="TK ngân hàng:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBox Text="{Binding BankAccount, UpdateSourceTrigger=PropertyChanged}"
+                             Width="140" Height="44" VerticalContentAlignment="Center"/>
+                </StackPanel>
 
-                <controls:AppLabel Text="Khoảng thời gian" VerticalAlignment="Center" Margin="0,0,8,8"/>
-                <ComboBox ItemsSource="{Binding PeriodOptions}" SelectedItem="{Binding SelectedPeriod, Mode=TwoWay}"
-                          Width="120" Height="32" VerticalContentAlignment="Center" Margin="0,0,16,8"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,16,8">
+                    <controls:AppLabel Text="Khoảng thời gian" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox ItemsSource="{Binding PeriodOptions}" SelectedItem="{Binding SelectedPeriod, Mode=TwoWay}"
+                              Width="120" Height="44" VerticalContentAlignment="Center"/>
+                </StackPanel>
 
-                <controls:AppLabel Text="Từ" VerticalAlignment="Center" Margin="0,0,8,8"/>
-                <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}" Width="120" Height="32" Margin="0,0,16,8"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,16,8">
+                    <controls:AppLabel Text="Từ" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}" Width="120" Height="44" VerticalContentAlignment="Center"/>
+                </StackPanel>
 
-                <controls:AppLabel Text="Đến" VerticalAlignment="Center" Margin="0,0,8,8"/>
-                <DatePicker SelectedDate="{Binding ToDate, Mode=TwoWay}" Width="120" Height="32" Margin="0,0,16,8"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,16,8">
+                    <controls:AppLabel Text="Đến" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <DatePicker SelectedDate="{Binding ToDate, Mode=TwoWay}" Width="120" Height="44" VerticalContentAlignment="Center"/>
+                </StackPanel>
 
-                <controls:AppLabel Text="NV bán hàng" VerticalAlignment="Center" Margin="0,0,8,8"/>
-                <controls:AppSearchableComboBox ItemsSource="{Binding Employees}"
-                                                SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
-                                                Placeholder="Tất cả" IsNullable="True"
-                                                Width="180" Height="32" Margin="0,0,16,8"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,16,8">
+                    <controls:AppLabel Text="NV bán hàng" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <controls:AppSearchableComboBox ItemsSource="{Binding Employees}"
+                                                    SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
+                                                    Placeholder="Tất cả" IsNullable="True"
+                                                    Width="180" Height="44"/>
+                </StackPanel>
 
                 <controls:AppButton Content="🔍 Lấy dữ liệu" Style="{StaticResource AppButton.Primary.Medium}"
-                                    Command="{Binding LoadCommand}" Height="32" Margin="0,0,0,8"/>
+                                    Command="{Binding LoadCommand}" Height="44" Margin="0,0,0,8"/>
             </WrapPanel>
         </Border>
 

@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
              xmlns:local="clr-namespace:DesktopLamour.Features.HomePage.Accounting.ViewModels"
+             xmlns:models="clr-namespace:DesktopLamour.Shared.Models"
              Background="{StaticResource AppColor.BackgroundSecondary}">
 
     <UserControl.Resources>
@@ -14,6 +15,13 @@
             <Setter Property="Margin"          Value="0"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Background"      Value="Transparent"/>
+            <!-- Stretch header content so the per-column inline filter row (StackPanel/Grid +
+                 AppTextField/ComboBox, all set to Stretch) fills the column instead of sizing to
+                 its natural width and sitting centered — same fix applied in
+                 SalesOrderReportDetailView. The ControlTemplate below also hardcodes
+                 HorizontalAlignment="Stretch" on its ContentPresenter, so this Setter is a
+                 belt-and-suspenders match with that reference pattern. -->
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="DataGridColumnHeader">
@@ -214,6 +222,7 @@
                       CanUserAddRows="False"
                       CanUserDeleteRows="False"
                       CanUserResizeColumns="True"
+                      CanUserSortColumns="False"
                       SelectionMode="Single"
                       HeadersVisibility="Column"
                       GridLinesVisibility="All"
@@ -224,125 +233,208 @@
                       RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
                       ColumnHeaderStyle="{StaticResource CleanHeaderStyle}"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
                       Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibilityConverter}}">
 
                 <DataGrid.Columns>
 
-                    <!-- Ngày hạch toán -->
+                    <!-- Ngày hạch toán — date column: operator combo (=, ≤, ≥...) + DatePicker, inline -->
                     <DataGridTextColumn Binding="{Binding AccountingDate, StringFormat=dd/MM/yyyy}"
-                                        Width="110" ElementStyle="{StaticResource CellCenter}">
+                                        Width="130" ElementStyle="{StaticResource CellCenter}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <Border Background="{StaticResource AppColor.BackgroundSecondary}"
                                         BorderBrush="{StaticResource GroupBorderBrush}"
                                         BorderThickness="1,1,0,1" Padding="6,4">
-                                    <TextBlock Text="Ngày hạch toán" FontWeight="SemiBold" FontSize="12"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                                    <StackPanel>
+                                        <TextBlock Text="Ngày hạch toán" FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                                        <Grid Margin="0,4,0,2">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ComboBox Grid.Column="0"
+                                                      ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
+                                                      SelectedItem="{Binding DataContext.AccountingDateFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                      Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
+                                                                   ToolTip="{Binding Converter={StaticResource FilterOperatorLabelConverter}}"
+                                                                   HorizontalAlignment="Center"/>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                            <DatePicker Grid.Column="1" HorizontalAlignment="Stretch"
+                                                        SelectedDate="{Binding DataContext.AccountingDateFilter.Value, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                        FontSize="10" Height="22"/>
+                                        </Grid>
+                                    </StackPanel>
                                 </Border>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
-                    <!-- Ngày chứng từ -->
+                    <!-- Ngày chứng từ — date column: operator combo (=, ≤, ≥...) + DatePicker, inline -->
                     <DataGridTextColumn Binding="{Binding DocumentDate, StringFormat=dd/MM/yyyy}"
+                                        Width="130" ElementStyle="{StaticResource CellCenter}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <Border Background="{StaticResource AppColor.BackgroundSecondary}"
+                                        BorderBrush="{StaticResource GroupBorderBrush}"
+                                        BorderThickness="0,1,0,1" Padding="6,4">
+                                    <StackPanel>
+                                        <TextBlock Text="Ngày chứng từ" FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                                        <Grid Margin="0,4,0,2">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ComboBox Grid.Column="0"
+                                                      ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
+                                                      SelectedItem="{Binding DataContext.DocumentDateFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                      Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
+                                                                   ToolTip="{Binding Converter={StaticResource FilterOperatorLabelConverter}}"
+                                                                   HorizontalAlignment="Center"/>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                            <DatePicker Grid.Column="1" HorizontalAlignment="Stretch"
+                                                        SelectedDate="{Binding DataContext.DocumentDateFilter.Value, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                        FontSize="10" Height="22"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- Số phiếu thu — text column: plain Contains filter, inline -->
+                    <DataGridTextColumn Binding="{Binding ReceiptNumber}"
                                         Width="110" ElementStyle="{StaticResource CellCenter}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <Border Background="{StaticResource AppColor.BackgroundSecondary}"
                                         BorderBrush="{StaticResource GroupBorderBrush}"
                                         BorderThickness="0,1,0,1" Padding="6,4">
-                                    <TextBlock Text="Ngày chứng từ" FontWeight="SemiBold" FontSize="12"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                                    <StackPanel>
+                                        <TextBlock Text="Số phiếu thu" FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                                        <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                                                Text="{Binding DataContext.FilterReceiptNumber, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                                FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,0,2"/>
+                                    </StackPanel>
                                 </Border>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
-                    <!-- Số phiếu thu -->
-                    <DataGridTextColumn Binding="{Binding ReceiptNumber}"
-                                        Width="100" ElementStyle="{StaticResource CellCenter}">
-                        <DataGridTextColumn.HeaderTemplate>
-                            <DataTemplate>
-                                <Border Background="{StaticResource AppColor.BackgroundSecondary}"
-                                        BorderBrush="{StaticResource GroupBorderBrush}"
-                                        BorderThickness="0,1,0,1" Padding="6,4">
-                                    <TextBlock Text="Số phiếu thu" FontWeight="SemiBold" FontSize="12"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
-                                </Border>
-                            </DataTemplate>
-                        </DataGridTextColumn.HeaderTemplate>
-                    </DataGridTextColumn>
-
-                    <!-- Số phiếu chi -->
+                    <!-- Số phiếu chi — text column: plain Contains filter, inline -->
                     <DataGridTextColumn Binding="{Binding PaymentNumber}"
+                                        Width="110" ElementStyle="{StaticResource CellCenter}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <Border Background="{StaticResource AppColor.BackgroundSecondary}"
+                                        BorderBrush="{StaticResource GroupBorderBrush}"
+                                        BorderThickness="0,1,0,1" Padding="6,4">
+                                    <StackPanel>
+                                        <TextBlock Text="Số phiếu chi" FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                                        <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                                                Text="{Binding DataContext.FilterPaymentNumber, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                                FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,0,2"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- Trạng thái — enum/display-string column: treated as text, Contains filter
+                         against the same Vietnamese label shown in the cell (via
+                         CashLedgerStatusDisplayConverter). Named FilterStatusText, not FilterStatus,
+                         to avoid clashing with the existing toolbar "Trạng thái" dropdown. -->
+                    <DataGridTextColumn Binding="{Binding Status, Converter={StaticResource CashLedgerStatusDisplayConverter}}"
+                                        Width="110" ElementStyle="{StaticResource CellCenter}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <Border Background="{StaticResource AppColor.BackgroundSecondary}"
+                                        BorderBrush="{StaticResource GroupBorderBrush}"
+                                        BorderThickness="0,1,0,1" Padding="6,4">
+                                    <StackPanel>
+                                        <TextBlock Text="Trạng thái" FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                                        <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                                                Text="{Binding DataContext.FilterStatusText, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                                FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,0,2"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- Diễn giải — text column: plain Contains filter, inline. Fixed width (not "*") —
+                         mixing a star column with HorizontalScrollBarVisibility="Auto" is a known WPF
+                         DataGrid quirk that clips trailing columns instead of scrolling to them. -->
+                    <DataGridTextColumn Binding="{Binding Description}"
+                                        Width="250" ElementStyle="{StaticResource CellText}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <Border Background="{StaticResource AppColor.BackgroundSecondary}"
+                                        BorderBrush="{StaticResource GroupBorderBrush}"
+                                        BorderThickness="0,1,0,1" Padding="6,4">
+                                    <StackPanel>
+                                        <TextBlock Text="Diễn giải" FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0"/>
+                                        <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                                                Text="{Binding DataContext.FilterDescription, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                                FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,0,2"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- Tài khoản — text column: plain Contains filter, inline -->
+                    <DataGridTextColumn Binding="{Binding Account}"
+                                        Width="90" ElementStyle="{StaticResource CellCenter}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <Border Background="{StaticResource AppColor.BackgroundSecondary}"
+                                        BorderBrush="{StaticResource GroupBorderBrush}"
+                                        BorderThickness="0,1,0,1" Padding="6,4">
+                                    <StackPanel>
+                                        <TextBlock Text="Tài khoản" FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                                        <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                                                Text="{Binding DataContext.FilterAccount, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                                FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,0,2"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- TK đối ứng — text column: plain Contains filter, inline -->
+                    <DataGridTextColumn Binding="{Binding CounterAccount}"
                                         Width="100" ElementStyle="{StaticResource CellCenter}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <Border Background="{StaticResource AppColor.BackgroundSecondary}"
                                         BorderBrush="{StaticResource GroupBorderBrush}"
                                         BorderThickness="0,1,0,1" Padding="6,4">
-                                    <TextBlock Text="Số phiếu chi" FontWeight="SemiBold" FontSize="12"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
-                                </Border>
-                            </DataTemplate>
-                        </DataGridTextColumn.HeaderTemplate>
-                    </DataGridTextColumn>
-
-                    <!-- Trạng thái -->
-                    <DataGridTextColumn Binding="{Binding Status, Converter={StaticResource CashLedgerStatusDisplayConverter}}"
-                                        Width="90" ElementStyle="{StaticResource CellCenter}">
-                        <DataGridTextColumn.HeaderTemplate>
-                            <DataTemplate>
-                                <Border Background="{StaticResource AppColor.BackgroundSecondary}"
-                                        BorderBrush="{StaticResource GroupBorderBrush}"
-                                        BorderThickness="0,1,0,1" Padding="6,4">
-                                    <TextBlock Text="Trạng thái" FontWeight="SemiBold" FontSize="12"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
-                                </Border>
-                            </DataTemplate>
-                        </DataGridTextColumn.HeaderTemplate>
-                    </DataGridTextColumn>
-
-                    <!-- Diễn giải -->
-                    <DataGridTextColumn Binding="{Binding Description}"
-                                        Width="*" ElementStyle="{StaticResource CellText}">
-                        <DataGridTextColumn.HeaderTemplate>
-                            <DataTemplate>
-                                <Border Background="{StaticResource AppColor.BackgroundSecondary}"
-                                        BorderBrush="{StaticResource GroupBorderBrush}"
-                                        BorderThickness="0,1,0,1" Padding="6,4">
-                                    <TextBlock Text="Diễn giải" FontWeight="SemiBold" FontSize="12"
-                                               HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0"/>
-                                </Border>
-                            </DataTemplate>
-                        </DataGridTextColumn.HeaderTemplate>
-                    </DataGridTextColumn>
-
-                    <!-- Tài khoản -->
-                    <DataGridTextColumn Binding="{Binding Account}"
-                                        Width="80" ElementStyle="{StaticResource CellCenter}">
-                        <DataGridTextColumn.HeaderTemplate>
-                            <DataTemplate>
-                                <Border Background="{StaticResource AppColor.BackgroundSecondary}"
-                                        BorderBrush="{StaticResource GroupBorderBrush}"
-                                        BorderThickness="0,1,0,1" Padding="6,4">
-                                    <TextBlock Text="Tài khoản" FontWeight="SemiBold" FontSize="12"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
-                                </Border>
-                            </DataTemplate>
-                        </DataGridTextColumn.HeaderTemplate>
-                    </DataGridTextColumn>
-
-                    <!-- TK đối ứng -->
-                    <DataGridTextColumn Binding="{Binding CounterAccount}"
-                                        Width="90" ElementStyle="{StaticResource CellCenter}">
-                        <DataGridTextColumn.HeaderTemplate>
-                            <DataTemplate>
-                                <Border Background="{StaticResource AppColor.BackgroundSecondary}"
-                                        BorderBrush="{StaticResource GroupBorderBrush}"
-                                        BorderThickness="0,1,0,1" Padding="6,4">
-                                    <TextBlock Text="TK đối ứng" FontWeight="SemiBold" FontSize="12"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                                    <StackPanel>
+                                        <TextBlock Text="TK đối ứng" FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                                        <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                                                Text="{Binding DataContext.FilterCounterAccount, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                                FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,0,2"/>
+                                    </StackPanel>
                                 </Border>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
@@ -350,15 +442,16 @@
 
                     <!-- ═══════════════════════ Nhóm: Số phát sinh ═══════════════════════ -->
 
-                    <!-- Nợ -->
+                    <!-- Nợ — numeric column: operator combo (=, ≤, ≥...) + value box, inline -->
                     <DataGridTextColumn Binding="{Binding DebitAmount, StringFormat=\{0:N0\}}"
-                                        Width="110" ElementStyle="{StaticResource CellNumber}">
+                                        Width="130" ElementStyle="{StaticResource CellNumber}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="24"/>
                                         <RowDefinition Height="26"/>
+                                        <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
                                     <Border Grid.Row="0"
                                             Background="{StaticResource GroupHeaderBrush}"
@@ -370,24 +463,51 @@
                                     <Border Grid.Row="1"
                                             Background="{StaticResource AppColor.BackgroundSecondary}"
                                             BorderBrush="{StaticResource GroupBorderBrush}"
-                                            BorderThickness="1,1,0,1">
+                                            BorderThickness="1,1,0,0">
                                         <TextBlock Text="Nợ" FontWeight="SemiBold" FontSize="12"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <Border Grid.Row="2"
+                                            Background="{StaticResource AppColor.BackgroundSecondary}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="1,0,0,1" Padding="3,2">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ComboBox Grid.Column="0"
+                                                      ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
+                                                      SelectedItem="{Binding DataContext.DebitAmountFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                      Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
+                                                                   ToolTip="{Binding Converter={StaticResource FilterOperatorLabelConverter}}"
+                                                                   HorizontalAlignment="Center"/>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                            <controls:AppTextField Grid.Column="1" Placeholder="Giá trị" TextAlignment="Right" HorizontalAlignment="Stretch"
+                                                                    Text="{Binding DataContext.DebitAmountFilter.ValueText, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                                    FontWeight="Normal" FontSize="11" Height="22"/>
+                                        </Grid>
                                     </Border>
                                 </Grid>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
-                    <!-- Có -->
+                    <!-- Có — numeric column: operator combo (=, ≤, ≥...) + value box, inline -->
                     <DataGridTextColumn Binding="{Binding CreditAmount, StringFormat=\{0:N0\}}"
-                                        Width="110" ElementStyle="{StaticResource CellNumber}">
+                                        Width="130" ElementStyle="{StaticResource CellNumber}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="24"/>
                                         <RowDefinition Height="26"/>
+                                        <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
                                     <Border Grid.Row="0"
                                             Background="{StaticResource GroupHeaderBrush}"
@@ -396,40 +516,94 @@
                                     <Border Grid.Row="1"
                                             Background="{StaticResource AppColor.BackgroundSecondary}"
                                             BorderBrush="{StaticResource GroupBorderBrush}"
-                                            BorderThickness="0,1,1,1">
+                                            BorderThickness="0,1,1,0">
                                         <TextBlock Text="Có" FontWeight="SemiBold" FontSize="12"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <Border Grid.Row="2"
+                                            Background="{StaticResource AppColor.BackgroundSecondary}"
+                                            BorderBrush="{StaticResource GroupBorderBrush}"
+                                            BorderThickness="0,0,1,1" Padding="3,2">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ComboBox Grid.Column="0"
+                                                      ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
+                                                      SelectedItem="{Binding DataContext.CreditAmountFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                      Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
+                                                                   ToolTip="{Binding Converter={StaticResource FilterOperatorLabelConverter}}"
+                                                                   HorizontalAlignment="Center"/>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                            <controls:AppTextField Grid.Column="1" Placeholder="Giá trị" TextAlignment="Right" HorizontalAlignment="Stretch"
+                                                                    Text="{Binding DataContext.CreditAmountFilter.ValueText, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                                    FontWeight="Normal" FontSize="11" Height="22"/>
+                                        </Grid>
                                     </Border>
                                 </Grid>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
-                    <!-- Số tồn -->
+                    <!-- Số tồn — numeric column: operator combo (=, ≤, ≥...) + value box, inline -->
                     <DataGridTextColumn Binding="{Binding Balance, StringFormat=\{0:N0\}}"
-                                        Width="120" ElementStyle="{StaticResource CellNumber}">
+                                        Width="140" ElementStyle="{StaticResource CellNumber}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <Border Background="{StaticResource AppColor.BackgroundSecondary}"
                                         BorderBrush="{StaticResource GroupBorderBrush}"
                                         BorderThickness="0,1,0,1" Padding="6,4">
-                                    <TextBlock Text="Số tồn" FontWeight="SemiBold" FontSize="12"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <StackPanel>
+                                        <TextBlock Text="Số tồn" FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <Grid Margin="0,4,0,2">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ComboBox Grid.Column="0"
+                                                      ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
+                                                      SelectedItem="{Binding DataContext.BalanceFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                      Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
+                                                                   ToolTip="{Binding Converter={StaticResource FilterOperatorLabelConverter}}"
+                                                                   HorizontalAlignment="Center"/>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                            <controls:AppTextField Grid.Column="1" Placeholder="Giá trị" TextAlignment="Right" HorizontalAlignment="Stretch"
+                                                                    Text="{Binding DataContext.BalanceFilter.ValueText, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                                    FontWeight="Normal" FontSize="11" Height="22"/>
+                                        </Grid>
+                                    </StackPanel>
                                 </Border>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
-                    <!-- Người nhận/Người nộp -->
+                    <!-- Người nhận/Người nộp — text column: plain Contains filter, inline -->
                     <DataGridTextColumn Binding="{Binding PersonName}"
-                                        Width="160" ElementStyle="{StaticResource CellText}">
+                                        Width="170" ElementStyle="{StaticResource CellText}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <Border Background="{StaticResource AppColor.BackgroundSecondary}"
                                         BorderBrush="{StaticResource GroupBorderBrush}"
                                         BorderThickness="0,1,1,1" Padding="6,4">
-                                    <TextBlock Text="Người nhận/Người nộp" FontWeight="SemiBold" FontSize="12"
-                                               HorizontalAlignment="Left" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                    <StackPanel>
+                                        <TextBlock Text="Người nhận/Người nộp" FontWeight="SemiBold" FontSize="12"
+                                                   HorizontalAlignment="Left" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                        <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                                                Text="{Binding DataContext.FilterPersonName, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                                FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,0,2"/>
+                                    </StackPanel>
                                 </Border>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>

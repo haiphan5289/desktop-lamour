@@ -7,6 +7,7 @@ using DesktopLamour.Core.Navigation;
 using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.HomePage.Deposits.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Deposits.Domain.UseCases;
+using DesktopLamour.Shared.Models;
 
 namespace DesktopLamour.Features.HomePage.Deposits.ViewModels;
 
@@ -26,6 +27,33 @@ public partial class DepositDeductionReportViewModel : ViewModelBase
     [ObservableProperty] private string   _filterKeyword = string.Empty;
     [ObservableProperty] private DepositDeductionResponseDto? _selectedDeduction;
 
+    // ── Per-column filter row, embedded directly in each header (no popup) ─────
+    // Text columns: plain textbox, case-insensitive Contains against the cell's displayed text.
+    // Date/numeric columns: an operator combo (=, ≤, ...) + a typed value, shown side by side.
+    // Composes (AND) with the existing top-toolbar keyword/date-range filter above.
+    [ObservableProperty] private string _filterDocumentNumber           = string.Empty;
+    [ObservableProperty] private string _filterDepositDocumentNumber    = string.Empty;
+    [ObservableProperty] private string _filterSalesOrderDocumentNumber = string.Empty;
+    [ObservableProperty] private string _filterCustomerName             = string.Empty;
+    [ObservableProperty] private string _filterEmployeeName             = string.Empty;
+    [ObservableProperty] private string _filterDescription              = string.Empty;
+
+    partial void OnFilterDocumentNumberChanged(string value)           => ApplyFilter();
+    partial void OnFilterDepositDocumentNumberChanged(string value)    => ApplyFilter();
+    partial void OnFilterSalesOrderDocumentNumberChanged(string value) => ApplyFilter();
+    partial void OnFilterCustomerNameChanged(string value)             => ApplyFilter();
+    partial void OnFilterEmployeeNameChanged(string value)             => ApplyFilter();
+    partial void OnFilterDescriptionChanged(string value)              => ApplyFilter();
+
+    public DateColumnFilter    AccountingDateFilter { get; } = new();
+    public NumericColumnFilter AmountFilter         { get; } = new();
+
+    private void WireColumnFilters()
+    {
+        AccountingDateFilter.Changed = ApplyFilter;
+        AmountFilter.Changed         = ApplyFilter;
+    }
+
     private List<DepositDeductionResponseDto> _allItems = new();
 
     public ObservableCollection<DepositDeductionResponseDto> Items { get; } = new();
@@ -38,6 +66,8 @@ public partial class DepositDeductionReportViewModel : ViewModelBase
         _navigationService = navigationService;
         _getDeductions     = getDeductions;
         _deleteDeduction   = deleteDeduction;
+
+        WireColumnFilters();
     }
 
     partial void OnFilterKeywordChanged(string value) => ApplyFilter();
@@ -105,7 +135,7 @@ public partial class DepositDeductionReportViewModel : ViewModelBase
 
     private void ApplyFilter()
     {
-        var filtered = _allItems.AsEnumerable();
+        var filtered = _allItems.Where(MatchesAllFilters);
 
         if (!string.IsNullOrWhiteSpace(FilterKeyword))
             filtered = filtered.Where(x =>
@@ -119,4 +149,18 @@ public partial class DepositDeductionReportViewModel : ViewModelBase
         HasItems       = Items.Count > 0;
         TotalDeducted  = Items.Sum(x => x.Amount);
     }
+
+    private bool MatchesAllFilters(DepositDeductionResponseDto item)
+        => AccountingDateFilter.Matches(item.AccountingDate)
+        && Matches(FilterDocumentNumber, item.DocumentNumber)
+        && Matches(FilterDepositDocumentNumber, item.DepositDocumentNumber)
+        && Matches(FilterSalesOrderDocumentNumber, item.SalesOrderDocumentNumber)
+        && Matches(FilterCustomerName, item.CustomerName)
+        && Matches(FilterEmployeeName, item.EmployeeName ?? string.Empty)
+        && AmountFilter.Matches(item.Amount)
+        && Matches(FilterDescription, item.Description ?? string.Empty);
+
+    private static bool Matches(string filter, string cellText)
+        => string.IsNullOrWhiteSpace(filter)
+        || cellText.Contains(filter.Trim(), StringComparison.OrdinalIgnoreCase);
 }

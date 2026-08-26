@@ -106,6 +106,13 @@ public partial class SalesReturnWindow : Window
 
             textBox.Text = typedChar;
             textBox.CaretIndex = textBox.Text.Length;
+            // Bắt buộc focus tường minh vào đúng TextBox vừa seed — DataGridCell.BeginEdit() có thể
+            // đã chạy focus-on-edit mặc định TRƯỚC KHI PART_EditableTextBox tồn tại (mới Loaded xong
+            // ở đây), nên có thể focus rơi vào ComboBox cha thay vì TextBox con. Gõ tiếng Việt qua bộ
+            // gõ hay gửi dồn backspace+retype để ghép dấu — nếu bàn phím không đúng focus, các
+            // keystroke ghép dấu tiếp theo bị lạc, vỡ cả từ.
+            textBox.Focus();
+            Keyboard.Focus(textBox);
             RestoreTypedTextDeferred(textBox, typedChar);
         }
 

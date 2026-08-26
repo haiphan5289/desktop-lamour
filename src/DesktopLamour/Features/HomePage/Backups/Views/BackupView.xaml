@@ -96,68 +96,79 @@
                                         Command="{Binding OpenDirectoryCommand}"/>
                 </Grid>
 
+                <!-- Mỗi cụm label + control liên quan nằm chung 1 StackPanel để WrapPanel chỉ
+                     xuống dòng giữa các cụm, không tách rời label khỏi control/đơn vị của nó khi
+                     thu hẹp cửa sổ. -->
                 <WrapPanel Orientation="Horizontal">
-                    <CheckBox IsChecked="{Binding IsScheduleEnabled, Mode=TwoWay}"
-                              VerticalAlignment="Center"
-                              Margin="0,0,8,0"/>
-                    <controls:AppLabel Text="Bật backup hàng ngày lúc"
-                                       Style="{StaticResource AppTypography.BodySection}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,8,0"/>
-                    <controls:AppLabel Text="Giờ"
-                                       Style="{StaticResource AppTypography.BodyCaption}"
-                                       Foreground="{StaticResource AppColor.TextSecondary}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,4,0"/>
-                    <controls:AppTextField Text="{Binding ScheduleHour, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                           Width="90"
-                                           TextAlignment="Center"
+                    <StackPanel Orientation="Horizontal" Margin="0,0,8,8">
+                        <CheckBox IsChecked="{Binding IsScheduleEnabled, Mode=TwoWay}"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,8,0"/>
+                        <controls:AppLabel Text="Bật backup hàng ngày lúc"
+                                           Style="{StaticResource AppTypography.BodySection}"
+                                           VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,20,8">
+                        <controls:AppLabel Text="Giờ"
+                                           Style="{StaticResource AppTypography.BodyCaption}"
+                                           Foreground="{StaticResource AppColor.TextSecondary}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,4,0"/>
+                        <controls:AppTextField Text="{Binding ScheduleHour, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                               Width="90"
+                                               TextAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,6,0"/>
+                        <controls:AppLabel Text=":"
+                                           Style="{StaticResource AppTypography.LabelSection}"
                                            VerticalAlignment="Center"
                                            Margin="0,0,6,0"/>
-                    <controls:AppLabel Text=":"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,6,0"/>
-                    <controls:AppLabel Text="Phút"
-                                       Style="{StaticResource AppTypography.BodyCaption}"
-                                       Foreground="{StaticResource AppColor.TextSecondary}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,4,0"/>
-                    <controls:AppTextField Text="{Binding ScheduleMinute, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                           Width="90"
-                                           TextAlignment="Center"
+                        <controls:AppLabel Text="Phút"
+                                           Style="{StaticResource AppTypography.BodyCaption}"
+                                           Foreground="{StaticResource AppColor.TextSecondary}"
                                            VerticalAlignment="Center"
-                                           Margin="0,0,16,0"/>
-                    <controls:AppLabel Text="Chạy mỗi"
-                                       Style="{StaticResource AppTypography.BodySection}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,8,0"/>
-                    <controls:AppTextField Text="{Binding ScheduleIntervalDays, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                           Width="90"
-                                           TextAlignment="Center"
+                                           Margin="0,0,4,0"/>
+                        <controls:AppTextField Text="{Binding ScheduleMinute, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                               Width="90"
+                                               TextAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,20,8">
+                        <controls:AppLabel Text="Chạy mỗi"
+                                           Style="{StaticResource AppTypography.BodySection}"
                                            VerticalAlignment="Center"
                                            Margin="0,0,8,0"/>
-                    <controls:AppLabel Text="ngày/lần"
-                                       Style="{StaticResource AppTypography.BodySection}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,20,0"/>
-                    <controls:AppLabel Text="Giữ tối đa"
-                                       Style="{StaticResource AppTypography.BodySection}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,8,0"/>
-                    <controls:AppTextField Text="{Binding ScheduleRetentionDays, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                           Width="90"
-                                           TextAlignment="Center"
+                        <controls:AppTextField Text="{Binding ScheduleIntervalDays, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                               Width="90"
+                                               TextAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,8,0"/>
+                        <controls:AppLabel Text="ngày/lần"
+                                           Style="{StaticResource AppTypography.BodySection}"
+                                           VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,16,8">
+                        <controls:AppLabel Text="Giữ tối đa"
+                                           Style="{StaticResource AppTypography.BodySection}"
                                            VerticalAlignment="Center"
                                            Margin="0,0,8,0"/>
-                    <controls:AppLabel Text="ngày"
-                                       Style="{StaticResource AppTypography.BodySection}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,16,0"/>
+                        <controls:AppTextField Text="{Binding ScheduleRetentionDays, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                               Width="90"
+                                               TextAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,8,0"/>
+                        <controls:AppLabel Text="ngày"
+                                           Style="{StaticResource AppTypography.BodySection}"
+                                           VerticalAlignment="Center"/>
+                    </StackPanel>
+
                     <controls:AppButton Content="💾 Lưu cấu hình"
                                         Style="{StaticResource AppButton.Secondary.Medium}"
                                         Command="{Binding SaveScheduleCommand}"
-                                        Margin="0,4,0,0"/>
+                                        Margin="0,4,0,8"/>
                 </WrapPanel>
                 <controls:AppLabel Text="{Binding ScheduleLastRunAt, StringFormat='Lần chạy gần nhất: dd/MM/yyyy HH:mm'}"
                                    Style="{StaticResource AppTypography.BodyCaption}"

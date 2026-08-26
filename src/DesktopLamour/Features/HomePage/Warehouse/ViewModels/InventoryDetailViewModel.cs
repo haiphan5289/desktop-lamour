@@ -1,5 +1,6 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -12,6 +13,7 @@ using DesktopLamour.Features.HomePage.Warehouse.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Warehouse.Domain.Models;
 using DesktopLamour.Features.HomePage.Warehouse.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Warehouse.Views;
+using DesktopLamour.Shared.Models;
 using Microsoft.Extensions.Logging;
 
 namespace DesktopLamour.Features.HomePage.Warehouse.ViewModels;
@@ -41,7 +43,44 @@ public partial class InventoryDetailViewModel : ViewModelBase, INavigationParame
     [ObservableProperty] private int      _closingQty;
     [ObservableProperty] private decimal  _closingValue;
 
+    // ── Per-column filter row, embedded directly in each header (no popup) ─────
+    // Text columns: plain textbox, case-insensitive Contains against the cell's displayed text.
+    // Date/numeric columns: an operator combo (=, ≤, ...) + a typed value, shown side by side.
+    // Same pattern as SalesOrderReportDetailViewModel — see Shared/Models/ColumnFilterModels.cs.
+    [ObservableProperty] private string _filterDocumentNumber = string.Empty;
+    [ObservableProperty] private string _filterDescription    = string.Empty;
+    [ObservableProperty] private string _filterUnit           = string.Empty;
+
+    partial void OnFilterDocumentNumberChanged(string value) => ApplyFilters();
+    partial void OnFilterDescriptionChanged(string value)    => ApplyFilters();
+    partial void OnFilterUnitChanged(string value)           => ApplyFilters();
+
+    public DateColumnFilter AccountingDateFilter { get; } = new();
+    public DateColumnFilter DocumentDateFilter   { get; } = new();
+
+    public NumericColumnFilter ImportQtyFilter    { get; } = new();
+    public NumericColumnFilter ImportValueFilter  { get; } = new();
+    public NumericColumnFilter ExportQtyFilter    { get; } = new();
+    public NumericColumnFilter ExportValueFilter  { get; } = new();
+    public NumericColumnFilter RunningQtyFilter   { get; } = new();
+    public NumericColumnFilter RunningValueFilter { get; } = new();
+
+    private void WireColumnFilters()
+    {
+        AccountingDateFilter.Changed = ApplyFilters;
+        DocumentDateFilter.Changed   = ApplyFilters;
+        ImportQtyFilter.Changed      = ApplyFilters;
+        ImportValueFilter.Changed    = ApplyFilters;
+        ExportQtyFilter.Changed      = ApplyFilters;
+        ExportValueFilter.Changed    = ApplyFilters;
+        RunningQtyFilter.Changed     = ApplyFilters;
+        RunningValueFilter.Changed   = ApplyFilters;
+    }
+
     public ObservableCollection<InventoryDetailLine> Lines { get; } = new();
+
+    // Full unfiltered dataset from the last LoadAsync — Lines is derived from this via ApplyFilters.
+    private List<InventoryDetailLine> _allItems = new();
 
     private InventoryDetailFilter? _filter;
 
@@ -63,6 +102,8 @@ public partial class InventoryDetailViewModel : ViewModelBase, INavigationParame
         _printWindowFactory  = printWindowFactory;
         _detailWindowFactory = detailWindowFactory;
         _logger              = logger;
+
+        WireColumnFilters();
     }
 
     public void OnNavigatedTo(object? parameter)
@@ -100,19 +141,21 @@ public partial class InventoryDetailViewModel : ViewModelBase, INavigationParame
                 DateOnly.FromDateTime(filter.ToDate),
                 filter.WarehouseIds);
 
-            Lines.Clear();
             if (detail is not null)
             {
-                foreach (var line in detail.Lines)
-                    Lines.Add(line);
+                _allItems = detail.Lines.ToList();
 
                 OpeningQty   = detail.OpeningQty;
                 OpeningValue = detail.OpeningValue;
                 ClosingQty   = detail.ClosingQty;
                 ClosingValue = detail.ClosingValue;
             }
+            else
+            {
+                _allItems = new List<InventoryDetailLine>();
+            }
 
-            HasLines = Lines.Count > 0;
+            ApplyFilters();
         }
         catch (Exception ex)
         {
@@ -121,6 +164,33 @@ public partial class InventoryDetailViewModel : ViewModelBase, INavigationParame
         }
         finally { IsLoading = false; }
     }
+
+    // Re-derives Lines from _allItems using the active column filters.
+    private void ApplyFilters()
+    {
+        Lines.Clear();
+        foreach (var item in _allItems.Where(MatchesAllFilters))
+            Lines.Add(item);
+
+        HasLines = Lines.Count > 0;
+    }
+
+    private bool MatchesAllFilters(InventoryDetailLine item)
+        => AccountingDateFilter.Matches(item.AccountingDate)
+        && DocumentDateFilter.Matches(item.DocumentDate)
+        && Matches(FilterDocumentNumber, item.DocumentNumber)
+        && Matches(FilterDescription, item.Description ?? string.Empty)
+        && Matches(FilterUnit, item.Unit)
+        && ImportQtyFilter.Matches(item.ImportQty)
+        && ImportValueFilter.Matches(item.ImportValue)
+        && ExportQtyFilter.Matches(item.ExportQty)
+        && ExportValueFilter.Matches(item.ExportValue)
+        && RunningQtyFilter.Matches(item.RunningQty)
+        && RunningValueFilter.Matches(item.RunningValue);
+
+    private static bool Matches(string filter, string cellText)
+        => string.IsNullOrWhiteSpace(filter)
+        || cellText.Contains(filter.Trim(), StringComparison.OrdinalIgnoreCase);
 
     [RelayCommand]
     private void GoBack() => _navigationService.GoBack();

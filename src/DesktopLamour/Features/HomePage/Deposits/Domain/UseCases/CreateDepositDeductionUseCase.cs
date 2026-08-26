@@ -10,6 +10,6 @@ public sealed class CreateDepositDeductionUseCase : ICreateDepositDeductionUseCa
 
     public CreateDepositDeductionUseCase(IDepositDeductionService service) => _service = service;
 
-    public Task<DepositDeductionResponseDto> ExecuteAsync(CreateDepositDeductionRequestDto request, CancellationToken ct = default)
+    public Task<IEnumerable<DepositDeductionResponseDto>> ExecuteAsync(CreateDepositDeductionRequestDto request, CancellationToken ct = default)
         => _service.CreateAsync(request, ct);
 }

@@ -289,25 +289,32 @@ public partial class SalesOrderViewModel : ViewModelBase
             return;
         }
 
-        if (Lines.Count(l => !l.IsDepositDeductionRow && l.ProductId > 0) == 0)
+        // Chứng từ hợp lệ nếu có ít nhất 1 mặt hàng thật HOẶC 1 dòng Trừ cọc có ý định trừ (chứng
+        // từ "chỉ trừ cọc", không kèm sản phẩm — dùng khi cần số chứng từ dạng XK cho lần trừ đó
+        // thay vì số TC từ màn Đặt Cọc/Trừ Cọc riêng). BE (CreateSalesOrderUseCase) đã bỏ ràng buộc
+        // "ít nhất 1 dòng" tương ứng — validate ở đây là chốt chặn duy nhất.
+        var hasProductLine = Lines.Any(l => !l.IsDepositDeductionRow && l.ProductId > 0);
+        var hasDepositLine = Lines.Any(l => l.IsDepositDeductionRow && l.Amount != 0);
+        if (!hasProductLine && !hasDepositLine)
         {
             HasError     = true;
-            ErrorMessage = "Vui lòng nhập ít nhất một mặt hàng.";
+            ErrorMessage = "Vui lòng nhập ít nhất một mặt hàng hoặc chọn Trừ cọc.";
             return;
         }
 
-        // Dòng Trừ cọc chỉ được coi là "có ý định trừ" khi user đã chọn cọc VÀ nhập số tiền
+        // Dòng Trừ cọc chỉ được coi là "có ý định trừ" khi user đã chọn "Trừ cọc" VÀ nhập số tiền
         // (Amount != 0) — nếu dòng tự động thêm nhưng user bỏ trống thì bỏ qua, không lỗi.
-        var depositLine = Lines.FirstOrDefault(l =>
-            l.IsDepositDeductionRow && l.LinkedDeposit is not null && l.Amount != 0);
+        var depositLine = Lines.FirstOrDefault(l => l.IsDepositDeductionRow && l.Amount != 0);
 
+        // Validate tạm ở client theo AvailableDepositBalance chụp lúc chọn "Trừ cọc" — BE mới là
+        // nơi quyết định thật (tự phân bổ FIFO qua nhiều Deposit, xem CreateDepositDeductionUseCase).
         if (depositLine is not null)
         {
             var deductAmount = Math.Abs(depositLine.Amount);
-            if (deductAmount > depositLine.LinkedDeposit!.RemainingBalance)
+            if (deductAmount > depositLine.AvailableDepositBalance)
             {
                 HasError     = true;
-                ErrorMessage = "Số tiền trừ cọc vượt quá số dư còn lại của cọc đã chọn.";
+                ErrorMessage = "Số tiền trừ cọc vượt quá tổng số dư cọc còn lại của khách hàng.";
                 return;
             }
         }
@@ -336,7 +343,6 @@ public partial class SalesOrderViewModel : ViewModelBase
                 {
                     await _createDepositDeduction.ExecuteAsync(new CreateDepositDeductionRequestDto
                     {
-                        DepositId      = depositLine.LinkedDeposit!.Id,
                         SalesOrderId   = result.Id,
                         Amount         = Math.Abs(depositLine.Amount),
                         AccountingDate = DateTime.SpecifyKind(AccountingDate.Date, DateTimeKind.Unspecified),
@@ -491,15 +497,15 @@ public partial class SalesOrderViewModel : ViewModelBase
                     Warehouses.FirstOrDefault(w => w.Code == DefaultWarehouseCode) ?? Warehouses.FirstOrDefault());
 
             // Vừa chọn "Trừ cọc" cho dòng này (Thành tiền còn 0, chưa gõ tay) — gợi ý sẵn số tiền
-            // trừ = min(số dư còn lại của cọc, tổng tiền chứng từ đang cần thanh toán). User vẫn
-            // sửa lại được nếu muốn trừ ít hơn số gợi ý. Bắt ở LinkedDeposit (không phải
+            // trừ = min(tổng số dư cọc khả dụng, tổng tiền chứng từ đang cần thanh toán). User vẫn
+            // sửa lại được nếu muốn trừ ít hơn số gợi ý. Bắt ở AvailableDepositBalance (không phải
             // SelectedProduct) vì SelectedProduct phát PropertyChanged NGAY khi gán, trước khi
-            // nhánh DepositProductPickerItem trong setter kịp gán LinkedDeposit.
-            if (e.PropertyName == nameof(SalesOrderLineItem.LinkedDeposit)
-                && line.IsDepositDeductionRow && line.LinkedDeposit is not null && line.Amount == 0)
+            // nhánh TruCocPickerItem trong setter kịp gán AvailableDepositBalance.
+            if (e.PropertyName == nameof(SalesOrderLineItem.AvailableDepositBalance)
+                && line.IsDepositDeductionRow && line.AvailableDepositBalance > 0 && line.Amount == 0)
             {
                 var amountDue = TotalPayment + TotalTaxAmount;
-                line.Amount = Math.Max(0, Math.Min(line.LinkedDeposit.RemainingBalance, amountDue));
+                line.Amount = Math.Max(0, Math.Min(line.AvailableDepositBalance, amountDue));
             }
         };
     }
@@ -568,14 +574,17 @@ public partial class SalesOrderViewModel : ViewModelBase
     {
         try
         {
-            var deposits = await _getDepositsByCustomer.ExecuteAsync(customerId);
+            // Loại cọc do chính chứng từ đang sửa tạo ra (SourceSalesOrderId == CurrentOrder.Id) —
+            // không cho 1 đơn tự trừ cọc của chính nó. CurrentOrder null khi tạo đơn mới → không lọc.
+            var deposits = await _getDepositsByCustomer.ExecuteAsync(customerId, CurrentOrder?.Id);
             AvailableDeposits = deposits.ToList().AsReadOnly();
             OnPropertyChanged(nameof(AvailableDeposits));
 
-            // Mỗi cọc còn số dư trở thành 1 "sản phẩm ảo" chọn được trong dropdown Mã hàng/Tên hàng.
-            _depositPickerItems = AvailableDeposits
-                .Select(d => (ISearchableItem)new DepositProductPickerItem(d))
-                .ToList();
+            // Chỉ 1 item "Trừ cọc" chung trong dropdown Mã hàng/Tên hàng — không cho chọn từng cọc
+            // riêng lẻ nữa. DisplayText gộp sẵn tổng số dư còn lại; BE tự phân bổ FIFO khi Ghi sổ.
+            _depositPickerItems = AvailableDeposits.Count > 0
+                ? new List<ISearchableItem> { new TruCocPickerItem(AvailableDeposits.Sum(d => d.RemainingBalance)) }
+                : new List<ISearchableItem>();
             ResetProductFilter();
         }
         catch (Exception ex)
@@ -678,16 +687,19 @@ public partial class SalesOrderViewModel : ViewModelBase
                 customerId: null, employeeId: null, salesOrderId: CurrentOrder.Id,
                 fromDate: null, toDate: null, ct);
 
-            foreach (var d in deductions)
+            // 1 lần trừ cọc trên đơn này có thể đã được BE phân bổ FIFO qua nhiều Deposit → nhiều
+            // DepositDeduction record. Gộp lại thành đúng 1 dòng hiển thị (khớp UI "1 chỗ trừ cọc").
+            var deductionList = deductions.ToList();
+            if (deductionList.Count > 0)
             {
                 var lockedLine = new SalesOrderLineItem
                 {
                     IsDepositDeductionRow = true,
                     IsLocked              = true,
-                    ProductCode           = d.DepositDocumentNumber,
+                    ProductCode           = "",
                     ProductName           = "Trừ cọc",
                 };
-                lockedLine.LoadAmount(-d.Amount, isAmountManual: false);
+                lockedLine.LoadAmount(-deductionList.Sum(d => d.Amount), isAmountManual: false);
                 Lines.Add(lockedLine);
             }
         }
@@ -835,13 +847,13 @@ public partial class SalesOrderViewModel : ViewModelBase
     // ── Print ─────────────────────────────────────────────────────────────────
     // In được ngay khi đã có ít nhất 1 dòng đã chọn sản phẩm — không bắt buộc phải Ghi sổ trước
     // (khác với Treo, vốn chỉ áp dụng cho chứng từ đã tồn tại trên BE).
-    private bool CanPrint => Lines.Any(l => l.ProductId > 0);
+    private bool CanPrint => Lines.Any(l => l.ProductId > 0) || Lines.Any(l => l.IsDepositDeductionRow && l.Amount != 0);
 
     [RelayCommand(CanExecute = nameof(CanPrint))]
     private void Print()
     {
         if (!CanPrint) return;
-        var depositLine = Lines.FirstOrDefault(l => l.IsDepositDeductionRow && l.LinkedDeposit is not null && l.Amount != 0);
+        var depositLine = Lines.FirstOrDefault(l => l.IsDepositDeductionRow && l.Amount != 0);
         ShowPrintPreview(BuildPreviewOrderDto(), depositLine is null ? 0m : Math.Abs(depositLine.Amount));
     }
 

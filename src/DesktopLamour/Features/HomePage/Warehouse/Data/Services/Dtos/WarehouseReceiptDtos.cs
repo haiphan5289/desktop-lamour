@@ -80,3 +80,17 @@ public class CreateWarehouseReceiptRequestDto
     [JsonPropertyName("reference")]        public string?  Reference      { get; set; }
     [JsonPropertyName("lines")]            public List<CreateWarehouseReceiptLineDto> Lines { get; set; } = new();
 }
+
+public class UpdateWarehouseReceiptRequestDto
+{
+    [JsonPropertyName("receipt_type")]     public int      ReceiptType    { get; set; }
+    [JsonPropertyName("customer_id")]      public int?     CustomerId     { get; set; }
+    [JsonPropertyName("supplier_id")]      public int?     SupplierId     { get; set; }
+    [JsonPropertyName("employee_id")]      public int?     EmployeeId     { get; set; }
+    [JsonPropertyName("accounting_date")]  public DateTime AccountingDate { get; set; }
+    [JsonPropertyName("document_date")]    public DateTime DocumentDate   { get; set; }
+    [JsonPropertyName("description")]      public string?  Description    { get; set; }
+    [JsonPropertyName("delivery_person")]  public string?  DeliveryPerson { get; set; }
+    [JsonPropertyName("reference")]        public string?  Reference      { get; set; }
+    [JsonPropertyName("lines")]            public List<CreateWarehouseReceiptLineDto> Lines { get; set; } = new();
+}

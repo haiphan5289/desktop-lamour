@@ -10,6 +10,6 @@ public sealed class GetDepositsByCustomerUseCase : IGetDepositsByCustomerUseCase
 
     public GetDepositsByCustomerUseCase(IDepositService service) => _service = service;
 
-    public Task<IEnumerable<DepositResponseDto>> ExecuteAsync(int customerId, CancellationToken ct = default)
-        => _service.GetByCustomerAsync(customerId, ct);
+    public Task<IEnumerable<DepositResponseDto>> ExecuteAsync(int customerId, int? excludeSalesOrderId = null, CancellationToken ct = default)
+        => _service.GetByCustomerAsync(customerId, excludeSalesOrderId, ct);
 }

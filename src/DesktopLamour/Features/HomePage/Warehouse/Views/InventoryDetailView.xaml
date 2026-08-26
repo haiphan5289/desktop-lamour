@@ -2,6 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+             xmlns:models="clr-namespace:DesktopLamour.Shared.Models"
              Background="{StaticResource AppColor.BackgroundSecondary}">
 
     <UserControl.Resources>
@@ -65,14 +66,14 @@
                 BorderThickness="1"
                 CornerRadius="8">
             <StackPanel Orientation="Horizontal">
-                <controls:AppLabel Text="Số dư đầu kỳ:" Style="{StaticResource AppTypography.BodyLabel}" Margin="0,0,8,0"/>
-                <controls:AppLabel Text="{Binding OpeningQty, StringFormat=\{0:N0\}}" Style="{StaticResource AppTypography.BodyLabel}" Margin="0,0,4,0"/>
+                <controls:AppLabel Text="Số dư đầu kỳ:" Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,8,0"/>
+                <controls:AppLabel Text="{Binding OpeningQty, StringFormat=\{0:N0\}}" Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,4,0"/>
                 <controls:AppLabel Text="(" Style="{StaticResource AppTypography.BodyCaption}"/>
                 <controls:AppLabel Text="{Binding OpeningValue, StringFormat=\{0:N0\}}" Style="{StaticResource AppTypography.BodyCaption}"/>
                 <controls:AppLabel Text=")" Style="{StaticResource AppTypography.BodyCaption}" Margin="0,0,24,0"/>
 
-                <controls:AppLabel Text="Tồn cuối kỳ:" Style="{StaticResource AppTypography.BodyLabel}" Margin="0,0,8,0"/>
-                <controls:AppLabel Text="{Binding ClosingQty, StringFormat=\{0:N0\}}" Style="{StaticResource AppTypography.BodyLabel}" Margin="0,0,4,0"/>
+                <controls:AppLabel Text="Tồn cuối kỳ:" Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,8,0"/>
+                <controls:AppLabel Text="{Binding ClosingQty, StringFormat=\{0:N0\}}" Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,4,0"/>
                 <controls:AppLabel Text="(" Style="{StaticResource AppTypography.BodyCaption}"/>
                 <controls:AppLabel Text="{Binding ClosingValue, StringFormat=\{0:N0\}}" Style="{StaticResource AppTypography.BodyCaption}"/>
                 <controls:AppLabel Text=")" Style="{StaticResource AppTypography.BodyCaption}"/>
@@ -111,28 +112,329 @@
                       IsReadOnly="True"
                       CanUserAddRows="False"
                       CanUserDeleteRows="False"
+                      CanUserSortColumns="False"
                       SelectionMode="Single"
                       HeadersVisibility="Column"
+                      ColumnHeaderHeight="56"
                       GridLinesVisibility="Horizontal"
                       BorderBrush="{StaticResource AppColor.BorderThin}"
                       BorderThickness="1"
                       RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
                       MouseDoubleClick="LinesDataGrid_MouseDoubleClick"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
                       Visibility="{Binding HasLines, Converter={StaticResource BoolToVisibilityConverter}}">
+                <!-- DataGridColumnHeader centers its content by default — without this, the filter
+                     row (StackPanel/Grid + AppTextField/ComboBox, all set to Stretch) still just
+                     sizes to its natural width and sits centered instead of filling the column. -->
+                <DataGrid.ColumnHeaderStyle>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    </Style>
+                </DataGrid.ColumnHeaderStyle>
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Ngày hạch toán" Binding="{Binding AccountingDate, StringFormat=dd/MM/yyyy}" Width="110"/>
-                    <DataGridTextColumn Header="Ngày chứng từ"  Binding="{Binding DocumentDate, StringFormat=dd/MM/yyyy}"   Width="110"/>
-                    <DataGridTextColumn Header="Số chứng từ"    Binding="{Binding DocumentNumber}" Width="110" ElementStyle="{StaticResource LinkCell}"/>
-                    <DataGridTextColumn Header="Diễn giải"      Binding="{Binding Description}"    Width="*"/>
-                    <DataGridTextColumn Header="ĐVT"            Binding="{Binding Unit}"            Width="60"/>
+                    <!-- Ngày hạch toán — date column: operator combo (=, ≤, ≥...) + DatePicker, inline -->
+                    <DataGridTextColumn Header="Ngày hạch toán" Binding="{Binding AccountingDate, StringFormat=dd/MM/yyyy}" Width="120">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Ngày hạch toán" FontWeight="SemiBold"/>
+                                    <Grid Margin="0,4,4,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0"
+                                                  ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
+                                                  SelectedItem="{Binding DataContext.AccountingDateFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
+                                                               ToolTip="{Binding Converter={StaticResource FilterOperatorLabelConverter}}"
+                                                               HorizontalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <DatePicker Grid.Column="1" HorizontalAlignment="Stretch"
+                                                    SelectedDate="{Binding DataContext.AccountingDateFilter.Value, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                    FontSize="10" Height="22"/>
+                                    </Grid>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
 
-                    <DataGridTextColumn Header="SL Nhập"    Binding="{Binding ImportQty, StringFormat=\{0:N0\}}"    Width="80" ElementStyle="{StaticResource CellNumber}"/>
-                    <DataGridTextColumn Header="Giá trị Nhập" Binding="{Binding ImportValue, StringFormat=\{0:N0\}}" Width="110" ElementStyle="{StaticResource CellNumber}"/>
-                    <DataGridTextColumn Header="SL Xuất"    Binding="{Binding ExportQty, StringFormat=\{0:N0\}}"    Width="80" ElementStyle="{StaticResource CellNumber}"/>
-                    <DataGridTextColumn Header="Giá trị Xuất" Binding="{Binding ExportValue, StringFormat=\{0:N0\}}" Width="110" ElementStyle="{StaticResource CellNumber}"/>
-                    <DataGridTextColumn Header="SL Tồn"     Binding="{Binding RunningQty, StringFormat=\{0:N0\}}"    Width="80" ElementStyle="{StaticResource CellNumber}"/>
-                    <DataGridTextColumn Header="Giá trị Tồn"  Binding="{Binding RunningValue, StringFormat=\{0:N0\}}" Width="110" ElementStyle="{StaticResource CellNumber}"/>
+                    <!-- Ngày chứng từ — date column: operator combo (=, ≤, ≥...) + DatePicker, inline -->
+                    <DataGridTextColumn Header="Ngày chứng từ" Binding="{Binding DocumentDate, StringFormat=dd/MM/yyyy}" Width="120">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Ngày chứng từ" FontWeight="SemiBold"/>
+                                    <Grid Margin="0,4,4,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0"
+                                                  ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
+                                                  SelectedItem="{Binding DataContext.DocumentDateFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
+                                                               ToolTip="{Binding Converter={StaticResource FilterOperatorLabelConverter}}"
+                                                               HorizontalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <DatePicker Grid.Column="1" HorizontalAlignment="Stretch"
+                                                    SelectedDate="{Binding DataContext.DocumentDateFilter.Value, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                    FontSize="10" Height="22"/>
+                                    </Grid>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- Số chứng từ — CLICKABLE LINK column (ElementStyle="LinkCell" + MouseDoubleClick
+                         handler in code-behind opens the source document). Only the header gains a
+                         plain Contains filter here — the cell template/click behavior is untouched. -->
+                    <DataGridTextColumn Header="Số chứng từ" Binding="{Binding DocumentNumber}" Width="120" ElementStyle="{StaticResource LinkCell}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Số chứng từ" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                                            Text="{Binding DataContext.FilterDocumentNumber, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- Diễn giải — text column: plain Contains filter, inline -->
+                    <!-- Fixed width (not "*") — mixing a star column with HorizontalScrollBarVisibility="Auto"
+                         is a known WPF DataGrid quirk that clips trailing columns instead of scrolling to them. -->
+                    <DataGridTextColumn Header="Diễn giải" Binding="{Binding Description}" Width="250">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Diễn giải" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                                            Text="{Binding DataContext.FilterDescription, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- ĐVT — text column: plain Contains filter, inline -->
+                    <DataGridTextColumn Header="ĐVT" Binding="{Binding Unit}" Width="70">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="ĐVT" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                                            Text="{Binding DataContext.FilterUnit, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- SL Nhập — numeric column: operator combo (=, ≤, ≥...) + value box, inline -->
+                    <DataGridTextColumn Header="SL Nhập" Binding="{Binding ImportQty, StringFormat=\{0:N0\}}" Width="90" ElementStyle="{StaticResource CellNumber}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="SL Nhập" FontWeight="SemiBold" TextAlignment="Right"/>
+                                    <Grid Margin="0,4,4,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0"
+                                                  ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
+                                                  SelectedItem="{Binding DataContext.ImportQtyFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
+                                                               ToolTip="{Binding Converter={StaticResource FilterOperatorLabelConverter}}"
+                                                               HorizontalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <controls:AppTextField Grid.Column="1" Placeholder="Giá trị" TextAlignment="Right" HorizontalAlignment="Stretch"
+                                                                Text="{Binding DataContext.ImportQtyFilter.ValueText, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                                FontWeight="Normal" FontSize="11" Height="22"/>
+                                    </Grid>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- Giá trị Nhập — numeric column: operator combo (=, ≤, ≥...) + value box, inline -->
+                    <DataGridTextColumn Header="Giá trị Nhập" Binding="{Binding ImportValue, StringFormat=\{0:N0\}}" Width="120" ElementStyle="{StaticResource CellNumber}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Giá trị Nhập" FontWeight="SemiBold" TextAlignment="Right"/>
+                                    <Grid Margin="0,4,4,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0"
+                                                  ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
+                                                  SelectedItem="{Binding DataContext.ImportValueFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
+                                                               ToolTip="{Binding Converter={StaticResource FilterOperatorLabelConverter}}"
+                                                               HorizontalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <controls:AppTextField Grid.Column="1" Placeholder="Giá trị" TextAlignment="Right" HorizontalAlignment="Stretch"
+                                                                Text="{Binding DataContext.ImportValueFilter.ValueText, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                                FontWeight="Normal" FontSize="11" Height="22"/>
+                                    </Grid>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- SL Xuất — numeric column: operator combo (=, ≤, ≥...) + value box, inline -->
+                    <DataGridTextColumn Header="SL Xuất" Binding="{Binding ExportQty, StringFormat=\{0:N0\}}" Width="90" ElementStyle="{StaticResource CellNumber}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="SL Xuất" FontWeight="SemiBold" TextAlignment="Right"/>
+                                    <Grid Margin="0,4,4,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0"
+                                                  ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
+                                                  SelectedItem="{Binding DataContext.ExportQtyFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
+                                                               ToolTip="{Binding Converter={StaticResource FilterOperatorLabelConverter}}"
+                                                               HorizontalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <controls:AppTextField Grid.Column="1" Placeholder="Giá trị" TextAlignment="Right" HorizontalAlignment="Stretch"
+                                                                Text="{Binding DataContext.ExportQtyFilter.ValueText, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                                FontWeight="Normal" FontSize="11" Height="22"/>
+                                    </Grid>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- Giá trị Xuất — numeric column: operator combo (=, ≤, ≥...) + value box, inline -->
+                    <DataGridTextColumn Header="Giá trị Xuất" Binding="{Binding ExportValue, StringFormat=\{0:N0\}}" Width="120" ElementStyle="{StaticResource CellNumber}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Giá trị Xuất" FontWeight="SemiBold" TextAlignment="Right"/>
+                                    <Grid Margin="0,4,4,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0"
+                                                  ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
+                                                  SelectedItem="{Binding DataContext.ExportValueFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
+                                                               ToolTip="{Binding Converter={StaticResource FilterOperatorLabelConverter}}"
+                                                               HorizontalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <controls:AppTextField Grid.Column="1" Placeholder="Giá trị" TextAlignment="Right" HorizontalAlignment="Stretch"
+                                                                Text="{Binding DataContext.ExportValueFilter.ValueText, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                                FontWeight="Normal" FontSize="11" Height="22"/>
+                                    </Grid>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- SL Tồn — numeric column: operator combo (=, ≤, ≥...) + value box, inline -->
+                    <DataGridTextColumn Header="SL Tồn" Binding="{Binding RunningQty, StringFormat=\{0:N0\}}" Width="90" ElementStyle="{StaticResource CellNumber}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="SL Tồn" FontWeight="SemiBold" TextAlignment="Right"/>
+                                    <Grid Margin="0,4,4,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0"
+                                                  ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
+                                                  SelectedItem="{Binding DataContext.RunningQtyFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
+                                                               ToolTip="{Binding Converter={StaticResource FilterOperatorLabelConverter}}"
+                                                               HorizontalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <controls:AppTextField Grid.Column="1" Placeholder="Giá trị" TextAlignment="Right" HorizontalAlignment="Stretch"
+                                                                Text="{Binding DataContext.RunningQtyFilter.ValueText, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                                FontWeight="Normal" FontSize="11" Height="22"/>
+                                    </Grid>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- Giá trị Tồn — numeric column: operator combo (=, ≤, ≥...) + value box, inline -->
+                    <DataGridTextColumn Header="Giá trị Tồn" Binding="{Binding RunningValue, StringFormat=\{0:N0\}}" Width="120" ElementStyle="{StaticResource CellNumber}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Giá trị Tồn" FontWeight="SemiBold" TextAlignment="Right"/>
+                                    <Grid Margin="0,4,4,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0"
+                                                  ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
+                                                  SelectedItem="{Binding DataContext.RunningValueFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
+                                                               ToolTip="{Binding Converter={StaticResource FilterOperatorLabelConverter}}"
+                                                               HorizontalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <controls:AppTextField Grid.Column="1" Placeholder="Giá trị" TextAlignment="Right" HorizontalAlignment="Stretch"
+                                                                Text="{Binding DataContext.RunningValueFilter.ValueText, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                                FontWeight="Normal" FontSize="11" Height="22"/>
+                                    </Grid>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
                 </DataGrid.Columns>
             </DataGrid>
 

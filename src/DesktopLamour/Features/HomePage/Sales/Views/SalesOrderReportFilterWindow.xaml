@@ -88,14 +88,14 @@
                                VerticalAlignment="Center"/>
             <DatePicker Grid.Row="4" Grid.Column="1"
                         SelectedDate="{Binding FromDate, Mode=TwoWay}"
-                        Height="34" HorizontalAlignment="Stretch"/>
+                        Height="34" HorizontalAlignment="Stretch" VerticalContentAlignment="Center"/>
 
             <controls:AppLabel Grid.Row="4" Grid.Column="3" Text="Đến"
                                Style="{StaticResource AppTypography.LabelSection}"
                                VerticalAlignment="Center"/>
             <DatePicker Grid.Row="4" Grid.Column="4"
                         SelectedDate="{Binding ToDate, Mode=TwoWay}"
-                        Height="34" HorizontalAlignment="Stretch"/>
+                        Height="34" HorizontalAlignment="Stretch" VerticalContentAlignment="Center"/>
 
             <!-- Đơn vị tính / Nhóm VTHH -->
             <controls:AppLabel Grid.Row="6" Grid.Column="0" Text="Đơn vị tính"

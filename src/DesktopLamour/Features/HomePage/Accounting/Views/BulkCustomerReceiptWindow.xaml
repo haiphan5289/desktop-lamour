@@ -40,17 +40,20 @@
                 </Grid.RowDefinitions>
 
                 <controls:AppLabel Grid.Row="0" Grid.Column="0" Text="Ngày hạch toán" VerticalAlignment="Center" Margin="0,0,8,8"/>
-                <DatePicker Grid.Row="0" Grid.Column="1" SelectedDate="{Binding AccountingDate, Mode=TwoWay}" Height="32" Margin="0,0,0,8"/>
+                <DatePicker Grid.Row="0" Grid.Column="1" SelectedDate="{Binding AccountingDate, Mode=TwoWay}" Height="44" VerticalContentAlignment="Center" Margin="0,0,0,8"/>
 
                 <controls:AppLabel Grid.Row="0" Grid.Column="3" Text="Ngày chứng từ" VerticalAlignment="Center" Margin="0,0,8,8"/>
-                <DatePicker Grid.Row="0" Grid.Column="4" SelectedDate="{Binding DocumentDate, Mode=TwoWay}" Height="32" Margin="0,0,0,8"/>
+                <DatePicker Grid.Row="0" Grid.Column="4" SelectedDate="{Binding DocumentDate, Mode=TwoWay}" Height="44" VerticalContentAlignment="Center" Margin="0,0,0,8"/>
 
                 <controls:AppLabel Grid.Row="1" Grid.Column="0" Text="NV thu nợ" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <!-- AppSearchableComboBox nội bộ có FieldBorder cố định Height=44 — set Height nhỏ
+                     hơn ở đây (32) làm phần textfield search bị clip mất, giống lỗi từng gặp ở
+                     SalesView/TongHopTonKhoView/BulkCustomerReceiptSearchWindow. -->
                 <controls:AppSearchableComboBox Grid.Row="1" Grid.Column="1"
                                                 ItemsSource="{Binding Employees}"
                                                 SelectedItem="{Binding SelectedCollectorEmployee, Mode=TwoWay}"
                                                 Placeholder="Chọn nhân viên" IsNullable="True"
-                                                Height="32"/>
+                                                Height="44"/>
 
                 <controls:AppLabel Grid.Row="1" Grid.Column="3" Text="{Binding LineSummary}" VerticalAlignment="Center"/>
             </Grid>
