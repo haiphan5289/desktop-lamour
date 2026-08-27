@@ -444,7 +444,10 @@
                             </DataGridTemplateColumn>
 
                             <!-- Kho — chọn kho xuất hàng cho dòng này -->
-                            <DataGridTemplateColumn Header="Kho" Width="110">
+                            <!-- Dòng Trừ cọc (chọn product mã TruCocProductCode) không cần chọn Kho —
+                                 dòng này bị loại khỏi payload gửi BE (xem BuildCreateRequest/
+                                 BuildUpdateRequest), khoá cùng kiểu với các cột khác của dòng này. -->
+                            <DataGridTemplateColumn Header="Kho" Width="110" CellStyle="{StaticResource DisabledForDepositRow}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding WarehouseName}"
@@ -586,21 +589,16 @@
 
                             <!-- Thành tiền: cho gõ tay để override — dòng tự chuyển sang chế độ thủ công
                                  (BE dùng thẳng giá trị này); sửa lại Đơn giá/SL/CK% sẽ tự tắt chế độ này.
-                                 Bind DisplayAmount (không phải Amount thẳng) — dòng Trừ cọc cần luôn hiện
-                                 số dương như lúc user gõ, dù Amount lưu âm nội bộ để cộng vào GrandTotal. -->
-                            <DataGridTextColumn Header="Thành tiền"
-                                                Binding="{Binding DisplayAmount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=N0}"
-                                                Width="110">
-                                <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="HorizontalAlignment" Value="Right"/>
-                                        <Setter Property="VerticalAlignment"   Value="Center"/>
-                                        <Setter Property="Padding"             Value="0,0,6,0"/>
-                                        <Setter Property="Foreground"          Value="{StaticResource AppColor.TextBrand}"/>
-                                        <Setter Property="FontWeight"          Value="SemiBold"/>
-                                    </Style>
-                                </DataGridTextColumn.ElementStyle>
-                                <DataGridTextColumn.CellStyle>
+                                 Tách CellTemplate (hiển thị)/CellEditingTemplate (đang gõ) thay vì 1
+                                 DataGridTextColumn dùng chung 1 converter cho cả 2: lúc gõ cần format
+                                 dấu chấm phân cách hàng nghìn SỐNG theo từng phím (BlankPreserveConverter
+                                 + PropertyChanged, giống Số lượng/Đơn giá/Tỷ lệ CK% — chỉ chèn ".", an
+                                 toàn); lúc hiển thị (đã rời ô) mới chuyển sang AccountingAmountConverter
+                                 để bọc "(1.814.400)" đỏ cho dòng Trừ cọc (IsNegativeAmount). Gộp chung 1
+                                 converter + UpdateSourceTrigger=PropertyChanged như cũ sẽ lỗi: converter
+                                 chèn thêm ký tự "(" ")" giữa lúc đang gõ làm "-99" bị bung thành "(9)99". -->
+                            <DataGridTemplateColumn Header="Thành tiền" Width="110">
+                                <DataGridTemplateColumn.CellStyle>
                                     <Style TargetType="DataGridCell">
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsPromotion}" Value="True">
@@ -613,8 +611,36 @@
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </DataGridTextColumn.CellStyle>
-                            </DataGridTextColumn>
+                                </DataGridTemplateColumn.CellStyle>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding DisplayAmount, Converter={StaticResource AccountingAmountConverter}, ConverterParameter=N0}"
+                                                   HorizontalAlignment="Right"
+                                                   VerticalAlignment="Center"
+                                                   Padding="0,0,6,0"
+                                                   FontWeight="SemiBold">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsNegativeAmount}" Value="True">
+                                                            <Setter Property="Foreground" Value="{StaticResource AppColor.TextError}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate>
+                                        <TextBox Text="{Binding DisplayAmount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=N0}"
+                                                 TextAlignment="Right"
+                                                 VerticalContentAlignment="Center"
+                                                 Padding="0,0,6,0"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                            </DataGridTemplateColumn>
 
                             <!-- Thuế suất — TaxRate đã là số phần trăm nguyên (5/8/10), KHÔNG phải
                                  phân số 0-1, nên ConverterParameter phải giữ đúng "0\%" (dấu \ để

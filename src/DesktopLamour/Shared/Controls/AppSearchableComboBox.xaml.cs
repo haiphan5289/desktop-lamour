@@ -1,6 +1,8 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 using System.Collections;
 using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -257,18 +259,41 @@ public partial class AppSearchableComboBox : UserControl
         _filtered.Clear();
         if (ItemsSource is null) return;
 
-        var term = query.Trim();
+        // Bỏ dấu trước khi so khớp — user gõ không dấu ("tru", "coc") vẫn cần ra kết quả có dấu
+        // ("Trừ Cọc"). Chỉ "Tr" khớp trước đây vì 2 ký tự đó không dấu nên khớp thẳng; "tru"/"coc"
+        // không khớp vì "ừ"/"ọ" khác hẳn "u"/"o" theo Contains thông thường.
+        var term = RemoveDiacritics(query.Trim());
         foreach (var obj in ItemsSource)
         {
             if (obj is not ISearchableItem item) continue;
             if (string.IsNullOrEmpty(term)
-                || item.Code.Contains(term, StringComparison.OrdinalIgnoreCase)
-                || item.Name.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || RemoveDiacritics(item.Code).Contains(term, StringComparison.OrdinalIgnoreCase)
+                || RemoveDiacritics(item.Name).Contains(term, StringComparison.OrdinalIgnoreCase)
                 || (item.Phone is { Length: > 0 } phone && phone.Contains(term, StringComparison.OrdinalIgnoreCase)))
             {
                 _filtered.Add(item);
             }
         }
+    }
+
+    // Chuẩn hoá bỏ dấu tiếng Việt để filter không phân biệt có dấu/không dấu. FormD tách ký tự có
+    // dấu thành ký tự gốc + dấu kết hợp (NonSpacingMark) rồi loại bỏ dấu — riêng "đ"/"Đ" không tách
+    // được qua FormD (là chữ cái gốc riêng, không phải "d" + dấu) nên phải thay tay.
+    private static string RemoveDiacritics(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+
+        var normalized = text.Normalize(NormalizationForm.FormD);
+        var sb = new StringBuilder(normalized.Length);
+        foreach (var c in normalized)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                sb.Append(c);
+        }
+
+        return sb.ToString()
+            .Replace('đ', 'd').Replace('Đ', 'D')
+            .Normalize(NormalizationForm.FormC);
     }
 
     private void UpdatePlaceholder()

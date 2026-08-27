@@ -143,7 +143,6 @@ public partial class SalesOrderViewModel : ViewModelBase
     public ObservableCollection<ISearchableItem> Products { get; } = new();
     public IReadOnlyList<ISearchableItem> Warehouses { get; private set; } = Array.Empty<ISearchableItem>();
     private readonly List<ISearchableItem> _allProducts = new();
-    private List<ISearchableItem> _depositPickerItems = new();
 
     private string _nextDocumentNumber = "XK00001";
 
@@ -491,16 +490,23 @@ public partial class SalesOrderViewModel : ViewModelBase
         {
             OnLinesOrTotalsChanged();
 
-            if (e.PropertyName == nameof(SalesOrderLineItem.ProductId)
-                && line.ProductId > 0 && line.WarehouseId == 0)
-                line.SetSelectedWarehouseSilent(
-                    Warehouses.FirstOrDefault(w => w.Code == DefaultWarehouseCode) ?? Warehouses.FirstOrDefault());
+            if (e.PropertyName == nameof(SalesOrderLineItem.ProductId) && line.ProductId > 0)
+            {
+                if (line.IsDepositDeductionRow)
+                    // Vừa chọn product "Trừ cọc" (mã SalesOrderLineItem.TruCocProductCode) cho dòng
+                    // này — không auto-fill Kho (dòng này bị loại khỏi payload gửi BE), thay vào đó
+                    // lấy tổng số dư cọc khả dụng của khách hàng đang chọn để gợi ý Thành tiền (bắt ở
+                    // block AvailableDepositBalance bên dưới, giống cách TruCocPickerItem cũ làm qua
+                    // constructor).
+                    line.AvailableDepositBalance = AvailableDeposits.Sum(d => d.RemainingBalance);
+                else if (line.WarehouseId == 0)
+                    line.SetSelectedWarehouseSilent(
+                        Warehouses.FirstOrDefault(w => w.Code == DefaultWarehouseCode) ?? Warehouses.FirstOrDefault());
+            }
 
             // Vừa chọn "Trừ cọc" cho dòng này (Thành tiền còn 0, chưa gõ tay) — gợi ý sẵn số tiền
             // trừ = min(tổng số dư cọc khả dụng, tổng tiền chứng từ đang cần thanh toán). User vẫn
-            // sửa lại được nếu muốn trừ ít hơn số gợi ý. Bắt ở AvailableDepositBalance (không phải
-            // SelectedProduct) vì SelectedProduct phát PropertyChanged NGAY khi gán, trước khi
-            // nhánh TruCocPickerItem trong setter kịp gán AvailableDepositBalance.
+            // sửa lại được nếu muốn trừ ít hơn số gợi ý.
             if (e.PropertyName == nameof(SalesOrderLineItem.AvailableDepositBalance)
                 && line.IsDepositDeductionRow && line.AvailableDepositBalance > 0 && line.Amount == 0)
             {
@@ -546,10 +552,8 @@ public partial class SalesOrderViewModel : ViewModelBase
             _ = LoadAvailableDepositsAsync(value.Id);
         else
         {
-            AvailableDeposits   = Array.Empty<DepositResponseDto>();
-            _depositPickerItems = new List<ISearchableItem>();
+            AvailableDeposits = Array.Empty<DepositResponseDto>();
             OnPropertyChanged(nameof(AvailableDeposits));
-            ResetProductFilter();
         }
     }
 
@@ -579,13 +583,6 @@ public partial class SalesOrderViewModel : ViewModelBase
             var deposits = await _getDepositsByCustomer.ExecuteAsync(customerId, CurrentOrder?.Id);
             AvailableDeposits = deposits.ToList().AsReadOnly();
             OnPropertyChanged(nameof(AvailableDeposits));
-
-            // Chỉ 1 item "Trừ cọc" chung trong dropdown Mã hàng/Tên hàng — không cho chọn từng cọc
-            // riêng lẻ nữa. DisplayText gộp sẵn tổng số dư còn lại; BE tự phân bổ FIFO khi Ghi sổ.
-            _depositPickerItems = AvailableDeposits.Count > 0
-                ? new List<ISearchableItem> { new TruCocPickerItem(AvailableDeposits.Sum(d => d.RemainingBalance)) }
-                : new List<ISearchableItem>();
-            ResetProductFilter();
         }
         catch (Exception ex)
         {
@@ -711,13 +708,14 @@ public partial class SalesOrderViewModel : ViewModelBase
         RecalculateTotals();
     }
 
-    // "Trừ cọc" luôn hiển thị ở đầu danh sách (trước sản phẩm thật) khi khách hàng có cọc khả dụng.
     // AppSearchableComboBox tự lọc theo Code/Name khi user gõ (xem PopulateFiltered) nên Products
-    // chỉ cần giữ đúng danh sách đầy đủ — không cần lọc lại mỗi keystroke như ComboBox cũ.
+    // chỉ cần giữ đúng danh sách đầy đủ — không cần lọc lại mỗi keystroke như ComboBox cũ. Dòng "Trừ
+    // cọc" chọn qua product thật (mã SalesOrderLineItem.TruCocProductCode) nằm sẵn trong _allProducts
+    // như mọi sản phẩm khác — không còn entry ảo chèn riêng vào đầu danh sách.
     public void ResetProductFilter()
     {
         Products.Clear();
-        foreach (var item in _depositPickerItems.Concat(_allProducts))
+        foreach (var item in _allProducts)
             Products.Add(item);
     }
 

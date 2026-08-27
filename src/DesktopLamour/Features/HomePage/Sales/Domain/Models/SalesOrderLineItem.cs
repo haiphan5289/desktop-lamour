@@ -8,6 +8,12 @@ namespace DesktopLamour.Features.HomePage.Sales.Domain.Models;
 
 public class SalesOrderLineItem : INotifyPropertyChanged
 {
+    // Mã sản phẩm THẬT trong catalog đại diện cho dòng "Trừ cọc" (thay cho entry ảo TruCocPickerItem
+    // trước đây) — chọn đúng product này trong picker sẽ biến dòng thành dòng Trừ cọc, y hệt hành vi
+    // cũ. Xác nhận với người dùng 2026-08-27: dùng thẳng mã product cụ thể, không cần thêm cờ catalog
+    // mới (IsDepositDeductionProduct) hay đổi BE — chỉ 1 product duy nhất đóng vai trò này.
+    public const string TruCocProductCode = "36";
+
     private int              _productId;
     private string           _productCode       = "";
     private string           _productName       = "";
@@ -173,9 +179,12 @@ public class SalesOrderLineItem : INotifyPropertyChanged
             // của dòng sản phẩm (Quantity=0 nên back-calculate Đơn giá vô nghĩa với dòng này).
             if (_isDepositDeductionRow)
             {
+                // User gõ số dương hay số âm đều ra cùng 1 kết quả âm (Math.Abs rồi tự phủ định) —
+                // AccountingAmountConverter trên grid hiển thị lại dạng "(1.814.400)" sau khi commit.
                 _amount = -Math.Abs(value);
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(DisplayAmount));
+                OnPropertyChanged(nameof(IsNegativeAmount));
                 RecalculateTax();
                 return;
             }
@@ -183,21 +192,26 @@ public class SalesOrderLineItem : INotifyPropertyChanged
             _amount = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(DisplayAmount));
+            OnPropertyChanged(nameof(IsNegativeAmount));
             SetIsAmountManual(true);
             TryBackCalculateUnitPrice();
             RecalculateTax();
         }
     }
 
-    // Ô "Thành tiền" trên grid bind vào đây thay vì thẳng Amount — dòng Trừ cọc cần user LUÔN
-    // thấy số dương (khớp cách họ gõ vào), dù Amount lưu nội bộ ở dạng âm để cộng dồn đúng vào
-    // GrandTotal (RecalculateTotals). Set lại đi qua Amount setter ở trên nên vẫn tự âm hoá đúng —
-    // không cần logic riêng. Dòng sản phẩm thường không đổi hành vi (DisplayAmount == Amount).
+    // Ô "Thành tiền" trên grid bind vào đây thay vì thẳng Amount — tách riêng để dành chỗ cho hành vi
+    // UI-only sau này nếu cần. Hiện tại DisplayAmount == Amount (giữ dấu âm thật của dòng Trừ cọc để
+    // AccountingAmountConverter format dạng ngoặc "(xxx)" — không còn ẩn dấu âm bằng Math.Abs như
+    // trước). Set lại đi qua Amount setter ở trên nên dòng Trừ cọc vẫn tự âm hoá đúng.
     public decimal DisplayAmount
     {
-        get => _isDepositDeductionRow ? Math.Abs(_amount) : _amount;
+        get => _amount;
         set => Amount = value;
     }
+
+    // Dùng để tô đỏ ô "Thành tiền" trên grid khi Amount âm (dòng Trừ cọc sau khi commit) — kiểu kế
+    // toán quen thuộc, khớp với format ngoặc của AccountingAmountConverter.
+    public bool IsNegativeAmount => _amount < 0m;
 
     // Đơn giá = Thành tiền ÷ (SL × (1-CK%/100)). Không chia được (SL=0, CK%=100%) hoặc
     // Thành tiền vẫn = 0 (chưa nhập) thì giữ nguyên Đơn giá hiện có.
@@ -224,6 +238,7 @@ public class SalesOrderLineItem : INotifyPropertyChanged
         _amount = amount;
         OnPropertyChanged(nameof(Amount));
         OnPropertyChanged(nameof(DisplayAmount));
+        OnPropertyChanged(nameof(IsNegativeAmount));
         SetIsAmountManual(isAmountManual);
         RecalculateTax();
     }
@@ -260,15 +275,16 @@ public class SalesOrderLineItem : INotifyPropertyChanged
             _selectedProduct = value;
             OnPropertyChanged();
 
-            if (value is TruCocPickerItem trucoc)
+            if (value is Product p && p.Code == TruCocProductCode)
             {
-                // Chọn "Trừ cọc" trong dropdown sản phẩm → biến dòng này thành dòng Trừ cọc. Không
-                // còn gắn với 1 Deposit cụ thể nữa — BE tự phân bổ FIFO qua nhiều Deposit khi Ghi sổ.
+                // Chọn product "Trừ cọc" thật (mã TruCocProductCode) → biến dòng này thành dòng Trừ
+                // cọc, y hệt hành vi entry ảo trước đây. Không gắn với 1 Deposit cụ thể — BE tự phân
+                // bổ FIFO qua nhiều Deposit khi Ghi sổ (xem CreateDepositDeductionUseCase).
                 IsDepositDeductionRow = true;
                 IsDepositProduct      = false;
-                ProductId             = 0;
-                ProductCode           = "";
-                ProductName           = "Trừ cọc";
+                ProductId             = p.Id;
+                ProductCode           = p.Code;
+                ProductName           = p.Name;
                 Unit                  = "";
                 Quantity              = 0;
                 UnitPrice             = 0;
@@ -276,25 +292,25 @@ public class SalesOrderLineItem : INotifyPropertyChanged
                 TaxRate               = 0;
                 ReceivableAccount     = "";
                 RevenueAccount        = "";
-                // Đặt sau cùng — bắt ở PropertyChanged(AvailableDepositBalance) để gợi ý Thành tiền
-                // (xem SalesOrderViewModel.AttachLineHandlers), giống cách LinkedDeposit từng làm.
-                AvailableDepositBalance = trucoc.TotalRemainingBalance;
+                // AvailableDepositBalance được SalesOrderViewModel.AttachLineHandlers gán ngay sau
+                // khi bắt PropertyChanged(ProductId) ở trên (ViewModel mới có tổng số dư cọc khách
+                // hàng) — bắt AvailableDepositBalance đổi để gợi ý sẵn Thành tiền, giống cách cũ.
             }
-            else if (value is Product p)
+            else if (value is Product p2)
             {
-                // Chọn lại 1 sản phẩm thật → khôi phục dòng về trạng thái bình thường.
+                // Chọn lại 1 sản phẩm thật bình thường → khôi phục dòng về trạng thái bình thường.
                 IsDepositDeductionRow   = false;
-                IsDepositProduct        = p.IsDepositProduct;
+                IsDepositProduct        = p2.IsDepositProduct;
                 AvailableDepositBalance = 0;
-                ProductId   = p.Id;
-                ProductCode = p.Code;
-                ProductName = p.Name;
-                Unit        = p.Unit;
+                ProductId   = p2.Id;
+                ProductCode = p2.Code;
+                ProductName = p2.Name;
+                Unit        = p2.Unit;
                 Quantity    = Quantity == 0 ? 1 : Quantity;
-                UnitPrice   = p.SellingPrice;
+                UnitPrice   = p2.SellingPrice;
                 ReceivableAccount = string.IsNullOrEmpty(ReceivableAccount) ? "131" : ReceivableAccount;
                 RevenueAccount    = string.IsNullOrEmpty(RevenueAccount)    ? "511" : RevenueAccount;
-                TaxRate     = SalesOrderTaxCalculator.ToPercent(p.VatRate);
+                TaxRate     = SalesOrderTaxCalculator.ToPercent(p2.VatRate);
             }
         }
     }
@@ -313,6 +329,7 @@ public class SalesOrderLineItem : INotifyPropertyChanged
         _amount = Quantity * UnitPrice * (1 - Math.Max(0, Math.Min(100, DiscountRate)) / 100m);
         OnPropertyChanged(nameof(Amount));
         OnPropertyChanged(nameof(DisplayAmount));
+        OnPropertyChanged(nameof(IsNegativeAmount));
         RecalculateTax();
     }
 

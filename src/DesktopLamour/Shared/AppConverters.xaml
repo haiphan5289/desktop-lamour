@@ -14,6 +14,7 @@
     <converters:GroupSumConverter x:Key="GroupSumConverter"/>
     <converters:BlankToZeroConverter x:Key="BlankToZeroConverter"/>
     <converters:BlankPreserveConverter x:Key="BlankPreserveConverter"/>
+    <converters:AccountingAmountConverter x:Key="AccountingAmountConverter"/>
     <converters:CashLedgerStatusDisplayConverter x:Key="CashLedgerStatusDisplayConverter"/>
     <converters:FilterOperatorLabelConverter x:Key="FilterOperatorLabelConverter"/>
     <converters:FilterOperatorSymbolConverter x:Key="FilterOperatorSymbolConverter"/>
