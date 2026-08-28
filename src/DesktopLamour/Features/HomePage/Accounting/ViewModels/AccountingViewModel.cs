@@ -57,38 +57,30 @@ public partial class AccountingViewModel : ViewModelBase
     // on top of the existing FilterStatus/FilterType toolbar filters via the same ItemsView
     // (CollectionView) filter predicate — FilterEntry — so ItemsView.Refresh() plays the role
     // ApplyFilters() plays on the Sales screen (Items itself is not re-populated here).
-    // "Trạng thái" column filter is named FilterStatusText (not FilterStatus) to avoid clashing
-    // with the existing toolbar dropdown FilterStatus (exact match vs. this Contains match).
     [ObservableProperty] private string _filterReceiptNumber  = string.Empty;
     [ObservableProperty] private string _filterPaymentNumber  = string.Empty;
-    [ObservableProperty] private string _filterStatusText     = string.Empty;
     [ObservableProperty] private string _filterDescription    = string.Empty;
-    [ObservableProperty] private string _filterAccount        = string.Empty;
-    [ObservableProperty] private string _filterCounterAccount = string.Empty;
     [ObservableProperty] private string _filterPersonName     = string.Empty;
+    [ObservableProperty] private string _filterPaymentReason  = string.Empty;
+    [ObservableProperty] private string _filterDocumentType   = string.Empty;
 
     partial void OnFilterReceiptNumberChanged(string value)  => ItemsView.Refresh();
     partial void OnFilterPaymentNumberChanged(string value)  => ItemsView.Refresh();
-    partial void OnFilterStatusTextChanged(string value)     => ItemsView.Refresh();
     partial void OnFilterDescriptionChanged(string value)    => ItemsView.Refresh();
-    partial void OnFilterAccountChanged(string value)        => ItemsView.Refresh();
-    partial void OnFilterCounterAccountChanged(string value) => ItemsView.Refresh();
     partial void OnFilterPersonNameChanged(string value)     => ItemsView.Refresh();
+    partial void OnFilterPaymentReasonChanged(string value)  => ItemsView.Refresh();
+    partial void OnFilterDocumentTypeChanged(string value)   => ItemsView.Refresh();
 
     public DateColumnFilter AccountingDateFilter { get; } = new();
     public DateColumnFilter DocumentDateFilter   { get; } = new();
 
-    public NumericColumnFilter DebitAmountFilter  { get; } = new();
-    public NumericColumnFilter CreditAmountFilter { get; } = new();
-    public NumericColumnFilter BalanceFilter      { get; } = new();
+    public NumericColumnFilter AmountFilter { get; } = new();
 
     private void WireColumnFilters()
     {
         AccountingDateFilter.Changed = ItemsView.Refresh;
         DocumentDateFilter.Changed   = ItemsView.Refresh;
-        DebitAmountFilter.Changed    = ItemsView.Refresh;
-        CreditAmountFilter.Changed   = ItemsView.Refresh;
-        BalanceFilter.Changed        = ItemsView.Refresh;
+        AmountFilter.Changed         = ItemsView.Refresh;
     }
 
     public ObservableCollection<CashLedgerEntryDto> Items { get; } = new();
@@ -174,18 +166,27 @@ public partial class AccountingViewModel : ViewModelBase
         if (FilterType == "Thu" && string.IsNullOrEmpty(entry.ReceiptNumber)) return false;
         if (FilterType == "Chi" && string.IsNullOrEmpty(entry.PaymentNumber)) return false;
 
+        var paymentReasonLabel = entry.PaymentReason switch
+        {
+            "ThuKhac"     => "Thu khác",
+            "ThuTienHang" => "Thu tiền hàng",
+            "ThuCongNo"   => "Thu công nợ",
+            "ChiKhac"     => "Chi khác",
+            "ChiMuaHang"  => "Chi mua hàng",
+            "ChiTraNo"    => "Chi trả nợ",
+            "ChiLuong"    => "Chi lương",
+            _             => entry.PaymentReason ?? "",
+        };
+
         return AccountingDateFilter.Matches(entry.AccountingDate)
             && DocumentDateFilter.Matches(entry.DocumentDate)
             && Matches(FilterReceiptNumber, entry.ReceiptNumber ?? "")
             && Matches(FilterPaymentNumber, entry.PaymentNumber ?? "")
-            && Matches(FilterStatusText, statusLabel)
             && Matches(FilterDescription, entry.Description)
-            && Matches(FilterAccount, entry.Account)
-            && Matches(FilterCounterAccount, entry.CounterAccount)
-            && DebitAmountFilter.Matches(entry.DebitAmount)
-            && CreditAmountFilter.Matches(entry.CreditAmount)
-            && BalanceFilter.Matches(entry.Balance)
-            && Matches(FilterPersonName, entry.PersonName ?? "");
+            && AmountFilter.Matches(entry.Amount)
+            && Matches(FilterPersonName, entry.PersonName ?? "")
+            && Matches(FilterPaymentReason, paymentReasonLabel)
+            && Matches(FilterDocumentType, entry.DocumentType);
     }
 
     private static bool Matches(string filter, string cellText)
@@ -270,8 +271,8 @@ public partial class AccountingViewModel : ViewModelBase
 
             string[] headers =
             {
-                "Ngày hạch toán", "Ngày chứng từ", "Số phiếu thu", "Số phiếu chi", "Trạng thái",
-                "Diễn giải", "Tài khoản", "TK đối ứng", "Nợ", "Có", "Số tồn", "Người nhận/Người nộp",
+                "Ngày hạch toán", "Ngày chứng từ", "Số phiếu thu", "Số phiếu chi",
+                "Diễn giải", "Số tiền", "Người nhận/Người nộp", "Lý do thu/chi", "Loại chứng từ",
             };
             for (var i = 0; i < headers.Length; i++)
             {
@@ -283,24 +284,25 @@ public partial class AccountingViewModel : ViewModelBase
             var row = 2;
             foreach (var e in ItemsView.Cast<CashLedgerEntryDto>())
             {
-                worksheet.Cell(row, 1).Value  = e.AccountingDate;
-                worksheet.Cell(row, 2).Value  = e.DocumentDate;
-                worksheet.Cell(row, 3).Value  = e.ReceiptNumber;
-                worksheet.Cell(row, 4).Value  = e.PaymentNumber;
-                worksheet.Cell(row, 5).Value  = e.Status switch
+                worksheet.Cell(row, 1).Value = e.AccountingDate;
+                worksheet.Cell(row, 2).Value = e.DocumentDate;
+                worksheet.Cell(row, 3).Value = e.ReceiptNumber;
+                worksheet.Cell(row, 4).Value = e.PaymentNumber;
+                worksheet.Cell(row, 5).Value = e.Description;
+                worksheet.Cell(row, 6).Value = e.Amount;
+                worksheet.Cell(row, 7).Value = e.PersonName;
+                worksheet.Cell(row, 8).Value = e.PaymentReason switch
                 {
-                    "Draft"     => "Nháp",
-                    "Treo"      => "Treo",
-                    "Confirmed" => "Đã ghi sổ",
-                    _           => e.Status,
+                    "ThuKhac"     => "Thu khác",
+                    "ThuTienHang" => "Thu tiền hàng",
+                    "ThuCongNo"   => "Thu công nợ",
+                    "ChiKhac"     => "Chi khác",
+                    "ChiMuaHang"  => "Chi mua hàng",
+                    "ChiTraNo"    => "Chi trả nợ",
+                    "ChiLuong"    => "Chi lương",
+                    _             => e.PaymentReason,
                 };
-                worksheet.Cell(row, 6).Value  = e.Description;
-                worksheet.Cell(row, 7).Value  = e.Account;
-                worksheet.Cell(row, 8).Value  = e.CounterAccount;
-                worksheet.Cell(row, 9).Value  = e.DebitAmount;
-                worksheet.Cell(row, 10).Value = e.CreditAmount;
-                worksheet.Cell(row, 11).Value = e.Balance;
-                worksheet.Cell(row, 12).Value = e.PersonName;
+                worksheet.Cell(row, 9).Value = e.DocumentType;
                 row++;
             }
 

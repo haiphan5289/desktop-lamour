@@ -539,6 +539,7 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<IUpdateSalesOrderUseCase, UpdateSalesOrderUseCase>();
         services.AddTransient<IDeleteSalesOrderUseCase, DeleteSalesOrderUseCase>();
         services.AddTransient<IHoldSalesOrderUseCase, HoldSalesOrderUseCase>();
+        services.AddTransient<IDuplicateSalesOrderUseCase, DuplicateSalesOrderUseCase>();
         services.AddTransient<IGetNextSalesOrderCodeUseCase, GetNextSalesOrderCodeUseCase>();
         services.AddTransient<IGetSalesOrderReportUseCase, GetSalesOrderReportUseCase>();
         services.AddTransient<IGetSalesOrderSummaryReportUseCase, GetSalesOrderSummaryReportUseCase>();

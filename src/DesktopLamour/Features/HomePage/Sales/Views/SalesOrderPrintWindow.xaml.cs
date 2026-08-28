@@ -58,7 +58,24 @@ public partial class SalesOrderPrintWindow : Window
     // từ TÊN SẢN PHẨM (đã chấp nhận wrap nhiều dòng — xem EstimateContentHeight) vì cột này co giãn
     // được, còn STT/CK/ĐƠN GIÁ/THÀNH TIỀN/TỔNG CỘNG chứa số/% không được xuống hàng. Tổng vẫn giữ 490
     // để không đổi ngân sách bề ngang đã kiểm chứng vừa khít trang A5.
-    private static readonly int[] ProductTableColumnWidths = { 28, 114, 26, 66, 60, 74, 48, 74 };
+    // 2026-08-28: header "THÀNH TIỀN"/"THUẾ SUẤT"/"TỔNG CỘNG" (in đậm, chữ dài hơn giá trị bên dưới)
+    // vẫn bị xuống 2 dòng ở các cột này dù đã nới lần trước — lấy thêm width từ TÊN SẢN PHẨM/SL/
+    // CK (%) (không đổi tổng 490), kèm giảm FontSize riêng cho header (xem HeaderRow) để chắc chắn
+    // nằm gọn 1 hàng.
+    // 2026-08-28 (lần 2): "THUẾ SUẤT" (60) vẫn vỡ dòng dù "TỔNG CỘNG" cùng 9 ký tự đã gọn ở 84 —
+    // nới THUẾ SUẤT lên bằng TỔNG CỘNG (84) + hạ thêm HeaderFontSize (11 → 10). THÀNH TIỀN/THUẾ
+    // SUẤT/TỔNG CỘNG (82/84/84) giờ đã xác nhận không vỡ dòng — KHÔNG đổi 3 giá trị này nữa.
+    // 2026-08-28 (lần 3): nới rộng lại lần 2 lấy quá nhiều từ TÊN SẢN PHẨM (114 → 76) khiến tên sản
+    // phẩm ngắn/trung bình (trước đó không vỡ dòng) giờ vỡ 2-3 dòng — lấy lại width cho TÊN SẢN
+    // PHẨM (76 → 94) từ STT/SL/ĐƠN GIÁ/CK (%) (vốn dư nhiều so với dữ liệu thực — số/% ngắn), không
+    // đụng tới 3 cột đã xác nhận ổn ở trên. Tên sản phẩm rất dài vẫn có thể vỡ dòng (chấp nhận được,
+    // xem EstimateContentHeight) nhưng tên ngắn/trung bình giờ nằm gọn hơn nhiều so với lần 2.
+    // 2026-08-28 (lần 4): lần 3 lấy quá tay từ STT (20, header "STT" 3 ký tự cũng vỡ dòng) và SL
+    // (18, số lượng 3 chữ số như "100" vỡ dòng) — nới STT 20→26, SL 18→26, bù lại bằng cách nhường
+    // 10 từ TÊN SẢN PHẨM (94→84, chấp nhận đánh đổi ngược một phần lần 3) + 4 từ CK (%) (46→42,
+    // "0,00%"/"40,00%" vẫn đủ chỗ ở font 13). KHÔNG đụng ĐƠN GIÁ (62) — đơn giá 7 chữ số dạng
+    // "1.600.000" cần đủ chỗ, không còn dư để cắt thêm như STT/SL/CK (%).
+    private static readonly int[] ProductTableColumnWidths = { 26, 84, 26, 62, 42, 82, 84, 84 };
 
     private static readonly SolidColorBrush OuterBorderBrush = new(Color.FromRgb(0x9D, 0xC1, 0xE0));
 
@@ -205,7 +222,7 @@ public partial class SalesOrderPrintWindow : Window
             table.Columns.Add(new TableColumn { Width = new GridLength(width) });
 
         var rowGroup = new TableRowGroup();
-        rowGroup.Rows.Add(HeaderRow("STT", "TÊN SẢN PHẨM", "SL", "ĐƠN GIÁ", "CK (%)", "THÀNH TIỀN", "THUẾ SUẤT", "TỔNG CỘNG"));
+        rowGroup.Rows.Add(HeaderRow("STT", "TÊN SẢN PHẨM", "SL", "ĐƠN GIÁ", "CK (%)", "THÀNH TIỀN", "THUẾ SUẤT", "TỔNG CỘNG"));
 
         int stt = 1;
         foreach (var line in order.Lines)
@@ -255,16 +272,32 @@ public partial class SalesOrderPrintWindow : Window
         // hàm này: response thật từ BE lúc vừa Ghi sổ, và preview dựng tại chỗ từ form chưa lưu) rồi
         // trừ depositDeductionAmount — để tổng tiền in ra luôn khớp với dòng "Trừ Cọc" ngay phía trên.
         var netGrandTotal = order.TotalAmount + order.TotalTaxAmount - depositDeductionAmount;
-        var totalPara = new Paragraph(new Bold(new Run($"Tổng tiền thanh toán : {FormatMoney(netGrandTotal)}")))
+        // 2 ô riêng (nhãn span hết trừ cột cuối + số tiền span đúng 1 cột cuối, thẳng hàng dưới
+        // "TỔNG CỘNG") thay vì 1 ô gộp span hết bảng — khớp mẫu hoá đơn tham chiếu (đường kẻ dọc
+        // ngăn nhãn và số tiền, số tiền canh dưới cột Tổng cộng).
+        var totalLabelPara = new Paragraph(new Bold(new Run("Tổng tiền thanh toán :")))
+        {
+            TextAlignment = TextAlignment.Right,
+            FontSize      = 16,
+            Margin        = new Thickness(0),
+        };
+        var totalValuePara = new Paragraph(new Bold(new Run(FormatMoney(netGrandTotal))))
         {
             TextAlignment = TextAlignment.Right,
             FontSize      = 16,
             Margin        = new Thickness(0),
         };
         var totalRow = new TableRow();
-        totalRow.Cells.Add(new TableCell(totalPara)
+        totalRow.Cells.Add(new TableCell(totalLabelPara)
         {
-            ColumnSpan      = ProductTableColumnWidths.Length,
+            ColumnSpan      = ProductTableColumnWidths.Length - 1,
+            BorderBrush     = Brushes.Black,
+            BorderThickness = new Thickness(0.5),
+            Padding         = new Thickness(6, 6, 6, 6),
+        });
+        totalRow.Cells.Add(new TableCell(totalValuePara)
+        {
+            ColumnSpan      = 1,
             BorderBrush     = Brushes.Black,
             BorderThickness = new Thickness(0.5),
             Padding         = new Thickness(6, 6, 6, 6),
@@ -329,13 +362,18 @@ public partial class SalesOrderPrintWindow : Window
     // đơn thông dụng), các cột còn lại (số lượng/tiền/%) căn giữa.
     private const int ProductNameColumnIndex = 1;
 
+    // Header dùng font nhỏ hơn data (11 thay vì 13 kế thừa từ FlowDocument) — nhãn cột in đậm
+    // ("THÀNH TIỀN"/"THUẾ SUẤT"/"TỔNG CỘNG") dài hơn giá trị bên dưới nên dễ vỡ dòng hơn dữ liệu dù
+    // cùng font size; hạ riêng font header (không đụng font data) để chắc chắn nằm gọn 1 hàng.
+    private const double HeaderFontSize = 10;
+
     private static TableRow HeaderRow(params string[] headers)
     {
         var row = new TableRow { Background = Brushes.WhiteSmoke };
         for (var i = 0; i < headers.Length; i++)
         {
             var alignment = i == ProductNameColumnIndex ? TextAlignment.Left : TextAlignment.Center;
-            row.Cells.Add(new TableCell(new Paragraph(new Bold(new Run(headers[i]))) { TextAlignment = alignment })
+            row.Cells.Add(new TableCell(new Paragraph(new Bold(new Run(headers[i]))) { TextAlignment = alignment, FontSize = HeaderFontSize })
             {
                 // Padding ngang giảm còn 2 (trước 4) để bù chỗ cho font size lớn hơn (11 → 12) trong
                 // các cột hẹp cố định (CK/ĐƠN GIÁ/THÀNH TIỀN/TỔNG CỘNG) mà không phải nới thêm bề rộng

@@ -6,17 +6,19 @@
 
     <UserControl.Resources>
 
-        <!-- Thẻ nghiệp vụ — nền trắng bo góc lớn, đổ bóng nhẹ để nổi khối trên nền xám, viền +
-             bóng đậm hơn hẳn khi hover (thay cho hiệu ứng đổi viền xám đơn điệu trước đây) để
-             người dùng thấy rõ đang có thể bấm. -->
+        <!-- Thẻ nghiệp vụ — đổi từ hàng ngang nhỏ (220×66, dồn về góc trái, để trống rất nhiều
+             khoảng trắng bên phải/bên dưới trên màn rộng) sang thẻ vuông lớn hơn (200×170, icon
+             trên/nhãn dưới, đều căn giữa) — cùng ngôn ngữ hình khối với các tile trên HomeView
+             (Quỹ/Bán hàng...), để 2 màn nhìn nhất quán. Khối 5 thẻ sau đó được set HorizontalAlignment
+             ="Center" ở WrapPanel bên dưới thay vì để trôi dạt về góc trái như trước. -->
         <Style x:Key="SalesTile" TargetType="Border">
-            <Setter Property="Width" Value="220"/>
-            <Setter Property="Height" Value="66"/>
+            <Setter Property="Width" Value="200"/>
+            <Setter Property="Height" Value="170"/>
             <Setter Property="Background" Value="{StaticResource AppColor.BackgroundPrimary}"/>
             <Setter Property="BorderBrush" Value="{StaticResource AppColor.BorderThin}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="{StaticResource AppRadius.Large}"/>
-            <Setter Property="Margin" Value="0,0,14,14"/>
+            <Setter Property="Margin" Value="10,10,10,10"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Effect">
                 <Setter.Value>
@@ -37,10 +39,11 @@
 
         <!-- Khung tròn nền cam nhạt sau icon — thay emoji trơ trên nền trắng bằng 1 "badge" tròn,
              khớp phong cách dashboard hiện đại; dùng đúng tông brand đã có sẵn (BackgroundBrand),
-             không thêm màu mới ngoài bảng màu hiện tại của app. -->
+             không thêm màu mới ngoài bảng màu hiện tại của app. To hơn bản pill cũ (40 → 56) để cân
+             xứng với thẻ vuông lớn hơn. -->
         <Style x:Key="SalesTileIconBadge" TargetType="Border">
-            <Setter Property="Width" Value="40"/>
-            <Setter Property="Height" Value="40"/>
+            <Setter Property="Width" Value="56"/>
+            <Setter Property="Height" Value="56"/>
             <Setter Property="CornerRadius" Value="{StaticResource AppRadius.Full}"/>
             <Setter Property="Background" Value="{StaticResource AppColor.BackgroundBrand}"/>
         </Style>
@@ -74,103 +77,115 @@
 
         <!-- Navigation tiles -->
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel Margin="24,16,24,20">
+            <!-- Khối (caption + lưới thẻ) neo góc trên-trái ngay dưới header, không căn giữa trang —
+                 chỉ đổi hình dạng thẻ (vuông, to hơn) so với bản pill cũ, giữ nguyên vị trí quen
+                 thuộc sát header thay vì trôi xuống giữa màn hình. -->
+            <Grid HorizontalAlignment="Left" VerticalAlignment="Top">
+                <StackPanel Margin="24,16,24,20" HorizontalAlignment="Left">
 
-                <controls:AppLabel Text="Nghiệp vụ bán hàng"
-                                   Style="{StaticResource AppTypography.BodyCaption}"
-                                   Foreground="{StaticResource AppColor.TextSecondary}"
-                                   FontWeight="SemiBold"
-                                   Margin="0,0,0,12"/>
-                <WrapPanel>
+                    <controls:AppLabel Text="Nghiệp vụ bán hàng"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       Foreground="{StaticResource AppColor.TextSecondary}"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,16"/>
 
-                    <!-- Chứng từ bán hàng -->
-                    <Border Style="{StaticResource SalesTile}">
-                        <Border.InputBindings>
-                            <MouseBinding MouseAction="LeftClick" Command="{Binding NavigateToSalesOrdersCommand}"/>
-                        </Border.InputBindings>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Border Style="{StaticResource SalesTileIconBadge}">
-                                <TextBlock Text="🛒" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <controls:AppLabel Text="Chứng từ bán hàng"
-                                               Style="{StaticResource AppTypography.LabelSection}"
-                                               FontWeight="SemiBold"
-                                               Margin="12,0,0,0"
-                                               VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Border>
+                    <!-- Width cố định = đúng 3 thẻ/hàng (3 × 220 lề) — 5 thẻ tự xuống hàng 3+2. -->
+                    <WrapPanel Width="660">
 
-                    <!-- Hàng bán bị trả lại -->
-                    <Border Style="{StaticResource SalesTile}">
-                        <Border.InputBindings>
-                            <MouseBinding MouseAction="LeftClick" Command="{Binding NavigateToSalesReturnsCommand}"/>
-                        </Border.InputBindings>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Border Style="{StaticResource SalesTileIconBadge}">
-                                <TextBlock Text="↩️" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <controls:AppLabel Text="Hàng bán bị trả lại"
-                                               Style="{StaticResource AppTypography.LabelSection}"
-                                               FontWeight="SemiBold"
-                                               Margin="12,0,0,0"
-                                               VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Border>
+                        <!-- Chứng từ bán hàng -->
+                        <Border Style="{StaticResource SalesTile}">
+                            <Border.InputBindings>
+                                <MouseBinding MouseAction="LeftClick" Command="{Binding NavigateToSalesOrdersCommand}"/>
+                            </Border.InputBindings>
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Border Style="{StaticResource SalesTileIconBadge}">
+                                    <TextBlock Text="🛒" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <controls:AppLabel Text="Chứng từ bán hàng"
+                                                   Style="{StaticResource AppTypography.LabelSection}"
+                                                   FontWeight="SemiBold"
+                                                   HorizontalAlignment="Center"
+                                                   HorizontalContentAlignment="Center"
+                                                   Margin="0,14,0,0"/>
+                            </StackPanel>
+                        </Border>
 
-                    <!-- Báo cáo -->
-                    <Border Style="{StaticResource SalesTile}">
-                        <Border.InputBindings>
-                            <MouseBinding MouseAction="LeftClick" Command="{Binding OpenReportCommand}"/>
-                        </Border.InputBindings>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Border Style="{StaticResource SalesTileIconBadge}">
-                                <TextBlock Text="📊" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <controls:AppLabel Text="Báo cáo"
-                                               Style="{StaticResource AppTypography.LabelSection}"
-                                               FontWeight="SemiBold"
-                                               Margin="12,0,0,0"
-                                               VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Border>
+                        <!-- Hàng bán bị trả lại -->
+                        <Border Style="{StaticResource SalesTile}">
+                            <Border.InputBindings>
+                                <MouseBinding MouseAction="LeftClick" Command="{Binding NavigateToSalesReturnsCommand}"/>
+                            </Border.InputBindings>
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Border Style="{StaticResource SalesTileIconBadge}">
+                                    <TextBlock Text="↩️" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <controls:AppLabel Text="Hàng bán bị trả lại"
+                                                   Style="{StaticResource AppTypography.LabelSection}"
+                                                   FontWeight="SemiBold"
+                                                   HorizontalAlignment="Center"
+                                                   HorizontalContentAlignment="Center"
+                                                   Margin="0,14,0,0"/>
+                            </StackPanel>
+                        </Border>
 
-                    <!-- Phiếu cọc -->
-                    <Border Style="{StaticResource SalesTile}">
-                        <Border.InputBindings>
-                            <MouseBinding MouseAction="LeftClick" Command="{Binding OpenDepositCommand}"/>
-                        </Border.InputBindings>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Border Style="{StaticResource SalesTileIconBadge}">
-                                <TextBlock Text="💰" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <controls:AppLabel Text="Phiếu cọc"
-                                               Style="{StaticResource AppTypography.LabelSection}"
-                                               FontWeight="SemiBold"
-                                               Margin="12,0,0,0"
-                                               VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Border>
+                        <!-- Báo cáo -->
+                        <Border Style="{StaticResource SalesTile}">
+                            <Border.InputBindings>
+                                <MouseBinding MouseAction="LeftClick" Command="{Binding OpenReportCommand}"/>
+                            </Border.InputBindings>
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Border Style="{StaticResource SalesTileIconBadge}">
+                                    <TextBlock Text="📊" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <controls:AppLabel Text="Báo cáo"
+                                                   Style="{StaticResource AppTypography.LabelSection}"
+                                                   FontWeight="SemiBold"
+                                                   HorizontalAlignment="Center"
+                                                   HorizontalContentAlignment="Center"
+                                                   Margin="0,14,0,0"/>
+                            </StackPanel>
+                        </Border>
 
-                    <!-- Báo cáo trừ cọc -->
-                    <Border Style="{StaticResource SalesTile}">
-                        <Border.InputBindings>
-                            <MouseBinding MouseAction="LeftClick" Command="{Binding NavigateToDepositDeductionReportCommand}"/>
-                        </Border.InputBindings>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Border Style="{StaticResource SalesTileIconBadge}">
-                                <TextBlock Text="📉" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <controls:AppLabel Text="Báo cáo trừ cọc"
-                                               Style="{StaticResource AppTypography.LabelSection}"
-                                               FontWeight="SemiBold"
-                                               Margin="12,0,0,0"
-                                               VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Border>
+                        <!-- Phiếu cọc -->
+                        <Border Style="{StaticResource SalesTile}">
+                            <Border.InputBindings>
+                                <MouseBinding MouseAction="LeftClick" Command="{Binding OpenDepositCommand}"/>
+                            </Border.InputBindings>
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Border Style="{StaticResource SalesTileIconBadge}">
+                                    <TextBlock Text="💰" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <controls:AppLabel Text="Phiếu cọc"
+                                                   Style="{StaticResource AppTypography.LabelSection}"
+                                                   FontWeight="SemiBold"
+                                                   HorizontalAlignment="Center"
+                                                   HorizontalContentAlignment="Center"
+                                                   Margin="0,14,0,0"/>
+                            </StackPanel>
+                        </Border>
 
-                </WrapPanel>
+                        <!-- Báo cáo trừ cọc -->
+                        <Border Style="{StaticResource SalesTile}">
+                            <Border.InputBindings>
+                                <MouseBinding MouseAction="LeftClick" Command="{Binding NavigateToDepositDeductionReportCommand}"/>
+                            </Border.InputBindings>
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Border Style="{StaticResource SalesTileIconBadge}">
+                                    <TextBlock Text="📉" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <controls:AppLabel Text="Báo cáo trừ cọc"
+                                                   Style="{StaticResource AppTypography.LabelSection}"
+                                                   FontWeight="SemiBold"
+                                                   HorizontalAlignment="Center"
+                                                   HorizontalContentAlignment="Center"
+                                                   Margin="0,14,0,0"/>
+                            </StackPanel>
+                        </Border>
 
-            </StackPanel>
+                    </WrapPanel>
+
+                </StackPanel>
+            </Grid>
         </ScrollViewer>
     </Grid>
 

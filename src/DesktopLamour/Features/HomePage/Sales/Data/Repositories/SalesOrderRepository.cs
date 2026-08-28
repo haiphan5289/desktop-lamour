@@ -32,6 +32,9 @@ public class SalesOrderRepository : ISalesOrderRepository
     public Task<SalesOrderResponseDto> HoldAsync(int id, CancellationToken ct = default)
         => _service.HoldAsync(id, ct);
 
+    public Task<SalesOrderResponseDto> DuplicateAsync(int id, CancellationToken ct = default)
+        => _service.DuplicateAsync(id, ct);
+
     public Task<IEnumerable<SalesOrderReportLineDto>> GetReportAsync(
         IEnumerable<int>? productIds, int? employeeId, int? customerId,
         string? unit, string? category,

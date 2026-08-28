@@ -1,6 +1,7 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 using System.Collections.ObjectModel;
 using System.Windows;
+using ClosedXML.Excel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.Navigation;
@@ -8,6 +9,7 @@ using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.HomePage.Sales.Domain.Models;
 using DesktopLamour.Features.HomePage.Sales.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Sales.Views;
+using DesktopLamour.Shared.Helpers;
 using DesktopLamour.Shared.Utilities;
 
 namespace DesktopLamour.Features.HomePage.Sales.ViewModels;
@@ -20,6 +22,7 @@ public partial class SalesOrderListViewModel : ViewModelBase
     private readonly IGetSalesOrdersUseCase      _getOrders;
     private readonly IDeleteSalesOrderUseCase    _deleteOrder;
     private readonly IHoldSalesOrderUseCase      _holdOrder;
+    private readonly IDuplicateSalesOrderUseCase _duplicateOrder;
     private readonly Func<SalesOrderWindow>      _formWindowFactory;
     private readonly DebounceDispatcher          _searchDebounce = new();
 
@@ -50,12 +53,14 @@ public partial class SalesOrderListViewModel : ViewModelBase
         IGetSalesOrdersUseCase     getOrders,
         IDeleteSalesOrderUseCase   deleteOrder,
         IHoldSalesOrderUseCase     holdOrder,
+        IDuplicateSalesOrderUseCase duplicateOrder,
         Func<SalesOrderWindow>     formWindowFactory)
     {
         _navigationService = navigationService;
         _getOrders         = getOrders;
         _deleteOrder       = deleteOrder;
         _holdOrder         = holdOrder;
+        _duplicateOrder    = duplicateOrder;
         _formWindowFactory = formWindowFactory;
 
         // Mặc định mở màn hình chỉ hiện chứng từ của HÔM NAY (không dồn hết lịch sử lại) —
@@ -69,6 +74,9 @@ public partial class SalesOrderListViewModel : ViewModelBase
         EditSalesOrderCommand.NotifyCanExecuteChanged();
         DeleteSalesOrderCommand.NotifyCanExecuteChanged();
         HoldSalesOrderCommand.NotifyCanExecuteChanged();
+        DuplicateSalesOrderCommand.NotifyCanExecuteChanged();
+        SendEmailCommand.NotifyCanExecuteChanged();
+        SendZaloCommand.NotifyCanExecuteChanged();
     }
 
     // Đổi ngày là thao tác rời rạc (không gõ liên tục như SearchText) — reload ngay, không debounce.
@@ -189,5 +197,119 @@ public partial class SalesOrderListViewModel : ViewModelBase
             HasError     = true;
             ErrorMessage = $"Xóa thất bại: {ex.Message}";
         }
+    }
+
+    // "Nhân bản" — tạo NGAY 1 chứng từ bán hàng mới (số chứng từ tự sinh, ngày = hôm nay, cùng
+    // khách hàng/dòng hàng) qua DuplicateSalesOrderUseCase → BE tái dùng CreateSalesOrderUseCase nên
+    // tồn kho được trừ lại như 1 giao dịch bán hàng thật, không phải chỉ copy dữ liệu.
+    [RelayCommand(CanExecute = nameof(HasSelection))]
+    private async Task DuplicateSalesOrderAsync(CancellationToken ct = default)
+    {
+        if (SelectedOrder is null) return;
+
+        // Chụp lại trước — LoadSalesOrdersAsync bên dưới Clear() rồi build lại SalesOrders, khiến
+        // DataGrid.SelectedItem (two-way bind SelectedOrder) rơi về null ngay khi collection đổi,
+        // nên đọc SelectedOrder.DocumentNumber SAU khi reload sẽ NullReferenceException.
+        var sourceId             = SelectedOrder.Id;
+        var sourceDocumentNumber = SelectedOrder.DocumentNumber;
+
+        try
+        {
+            var duplicated = await _duplicateOrder.ExecuteAsync(sourceId, ct);
+            await LoadSalesOrdersAsync(ct); // tự quản lý IsLoading — reload theo đúng filter đang xem
+
+            MessageBox.Show(
+                $"Đã nhân bản chứng từ '{sourceDocumentNumber}' thành '{duplicated.DocumentNumber}'.",
+                "Nhân bản thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Nhân bản thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    // "Gửi email, Zalo" — mirror ReportSharingHelper pattern đã dùng ở SalesOrderReportDetailViewModel:
+    // app chưa tích hợp SMTP/Zalo OA thật, nên chỉ xuất file rồi giao cho Email/Zalo client của máy
+    // người dùng tự đính kèm, không tự gửi được.
+    [RelayCommand(CanExecute = nameof(HasSelection))]
+    private void SendEmail()
+    {
+        if (SelectedOrder is null) return;
+
+        try
+        {
+            using var workbook = BuildSingleOrderWorkbook(SelectedOrder);
+            var path = ReportSharingHelper.SaveWorkbookToTempFile(workbook, $"ChungTu_{SelectedOrder.DocumentNumber}");
+            ReportSharingHelper.RevealInExplorer(path);
+            ReportSharingHelper.OpenMailClient(
+                $"Chứng từ bán hàng - {SelectedOrder.DocumentNumber}",
+                $"File chứng từ đã được lưu tại:\n{path}\n\nVui lòng đính kèm file này vào email trước khi gửi.");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Gửi Email thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(HasSelection))]
+    private void SendZalo()
+    {
+        if (SelectedOrder is null) return;
+
+        try
+        {
+            using var workbook = BuildSingleOrderWorkbook(SelectedOrder);
+            var path = ReportSharingHelper.SaveWorkbookToTempFile(workbook, $"ChungTu_{SelectedOrder.DocumentNumber}");
+            ReportSharingHelper.RevealInExplorer(path);
+            ReportSharingHelper.OpenZaloApp();
+
+            MessageBox.Show("Đã mở Zalo và thư mục chứa file chứng từ. Vui lòng kéo-thả file để đính kèm.",
+                "Gửi Zalo", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Gửi Zalo thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private static XLWorkbook BuildSingleOrderWorkbook(SalesOrderListItem item)
+    {
+        var order     = item.Original;
+        var workbook  = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Chứng từ");
+
+        worksheet.Cell(1, 1).Value = "Số chứng từ:";
+        worksheet.Cell(1, 2).Value = order.DocumentNumber;
+        worksheet.Cell(2, 1).Value = "Ngày:";
+        worksheet.Cell(2, 2).Value = order.DocumentDate.ToLocalTime().ToString("dd/MM/yyyy");
+        worksheet.Cell(3, 1).Value = "Khách hàng:";
+        worksheet.Cell(3, 2).Value = order.CustomerName;
+        worksheet.Cell(4, 1).Value = "Nhân viên:";
+        worksheet.Cell(4, 2).Value = order.EmployeeName;
+
+        string[] headers = { "Mã hàng", "Tên hàng", "SL", "Đơn giá", "CK (%)", "Thành tiền", "Thuế suất", "Tổng cộng" };
+        for (var i = 0; i < headers.Length; i++)
+        {
+            var cell = worksheet.Cell(6, i + 1);
+            cell.Value           = headers[i];
+            cell.Style.Font.Bold = true;
+        }
+
+        var row = 7;
+        foreach (var line in order.Lines)
+        {
+            worksheet.Cell(row, 1).Value = line.ProductCode;
+            worksheet.Cell(row, 2).Value = line.ProductName;
+            worksheet.Cell(row, 3).Value = line.Quantity;
+            worksheet.Cell(row, 4).Value = line.UnitPrice;
+            worksheet.Cell(row, 5).Value = line.DiscountRate;
+            worksheet.Cell(row, 6).Value = line.Amount;
+            worksheet.Cell(row, 7).Value = line.TaxRate;
+            worksheet.Cell(row, 8).Value = line.Amount + line.TaxAmount;
+            row++;
+        }
+
+        worksheet.Columns().AdjustToContents();
+        return workbook;
     }
 }

@@ -13,6 +13,7 @@ public interface ISalesOrderRepository
     Task DeleteAsync(int id, CancellationToken ct = default);
     Task<string> GetNextCodeAsync(bool isFromWarehouseExport = true, CancellationToken ct = default);
     Task<SalesOrderResponseDto> HoldAsync(int id, CancellationToken ct = default);
+    Task<SalesOrderResponseDto> DuplicateAsync(int id, CancellationToken ct = default);
 
     Task<IEnumerable<SalesOrderReportLineDto>> GetReportAsync(
         IEnumerable<int>? productIds, int? employeeId, int? customerId,

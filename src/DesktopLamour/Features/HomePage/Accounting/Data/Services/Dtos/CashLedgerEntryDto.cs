@@ -14,7 +14,10 @@ public class CashLedgerEntryDto
     [JsonPropertyName("counter_account")] public string   CounterAccount { get; set; } = "";
     [JsonPropertyName("debit_amount")]    public decimal  DebitAmount    { get; set; }
     [JsonPropertyName("credit_amount")]   public decimal  CreditAmount   { get; set; }
+    [JsonPropertyName("amount")]          public decimal  Amount         { get; set; }
     [JsonPropertyName("balance")]         public decimal  Balance        { get; set; }
     [JsonPropertyName("person_name")]     public string?  PersonName     { get; set; }
+    [JsonPropertyName("payment_reason")]  public string?  PaymentReason  { get; set; }
+    [JsonPropertyName("document_type")]   public string   DocumentType   { get; set; } = "";
     [JsonPropertyName("status")]          public string   Status         { get; set; } = "Confirmed";
 }

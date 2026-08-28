@@ -179,6 +179,18 @@ public sealed class SalesOrderService : ISalesOrderService
             ?? throw new InvalidOperationException("Empty response from hold endpoint.");
     }
 
+    public async Task<SalesOrderResponseDto> DuplicateAsync(int id, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Duplicating sales order {Id}", id);
+        SetBearerToken();
+
+        var response = await _httpClient.PostAsync($"/api/v1/sales-orders/{id}/duplicate", null, ct);
+        await EnsureSuccessOrThrowAsync(response, ct);
+
+        return await response.Content.ReadFromJsonAsync<SalesOrderResponseDto>(ct)
+            ?? throw new InvalidOperationException("Empty response from duplicate sales order endpoint.");
+    }
+
     private static async Task EnsureSuccessOrThrowAsync(HttpResponseMessage response, CancellationToken ct)
     {
         if (response.IsSuccessStatusCode) return;

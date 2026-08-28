@@ -16,6 +16,7 @@
     <converters:BlankPreserveConverter x:Key="BlankPreserveConverter"/>
     <converters:AccountingAmountConverter x:Key="AccountingAmountConverter"/>
     <converters:CashLedgerStatusDisplayConverter x:Key="CashLedgerStatusDisplayConverter"/>
+    <converters:PaymentReasonDisplayConverter x:Key="PaymentReasonDisplayConverter"/>
     <converters:FilterOperatorLabelConverter x:Key="FilterOperatorLabelConverter"/>
     <converters:FilterOperatorSymbolConverter x:Key="FilterOperatorSymbolConverter"/>
 

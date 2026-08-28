@@ -148,7 +148,29 @@
                       RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
                       MouseDoubleClick="OrdersGrid_MouseDoubleClick"
+                      PreviewMouseRightButtonDown="OrdersGrid_PreviewMouseRightButtonDown"
                       Visibility="{Binding HasSalesOrders, Converter={StaticResource BoolToVisibilityConverter}}">
+
+                <!-- Chuột phải trên lưới — chỉ 5 mục thao tác thật có nghiệp vụ tương ứng (Thêm/
+                     Nhân bản/Xem/Xóa/Gửi email,Zalo), không rập khuôn toàn bộ menu tham chiếu (các
+                     mục như "Ghi sổ"/"Lập phiếu xuất..."/"Sửa mẫu..." thuộc phần mềm khác, app này
+                     chưa có nghiệp vụ đó). InputGestureText chỉ hiển thị chữ phím tắt cho giống ảnh
+                     mẫu — KHÔNG wiring KeyBinding thật (ngoài phạm vi yêu cầu ban đầu). -->
+                <DataGrid.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Thêm" InputGestureText="Ctrl+N" Command="{Binding AddSalesOrderCommand}"/>
+                        <MenuItem Header="Nhân bản..." InputGestureText="Ctrl+C" Command="{Binding DuplicateSalesOrderCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="Xem" InputGestureText="Ctrl+E" Command="{Binding EditSalesOrderCommand}"/>
+                        <MenuItem Header="Xóa" InputGestureText="Ctrl+D" Command="{Binding DeleteSalesOrderCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="Gửi email, Zalo" InputGestureText="Ctrl+Shift+G">
+                            <MenuItem Header="Email" Command="{Binding SendEmailCommand}"/>
+                            <MenuItem Header="Zalo" Command="{Binding SendZaloCommand}"/>
+                        </MenuItem>
+                    </ContextMenu>
+                </DataGrid.ContextMenu>
+
                 <DataGrid.CellStyle>
                     <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
                         <Style.Triggers>
