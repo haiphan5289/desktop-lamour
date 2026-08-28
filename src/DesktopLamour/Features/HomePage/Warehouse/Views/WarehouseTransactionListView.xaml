@@ -188,10 +188,12 @@
                       ScrollViewer.VerticalScrollBarVisibility="Auto"
                       Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibilityConverter}}">
 
-                <!-- Chứng từ bán hàng đang Treo (IsHeld) → tô nền cảnh báo cho cả dòng, khớp cách
-                     SalesOrderListView tô dòng Treo (xem DataGrid.CellStyle ở đó) — dòng Nhập kho
-                     luôn IsHeld=false nên không bị ảnh hưởng. BasedOn VerticalCenterCellStyle vì
-                     CellStyle chỉ được set 1 lần (trước đây set qua thuộc tính CellStyle= ở trên). -->
+                <!-- IsHeld → tô nền cảnh báo cho cả dòng, khớp cách SalesOrderListView tô dòng Treo
+                     (xem DataGrid.CellStyle ở đó). Dòng Xuất kho: SalesOrder đang Treo. Dòng Nhập
+                     kho: phiếu chưa ghi sổ (Draft — kể cả sau khi bấm "Bỏ ghi", xem
+                     GetWarehouseTransactionsUseCase.MapReceipt phía BE). BasedOn
+                     VerticalCenterCellStyle vì CellStyle chỉ được set 1 lần (trước đây set qua
+                     thuộc tính CellStyle= ở trên). -->
                 <DataGrid.CellStyle>
                     <Style TargetType="DataGridCell" BasedOn="{StaticResource VerticalCenterCellStyle}">
                         <Style.Triggers>

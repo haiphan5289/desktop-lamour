@@ -480,6 +480,7 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<WarehouseReceiptListViewModel>();
         services.AddTransient<WarehouseReceiptFormWindow>();
         services.AddTransient<WarehouseReceiptFormViewModel>();
+        services.AddTransient<WarehouseReceiptPrintWindow>();
 
         // ── WarehouseReceipts: UseCases ──────────────────────────────────────────
         services.AddTransient<IGetWarehouseReceiptsUseCase, GetWarehouseReceiptsUseCase>();
@@ -499,6 +500,7 @@ public static class HomeServiceCollectionExtensions
 
         // ── WarehouseReceipts: Window factory ────────────────────────────────────
         services.AddTransient<Func<WarehouseReceiptFormWindow>>(sp => () => sp.GetRequiredService<WarehouseReceiptFormWindow>());
+        services.AddTransient<Func<WarehouseReceiptPrintWindow>>(sp => () => sp.GetRequiredService<WarehouseReceiptPrintWindow>());
 
         // ── WarehouseTransactions (Nhập, xuất kho — danh sách gộp): Views + ViewModels ──
         services.AddTransient<WarehouseTransactionListView>();
@@ -565,9 +567,11 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<SalesReturnListViewModel>();
         services.AddTransient<SalesReturnWindow>();
         services.AddTransient<SalesReturnViewModel>();
+        services.AddTransient<SalesReturnPrintWindow>();
 
         // ── SalesReturn: Window factory ──────────────────────────────────────────
         services.AddTransient<Func<SalesReturnWindow>>(sp => () => sp.GetRequiredService<SalesReturnWindow>());
+        services.AddTransient<Func<SalesReturnPrintWindow>>(sp => () => sp.GetRequiredService<SalesReturnPrintWindow>());
 
         // ── Deposits: Views + ViewModels ─────────────────────────────────────────
         services.AddTransient<DepositWindow>();

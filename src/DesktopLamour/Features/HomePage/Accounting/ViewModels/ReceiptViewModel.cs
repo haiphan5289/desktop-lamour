@@ -466,4 +466,19 @@ public partial class ReceiptViewModel : ViewModelBase
             PopulateFormFromCurrent();
         }
     }
+
+    // Mở màn "Xem" 1 phiếu thu cụ thể từ nơi khác (VD: double-click 1 dòng trên "Sổ Kế Toán Chi
+    // Tiết Quỹ Tiền Mặt") — chỉ có DocumentNumber (CashLedgerEntryDto không mang ReceiptId), nên
+    // tìm theo DocumentNumber thay vì Id trong _receiptListCache đã LoadAsync sẵn. Gọi SAU khi
+    // ReceiptWindow.OnContentRendered đã LoadAsync — xem ReceiptWindow.InitialDocumentNumber.
+    public void NavigateToReceiptByDocumentNumber(string documentNumber)
+    {
+        var idx = _receiptListCache.FindIndex(r => r.DocumentNumber == documentNumber);
+        if (idx >= 0)
+        {
+            _currentIndex  = idx;
+            CurrentReceipt = _receiptListCache[idx];
+            PopulateFormFromCurrent();
+        }
+    }
 }

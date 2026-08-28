@@ -15,9 +15,13 @@ public class SalesReturnLineItem : INotifyPropertyChanged
     private int              _warehouseId;
     private string           _warehouseName     = "";
     private ISearchableItem? _selectedWarehouse;
-    private string           _returnAccount     = "5212";
-    private string           _debtAccount       = "131";
-    private string           _discountAccount   = "5211";
+    // Rỗng cho tới khi user chọn 1 sản phẩm thật — SalesReturnViewModel.AttachLineHandlers gán
+    // "5212"/"131"/"5211" (giá trị mặc định thật) khi ProductId chuyển từ 0 → có giá trị. Trước
+    // đây default sẵn ở đây khiến dòng trống vẫn hiện "5212"/"131"/"5211" trên lưới (CellTemplate
+    // bind thẳng vào các string này, không qua SelectedXxxAccount) dù AddLine() không tự gán nữa.
+    private string           _returnAccount     = "";
+    private string           _debtAccount       = "";
+    private string           _discountAccount   = "";
     private ISearchableItem? _selectedReturnAccount;
     private ISearchableItem? _selectedDebtAccount;
     private ISearchableItem? _selectedDiscountAccount;
@@ -32,11 +36,11 @@ public class SalesReturnLineItem : INotifyPropertyChanged
 
     private decimal          _taxRate;
     private decimal          _taxAmount;
-    private string           _taxAccount        = "33311";
+    private string           _taxAccount        = "";
     private ISearchableItem? _selectedTaxAccount;
 
-    private string           _costAccount       = "1561";
-    private string           _cogsAccount       = "632";
+    private string           _costAccount       = "";
+    private string           _cogsAccount       = "";
     private ISearchableItem? _selectedCostAccount;
     private ISearchableItem? _selectedCogsAccount;
     private decimal          _costPrice;
@@ -60,8 +64,14 @@ public class SalesReturnLineItem : INotifyPropertyChanged
     public string ProductName
     {
         get => _productName;
-        set { _productName = value; OnPropertyChanged(); }
+        set { _productName = value; OnPropertyChanged(); OnPropertyChanged(nameof(TaxDescription)); }
     }
+
+    // "Diễn giải thuế" (tab 2. Thuế) — tự sinh theo tên hàng, RỖNG khi chưa chọn sản phẩm. XAML
+    // trước đây dùng Binding StringFormat="Thuế GTGT - {0}" thẳng vào ProductName — StringFormat
+    // luôn in phần chữ tĩnh "Thuế GTGT -" dù giá trị bind rỗng, không tự ẩn cho dòng trống được;
+    // chuyển sang computed property tự kiểm tra rỗng ở đây thay vì để WPF format.
+    public string TaxDescription => string.IsNullOrEmpty(ProductName) ? "" : $"Thuế GTGT - {ProductName}";
 
     public int WarehouseId
     {

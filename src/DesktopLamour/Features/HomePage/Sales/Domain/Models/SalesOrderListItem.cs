@@ -8,10 +8,12 @@ public class SalesOrderListItem
     public int      Id             { get; init; }
     public string   DocumentNumber { get; init; } = "";
     public DateTime DocumentDate   { get; init; }
+    public string?  Description    { get; init; }
     public string   CustomerName   { get; init; } = "";
     public string?  EmployeeName   { get; init; }
     public decimal  TotalGross     { get; init; }
     public decimal  TotalDiscount  { get; init; }
+    public decimal  TotalTax       { get; init; }
     public decimal  TotalPayment   { get; init; }
     public string?  Notes          { get; init; }
     public int      Status         { get; init; }
@@ -28,10 +30,12 @@ public class SalesOrderListItem
             Id             = dto.Id,
             DocumentNumber = dto.DocumentNumber,
             DocumentDate   = dto.DocumentDate.ToLocalTime(),
+            Description    = dto.Description,
             CustomerName   = dto.CustomerName,
             EmployeeName   = dto.EmployeeName,
             TotalGross     = gross,
             TotalDiscount  = discount,
+            TotalTax       = dto.TotalTaxAmount,
             TotalPayment   = dto.TotalAmount,
             Notes          = dto.Notes,
             Status         = dto.Status,

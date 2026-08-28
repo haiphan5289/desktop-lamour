@@ -8,6 +8,10 @@ public partial class ReceiptWindow : Window
 {
     public ReceiptViewModel ViewModel { get; }
 
+    // Set trước khi Show() để mở thẳng vào 1 phiếu thu cụ thể (VD: "Xem" từ Sổ Kế Toán Chi Tiết
+    // Quỹ Tiền Mặt) thay vì form Thêm mới trống — xem OnContentRendered.
+    public string? InitialDocumentNumber { get; set; }
+
     public ReceiptWindow(ReceiptViewModel viewModel)
     {
         InitializeComponent();
@@ -20,7 +24,10 @@ public partial class ReceiptWindow : Window
     {
         base.OnContentRendered(e);
         await ViewModel.LoadAsync();
-        ViewModel.AddNewCommand.Execute(null);
+        if (!string.IsNullOrEmpty(InitialDocumentNumber))
+            ViewModel.NavigateToReceiptByDocumentNumber(InitialDocumentNumber);
+        else
+            ViewModel.AddNewCommand.Execute(null);
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)

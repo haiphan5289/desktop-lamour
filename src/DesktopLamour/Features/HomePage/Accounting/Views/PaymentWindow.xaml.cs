@@ -9,6 +9,10 @@ public partial class PaymentWindow : Window
 {
     public PaymentViewModel ViewModel { get; }
 
+    // Set trước khi Show() để mở thẳng vào 1 phiếu chi cụ thể (VD: "Xem" từ Sổ Kế Toán Chi Tiết
+    // Quỹ Tiền Mặt) thay vì form Thêm mới trống — xem OnContentRendered.
+    public string? InitialDocumentNumber { get; set; }
+
     public PaymentWindow(PaymentViewModel viewModel)
     {
         InitializeComponent();
@@ -22,7 +26,10 @@ public partial class PaymentWindow : Window
     {
         base.OnContentRendered(e);
         await ViewModel.LoadAsync();
-        ViewModel.AddNewCommand.Execute(null);
+        if (!string.IsNullOrEmpty(InitialDocumentNumber))
+            ViewModel.NavigateToPaymentByDocumentNumber(InitialDocumentNumber);
+        else
+            ViewModel.AddNewCommand.Execute(null);
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)

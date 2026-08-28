@@ -13,6 +13,9 @@ using DesktopLamour.Features.HomePage.Customers.Views;
 using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Employees.Views;
 using DesktopLamour.Features.HomePage.ProductList.Domain.UseCases;
+using DesktopLamour.Features.HomePage.SalesReturn.Views;
+using DesktopLamour.Features.HomePage.Warehouse.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Warehouse.Views;
 using DesktopLamour.Features.HomePage.Warehouses.Domain.UseCases;
 using DesktopLamour.Shared.Controls;
 using Microsoft.Extensions.Logging;
@@ -38,8 +41,11 @@ public partial class SalesReturnViewModel : ViewModelBase
     private readonly IGetAccountSettingsUseCase     _getAccountSettings;
     private readonly IGetDepartmentsUseCase         _getDepartments;
     private readonly ICreateSalesReturnWarehouseReceiptUseCase _createWarehouseReceipt;
+    private readonly IGetWarehouseReceiptByIdUseCase _getWarehouseReceiptById;
     private readonly Func<EmployeeFormWindow>       _employeeFormWindowFactory;
     private readonly Func<CustomerFormWindow>       _customerFormWindowFactory;
+    private readonly Func<SalesReturnPrintWindow>   _printWindowFactory;
+    private readonly Func<WarehouseReceiptPrintWindow> _warehouseReceiptPrintWindowFactory;
     private readonly ILogger<SalesReturnViewModel>  _logger;
 
     // ── State ──────────────────────────────────────────────────────────────
@@ -61,6 +67,8 @@ public partial class SalesReturnViewModel : ViewModelBase
     {
         ReturnTypeLabel = value == 1 ? "Trả lại tiền mặt" : "Giảm trừ công nợ";
         OnPropertyChanged(nameof(SelectedReturnType));
+        OnPropertyChanged(nameof(IsDebtReduction));
+        OnPropertyChanged(nameof(IsCashReturn));
     }
 
     // Bridge cho ComboBox "Loại trả hàng" trong XAML (SelectedItem cần đúng kiểu ReturnTypeItem,
@@ -76,6 +84,22 @@ public partial class SalesReturnViewModel : ViewModelBase
         }
     }
 
+    // Bridge cho 2 RadioButton "Giảm trừ công nợ"/"Trả lại tiền mặt" (khớp ảnh mẫu MISA — dùng
+    // radio thay vì dropdown) — RadioButton.IsChecked là bool, không bind thẳng được vào ReturnType
+    // (int). OnReturnTypeChanged đã notify cả 2 property này khi ReturnType đổi (kể cả đổi từ nơi
+    // khác, không chỉ qua radio).
+    public bool IsDebtReduction
+    {
+        get => ReturnType == 0;
+        set { if (value) ReturnType = 0; }
+    }
+
+    public bool IsCashReturn
+    {
+        get => ReturnType == 1;
+        set { if (value) ReturnType = 1; }
+    }
+
     // ── Chứng từ ──────────────────────────────────────────────────────────
     [ObservableProperty] private DateTime _accountingDate = DateTime.Today;
     [ObservableProperty] private DateTime _documentDate   = DateTime.Today;
@@ -84,6 +108,7 @@ public partial class SalesReturnViewModel : ViewModelBase
     // ── Computed ──────────────────────────────────────────────────────────
     [ObservableProperty] private decimal _totalAmount;
     [ObservableProperty] private decimal _totalDiscount;
+    [ObservableProperty] private decimal _totalTax;
     [ObservableProperty] private decimal _totalPayment;
     [ObservableProperty] private string  _lineSummary = "Số dòng = 0";
 
@@ -122,8 +147,11 @@ public partial class SalesReturnViewModel : ViewModelBase
         IGetAccountSettingsUseCase     getAccountSettings,
         IGetDepartmentsUseCase         getDepartments,
         ICreateSalesReturnWarehouseReceiptUseCase createWarehouseReceipt,
+        IGetWarehouseReceiptByIdUseCase getWarehouseReceiptById,
         Func<EmployeeFormWindow>       employeeFormWindowFactory,
         Func<CustomerFormWindow>       customerFormWindowFactory,
+        Func<SalesReturnPrintWindow>   printWindowFactory,
+        Func<WarehouseReceiptPrintWindow> warehouseReceiptPrintWindowFactory,
         ILogger<SalesReturnViewModel>  logger)
     {
         _createReturn              = createReturn;
@@ -137,8 +165,11 @@ public partial class SalesReturnViewModel : ViewModelBase
         _getAccountSettings        = getAccountSettings;
         _getDepartments            = getDepartments;
         _createWarehouseReceipt    = createWarehouseReceipt;
+        _getWarehouseReceiptById   = getWarehouseReceiptById;
         _employeeFormWindowFactory = employeeFormWindowFactory;
         _customerFormWindowFactory = customerFormWindowFactory;
+        _printWindowFactory        = printWindowFactory;
+        _warehouseReceiptPrintWindowFactory = warehouseReceiptPrintWindowFactory;
         _logger                    = logger;
 
         Lines.CollectionChanged += (_, _) => RecalculateTotals();
@@ -255,21 +286,29 @@ public partial class SalesReturnViewModel : ViewModelBase
         IsBusy = true;
         try
         {
+            SalesReturnResponseDto result;
             if (CurrentReturn is null)
             {
                 var request = BuildCreateRequest();
-                var result  = await _createReturn.ExecuteAsync(request, ct);
+                result = await _createReturn.ExecuteAsync(request, ct);
                 _logger.LogInformation("SalesReturn created: {DocumentNumber}", result.DocumentNumber);
             }
             else
             {
                 var request = BuildUpdateRequest();
-                var result  = await _updateReturn.ExecuteAsync(CurrentReturn.Id, request, ct);
+                result = await _updateReturn.ExecuteAsync(CurrentReturn.Id, request, ct);
                 _logger.LogInformation("SalesReturn updated: {Id}", result.Id);
             }
 
             StopDirtyTracking();
             ReturnSaved?.Invoke();
+            IsBusy = false;
+
+            // Sau khi Ghi sổ, chuyển thẳng sang workflow In Hoá Đơn (PHIẾU TRẢ LẠI HÀNG BÁN) — khớp
+            // hành vi SalesOrderViewModel.SaveAsync đang làm cho "Chứng từ bán hàng" (ShowDialog chặn
+            // cho tới khi user đóng cửa sổ in, rồi mới đóng form này).
+            ShowPrintPreview(result);
+
             RequestClose?.Invoke();
         }
         catch (OperationCanceledException) { }
@@ -281,6 +320,16 @@ public partial class SalesReturnViewModel : ViewModelBase
             MessageBox.Show(ex.Message, "Không thể ghi sổ", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally { IsBusy = false; }
+    }
+
+    private void ShowPrintPreview(SalesReturnResponseDto salesReturn)
+    {
+        var customer = SelectedCustomer as DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer;
+        var printWindow = _printWindowFactory();
+        // SalesReturnResponseDto không có CustomerAddress (khác SalesOrderResponseDto) — lấy thẳng
+        // từ Customer đã chọn trên form, cũng không có khái niệm CustomerNameOverride nên luôn hiện SĐT.
+        printWindow.Initialize(salesReturn, customer?.Phone, customer?.Address);
+        printWindow.ShowDialog();
     }
 
     [RelayCommand]
@@ -331,9 +380,22 @@ public partial class SalesReturnViewModel : ViewModelBase
         try
         {
             var result = await _createWarehouseReceipt.ExecuteAsync(CurrentReturn.Id, ct);
-            MessageBox.Show(
-                $"Đã lập và ghi sổ phiếu nhập kho {result.ReceiptNumber}.",
-                "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            // Sau khi lập PN thành công, chuyển thẳng sang workflow In PHIẾU NHẬP KHO — khớp đúng
+            // hành vi "Ghi sổ → In" đã làm cho Chứng từ bán hàng/Chứng từ trả hàng (auto mở print
+            // preview, không cần thông báo MessageBox riêng vì thấy được bản in là đã xác nhận
+            // thành công). CreateWarehouseReceiptResultDto (result) chỉ có id/receipt_number —
+            // fetch lại đầy đủ (dòng hàng, TK Nợ/Có...) để in.
+            var receipt = await _getWarehouseReceiptById.ExecuteAsync(result.Id, ct);
+            if (receipt is not null)
+            {
+                var partner = Customers.FirstOrDefault(c => c.Id == receipt.CustomerId)
+                    as DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer;
+                var printWindow = _warehouseReceiptPrintWindowFactory();
+                printWindow.Initialize(receipt, partner?.Address);
+                printWindow.Owner = Application.Current.MainWindow;
+                printWindow.ShowDialog();
+            }
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -393,25 +455,50 @@ public partial class SalesReturnViewModel : ViewModelBase
     [RelayCommand]
     private void AddLine()
     {
-        var line = new SalesReturnLineItem
-        {
-            ReturnAccount   = "5212",
-            DebtAccount     = "131",
-            DiscountAccount = "5211",
-            Quantity        = 1,
-        };
-        line.SetSelectedWarehouseSilent(Warehouses.FirstOrDefault());
-        // Set theo mã đã có ở trên (fallback string, phòng khi danh mục tài khoản chưa tải/không
-        // khớp mã nào) — setter chỉ ghi đè ReturnAccount/DebtAccount/DiscountAccount khi tìm thấy
-        // match, không xoá mất giá trị mặc định nếu AccountSettings rỗng.
-        line.SetSelectedReturnAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == line.ReturnAccount));
-        line.SetSelectedDebtAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == line.DebtAccount));
-        line.SetSelectedDiscountAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == line.DiscountAccount));
-        line.SetSelectedTaxAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == line.TaxAccount));
-        line.SetSelectedCostAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == line.CostAccount));
-        line.SetSelectedCogsAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == line.CogsAccount));
-        line.PropertyChanged += (_, _) => RecalculateTotals();
+        var line = new SalesReturnLineItem();
+        AttachLineHandlers(line);
         Lines.Add(line);
+    }
+
+    // Dòng mới phải thực sự rỗng (không Kho/TK/Số lượng mặc định hiển thị sẵn trên dòng chưa chọn
+    // sản phẩm) — tự điền các giá trị này CHỈ khi user chọn 1 sản phẩm thật (ProductId chuyển từ
+    // 0 → có giá trị). Trước đây AddLine set sẵn Warehouse/TK/Quantity=1 ngay từ đầu cho toàn bộ
+    // 100 dòng trống nạp sẵn (ClearForm), khiến dòng chưa có sản phẩm vẫn hiện Kho/TK/Số lượng —
+    // đây chính là bug đã báo. Giống hệt cách SalesOrderViewModel.AttachLineHandlers làm cho
+    // "Chứng từ bán hàng" (không có tác dụng phụ lên dữ liệu lưu — BuildCreateRequest/
+    // BuildUpdateRequest đã lọc Lines.Where(l => l.ProductId > 0) từ trước).
+    //
+    // 2026-08-28: lần sửa đầu (bỏ set trong AddLine) CHƯA đủ — CellTemplate hiển thị (không phải
+    // CellEditingTemplate) bind THẲNG vào ReturnAccount/DebtAccount/DiscountAccount/TaxAccount/
+    // CostAccount/CogsAccount (string), không qua SelectedXxxAccount — mà các string này lại có
+    // default "5212"/"131"/"5211"/"33311"/"1561"/"632" ngay từ field initializer trên
+    // SalesReturnLineItem, nên dòng trống vẫn hiện sẵn dù AddLine không gán gì. Đã đổi field
+    // initializer về "" (xem SalesReturnLineItem.cs) và chuyển việc gán giá trị mặc định thật vào
+    // đúng đây — nơi DUY NHẤT set các string này, chỉ chạy khi ProductId > 0.
+    private void AttachLineHandlers(SalesReturnLineItem line)
+    {
+        line.PropertyChanged += (_, e) =>
+        {
+            RecalculateTotals();
+
+            if (e.PropertyName == nameof(SalesReturnLineItem.ProductId) && line.ProductId > 0 && line.WarehouseId == 0)
+            {
+                line.Quantity        = 1;
+                line.ReturnAccount   = "5212";
+                line.DebtAccount     = "131";
+                line.DiscountAccount = "5211";
+                line.TaxAccount      = "33311";
+                line.CostAccount     = "1561";
+                line.CogsAccount     = "632";
+                line.SetSelectedWarehouseSilent(Warehouses.FirstOrDefault());
+                line.SetSelectedReturnAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == line.ReturnAccount));
+                line.SetSelectedDebtAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == line.DebtAccount));
+                line.SetSelectedDiscountAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == line.DiscountAccount));
+                line.SetSelectedTaxAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == line.TaxAccount));
+                line.SetSelectedCostAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == line.CostAccount));
+                line.SetSelectedCogsAccountSilent(AccountSettings.FirstOrDefault(a => a.Code == line.CogsAccount));
+            }
+        };
     }
 
     [RelayCommand]
@@ -426,7 +513,19 @@ public partial class SalesReturnViewModel : ViewModelBase
     partial void OnSelectedCustomerChanged(ISearchableItem? value)
     {
         if (value is DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer c)
+        {
             Description = $"Thu hồi hàng {c.Name}";
+
+            // Tự điền "NV bán hàng" theo nhân viên chăm sóc gắn sẵn trên khách hàng — khớp hành vi
+            // OnSelectedCustomerChanged bên SalesOrderViewModel ("Chứng từ bán hàng"), trước đây
+            // SalesReturnViewModel chỉ tự điền Diễn giải, bỏ sót phần liên kết nhân viên này.
+            if (c.SaleCareEmployeeId.HasValue)
+            {
+                var matched = Employees.FirstOrDefault(e => e.Id == c.SaleCareEmployeeId.Value);
+                if (matched is not null)
+                    SelectedEmployee = matched;
+            }
+        }
     }
 
     private void ClearForm()
@@ -524,6 +623,9 @@ public partial class SalesReturnViewModel : ViewModelBase
     {
         TotalAmount   = Lines.Sum(l => l.Amount);
         TotalDiscount = Lines.Sum(l => l.DiscountAmount);
+        TotalTax      = Lines.Sum(l => l.TaxAmount);
+        // KHÔNG cộng TotalTax vào đây — khớp đúng công thức BE (CreateSalesReturnUseCase.TotalPayment
+        // = TotalAmount - TotalDiscount, không có tax). TotalTax chỉ là số hiển thị riêng ở footer.
         TotalPayment  = TotalAmount - TotalDiscount;
         LineSummary   = $"Số dòng = {Lines.Count(l => l.ProductId > 0)}";
     }

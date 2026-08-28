@@ -38,6 +38,7 @@ public partial class SalesOrderListViewModel : ViewModelBase
     [ObservableProperty] private int                 _totalCount;
     [ObservableProperty] private decimal             _totalGrossSum;
     [ObservableProperty] private decimal             _totalDiscountSum;
+    [ObservableProperty] private decimal             _totalTaxSum;
     [ObservableProperty] private decimal             _totalPaymentSum;
 
     // 1 ô tìm kiếm chung (AND với FilterFromDate/FilterToDate ở trên) — khớp OR trên các trường
@@ -119,6 +120,7 @@ public partial class SalesOrderListViewModel : ViewModelBase
             TotalCount       = SalesOrders.Count;
             TotalGrossSum    = SalesOrders.Sum(o => o.TotalGross);
             TotalDiscountSum = SalesOrders.Sum(o => o.TotalDiscount);
+            TotalTaxSum      = SalesOrders.Sum(o => o.TotalTax);
             TotalPaymentSum  = SalesOrders.Sum(o => o.TotalPayment);
         }
         catch (OperationCanceledException) { }

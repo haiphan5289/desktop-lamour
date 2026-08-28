@@ -87,6 +87,10 @@ public partial class AccountingViewModel : ViewModelBase
 
     public ICollectionView ItemsView { get; }
 
+    [ObservableProperty] private CashLedgerEntryDto? _selectedEntry;
+
+    private bool HasSelectedEntry => SelectedEntry is not null;
+
     public AccountingViewModel(
         INavigationService   navigationService,
         IGetCashLedgerUseCase getCashLedger,
@@ -225,6 +229,36 @@ public partial class AccountingViewModel : ViewModelBase
         window.ShowDialog();
         _ = LoadAsync(CancellationToken.None);
     }
+
+    // "Xem" 1 dòng đã chọn (double-click hoặc nút toolbar) — mở đúng ReceiptWindow/PaymentWindow
+    // (tuỳ ReceiptNumber hay PaymentNumber có giá trị) THẲNG vào bản ghi đó thay vì form Thêm mới
+    // trống, tái dùng toàn bộ Sửa/Lưu/Xóa/Ghi số/Hoàn đã có sẵn trong 2 window này — không cần
+    // xây UI Sửa/Xóa riêng trên màn Sổ Kế Toán. Rule "phiếu đã Ghi số bất biến" đã tự áp dụng bên
+    // trong PaymentViewModel (CanEdit/thông báo "đã ghi số, không thể sửa" khi bấm Sửa/Xóa).
+    [RelayCommand(CanExecute = nameof(HasSelectedEntry))]
+    private void ViewEntry()
+    {
+        if (SelectedEntry is null) return;
+
+        if (!string.IsNullOrEmpty(SelectedEntry.ReceiptNumber))
+        {
+            var window = _receiptWindowFactory();
+            window.InitialDocumentNumber = SelectedEntry.ReceiptNumber;
+            window.Owner = Application.Current.MainWindow;
+            window.ViewModel.ReceiptSaved += () => _ = LoadAsync(CancellationToken.None);
+            window.Show();
+        }
+        else if (!string.IsNullOrEmpty(SelectedEntry.PaymentNumber))
+        {
+            var window = _paymentWindowFactory();
+            window.InitialDocumentNumber = SelectedEntry.PaymentNumber;
+            window.Owner = Application.Current.MainWindow;
+            window.ViewModel.PaymentSaved += () => _ = LoadAsync(CancellationToken.None);
+            window.Show();
+        }
+    }
+
+    partial void OnSelectedEntryChanged(CashLedgerEntryDto? value) => ViewEntryCommand.NotifyCanExecuteChanged();
 
     [RelayCommand]
     private async Task LoadAsync(CancellationToken ct = default)

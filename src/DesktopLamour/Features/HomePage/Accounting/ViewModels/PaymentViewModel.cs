@@ -701,4 +701,19 @@ public partial class PaymentViewModel : ViewModelBase
             PopulateFormFromCurrent();
         }
     }
+
+    // Mở màn "Xem" 1 phiếu chi cụ thể từ nơi khác (VD: double-click 1 dòng trên "Sổ Kế Toán Chi
+    // Tiết Quỹ Tiền Mặt") — chỉ có DocumentNumber (CashLedgerEntryDto không mang PaymentId), nên
+    // tìm theo DocumentNumber thay vì Id trong _receiptListCache đã LoadAsync sẵn. Gọi SAU khi
+    // PaymentWindow.OnContentRendered đã LoadAsync — xem PaymentWindow.InitialDocumentNumber.
+    public void NavigateToPaymentByDocumentNumber(string documentNumber)
+    {
+        var idx = _receiptListCache.FindIndex(r => r.DocumentNumber == documentNumber);
+        if (idx >= 0)
+        {
+            _currentIndex  = idx;
+            CurrentPayment = _receiptListCache[idx];
+            PopulateFormFromCurrent();
+        }
+    }
 }

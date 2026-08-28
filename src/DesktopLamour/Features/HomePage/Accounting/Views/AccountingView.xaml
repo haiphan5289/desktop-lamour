@@ -104,7 +104,14 @@
                                         Margin="0,0,8,0"/>
                     <controls:AppButton Content="📤 Xuất khẩu"
                                         Style="{StaticResource AppButton.Secondary.Medium}"
-                                        Command="{Binding ExportExcelCommand}"/>
+                                        Command="{Binding ExportExcelCommand}"
+                                        Margin="0,0,8,0"/>
+                    <!-- Chọn 1 dòng trong lưới bên dưới rồi bấm — hoặc double-click thẳng dòng đó
+                         (xem MouseDoubleClick trên DataGrid). Mở đúng Phiếu Thu/Phiếu Chi gốc của
+                         dòng, ở chế độ Sửa (Lưu/Xóa dùng luôn UI có sẵn trong 2 form đó). -->
+                    <controls:AppButton Content="👁 Xem"
+                                        Style="{StaticResource AppButton.Secondary.Medium}"
+                                        Command="{Binding ViewEntryCommand}"/>
                 </StackPanel>
 
                 <!-- Hàng lọc — mọi ô cùng Height="36" + VerticalAlignment="Center" để nhãn và
@@ -216,7 +223,10 @@
                 </DockPanel>
             </Border>
 
-            <DataGrid ItemsSource="{Binding ItemsView}"
+            <DataGrid x:Name="LedgerGrid"
+                      ItemsSource="{Binding ItemsView}"
+                      SelectedItem="{Binding SelectedEntry, Mode=TwoWay}"
+                      MouseDoubleClick="LedgerGrid_MouseDoubleClick"
                       AutoGenerateColumns="False"
                       IsReadOnly="True"
                       CanUserAddRows="False"

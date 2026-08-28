@@ -207,6 +207,7 @@
                                         Binding="{Binding DocumentDate, StringFormat=\{0:dd/MM/yyyy\}}"
                                         Width="100"/>
 
+                    <DataGridTextColumn Header="Diễn giải" Binding="{Binding Description}" Width="200"/>
                     <DataGridTextColumn Header="Khách hàng" Binding="{Binding CustomerName}" Width="*"/>
                     <DataGridTextColumn Header="Nhân viên" Binding="{Binding EmployeeName}" Width="140"/>
 
@@ -220,6 +221,15 @@
                     </DataGridTextColumn>
 
                     <DataGridTextColumn Header="Tổng CK" Binding="{Binding TotalDiscount, StringFormat=\{0:N0\}}" Width="110">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextAlignment" Value="Right"/>
+                                <Setter Property="Padding" Value="6,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn Header="Tiền thuế GTGT" Binding="{Binding TotalTax, StringFormat=\{0:N0\}}" Width="120">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="TextAlignment" Value="Right"/>
@@ -257,35 +267,44 @@
                         <ColumnDefinition Width="100"/>  <!-- Trạng thái -->
                         <ColumnDefinition Width="120"/>  <!-- Số chứng từ -->
                         <ColumnDefinition Width="100"/>  <!-- Ngày -->
+                        <ColumnDefinition Width="200"/>  <!-- Diễn giải -->
                         <ColumnDefinition Width="*"/>    <!-- Khách hàng -->
                         <ColumnDefinition Width="140"/>  <!-- Nhân viên -->
                         <ColumnDefinition Width="130"/>  <!-- Tổng tiền hàng -->
                         <ColumnDefinition Width="110"/>  <!-- Tổng CK -->
+                        <ColumnDefinition Width="120"/>  <!-- Tiền thuế GTGT -->
                         <ColumnDefinition Width="140"/>  <!-- Tổng thanh toán -->
                         <ColumnDefinition Width="*"/>    <!-- Ghi chú -->
                     </Grid.ColumnDefinitions>
 
-                    <controls:AppLabel Grid.Column="0" Grid.ColumnSpan="4"
+                    <controls:AppLabel Grid.Column="0" Grid.ColumnSpan="5"
                                        Text="{Binding TotalCount, StringFormat='Tổng cộng: {0} chứng từ'}"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        VerticalAlignment="Center"
                                        Padding="6,10"/>
 
-                    <TextBlock Grid.Column="5"
+                    <TextBlock Grid.Column="6"
                                Text="{Binding TotalGrossSum, StringFormat=\{0:N0\}}"
                                FontWeight="Bold"
                                TextAlignment="Right"
                                VerticalAlignment="Center"
                                Padding="6,10"/>
 
-                    <TextBlock Grid.Column="6"
+                    <TextBlock Grid.Column="7"
                                Text="{Binding TotalDiscountSum, StringFormat=\{0:N0\}}"
                                FontWeight="Bold"
                                TextAlignment="Right"
                                VerticalAlignment="Center"
                                Padding="6,10"/>
 
-                    <TextBlock Grid.Column="7"
+                    <TextBlock Grid.Column="8"
+                               Text="{Binding TotalTaxSum, StringFormat=\{0:N0\}}"
+                               FontWeight="Bold"
+                               TextAlignment="Right"
+                               VerticalAlignment="Center"
+                               Padding="6,10"/>
+
+                    <TextBlock Grid.Column="9"
                                Text="{Binding TotalPaymentSum, StringFormat=\{0:N0\}}"
                                FontWeight="Bold"
                                TextAlignment="Right"
