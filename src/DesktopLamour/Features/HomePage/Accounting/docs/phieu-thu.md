@@ -197,3 +197,14 @@ This reduces manual data entry and ensures consistency with customer master data
 - `Số chứng từ` là free-text — không validate uniqueness trên WPF
 - `Tham chiếu` search button chưa có lookup action
 - `+` button cạnh `Đối tượng` và `Nhân viên thu` chưa có quick-add flow
+
+## "Sổ Kế Toán Chi Tiết Quỹ Tiền Mặt" — click-để-Xem + cột "Lý do thu/chi"/"Loại chứng từ" (2026-08-28)
+
+Theo yêu cầu ("cái chỗ quỹ bấm vào xem để xem chi tiết bên trong không được, cũng không cho chỉnh sửa rồi xóa") — trước đó `AccountingView` chỉ liệt kê `CashTransaction`, không có cách nào click 1 dòng để mở lại đúng Receipt/Payment gốc mà sửa/xóa.
+
+- **`AccountingViewModel`**: thêm `SelectedEntry` (`CashLedgerEntryDto?`) + `ViewEntryCommand` (`[RelayCommand(CanExecute = nameof(HasSelectedEntry))]`) — đọc `SelectedEntry.ReceiptNumber`/`.PaymentNumber` (bên nào khác rỗng) để quyết định mở `ReceiptWindow` hay `PaymentWindow`, set `window.InitialDocumentNumber` trước `ShowDialog()`.
+- **`ReceiptWindow.xaml.cs`/`PaymentWindow.xaml.cs`**: thêm property `InitialDocumentNumber` (`string?`), đọc trong `OnContentRendered` để tự tìm và chọn sẵn đúng chứng từ trong list đã load — tái dùng nguyên cơ chế Sửa/Xóa/In sẵn có trên 2 Window này (không viết thêm luồng edit riêng cho "mở từ Sổ quỹ").
+- **`ReceiptViewModel`/`PaymentViewModel`**: thêm method public `NavigateToReceiptByDocumentNumber`/`NavigateToPaymentByDocumentNumber` — tìm trong collection đã load theo `DocumentNumber`, set `SelectedReceipt`/`SelectedPayment`.
+- **`AccountingView.xaml`**: `DataGrid` bind `SelectedItem="{Binding SelectedEntry}"` (TwoWay) + `MouseDoubleClick` gọi `ViewEntryCommand`, thêm nút toolbar "👁 Xem".
+- **Cột mới**: "Lý do thu/chi" (`PaymentReason`, qua `PaymentReasonDisplayConverter` có sẵn) và "Loại chứng từ" (`DocumentType`, ví dụ "Phiếu thu"/"Phiếu chi") — 2 field mới trên BE `CashLedgerEntryDto` (xem `be-window-lamour/.../Accounting/docs/phieu-thu.md`/`phieu-chi.md`, migration `AddCashTransactionReasonAndDocType`). Cắt bớt vài cột kỹ thuật ít dùng (Nợ/Có riêng lẻ, Trạng thái tài khoản, TK đối ứng) để nhường chỗ — gộp hiển thị số tiền qua 1 cột "Số tiền" duy nhất thay vì tách Nợ/Có.
+- Không cần EF migration thêm cho phần WPF (BE migration đã chạy ở đợt sửa cùng ngày). WPF build 0 lỗi.
