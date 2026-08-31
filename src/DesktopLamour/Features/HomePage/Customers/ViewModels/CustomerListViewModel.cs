@@ -34,13 +34,38 @@ public partial class CustomerListViewModel : ViewModelBase
     // 1 ô tìm kiếm chung — khớp OR trên các trường text chính, không phân biệt hoa/thường.
     [ObservableProperty] private string _searchText = string.Empty;
 
+    // ── Filter theo từng cột — nhúng ngay trong header lưới (khớp UI MISA), AND với nhau và với
+    // SearchText phía trên. Cùng pattern WarehouseTransactionListView/WarehouseTransactionListViewModel.
+    [ObservableProperty] private string _filterCode                     = string.Empty;
+    [ObservableProperty] private string _filterName                     = string.Empty;
+    [ObservableProperty] private string _filterAddress                  = string.Empty;
+    [ObservableProperty] private string _filterProvince                 = string.Empty;
+    [ObservableProperty] private string _filterCustomerGroup            = string.Empty;
+    [ObservableProperty] private string _filterTaxCode                  = string.Empty;
+    [ObservableProperty] private string _filterPhone                    = string.Empty;
+    [ObservableProperty] private string _filterSaleCareEmployeeName     = string.Empty;
+
+    partial void OnFilterCodeChanged(string value)                 => CustomersView.Refresh();
+    partial void OnFilterNameChanged(string value)                 => CustomersView.Refresh();
+    partial void OnFilterAddressChanged(string value)              => CustomersView.Refresh();
+    partial void OnFilterProvinceChanged(string value)             => CustomersView.Refresh();
+    partial void OnFilterCustomerGroupChanged(string value)        => CustomersView.Refresh();
+    partial void OnFilterTaxCodeChanged(string value)              => CustomersView.Refresh();
+    partial void OnFilterPhoneChanged(string value)                => CustomersView.Refresh();
+    partial void OnFilterSaleCareEmployeeNameChanged(string value) => CustomersView.Refresh();
+
     public ObservableCollection<Customer> Customers { get; } = new();
 
-    // View lọc live theo các Filter* per-cột — DataGrid bind vào đây thay vì Customers trực tiếp;
-    // Customers vẫn là nguồn dữ liệu thật (Add/Remove/Clear ở Load/Duplicate/Delete không đổi).
+    // View lọc live theo SearchText + các Filter* per-cột — DataGrid bind vào đây thay vì Customers
+    // trực tiếp; Customers vẫn là nguồn dữ liệu thật (Add/Remove/Clear ở Load/Duplicate/Delete không đổi).
     public ICollectionView CustomersView { get; }
 
     public string TotalCustomersText => $"Tổng: {Customers.Count} khách hàng";
+
+    // "Số dòng = N" — đếm đúng số dòng ĐANG HIỂN THỊ sau khi lọc (khớp footer lưới MISA), khác với
+    // TotalCustomersText luôn là tổng toàn bộ không lọc. CollectionChanged của ICollectionView tự
+    // bắn Reset sau mỗi lần Refresh() nên không cần gọi tay ở từng nơi filter thay đổi.
+    public string RowCountText => $"Số dòng = {CustomersView.Cast<object>().Count()}";
 
     private bool HasSelection => SelectedCustomer is not null;
 
@@ -61,6 +86,9 @@ public partial class CustomerListViewModel : ViewModelBase
 
         CustomersView = CollectionViewSource.GetDefaultView(Customers);
         CustomersView.Filter = FilterCustomer;
+        // ICollectionView tự bắn CollectionChanged (Reset) sau mỗi Refresh() — dùng chung 1 chỗ để
+        // cập nhật RowCountText, khỏi phải gọi tay ở từng OnFilterXChanged/Load/Add/Delete.
+        CustomersView.CollectionChanged += (_, _) => OnPropertyChanged(nameof(RowCountText));
     }
 
     partial void OnSearchTextChanged(string value) => CustomersView.Refresh();
@@ -68,16 +96,28 @@ public partial class CustomerListViewModel : ViewModelBase
     private bool FilterCustomer(object obj)
     {
         if (obj is not Customer c) return false;
-        if (string.IsNullOrWhiteSpace(SearchText)) return true;
 
-        return Matches(c.Code, SearchText)
-            || Matches(c.Name, SearchText)
-            || Matches(c.Address, SearchText)
-            || Matches(c.Province, SearchText)
-            || Matches(c.CustomerGroup, SearchText)
-            || Matches(c.TaxCode, SearchText)
-            || Matches(c.Phone, SearchText)
-            || Matches(c.SaleCareEmployeeName, SearchText);
+        if (!string.IsNullOrWhiteSpace(SearchText))
+        {
+            var matchesSearch = Matches(c.Code, SearchText)
+                || Matches(c.Name, SearchText)
+                || Matches(c.Address, SearchText)
+                || Matches(c.Province, SearchText)
+                || Matches(c.CustomerGroup, SearchText)
+                || Matches(c.TaxCode, SearchText)
+                || Matches(c.Phone, SearchText)
+                || Matches(c.SaleCareEmployeeName, SearchText);
+            if (!matchesSearch) return false;
+        }
+
+        return Matches(c.Code, FilterCode)
+            && Matches(c.Name, FilterName)
+            && Matches(c.Address, FilterAddress)
+            && Matches(c.Province, FilterProvince)
+            && Matches(c.CustomerGroup, FilterCustomerGroup)
+            && Matches(c.TaxCode, FilterTaxCode)
+            && Matches(c.Phone, FilterPhone)
+            && Matches(c.SaleCareEmployeeName, FilterSaleCareEmployeeName);
     }
 
     private static bool Matches(string? value, string filter)
