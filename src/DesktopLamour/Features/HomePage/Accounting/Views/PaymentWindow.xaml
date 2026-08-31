@@ -108,78 +108,19 @@
         </Border>
 
         <!-- ═══════════════════════════════════════════════════════ -->
-        <!-- Toolbar                                                 -->
+        <!-- Toolbar — dải ribbon dùng chung (DocumentToolbar)       -->
         <!-- ═══════════════════════════════════════════════════════ -->
-        <Border Grid.Row="1"
-                Padding="16,10"
-                Background="{StaticResource AppColor.BackgroundPrimary}"
-                BorderBrush="{StaticResource AppColor.BorderThin}"
-                BorderThickness="0,0,0,1">
-            <StackPanel Orientation="Horizontal">
-
-                <!-- Group 1: Navigation -->
-                <Border Background="{StaticResource AppColor.BackgroundSecondary}"
-                        BorderBrush="{StaticResource AppColor.BorderThin}"
-                        BorderThickness="1"
-                        CornerRadius="6"
-                        Padding="4"
-                        Margin="0,0,8,0">
-                    <StackPanel Orientation="Horizontal">
-                        <controls:AppButton Content="◀ Trước" Style="{StaticResource AppButton.Tertiary.Medium}" Command="{Binding NavigatePrevCommand}" Margin="0"/>
-                        <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
-                        <controls:AppButton Content="Sau ▶" Style="{StaticResource AppButton.Tertiary.Medium}" Command="{Binding NavigateNextCommand}" Margin="0"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- Group 2: Thêm / Sửa / Xóa / Treo / Ghi số -->
-                <Border Background="{StaticResource AppColor.BackgroundSecondary}"
-                        BorderBrush="{StaticResource AppColor.BorderThin}"
-                        BorderThickness="1"
-                        CornerRadius="6"
-                        Padding="4"
-                        Margin="0,0,8,0">
-                    <StackPanel Orientation="Horizontal">
-                        <controls:AppButton Content="➕ Thêm" Style="{StaticResource AppButton.Tertiary.Medium}" Command="{Binding AddNewCommand}" Margin="0"/>
-                        <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
-                        <controls:AppButton Content="✏️ Sửa" Style="{StaticResource AppButton.Tertiary.Medium}" Command="{Binding EditCommand}" Margin="0"/>
-                        <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
-                        <controls:AppButton Content="🗑️ Xóa" Style="{StaticResource AppButton.Destructive.Medium}" Command="{Binding DeleteCommand}" Margin="0"/>
-                        <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
-                        <controls:AppButton Content="📌 Treo" Style="{StaticResource AppButton.Tertiary.Medium}" Command="{Binding TreoCommand}" Margin="0"/>
-                        <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
-                        <controls:AppButton Content="📑 Ghi số" Style="{StaticResource AppButton.Primary.Medium}" Command="{Binding ConfirmCommand}" FontWeight="SemiBold" Margin="0"/>
-                        <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
-                        <controls:AppButton Content="↩️ Hoàn" Style="{StaticResource AppButton.Tertiary.Medium}" Command="{Binding UnconfirmCommand}" Margin="0"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- Group 3: Làm mới -->
-                <Border Background="{StaticResource AppColor.BackgroundSecondary}"
-                        BorderBrush="{StaticResource AppColor.BorderThin}"
-                        BorderThickness="1"
-                        CornerRadius="6"
-                        Padding="4"
-                        Margin="0,0,8,0">
-                    <StackPanel Orientation="Horizontal">
-                        <controls:AppButton Content="🔄 Làm mới" Style="{StaticResource AppButton.Tertiary.Medium}" Command="{Binding RefreshCommand}" Margin="0"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- Group 4: In / Đóng -->
-                <Border Background="{StaticResource AppColor.BackgroundSecondary}"
-                        BorderBrush="{StaticResource AppColor.BorderThin}"
-                        BorderThickness="1"
-                        CornerRadius="6"
-                        Padding="4">
-                    <StackPanel Orientation="Horizontal">
-                        <controls:AppButton Content="🖨️ In" Style="{StaticResource AppButton.Tertiary.Medium}" Command="{Binding PrintCommand}" Margin="0"/>
-                        <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
-                        <controls:AppButton Content="✖️ Đóng" Style="{StaticResource AppButton.Tertiary.Medium}" Click="CloseButton_Click" Margin="0"/>
-                    </StackPanel>
-                </Border>
-
-            </StackPanel>
-        </Border>
+        <controls:DocumentToolbar Grid.Row="1"
+                                  PrevCommand="{Binding NavigatePrevCommand}"
+                                  NextCommand="{Binding NavigateNextCommand}"
+                                  AddCommand="{Binding AddNewCommand}"
+                                  EditCommand="{Binding EditCommand}"
+                                  DeleteCommand="{Binding DeleteCommand}"
+                                  SaveCommand="{Binding ConfirmCommand}"
+                                  UnpostCommand="{Binding UnconfirmCommand}"
+                                  HoldCommand="{Binding TreoCommand}"
+                                  PrintCommand="{Binding PrintCommand}"
+                                  CloseRequested="CloseButton_Click"/>
 
         <!-- ═══════════════════════════════════════════════════════ -->
         <!-- Form — Thông tin chung + Chứng từ                       -->

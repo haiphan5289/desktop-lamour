@@ -115,7 +115,77 @@ public partial class SalesReturnViewModel : ViewModelBase
     // ── Data ──────────────────────────────────────────────────────────────
     [ObservableProperty] private SalesReturnResponseDto? _currentReturn;
 
+    partial void OnCurrentReturnChanged(SalesReturnResponseDto? value)
+    {
+        OnPropertyChanged(nameof(HasExistingReturn));
+        PrintCommand.NotifyCanExecuteChanged();
+        DeleteCommand.NotifyCanExecuteChanged();
+        CreateWarehouseReceiptCommand.NotifyCanExecuteChanged();
+    }
+
     public bool HasExistingReturn => CurrentReturn is not null;
+
+    // ── Điều hướng Trước/Sau/Thêm trong popup — gọi từ SalesReturnWindow.Initialize khi mở từ
+    // 1 danh sách (SalesReturnListViewModel). Không set (mặc định rỗng) → CanNavigatePrev/Next
+    // luôn false, nút Trước/Sau disable (mờ) chứ không ẩn hẳn khỏi toolbar.
+    private IReadOnlyList<SalesReturnResponseDto> _siblingReturns = Array.Empty<SalesReturnResponseDto>();
+    private int _siblingIndex = -1;
+
+    // CanExecute cho NavigatePrev/NavigateNextCommand.
+    public bool CanNavigatePrev => _siblingIndex > 0;
+    public bool CanNavigateNext => _siblingIndex >= 0 && _siblingIndex < _siblingReturns.Count - 1;
+
+    private void NotifyNavigationChanged()
+    {
+        NavigatePrevCommand.NotifyCanExecuteChanged();
+        NavigateNextCommand.NotifyCanExecuteChanged();
+    }
+
+    public void SetSiblingContext(IReadOnlyList<SalesReturnResponseDto> siblings, int currentIndex)
+    {
+        _siblingReturns = siblings;
+        _siblingIndex   = currentIndex;
+        NotifyNavigationChanged();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanNavigatePrev))]
+    private async Task NavigatePrevAsync(CancellationToken ct = default)
+    {
+        if (_siblingIndex <= 0 || !ConfirmDiscardIfDirty()) return;
+        _siblingIndex--;
+        await InitializeAsync(_siblingReturns[_siblingIndex], ct);
+        NotifyNavigationChanged();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanNavigateNext))]
+    private async Task NavigateNextAsync(CancellationToken ct = default)
+    {
+        if (_siblingIndex < 0 || _siblingIndex >= _siblingReturns.Count - 1 || !ConfirmDiscardIfDirty()) return;
+        _siblingIndex++;
+        await InitializeAsync(_siblingReturns[_siblingIndex], ct);
+        NotifyNavigationChanged();
+    }
+
+    [RelayCommand]
+    private async Task AddNewAsync(CancellationToken ct = default)
+    {
+        if (!ConfirmDiscardIfDirty()) return;
+        _siblingIndex = -1;
+        await InitializeAsync(null, ct);
+        NotifyNavigationChanged();
+    }
+
+    // Dùng chung cho Trước/Sau/Thêm — khớp text cảnh báo đã dùng ở SalesReturnWindow.OnClosing.
+    private bool ConfirmDiscardIfDirty()
+    {
+        if (!IsDirty) return true;
+        var r = MessageBox.Show(
+            "Dữ liệu chưa lưu sẽ bị mất nếu tiếp tục. Bạn có chắc muốn tiếp tục?",
+            "Xác nhận",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        return r == MessageBoxResult.Yes;
+    }
 
     public ObservableCollection<SalesReturnLineItem> Lines { get; } = new();
 
@@ -332,7 +402,17 @@ public partial class SalesReturnViewModel : ViewModelBase
         printWindow.ShowDialog();
     }
 
-    [RelayCommand]
+    // "In" ở toolbar — in lại chứng từ đã Ghi sổ. Chỉ khả dụng sau khi CurrentReturn tồn tại
+    // (khác SalesOrderWindow, form này không hỗ trợ preview cho dữ liệu chưa lưu vì
+    // ShowPrintPreview cần SalesReturnResponseDto đầy đủ Id/DocumentNumber từ BE).
+    [RelayCommand(CanExecute = nameof(HasExistingReturn))]
+    private void Print()
+    {
+        if (CurrentReturn is null) return;
+        ShowPrintPreview(CurrentReturn);
+    }
+
+    [RelayCommand(CanExecute = nameof(HasExistingReturn))]
     private async Task DeleteAsync(CancellationToken ct = default)
     {
         if (CurrentReturn is null) return;
@@ -365,7 +445,7 @@ public partial class SalesReturnViewModel : ViewModelBase
     // "Lập PN" — chỉ dùng được sau khi chứng từ đã Ghi sổ (có CurrentReturn.Id). Tự động tạo VÀ
     // ghi sổ (Confirmed) luôn 1 Phiếu Nhập Kho liên kết — xem
     // CreateSalesReturnWarehouseReceiptUseCase (BE) để biết vì sao không đụng lại tồn kho.
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasExistingReturn))]
     private async Task CreateWarehouseReceiptAsync(CancellationToken ct = default)
     {
         if (CurrentReturn is null)

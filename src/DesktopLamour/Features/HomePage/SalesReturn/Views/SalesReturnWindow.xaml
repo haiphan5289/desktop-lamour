@@ -84,38 +84,6 @@
             </Setter>
         </Style>
 
-        <!-- Ribbon toolbar button — icon lớn phía trên, chữ nhỏ phía dưới, nền trong suốt + đổi màu
-             nhạt khi hover, khớp phong cách ribbon MISA trong ảnh mẫu. Chỉ dùng cho action có logic
-             thật (Xóa/Lập PN/Ghi số/Đóng) — không thêm nút giả cho Trước/Sau/Hoàn/Nạp/Tiện ích/Mẫu/
-             Giúp vì app chưa có nghiệp vụ đứng sau (khớp precedent PaymentWindow: ẩn hẳn action
-             không có logic thật thay vì hiện placeholder mờ). -->
-        <Style x:Key="RibbonButton" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Padding" Value="10,6"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bg"
-                                Background="{TemplateBinding Background}"
-                                CornerRadius="{StaticResource AppRadius.Medium}"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="{StaticResource AppColor.BackgroundSecondary}"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.4"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
     </Window.Resources>
 
     <Grid>
@@ -146,48 +114,18 @@
         </Border>
 
         <!-- ══════════════════════════════════════════════════════════ -->
-        <!-- Toolbar — dải ribbon icon-trên/chữ-dưới, chỉ gồm action có  -->
-        <!-- logic thật (Xóa/Lập PN/Ghi số/Đóng) — xem RibbonButton.     -->
+        <!-- Toolbar — dải ribbon dùng chung (DocumentToolbar)          -->
         <!-- ══════════════════════════════════════════════════════════ -->
-        <Border Grid.Row="1"
-                Padding="8,6"
-                Background="{StaticResource AppColor.BackgroundSecondary}"
-                BorderBrush="{StaticResource AppColor.BorderThin}"
-                BorderThickness="0,0,0,1">
-            <StackPanel Orientation="Horizontal">
-                <Button Style="{StaticResource RibbonButton}" Command="{Binding SaveCommand}">
-                    <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="💾" FontSize="20" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Ghi sổ" FontSize="11" HorizontalAlignment="Center" Margin="0,2,0,0"/>
-                    </StackPanel>
-                </Button>
-
-                <Button Style="{StaticResource RibbonButton}" Command="{Binding CreateWarehouseReceiptCommand}">
-                    <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="🧾" FontSize="20" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Lập PN" FontSize="11" HorizontalAlignment="Center" Margin="0,2,0,0"/>
-                    </StackPanel>
-                </Button>
-
-                <Rectangle Width="1" Margin="4,6" Fill="{StaticResource AppColor.BorderThin}"/>
-
-                <Button Style="{StaticResource RibbonButton}" Command="{Binding DeleteCommand}">
-                    <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="🗑️" FontSize="20" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Xóa" FontSize="11" HorizontalAlignment="Center" Margin="0,2,0,0" Foreground="{StaticResource AppColor.TextError}"/>
-                    </StackPanel>
-                </Button>
-
-                <Rectangle Width="1" Margin="4,6" Fill="{StaticResource AppColor.BorderThin}"/>
-
-                <Button Style="{StaticResource RibbonButton}" Click="CloseButton_Click">
-                    <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="✖️" FontSize="20" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Đóng" FontSize="11" HorizontalAlignment="Center" Margin="0,2,0,0"/>
-                    </StackPanel>
-                </Button>
-            </StackPanel>
-        </Border>
+        <controls:DocumentToolbar Grid.Row="1"
+                                  PrevCommand="{Binding NavigatePrevCommand}"
+                                  NextCommand="{Binding NavigateNextCommand}"
+                                  AddCommand="{Binding AddNewCommand}"
+                                  SaveCommand="{Binding SaveCommand}"
+                                  DeleteCommand="{Binding DeleteCommand}"
+                                  CreateExportCommand="{Binding CreateWarehouseReceiptCommand}"
+                                  CreateExportLabel="Lập PN"
+                                  PrintCommand="{Binding PrintCommand}"
+                                  CloseRequested="CloseButton_Click"/>
 
         <!-- ══════════════════════════════════════════════════════════ -->
         <!-- Document-type tabs — Giảm trừ công nợ (nội dung thật) /   -->

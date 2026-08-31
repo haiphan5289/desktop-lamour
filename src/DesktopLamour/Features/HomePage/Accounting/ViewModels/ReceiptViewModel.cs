@@ -59,6 +59,19 @@ public partial class ReceiptViewModel : ViewModelBase
     [ObservableProperty] private ReceiptResponseDto? _currentReceipt;
     [ObservableProperty] private IEnumerable<ReceiptResponseDto> _receiptList = Enumerable.Empty<ReceiptResponseDto>();
 
+    partial void OnCurrentReceiptChanged(ReceiptResponseDto? value)
+    {
+        NavigatePrevCommand.NotifyCanExecuteChanged();
+        NavigateNextCommand.NotifyCanExecuteChanged();
+        DeleteCommand.NotifyCanExecuteChanged();
+    }
+
+    // CanExecute cho NavigatePrev/NavigateNextCommand — WPF tự disable (mờ) nút khi đang ở
+    // đầu/cuối danh sách, không phải ẩn hẳn (nút vẫn nằm đúng chỗ trong toolbar).
+    public bool CanNavigatePrev => _currentIndex > 0;
+    public bool CanNavigateNext => _currentIndex >= 0 && _currentIndex < _receiptListCache.Count - 1;
+    public bool CanDelete => CurrentReceipt is not null;
+
     public ObservableCollection<ReceiptEntryItem> Entries { get; } = new();
 
     public IReadOnlyList<ISearchableItem> Customers { get; private set; } = Array.Empty<ISearchableItem>();
@@ -235,7 +248,7 @@ public partial class ReceiptViewModel : ViewModelBase
         finally { IsBusy = false; }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanDelete))]
     private async Task DeleteAsync(CancellationToken ct = default)
     {
         if (CurrentReceipt is null) return;
@@ -257,7 +270,7 @@ public partial class ReceiptViewModel : ViewModelBase
         finally { IsBusy = false; }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanNavigatePrev))]
     private void NavigatePrev()
     {
         if (_receiptListCache.Count == 0 || _currentIndex <= 0) return;
@@ -266,7 +279,7 @@ public partial class ReceiptViewModel : ViewModelBase
         PopulateFormFromCurrent();
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanNavigateNext))]
     private void NavigateNext()
     {
         if (_receiptListCache.Count == 0 || _currentIndex >= _receiptListCache.Count - 1) return;

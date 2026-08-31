@@ -45,6 +45,11 @@ public partial class SalesOrderViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsEditable));
         OnPropertyChanged(nameof(ShowHoldSection));
         OnPropertyChanged(nameof(HeaderSubtitle));
+        EditCommand.NotifyCanExecuteChanged();
+        SaveCommand.NotifyCanExecuteChanged();
+        DeleteCommand.NotifyCanExecuteChanged();
+        CancelCommand.NotifyCanExecuteChanged();
+        HoldCommand.NotifyCanExecuteChanged();
     }
 
     public bool IsEditable => !IsReadOnly;
@@ -52,6 +57,78 @@ public partial class SalesOrderViewModel : ViewModelBase
     public string HeaderSubtitle => IsReadOnly
         ? "Xem chi tiết chứng từ (chỉ đọc)"
         : "Bán hàng hóa, dịch vụ trong nước chưa thu tiền";
+
+    // ── Điều hướng Trước/Sau/Thêm/Sửa trong popup — gọi từ SalesOrderWindow.Initialize khi mở từ
+    // 1 danh sách (SalesOrderListViewModel). Không set (mặc định rỗng) → CanNavigatePrev/Next luôn
+    // false, nút Trước/Sau disable (mờ) chứ không ẩn hẳn khỏi toolbar.
+    private IReadOnlyList<SalesOrderResponseDto> _siblingOrders = Array.Empty<SalesOrderResponseDto>();
+    private int _siblingIndex = -1;
+
+    // CanExecute cho NavigatePrev/NavigateNextCommand.
+    public bool CanNavigatePrev => _siblingIndex > 0;
+    public bool CanNavigateNext => _siblingIndex >= 0 && _siblingIndex < _siblingOrders.Count - 1;
+
+    private void NotifyNavigationChanged()
+    {
+        NavigatePrevCommand.NotifyCanExecuteChanged();
+        NavigateNextCommand.NotifyCanExecuteChanged();
+    }
+
+    public void SetSiblingContext(IReadOnlyList<SalesOrderResponseDto> siblings, int currentIndex)
+    {
+        _siblingOrders = siblings;
+        _siblingIndex  = currentIndex;
+        NotifyNavigationChanged();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanNavigatePrev))]
+    private async Task NavigatePrevAsync(CancellationToken ct = default)
+    {
+        if (_siblingIndex <= 0 || !ConfirmDiscardIfDirty()) return;
+        _siblingIndex--;
+        await InitializeAsync(_siblingOrders[_siblingIndex], ct);
+        NotifyNavigationChanged();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanNavigateNext))]
+    private async Task NavigateNextAsync(CancellationToken ct = default)
+    {
+        if (_siblingIndex < 0 || _siblingIndex >= _siblingOrders.Count - 1 || !ConfirmDiscardIfDirty()) return;
+        _siblingIndex++;
+        await InitializeAsync(_siblingOrders[_siblingIndex], ct);
+        NotifyNavigationChanged();
+    }
+
+    [RelayCommand]
+    private async Task AddNewAsync(CancellationToken ct = default)
+    {
+        if (!ConfirmDiscardIfDirty()) return;
+        // Chứng từ mới chưa có trong danh sách anh/em — bỏ vị trí cũ, giữ nguyên tinh thần
+        // Payment/ReceiptViewModel.AddNew() (đặt _currentIndex = -1) để Trước/Sau tự disable cho tới
+        // khi chứng từ này được Ghi sổ và mở lại từ danh sách.
+        _siblingIndex = -1;
+        IsReadOnly    = false;
+        await InitializeAsync(null, ct);
+        NotifyNavigationChanged();
+    }
+
+    private bool CanEdit => IsReadOnly;
+
+    [RelayCommand(CanExecute = nameof(CanEdit))]
+    private void Edit() => IsReadOnly = false;
+
+    // Dùng chung cho Trước/Sau/Thêm — cảnh báo mất dữ liệu chưa lưu, khớp text đã dùng ở
+    // SalesOrderWindow.OnClosing.
+    private bool ConfirmDiscardIfDirty()
+    {
+        if (!IsDirty) return true;
+        var r = MessageBox.Show(
+            "Dữ liệu chưa lưu sẽ bị mất nếu tiếp tục. Bạn có chắc muốn tiếp tục?",
+            "Xác nhận",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        return r == MessageBoxResult.Yes;
+    }
 
     public event Action? OrderSaved;
     public event Action? RequestClose;
@@ -275,7 +352,7 @@ public partial class SalesOrderViewModel : ViewModelBase
 
     // ── Commands ──────────────────────────────────────────────────────────
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(IsEditable))]
     private async Task SaveAsync(CancellationToken ct = default)
     {
         HasError     = false;
@@ -393,7 +470,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         printWindow.ShowDialog();
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(IsEditable))]
     private async Task DeleteAsync(CancellationToken ct = default)
     {
         if (CurrentOrder is null) return;
@@ -423,7 +500,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         finally { IsBusy = false; }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(IsEditable))]
     private async Task CancelAsync(CancellationToken ct = default)
     {
         HasError = false;
@@ -825,7 +902,9 @@ public partial class SalesOrderViewModel : ViewModelBase
     // ── Hold ──────────────────────────────────────────────────────────────────
     public bool HasExistingOrder => CurrentOrder is not null;
 
-    [RelayCommand(CanExecute = nameof(HasExistingOrder))]
+    // ShowHoldSection (= HasExistingOrder && !IsReadOnly) thay vì chỉ HasExistingOrder — Treo
+    // không có ý nghĩa ở chế độ chỉ xem, disable (mờ) thay vì ẩn hẳn như trước.
+    [RelayCommand(CanExecute = nameof(ShowHoldSection))]
     private async Task HoldAsync(CancellationToken ct = default)
     {
         if (CurrentOrder is null) return;

@@ -257,6 +257,13 @@ public partial class WarehouseTransactionListViewModel : ViewModelBase
 
             var window = _formWindowFactory();
             window.Initialize(receipt);
+            // Cho phép Trước/Sau/Thêm duyệt ngay trong popup — chỉ tính các dòng Nhập kho
+            // ("Import") trong danh sách đang xem, bỏ qua dòng Xuất kho (mở popup khác hẳn).
+            var siblingIds = Items
+                .Where(i => i.TransactionType.Equals("Import", StringComparison.OrdinalIgnoreCase))
+                .Select(i => i.Id)
+                .ToList();
+            window.SetSiblingContext(siblingIds, siblingIds.IndexOf(item.Id));
             window.Owner = Application.Current.MainWindow;
             var result = window.ShowDialog();
             if (result == true)

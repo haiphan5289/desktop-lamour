@@ -155,6 +155,10 @@ public partial class SalesOrderListViewModel : ViewModelBase
 
         var window = _formWindowFactory();
         window.Initialize(SelectedOrder.Original);
+        // Cho phép Trước/Sau/Thêm duyệt ngay trong popup theo đúng danh sách đang hiển thị
+        // (đã lọc theo Từ ngày/Đến ngày/tìm kiếm) — không cần đóng mở lại từng chứng từ.
+        var siblings = SalesOrders.Select(o => o.Original).ToList();
+        window.SetSiblingContext(siblings, siblings.IndexOf(SelectedOrder.Original));
         if (window.ShowDialog() == true)
             await LoadSalesOrdersCommand.ExecuteAsync(null);
     }

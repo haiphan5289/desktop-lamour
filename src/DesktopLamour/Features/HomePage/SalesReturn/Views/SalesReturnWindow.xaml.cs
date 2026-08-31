@@ -29,6 +29,11 @@ public partial class SalesReturnWindow : Window
     public void Initialize(SalesReturnResponseDto? salesReturn)
         => _initialReturn = salesReturn;
 
+    // Cho phép Trước/Sau/Thêm duyệt ngay trong popup khi mở từ 1 danh sách đã tải sẵn (vd.
+    // SalesReturnListViewModel.SalesReturns) — không gọi thì Trước/Sau chỉ là no-op.
+    public void SetSiblingContext(IReadOnlyList<SalesReturnResponseDto> siblings, int currentIndex)
+        => ViewModel.SetSiblingContext(siblings, currentIndex);
+
     protected override async void OnContentRendered(EventArgs e)
     {
         base.OnContentRendered(e);

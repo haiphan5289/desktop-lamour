@@ -42,6 +42,12 @@ public partial class SalesOrderWindow : Window
         ViewModel.DocumentNumberPlaceholder = isFromWarehouseExport ? "XK00001" : "BH00001";
     }
 
+    // Cho phép Trước/Sau/Thêm duyệt ngay trong popup khi mở từ 1 danh sách đã tải sẵn (vd.
+    // SalesOrderListViewModel.SalesOrders) — không gọi thì Trước/Sau chỉ là no-op (xem
+    // SalesOrderViewModel.SetSiblingContext).
+    public void SetSiblingContext(IReadOnlyList<SalesOrderResponseDto> siblings, int currentIndex)
+        => ViewModel.SetSiblingContext(siblings, currentIndex);
+
     protected override async void OnContentRendered(EventArgs e)
     {
         base.OnContentRendered(e);

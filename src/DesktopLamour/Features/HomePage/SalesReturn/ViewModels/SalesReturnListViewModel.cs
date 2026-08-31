@@ -119,6 +119,9 @@ public partial class SalesReturnListViewModel : ViewModelBase
 
         var window = _formWindowFactory();
         window.Initialize(SelectedReturn.Original);
+        // Cho phép Trước/Sau/Thêm duyệt ngay trong popup theo đúng danh sách đang hiển thị.
+        var siblings = SalesReturns.Select(r => r.Original).ToList();
+        window.SetSiblingContext(siblings, siblings.IndexOf(SelectedReturn.Original));
         if (window.ShowDialog() == true)
             await LoadSalesReturnsCommand.ExecuteAsync(null);
     }

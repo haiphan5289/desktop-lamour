@@ -91,6 +91,12 @@ public partial class PaymentViewModel : ViewModelBase
     public bool CanEdit => CurrentPayment is null || CurrentPayment.Status != "Confirmed";
     public bool CanPrint => CurrentPayment is not null;
     public bool CanUnconfirm => CurrentPayment is not null && CurrentPayment.Status == "Confirmed";
+    public bool CanDelete => CurrentPayment is not null;
+
+    // CanExecute cho NavigatePrev/NavigateNextCommand — WPF tự disable (mờ) nút khi đang ở
+    // đầu/cuối danh sách, không phải ẩn hẳn (nút vẫn nằm đúng chỗ trong toolbar).
+    public bool CanNavigatePrev => _currentIndex > 0;
+    public bool CanNavigateNext => _currentIndex >= 0 && _currentIndex < _receiptListCache.Count - 1;
 
     private List<PaymentResponseDto> _receiptListCache = new();
     private int _currentIndex = -1;
@@ -391,7 +397,7 @@ public partial class PaymentViewModel : ViewModelBase
         finally { IsBusy = false; }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanDelete))]
     private async Task DeleteAsync(CancellationToken ct = default)
     {
         if (CurrentPayment is null) return;
@@ -413,7 +419,7 @@ public partial class PaymentViewModel : ViewModelBase
         finally { IsBusy = false; }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanEdit))]
     private void Edit()
     {
         if (CurrentPayment is not null && CurrentPayment.Status == "Confirmed")
@@ -437,7 +443,7 @@ public partial class PaymentViewModel : ViewModelBase
         window.ShowDialog();
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanNavigatePrev))]
     private void NavigatePrev()
     {
         if (_receiptListCache.Count == 0 || _currentIndex <= 0) return;
@@ -446,7 +452,7 @@ public partial class PaymentViewModel : ViewModelBase
         PopulateFormFromCurrent();
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanNavigateNext))]
     private void NavigateNext()
     {
         if (_receiptListCache.Count == 0 || _currentIndex >= _receiptListCache.Count - 1) return;
@@ -542,8 +548,13 @@ public partial class PaymentViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanEdit));
         OnPropertyChanged(nameof(CanPrint));
         OnPropertyChanged(nameof(CanUnconfirm));
+        OnPropertyChanged(nameof(CanDelete));
+        EditCommand.NotifyCanExecuteChanged();
         PrintCommand.NotifyCanExecuteChanged();
         UnconfirmCommand.NotifyCanExecuteChanged();
+        DeleteCommand.NotifyCanExecuteChanged();
+        NavigatePrevCommand.NotifyCanExecuteChanged();
+        NavigateNextCommand.NotifyCanExecuteChanged();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

@@ -22,6 +22,11 @@ public partial class WarehouseReceiptFormWindow : Window
     // Không gọi (hoặc truyền null) → form tạo mới như cũ.
     public void Initialize(WarehouseReceiptResponseDto? existing) => ViewModel.Initialize(existing);
 
+    // Cho phép Trước/Sau/Thêm duyệt ngay trong popup khi mở từ "Nhập, Xuất Kho"
+    // (WarehouseTransactionListViewModel) — không gọi thì Trước/Sau chỉ là no-op.
+    public void SetSiblingContext(IReadOnlyList<int> receiptIds, int currentIndex)
+        => ViewModel.SetSiblingContext(receiptIds, currentIndex);
+
     protected override void OnClosing(CancelEventArgs e)
     {
         base.OnClosing(e);
@@ -41,4 +46,7 @@ public partial class WarehouseReceiptFormWindow : Window
         base.OnContentRendered(e);
         await ViewModel.LoadAsync();
     }
+
+    private void CloseButton_Click(object sender, RoutedEventArgs e)
+        => Close();
 }

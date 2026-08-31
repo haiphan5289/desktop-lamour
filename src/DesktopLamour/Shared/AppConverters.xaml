@@ -19,5 +19,9 @@
     <converters:PaymentReasonDisplayConverter x:Key="PaymentReasonDisplayConverter"/>
     <converters:FilterOperatorLabelConverter x:Key="FilterOperatorLabelConverter"/>
     <converters:FilterOperatorSymbolConverter x:Key="FilterOperatorSymbolConverter"/>
+    <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+    <converters:NullToVisibilityConverter x:Key="InverseNullToVisibilityConverter" Invert="True"/>
+    <converters:AnyNotNullToVisibilityConverter x:Key="AnyNotNullToVisibilityConverter"/>
+    <converters:CommandAndFlagToVisibilityConverter x:Key="CommandAndFlagToVisibilityConverter"/>
 
 </ResourceDictionary>
