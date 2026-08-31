@@ -21,4 +21,8 @@ public class SalesOrderSummaryLineDto
     [JsonPropertyName("return_quantity")]  public int      ReturnQuantity { get; set; }
     [JsonPropertyName("return_value")]     public decimal  ReturnValue    { get; set; }
     [JsonPropertyName("net_revenue")]      public decimal  NetRevenue     { get; set; }
+    [JsonPropertyName("cost_amount")]         public decimal  CostAmount        { get; set; }
+    [JsonPropertyName("gross_profit")]        public decimal  GrossProfit       { get; set; }
+    [JsonPropertyName("gross_profit_rate")]   public decimal  GrossProfitRate   { get; set; }
+    [JsonPropertyName("customer_group_name")] public string?  CustomerGroupName { get; set; }
 }

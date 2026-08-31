@@ -15,6 +15,7 @@ using DesktopLamour.Features.HomePage.Sales.Domain.Models;
 using DesktopLamour.Features.HomePage.Sales.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Sales.Views;
 using DesktopLamour.Shared.Helpers;
+using DesktopLamour.Shared.Models;
 using Microsoft.Win32;
 
 namespace DesktopLamour.Features.HomePage.Sales.ViewModels;
@@ -38,8 +39,82 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
     [ObservableProperty] private int     _totalReturnQuantity;
     [ObservableProperty] private decimal _totalReturnValue;
     [ObservableProperty] private decimal _totalNetRevenue;
+    [ObservableProperty] private decimal _totalCostAmount;
+    [ObservableProperty] private decimal _totalGrossProfit;
 
     [ObservableProperty] private bool _isUnitColumnVisible;
+
+    // "Tên nhóm KH" chỉ có ý nghĩa khi report gồm dimension Khách hàng — ẩn hẳn ở các report
+    // không liên quan tới khách hàng (vd. "Mặt hàng" đơn thuần) thay vì hiện cột luôn rỗng.
+    [ObservableProperty] private bool _isCustomerGroupColumnVisible;
+
+    // Cột "Mã hàng"/"Tên hàng" trong XAML là header tĩnh nhưng dữ liệu thực chất là danh tính của
+    // dimension TRONG (inner) của report type đang chọn — trước đây luôn hard-code "Mã hàng"/"Tên
+    // hàng" dù đang hiển thị Mã/Tên nhân viên hoặc khách hàng. 2 property này được code-behind
+    // (SalesOrderReportView.xaml.cs) gán trực tiếp vào Header của 2 cột đó mỗi khi đổi report type.
+    [ObservableProperty] private string _innerCodeLabel = "Mã hàng";
+    [ObservableProperty] private string _innerNameLabel = "Tên hàng";
+
+    // Report 2 chiều hiện dạng bảng phẳng kiểu MISA — dimension NGOÀI (vd. Nhân viên trong "Nhân
+    // viên & khách hàng") cũng là 2 cột thật trên MỌI dòng, không co gọn theo Expander/group-header
+    // nữa. Rỗng + ẩn cột khi report chỉ có 1 dimension.
+    [ObservableProperty] private string _outerCodeLabel = "";
+    [ObservableProperty] private string _outerNameLabel = "";
+    [ObservableProperty] private bool   _isOuterColumnVisible;
+
+    // ── Filter theo từng cột — nhúng ngay trong header lưới (khớp UI MISA), cùng pattern đã dùng
+    // ở SalesOrderReportDetailView/WarehouseTransactionListView: cột text dùng Contains-match string,
+    // cột số dùng NumericColumnFilter (operator =, ≤, ≥... + giá trị). AND tất cả với nhau.
+    [ObservableProperty] private string _filterOuterCode         = string.Empty;
+    [ObservableProperty] private string _filterOuterName         = string.Empty;
+    [ObservableProperty] private string _filterInnerCode         = string.Empty;
+    [ObservableProperty] private string _filterInnerName         = string.Empty;
+    [ObservableProperty] private string _filterUnit              = string.Empty;
+    [ObservableProperty] private string _filterCustomerGroupName = string.Empty;
+
+    partial void OnFilterOuterCodeChanged(string value)         => RowsView.Refresh();
+    partial void OnFilterOuterNameChanged(string value)         => RowsView.Refresh();
+    partial void OnFilterInnerCodeChanged(string value)         => RowsView.Refresh();
+    partial void OnFilterInnerNameChanged(string value)         => RowsView.Refresh();
+    partial void OnFilterUnitChanged(string value)              => RowsView.Refresh();
+    partial void OnFilterCustomerGroupNameChanged(string value) => RowsView.Refresh();
+
+    public NumericColumnFilter QuantitySoldFilter    { get; } = new();
+    public NumericColumnFilter SalesAmountFilter     { get; } = new();
+    public NumericColumnFilter DiscountAmountFilter  { get; } = new();
+    public NumericColumnFilter ReturnQuantityFilter  { get; } = new();
+    public NumericColumnFilter ReturnValueFilter     { get; } = new();
+    public NumericColumnFilter DiscountValueFilter   { get; } = new();
+    public NumericColumnFilter NetRevenueFilter      { get; } = new();
+    public NumericColumnFilter CostAmountFilter      { get; } = new();
+    public NumericColumnFilter GrossProfitFilter     { get; } = new();
+    public NumericColumnFilter GrossProfitRateFilter { get; } = new();
+
+    private bool MatchesAllFilters(object obj)
+    {
+        if (obj is not ReportDisplayRow row) return false;
+
+        return Matches(FilterOuterCode, row.OuterCode)
+            && Matches(FilterOuterName, row.OuterName)
+            && Matches(FilterInnerCode, row.ProductCode)
+            && Matches(FilterInnerName, row.ProductName)
+            && Matches(FilterUnit, row.Unit)
+            && QuantitySoldFilter.Matches(row.QuantitySold)
+            && SalesAmountFilter.Matches(row.SalesAmount)
+            && DiscountAmountFilter.Matches(row.DiscountAmount)
+            && ReturnQuantityFilter.Matches(row.ReturnQuantity)
+            && ReturnValueFilter.Matches(row.ReturnValue)
+            && DiscountValueFilter.Matches(row.DiscountValue)
+            && NetRevenueFilter.Matches(row.NetRevenue)
+            && CostAmountFilter.Matches(row.CostAmount)
+            && GrossProfitFilter.Matches(row.GrossProfit)
+            && GrossProfitRateFilter.Matches(row.GrossProfitRate)
+            && Matches(FilterCustomerGroupName, row.CustomerGroupName);
+    }
+
+    private static bool Matches(string filter, string cellText)
+        => string.IsNullOrWhiteSpace(filter)
+        || (!string.IsNullOrEmpty(cellText) && cellText.Contains(filter.Trim(), StringComparison.OrdinalIgnoreCase));
 
     public ObservableCollection<SalesOrderSummaryLineItem> Items { get; } = new();
 
@@ -85,6 +160,12 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
                 (Field: SummaryDimension.Customer, Key: (Func<SalesOrderSummaryLineItem, string>)(i => i.CustomerName), Label: "Khách hàng"),
                 (Field: SummaryDimension.Product,  Key: (Func<SalesOrderSummaryLineItem, string>)(i => i.ProductName),  Label: "Mặt hàng"),
             },
+        [SalesOrderReportTypes.ByEmployeeThenCustomer] =
+            new[]
+            {
+                (Field: SummaryDimension.Employee, Key: (Func<SalesOrderSummaryLineItem, string>)(i => i.EmployeeName), Label: "Nhân viên"),
+                (Field: SummaryDimension.Customer, Key: (Func<SalesOrderSummaryLineItem, string>)(i => i.CustomerName), Label: "Khách hàng"),
+            },
     };
 
     public SalesOrderReportViewModel(
@@ -95,6 +176,17 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
         _getSummaryReport          = getSummaryReport;
         _navigationService         = navigationService;
         _reportFilterWindowFactory = reportFilterWindowFactory;
+
+        QuantitySoldFilter.Changed    = () => RowsView.Refresh();
+        SalesAmountFilter.Changed     = () => RowsView.Refresh();
+        DiscountAmountFilter.Changed  = () => RowsView.Refresh();
+        ReturnQuantityFilter.Changed  = () => RowsView.Refresh();
+        ReturnValueFilter.Changed     = () => RowsView.Refresh();
+        DiscountValueFilter.Changed   = () => RowsView.Refresh();
+        NetRevenueFilter.Changed      = () => RowsView.Refresh();
+        CostAmountFilter.Changed      = () => RowsView.Refresh();
+        GrossProfitFilter.Changed     = () => RowsView.Refresh();
+        GrossProfitRateFilter.Changed = () => RowsView.Refresh();
     }
 
     public void OnNavigatedTo(object? parameter)
@@ -127,7 +219,9 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
                 Items.Add(SalesOrderSummaryLineItem.FromDto(dto));
 
             HasLines = Items.Count > 0;
-            RecalculateTotals();
+            // Tổng footer (TotalSalesAmount...) giờ tính lại trong RebuildDisplayRows/
+            // UpdateFilteredTotals — theo đúng tập dòng ĐANG HIỂN THỊ sau lọc, không phải toàn bộ
+            // Items như RecalculateTotals() cũ.
             RebuildDisplayRows();
         }
         catch (OperationCanceledException) { }
@@ -139,22 +233,20 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
         finally { IsLoading = false; }
     }
 
-    private void RecalculateTotals()
-    {
-        TotalQuantitySold   = Items.Sum(i => i.QuantitySold);
-        TotalSalesAmount    = Items.Sum(i => i.SalesAmount);
-        TotalDiscountAmount = Items.Sum(i => i.DiscountAmount);
-        TotalReturnQuantity = Items.Sum(i => i.ReturnQuantity);
-        TotalReturnValue    = Items.Sum(i => i.ReturnValue);
-        TotalNetRevenue     = Items.Sum(i => i.NetRevenue);
-    }
-
     private static string ColumnLabelFor(SummaryDimension d) => d switch
     {
         SummaryDimension.Product  => "Tên hàng",
         SummaryDimension.Customer => "Khách hàng",
         SummaryDimension.Employee => "Nhân viên",
         _ => "",
+    };
+
+    private static (string Code, string Name) CodeNameLabelFor(SummaryDimension d) => d switch
+    {
+        SummaryDimension.Product  => ("Mã hàng", "Tên hàng"),
+        SummaryDimension.Customer => ("Mã khách hàng", "Tên khách hàng"),
+        SummaryDimension.Employee => ("Mã nhân viên", "Tên nhân viên"),
+        _ => ("Mã", "Tên"),
     };
 
     private void RebuildDisplayRows()
@@ -174,7 +266,12 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
         var allFields  = dimensions.Select(d => d.Field).ToHashSet();
         var showUnit   = allFields.Contains(SummaryDimension.Product);
 
-        IsUnitColumnVisible = showUnit;
+        IsUnitColumnVisible          = showUnit;
+        IsCustomerGroupColumnVisible = allFields.Contains(SummaryDimension.Customer);
+        (InnerCodeLabel, InnerNameLabel) = CodeNameLabelFor(innerField);
+
+        IsOuterColumnVisible = isNested;
+        (OuterCodeLabel, OuterNameLabel) = isNested ? CodeNameLabelFor(dimensions[0].Field) : ("", "");
 
         var rows = new List<ReportDisplayRow>();
         foreach (var group in leafGroups)
@@ -201,10 +298,11 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
 
         _displayRows = orderedRows;
 
+        // Bảng phẳng kiểu MISA — không group/collapse theo Expander nữa (row đã tự mang đủ cả 2
+        // dimension làm cột thật khi isNested), chỉ cần sort đúng thứ tự Outer rồi Inner.
         var view = new ListCollectionView(_displayRows);
         if (dimensions.Length == 2)
         {
-            view.GroupDescriptions.Add(new PropertyGroupDescription(nameof(ReportDisplayRow.GroupKey)));
             view.SortDescriptions.Add(new SortDescription(nameof(ReportDisplayRow.GroupKey), ListSortDirection.Ascending));
             view.SortDescriptions.Add(new SortDescription(nameof(ReportDisplayRow.ProductName), ListSortDirection.Ascending));
         }
@@ -213,8 +311,31 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
             view.SortDescriptions.Add(new SortDescription(nameof(ReportDisplayRow.ProductName), ListSortDirection.Ascending));
         }
 
-        RowsView  = view;
-        RowCount  = _displayRows.Count;
+        // Filter theo cột (MatchesAllFilters) áp ngay khi gán — RowCount/tổng footer phải đếm
+        // đúng số dòng ĐANG HIỂN THỊ sau lọc, không phải toàn bộ _displayRows. CollectionChanged
+        // tự bắn Reset sau mỗi Refresh() nên chỉ cần gắn 1 lần cho view mới này.
+        view.Filter = MatchesAllFilters;
+        // CollectionChanged là explicit interface implementation của ICollectionView trên
+        // CollectionView (không public qua kiểu cụ thể ListCollectionView) — phải ép kiểu về
+        // ICollectionView mới gắn handler được, khớp cách CustomerListViewModel đã làm.
+        ((ICollectionView)view).CollectionChanged += (_, _) => UpdateFilteredTotals(view);
+
+        RowsView = view;
+        UpdateFilteredTotals(view);
+    }
+
+    private void UpdateFilteredTotals(ICollectionView view)
+    {
+        var rows = view.Cast<ReportDisplayRow>().ToList();
+        RowCount            = rows.Count;
+        TotalQuantitySold   = rows.Sum(r => r.QuantitySold);
+        TotalSalesAmount    = rows.Sum(r => r.SalesAmount);
+        TotalDiscountAmount = rows.Sum(r => r.DiscountAmount);
+        TotalReturnQuantity = rows.Sum(r => r.ReturnQuantity);
+        TotalReturnValue    = rows.Sum(r => r.ReturnValue);
+        TotalNetRevenue     = rows.Sum(r => r.NetRevenue);
+        TotalCostAmount     = rows.Sum(r => r.CostAmount);
+        TotalGrossProfit    = TotalNetRevenue - TotalCostAmount;
     }
 
     private List<ReportDisplayRow> BuildExportRows()

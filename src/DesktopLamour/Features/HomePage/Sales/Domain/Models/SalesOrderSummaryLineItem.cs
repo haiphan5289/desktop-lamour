@@ -21,6 +21,10 @@ public class SalesOrderSummaryLineItem
     public int     ReturnQuantity { get; init; }
     public decimal ReturnValue    { get; init; }
     public decimal NetRevenue     { get; init; }
+    public decimal CostAmount        { get; init; }
+    public decimal GrossProfit       { get; init; }
+    public decimal GrossProfitRate   { get; init; }
+    public string  CustomerGroupName { get; init; } = "";
 
     public static SalesOrderSummaryLineItem FromDto(SalesOrderSummaryLineDto dto) => new()
     {
@@ -40,5 +44,9 @@ public class SalesOrderSummaryLineItem
         ReturnQuantity = dto.ReturnQuantity,
         ReturnValue    = dto.ReturnValue,
         NetRevenue     = dto.NetRevenue,
+        CostAmount        = dto.CostAmount,
+        GrossProfit       = dto.GrossProfit,
+        GrossProfitRate   = dto.GrossProfitRate,
+        CustomerGroupName = dto.CustomerGroupName ?? "",
     };
 }

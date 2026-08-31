@@ -18,6 +18,16 @@ public class ReportDisplayRow
     public decimal   ReturnValue    { get; init; }
     public decimal   DiscountValue  { get; init; }
     public decimal   NetRevenue     { get; init; }
+    public decimal   CostAmount     { get; init; }
+    public decimal   GrossProfit    { get; init; }
+    public decimal   GrossProfitRate { get; init; }
+    public string    CustomerGroupName { get; init; } = "";
+
+    // Mã/Tên của dimension NGOÀI cho report 2 chiều — khớp bảng phẳng kiểu MISA: mọi dòng hiện
+    // đủ cả 2 dimension làm cột thật (vd. Mã NV/Tên NV NGOÀI cột Mã hàng/Tên hàng vốn mang danh
+    // tính dimension TRONG), không co gọn theo Expander như trước. Rỗng khi report chỉ 1 chiều.
+    public string    OuterCode      { get; set; } = "";
+    public string    OuterName      { get; set; } = "";
 
     // Identity of the row's own dimension (drill-down target) + the outer dimension for
     // 2-dimension report types (set alongside GroupKey/GroupLabel) — null when not applicable.
@@ -31,6 +41,14 @@ public class ReportDisplayRow
         SummaryDimension.Customer => item.CustomerId,
         SummaryDimension.Employee => item.EmployeeId,
         _ => null,
+    };
+
+    private static (string Code, string Name) CodeNameFor(SummaryDimension field, SalesOrderSummaryLineItem item) => field switch
+    {
+        SummaryDimension.Product  => (item.ProductCode, item.ProductName),
+        SummaryDimension.Customer => (item.CustomerCode, item.CustomerName),
+        SummaryDimension.Employee => (item.EmployeeCode, item.EmployeeName),
+        _ => ("", ""),
     };
 
     private void SetId(SummaryDimension field, int? id)
@@ -54,13 +72,11 @@ public class ReportDisplayRow
         SummaryDimension identityField, bool showUnit)
     {
         var first = items.First();
-        var (code, name) = identityField switch
-        {
-            SummaryDimension.Product  => (first.ProductCode, first.ProductName),
-            SummaryDimension.Customer => (first.CustomerCode, first.CustomerName),
-            SummaryDimension.Employee => (first.EmployeeCode, first.EmployeeName),
-            _ => ("", ""),
-        };
+        var (code, name) = CodeNameFor(identityField, first);
+
+        var netRevenue  = items.Sum(i => i.NetRevenue);
+        var costAmount  = items.Sum(i => i.CostAmount);
+        var grossProfit = netRevenue - costAmount;
 
         var row = new ReportDisplayRow
         {
@@ -72,14 +88,25 @@ public class ReportDisplayRow
             DiscountAmount = items.Sum(i => i.DiscountAmount),
             ReturnQuantity = items.Sum(i => i.ReturnQuantity),
             ReturnValue    = items.Sum(i => i.ReturnValue),
-            NetRevenue     = items.Sum(i => i.NetRevenue),
+            NetRevenue     = netRevenue,
+            CostAmount     = costAmount,
+            GrossProfit    = grossProfit,
+            // Tính lại từ tổng đã cộng dồn (netRevenue/grossProfit), không cộng dồn % của từng
+            // dòng lẻ — cộng % trực tiếp sẽ ra sai số học.
+            GrossProfitRate   = netRevenue == 0 ? 0 : grossProfit / netRevenue * 100,
+            // Chỉ có ý nghĩa khi report có dimension Khách hàng — vẫn gán an toàn ở đây (lấy theo
+            // dòng đầu tiên trong nhóm), cột chỉ thật sự hiển thị khi IsCustomerGroupColumnVisible.
+            CustomerGroupName = first.CustomerGroupName,
         };
         row.SetId(identityField, IdFor(identityField, first));
         return row;
     }
 
     // Called for 2-dimension report types so a leaf row also carries the OUTER dimension's id
-    // (its own inner-dimension id is already set by Aggregate) — needed to drill down by both.
+    // + Mã/Tên thật (bảng phẳng, không co gọn) — dimension TRONG (own identity) đã có sẵn từ Aggregate.
     public void SetOuterId(SummaryDimension field, SalesOrderSummaryLineItem sample)
-        => SetId(field, IdFor(field, sample));
+    {
+        SetId(field, IdFor(field, sample));
+        (OuterCode, OuterName) = CodeNameFor(field, sample);
+    }
 }
