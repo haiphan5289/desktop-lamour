@@ -246,15 +246,20 @@ public partial class SalesReturnPrintWindow : Window
         });
 
         // Chữ ký — giữ nguyên 3/4 vai trò như SalesOrderPrintWindow; "Người viết hóa đơn" đổi thành
-        // "Người viết phiếu" vì chứng từ này không phải hóa đơn.
+        // "Người viết phiếu" vì chứng từ này không phải hóa đơn. Thêm dòng "(Ký, họ tên)" in nghiêng
+        // dưới mỗi vai trò — khớp đúng convention MISA + đã dùng sẵn ở WarehouseReceiptPrintWindow,
+        // trước đây thiếu dòng này.
         var signTable = new Table { CellSpacing = 0 };
         for (int i = 0; i < 4; i++) signTable.Columns.Add(new TableColumn());
         var signRow = new TableRow();
         foreach (var label in new[] { "Thủ kho", "Người nhận hàng", "Nhân viên giao hàng", "Người viết phiếu" })
         {
-            signRow.Cells.Add(new TableCell(new Paragraph(new Bold(new Run(label))) { TextAlignment = TextAlignment.Center, FontSize = 13 })
+            var cellPara = new Paragraph(new Bold(new Run(label))) { TextAlignment = TextAlignment.Center, FontSize = 13 };
+            cellPara.Inlines.Add(new LineBreak());
+            cellPara.Inlines.Add(new Italic(new Run("(Ký, họ tên)")) { FontSize = 10 });
+            signRow.Cells.Add(new TableCell(cellPara)
             {
-                Padding = new Thickness(3, 3, 3, 48),
+                Padding = new Thickness(3, 3, 3, 40),
             });
         }
         var signGroup = new TableRowGroup();
@@ -315,7 +320,8 @@ public partial class SalesReturnPrintWindow : Window
         const double perProductRow   = 40;
         const double totalsRow       = 38;
         const double notesRow        = 38;
-        const double dateAndSignature = 114;
+        // +14 so với trước — thêm dòng "(Ký, họ tên)" in nghiêng dưới mỗi vai trò chữ ký.
+        const double dateAndSignature = 128;
         const double framePadding    = 28;
         const double pagePadding     = 32;
 

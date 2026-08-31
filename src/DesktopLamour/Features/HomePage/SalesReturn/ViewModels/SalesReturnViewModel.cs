@@ -42,6 +42,7 @@ public partial class SalesReturnViewModel : ViewModelBase
     private readonly IGetDepartmentsUseCase         _getDepartments;
     private readonly ICreateSalesReturnWarehouseReceiptUseCase _createWarehouseReceipt;
     private readonly IGetWarehouseReceiptByIdUseCase _getWarehouseReceiptById;
+    private readonly IGetWarehouseReceiptsUseCase    _getWarehouseReceipts;
     private readonly Func<EmployeeFormWindow>       _employeeFormWindowFactory;
     private readonly Func<CustomerFormWindow>       _customerFormWindowFactory;
     private readonly Func<SalesReturnPrintWindow>   _printWindowFactory;
@@ -218,6 +219,7 @@ public partial class SalesReturnViewModel : ViewModelBase
         IGetDepartmentsUseCase         getDepartments,
         ICreateSalesReturnWarehouseReceiptUseCase createWarehouseReceipt,
         IGetWarehouseReceiptByIdUseCase getWarehouseReceiptById,
+        IGetWarehouseReceiptsUseCase    getWarehouseReceipts,
         Func<EmployeeFormWindow>       employeeFormWindowFactory,
         Func<CustomerFormWindow>       customerFormWindowFactory,
         Func<SalesReturnPrintWindow>   printWindowFactory,
@@ -236,6 +238,7 @@ public partial class SalesReturnViewModel : ViewModelBase
         _getDepartments            = getDepartments;
         _createWarehouseReceipt    = createWarehouseReceipt;
         _getWarehouseReceiptById   = getWarehouseReceiptById;
+        _getWarehouseReceipts      = getWarehouseReceipts;
         _employeeFormWindowFactory = employeeFormWindowFactory;
         _customerFormWindowFactory = customerFormWindowFactory;
         _printWindowFactory        = printWindowFactory;
@@ -372,12 +375,32 @@ public partial class SalesReturnViewModel : ViewModelBase
 
             StopDirtyTracking();
             ReturnSaved?.Invoke();
+            // Gán lại CurrentReturn (trước đây bỏ trống cho tới khi InitializeAsync chạy lại) — cần
+            // có Id thật để EnsureWarehouseReceiptPrintedAsync bên dưới hoạt động, đồng thời bật
+            // luôn Xóa/In/Lập PN nếu bước tự động lập PN lỗi và form phải mở lại để retry thủ công.
+            CurrentReturn = result;
             IsBusy = false;
 
-            // Sau khi Ghi sổ, chuyển thẳng sang workflow In Hoá Đơn (PHIẾU TRẢ LẠI HÀNG BÁN) — khớp
-            // hành vi SalesOrderViewModel.SaveAsync đang làm cho "Chứng từ bán hàng" (ShowDialog chặn
-            // cho tới khi user đóng cửa sổ in, rồi mới đóng form này).
-            ShowPrintPreview(result);
+            // Sau khi Ghi sổ, tự động Lập PN (tạo Phiếu Nhập Kho thật — hoặc dùng lại PN đã có nếu
+            // chứng từ này đã từng Lập PN trước đó, xem EnsureWarehouseReceiptPrintedAsync) rồi in
+            // luôn theo mẫu MISA "PHIẾU NHẬP KHO" — thay cho in "Phiếu trả lại hàng bán"
+            // (SalesReturnPrintWindow) như trước đây, theo yêu cầu gộp workflow "Ghi sổ" và "Lập
+            // PN" làm một.
+            try
+            {
+                await EnsureWarehouseReceiptPrintedAsync(result.Id, result.DocumentNumber, ct);
+            }
+            catch (Exception ex)
+            {
+                // Chứng từ trả hàng ĐÃ Ghi sổ thành công — chỉ riêng bước Lập PN tự động bị lỗi.
+                // Không đóng form (giữ nguyên để user bấm lại nút "Lập PN" thủ công, đã bật vì
+                // CurrentReturn vừa được gán ở trên).
+                _logger.LogError(ex, "SalesReturn saved but auto warehouse-receipt creation failed for {Id}", result.Id);
+                MessageBox.Show(
+                    $"Đã Ghi sổ chứng từ '{result.DocumentNumber}' thành công, nhưng không thể tự động lập phiếu nhập kho: {ex.Message}\nBạn có thể bấm \"Lập PN\" để thử lại.",
+                    "Lập phiếu nhập kho thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
             RequestClose?.Invoke();
         }
@@ -442,9 +465,41 @@ public partial class SalesReturnViewModel : ViewModelBase
         finally { IsBusy = false; }
     }
 
-    // "Lập PN" — chỉ dùng được sau khi chứng từ đã Ghi sổ (có CurrentReturn.Id). Tự động tạo VÀ
-    // ghi sổ (Confirmed) luôn 1 Phiếu Nhập Kho liên kết — xem
-    // CreateSalesReturnWarehouseReceiptUseCase (BE) để biết vì sao không đụng lại tồn kho.
+    // BE không có FK thật giữa WarehouseReceipt và SalesReturn — CreateSalesReturnWarehouseReceiptUseCase
+    // tự phát hiện "đã lập PN rồi" bằng cách so Reference (== DocumentNumber) + ReceiptType == 2
+    // (ReturnedGoods, xem WarehouseReceiptListViewModel.ReceiptTypeLabel), ném DomainException nếu
+    // trùng. Giá trị này khớp đúng logic đó ở phía WPF để tự KIỂM TRA TRƯỚC khi gọi Create.
+    private const int ReturnedGoodsReceiptType = 2;
+
+    // Dùng chung bởi SaveAsync (tự động, sau khi Ghi sổ) và CreateWarehouseReceiptAsync (nút "Lập
+    // PN" thủ công). Tự tìm PN đã lập sẵn cho chứng từ này trước — CHỈ tạo mới khi chưa có, tránh
+    // gọi Create lần 2 cho cùng 1 chứng từ (vd. Ghi sổ lại 1 chứng từ đã có PN từ lần Ghi sổ/Lập PN
+    // trước) ném DomainException "Đã lập phiếu nhập kho cho chứng từ ... rồi." — thay vào đó mở lại
+    // đúng PN đã có để in, không tạo trùng.
+    private async Task EnsureWarehouseReceiptPrintedAsync(int salesReturnId, string documentNumber, CancellationToken ct)
+    {
+        var allReceipts = await _getWarehouseReceipts.ExecuteAsync(ct);
+        var existing = allReceipts.FirstOrDefault(r =>
+            r.ReceiptType == ReturnedGoodsReceiptType && r.Reference == documentNumber);
+
+        var receiptId = existing?.Id
+            ?? (await _createWarehouseReceipt.ExecuteAsync(salesReturnId, ct)).Id;
+
+        // Dù vừa tạo hay đã có sẵn, luôn fetch lại đầy đủ theo Id (dòng hàng, TK Nợ/Có...) để in —
+        // CreateWarehouseReceiptResultDto (khi vừa tạo) chỉ có id/receipt_number.
+        var receipt = await _getWarehouseReceiptById.ExecuteAsync(receiptId, ct);
+        if (receipt is null) return;
+
+        var partner = Customers.FirstOrDefault(c => c.Id == receipt.CustomerId)
+            as DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer;
+        var printWindow = _warehouseReceiptPrintWindowFactory();
+        printWindow.Initialize(receipt, partner?.Address);
+        printWindow.Owner = Application.Current.MainWindow;
+        printWindow.ShowDialog();
+    }
+
+    // "Lập PN" — dùng lại thủ công khi: (1) chứng từ cũ mở lại từ danh sách chưa có PN, hoặc
+    // (2) bước tự động lập PN trong SaveAsync bị lỗi và cần retry.
     [RelayCommand(CanExecute = nameof(HasExistingReturn))]
     private async Task CreateWarehouseReceiptAsync(CancellationToken ct = default)
     {
@@ -459,23 +514,7 @@ public partial class SalesReturnViewModel : ViewModelBase
         IsBusy = true;
         try
         {
-            var result = await _createWarehouseReceipt.ExecuteAsync(CurrentReturn.Id, ct);
-
-            // Sau khi lập PN thành công, chuyển thẳng sang workflow In PHIẾU NHẬP KHO — khớp đúng
-            // hành vi "Ghi sổ → In" đã làm cho Chứng từ bán hàng/Chứng từ trả hàng (auto mở print
-            // preview, không cần thông báo MessageBox riêng vì thấy được bản in là đã xác nhận
-            // thành công). CreateWarehouseReceiptResultDto (result) chỉ có id/receipt_number —
-            // fetch lại đầy đủ (dòng hàng, TK Nợ/Có...) để in.
-            var receipt = await _getWarehouseReceiptById.ExecuteAsync(result.Id, ct);
-            if (receipt is not null)
-            {
-                var partner = Customers.FirstOrDefault(c => c.Id == receipt.CustomerId)
-                    as DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer;
-                var printWindow = _warehouseReceiptPrintWindowFactory();
-                printWindow.Initialize(receipt, partner?.Address);
-                printWindow.Owner = Application.Current.MainWindow;
-                printWindow.ShowDialog();
-            }
+            await EnsureWarehouseReceiptPrintedAsync(CurrentReturn.Id, CurrentReturn.DocumentNumber, ct);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -675,28 +714,15 @@ public partial class SalesReturnViewModel : ViewModelBase
         RecalculateTotals();
     }
 
-    public void FilterProductsByCode(string? text)
-    {
-        var filtered = string.IsNullOrWhiteSpace(text)
-            ? _allProducts
-            : _allProducts.Where(p => p.Code.Contains(text, StringComparison.OrdinalIgnoreCase));
-        RefreshProducts(filtered);
-    }
-
-    public void FilterProductsByName(string? text)
-    {
-        var filtered = string.IsNullOrWhiteSpace(text)
-            ? _allProducts
-            : _allProducts.Where(p => p.Name.Contains(text, StringComparison.OrdinalIgnoreCase));
-        RefreshProducts(filtered);
-    }
-
-    public void ResetProductFilter() => RefreshProducts(_allProducts);
-
-    private void RefreshProducts(IEnumerable<ISearchableItem> items)
+    // AppSearchableComboBox tự lọc theo Code/Name khi user gõ (control TextBox tự viết, filter nội
+    // bộ không đụng vào Text đang gõ) nên Products chỉ cần giữ đúng danh sách đầy đủ — không cần
+    // lọc lại mỗi keystroke như ComboBox gốc trước đây (FilterProductsByCode/ByName đã bỏ, từng
+    // gây lỗi gõ tiếng Việt có dấu vì ComboBox tự reset Text/caret mỗi lần ItemsSource đổi). Khớp
+    // đúng cách SalesOrderViewModel.ResetProductFilter đang làm.
+    public void ResetProductFilter()
     {
         Products.Clear();
-        foreach (var p in items) Products.Add(p);
+        foreach (var p in _allProducts) Products.Add(p);
     }
 
     private void RecalculateTotals()

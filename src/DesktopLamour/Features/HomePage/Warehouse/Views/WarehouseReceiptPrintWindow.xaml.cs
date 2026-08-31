@@ -127,39 +127,62 @@ public partial class WarehouseReceiptPrintWindow : Window
         headerPara.Inlines.Add(new Run("Số tài khoản: 0071.0007.93865 - VCB - CN Tân Sơn Nhất") { FontSize = 12 });
         content.Blocks.Add(headerPara);
 
-        // Title
-        content.Blocks.Add(new Paragraph(new Bold(new Run("PHIẾU NHẬP KHO")) { FontSize = 20 })
-        {
-            TextAlignment = TextAlignment.Center,
-            Margin        = new Thickness(0, 6, 0, 4),
-        });
-
         var firstLine = receipt.Lines.FirstOrDefault();
         var debitAccount  = firstLine?.DebitAccount  ?? "";
         var creditAccount = firstLine?.CreditAccount ?? "";
         var documentDate  = receipt.DocumentDate.ToLocalTime();
 
-        // Ngày ... / Nợ | Số: .../ Có: ... — bảng 2 cột cố định, tránh nối chuỗi khoảng trắng cứng.
+        // Title + Ngày ... | Nợ/Có — gộp CHUNG 1 bảng 3 cột (spacer/giữa/phải) thay vì để title là
+        // 1 Paragraph full-width riêng: nếu tính center theo 2 cơ chế khác nhau (paragraph center =
+        // nửa content width, table-cell center = spacer + nửa cột giữa) thì chỉ cần lệch 1 chút
+        // trong ước lượng content width là 2 trục lệch nhau ngay. Đặt cả 3 dòng (title/Ngày/Số) vào
+        // CÙNG cột giữa của CÙNG bảng → tâm luôn trùng nhau tuyệt đối bất kể content width thật là
+        // bao nhiêu. Cột phải (Nợ/Có) CHỪA padding để không tràn/khuất sát khung viền phải.
         var dateNoTable = new Table { Margin = new Thickness(0, 0, 0, 8) };
-        dateNoTable.Columns.Add(new TableColumn { Width = new GridLength(280) });
-        dateNoTable.Columns.Add(new TableColumn { Width = new GridLength(215) });
+        dateNoTable.Columns.Add(new TableColumn { Width = new GridLength(140) }); // spacer
+        dateNoTable.Columns.Add(new TableColumn { Width = new GridLength(216) }); // Title/Ngày.../Số:
+        dateNoTable.Columns.Add(new TableColumn { Width = new GridLength(110) }); // Nợ:/Có:
         var dateNoGroup = new TableRowGroup();
 
-        var dateRow = new TableRow();
-        dateRow.Cells.Add(new TableCell(new Paragraph(new Italic(new Run(
-            $"Ngày {documentDate.Day} tháng {documentDate.Month} năm {documentDate.Year}")))));
-        var noRow1 = new TableRow();
-        noRow1.Cells.Add(new TableCell(new Paragraph(new Run($"Nợ: {debitAccount}"))));
-        dateNoGroup.Rows.Add(CombineRow(dateRow.Cells[0], noRow1.Cells[0]));
+        // Dựng thẳng từng TableRow với đủ 3 TableCell thật của nó — KHÔNG add TableCell vào 1
+        // TableRow tạm rồi lấy lại (TableCell.Cells[0]) để nhét vào TableRow khác như code cũ
+        // (CombineRow): 1 TableCell đã add vào Cells của row nào thì WPF coi nó thuộc sở hữu
+        // (logical parent) của đúng row đó — add tiếp vào row khác ném thẳng
+        // "Item belongs to another collection currently. Item must be removed first."
+        var noCoCellPadding = new Thickness(0, 0, 10, 0);
 
-        var soRow = new TableRow();
-        var soPara = new Paragraph();
+        var titleRow = new TableRow();
+        titleRow.Cells.Add(new TableCell(new Paragraph()));
+        titleRow.Cells.Add(new TableCell(new Paragraph(new Bold(new Run("PHIẾU NHẬP KHO")) { FontSize = 20 })
+        {
+            TextAlignment = TextAlignment.Center,
+            Margin        = new Thickness(0, 6, 0, 4),
+        }));
+        titleRow.Cells.Add(new TableCell(new Paragraph()));
+        dateNoGroup.Rows.Add(titleRow);
+
+        var dateRow = new TableRow();
+        dateRow.Cells.Add(new TableCell(new Paragraph()));
+        dateRow.Cells.Add(new TableCell(new Paragraph(new Italic(new Run(
+            $"Ngày {documentDate.Day} tháng {documentDate.Month} năm {documentDate.Year}")))
+        { TextAlignment = TextAlignment.Center }));
+        dateRow.Cells.Add(new TableCell(new Paragraph(new Run($"Nợ: {debitAccount}")) { TextAlignment = TextAlignment.Right })
+        {
+            Padding = noCoCellPadding,
+        });
+        dateNoGroup.Rows.Add(dateRow);
+
+        var soPara = new Paragraph { TextAlignment = TextAlignment.Center };
         soPara.Inlines.Add(new Run("Số: "));
         soPara.Inlines.Add(new Bold(new Run(receipt.ReceiptNumber)) { Foreground = Brushes.Red });
+        var soRow = new TableRow();
+        soRow.Cells.Add(new TableCell(new Paragraph()));
         soRow.Cells.Add(new TableCell(soPara));
-        var coRow = new TableRow();
-        coRow.Cells.Add(new TableCell(new Paragraph(new Run($"Có: {creditAccount}"))));
-        dateNoGroup.Rows.Add(CombineRow(soRow.Cells[0], coRow.Cells[0]));
+        soRow.Cells.Add(new TableCell(new Paragraph(new Run($"Có: {creditAccount}")) { TextAlignment = TextAlignment.Right })
+        {
+            Padding = noCoCellPadding,
+        });
+        dateNoGroup.Rows.Add(soRow);
 
         dateNoTable.RowGroups.Add(dateNoGroup);
         content.Blocks.Add(dateNoTable);
@@ -237,7 +260,10 @@ public partial class WarehouseReceiptPrintWindow : Window
         table.RowGroups.Add(rowGroup);
         content.Blocks.Add(table);
 
-        content.Blocks.Add(new Paragraph(new Run($"- Tổng số tiền (Viết bằng chữ): {VietnameseNumberToWordsHelper.ToWords(receipt.TotalAmount)}"))
+        // Để trống khi chưa có tiền thật (TotalAmount = 0) thay vì tự ghi "Không đồng" — khớp mẫu
+        // MISA (dòng để trống, chờ điền tay/dữ liệu thật) thay vì hiện chữ như đã có giá trị.
+        var amountInWords = receipt.TotalAmount == 0 ? "" : VietnameseNumberToWordsHelper.ToWords(receipt.TotalAmount);
+        content.Blocks.Add(new Paragraph(new Run($"- Tổng số tiền (Viết bằng chữ): {amountInWords}"))
         {
             Margin = new Thickness(0, 8, 0, 3),
         });
@@ -279,16 +305,6 @@ public partial class WarehouseReceiptPrintWindow : Window
         content.Blocks.Add(new BlockUIContainer(new Border { MinHeight = spacerHeight }));
 
         return doc;
-    }
-
-    // Ghép 2 TableCell (từ 2 TableRow tạm khác nhau) thành 1 TableRow thật — chỉ dùng nội bộ khi
-    // dựng dòng "Ngày.../Nợ" và "Số.../Có" ở trên để code đọc rõ ràng hơn (mỗi vế xây riêng).
-    private static TableRow CombineRow(TableCell left, TableCell right)
-    {
-        var row = new TableRow();
-        row.Cells.Add(left);
-        row.Cells.Add(right);
-        return row;
     }
 
     private const int ProductNameColumnIndex = 2;

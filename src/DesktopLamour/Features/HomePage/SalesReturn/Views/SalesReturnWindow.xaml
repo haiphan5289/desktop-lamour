@@ -319,13 +319,17 @@
                               BorderThickness="0"
                               RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                               AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
-                              PreparingCellForEdit="LinesDataGrid_PreparingCellForEdit"
-                              CellEditEnding="LinesDataGrid_CellEditEnding"
                               behaviors:DataGridRowNavigationBehavior.EnableArrowRowNavigation="True"
                               behaviors:DataGridLineContextMenuBehavior.EnableLineContextMenu="True">
                         <DataGrid.Columns>
 
-                            <!-- Mã hàng — product picker -->
+                            <!-- Mã hàng — product picker. Dùng AppSearchableComboBox (control TextBox
+                                 tự viết) thay vì ComboBox IsEditable=True gốc của WPF — ComboBox gốc
+                                 tự reset Text/caret của PART_EditableTextBox mỗi khi ItemsSource đổi
+                                 (Clear/Add khi lọc theo keystroke), làm vỡ chuỗi gõ tiếng Việt có dấu
+                                 (Vietkey cần nhiều keystroke ghép 1 ký tự). AppSearchableComboBox lọc
+                                 nội bộ, không đụng vào Text đang gõ — khớp cách SalesOrderWindow đã
+                                 dùng cho đúng cột này (Mã hàng/Tên hàng, xem SalesOrderWindow.xaml). -->
                             <DataGridTemplateColumn Header="Mã hàng" Width="130">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
@@ -336,17 +340,16 @@
                                 </DataGridTemplateColumn.CellTemplate>
                                 <DataGridTemplateColumn.CellEditingTemplate>
                                     <DataTemplate>
-                                        <ComboBox ItemsSource="{Binding DataContext.Products, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                  SelectedItem="{Binding SelectedProduct, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                  DisplayMemberPath="DisplayText"
-                                                  IsEditable="True"
-                                                  IsTextSearchEnabled="False"
-                                                  VerticalContentAlignment="Center"/>
+                                        <controls:AppSearchableComboBox
+                                            ItemsSource="{Binding DataContext.Products, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            SelectedItem="{Binding SelectedProduct, Mode=TwoWay}"
+                                            Placeholder="Chọn sản phẩm"
+                                            IsNullable="True"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellEditingTemplate>
                             </DataGridTemplateColumn>
 
-                            <!-- Tên hàng — filter by name with dropdown -->
+                            <!-- Tên hàng — product picker, cùng control với Mã hàng ở trên -->
                             <DataGridTemplateColumn Header="Tên hàng" Width="*">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
@@ -357,12 +360,11 @@
                                 </DataGridTemplateColumn.CellTemplate>
                                 <DataGridTemplateColumn.CellEditingTemplate>
                                     <DataTemplate>
-                                        <ComboBox ItemsSource="{Binding DataContext.Products, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                  SelectedItem="{Binding SelectedProduct, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                  DisplayMemberPath="DisplayText"
-                                                  IsEditable="True"
-                                                  IsTextSearchEnabled="False"
-                                                  VerticalContentAlignment="Center"/>
+                                        <controls:AppSearchableComboBox
+                                            ItemsSource="{Binding DataContext.Products, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            SelectedItem="{Binding SelectedProduct, Mode=TwoWay}"
+                                            Placeholder="Chọn sản phẩm"
+                                            IsNullable="True"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellEditingTemplate>
                             </DataGridTemplateColumn>
