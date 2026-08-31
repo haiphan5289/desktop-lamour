@@ -633,11 +633,10 @@ public partial class SalesReturnViewModel : ViewModelBase
     {
         if (value is DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer c)
         {
-            Description = $"Thu hồi hàng {c.Name}";
+            // Diễn giải: để trống, user tự nhập — không auto-fill "Thu hồi hàng {Tên KH}" nữa.
 
             // Tự điền "NV bán hàng" theo nhân viên chăm sóc gắn sẵn trên khách hàng — khớp hành vi
-            // OnSelectedCustomerChanged bên SalesOrderViewModel ("Chứng từ bán hàng"), trước đây
-            // SalesReturnViewModel chỉ tự điền Diễn giải, bỏ sót phần liên kết nhân viên này.
+            // OnSelectedCustomerChanged bên SalesOrderViewModel ("Chứng từ bán hàng").
             if (c.SaleCareEmployeeId.HasValue)
             {
                 var matched = Employees.FirstOrDefault(e => e.Id == c.SaleCareEmployeeId.Value);
