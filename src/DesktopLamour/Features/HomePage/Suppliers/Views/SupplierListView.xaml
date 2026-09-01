@@ -115,16 +115,20 @@
                       CanUserAddRows="False"
                       CanUserDeleteRows="False"
                       SelectionMode="Single"
-                      GridLinesVisibility="Horizontal"
+                      GridLinesVisibility="All"
+                      HorizontalGridLinesBrush="#9CB8D4"
+                      VerticalGridLinesBrush="#9CB8D4"
                       BorderBrush="{StaticResource AppColor.BorderThin}"
                       BorderThickness="1"
                       RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
                       Visibility="{Binding HasSuppliers, Converter={StaticResource BoolToVisibilityConverter}}">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Mã nhà cung cấp" Binding="{Binding Code}" Width="140"/>
-                    <DataGridTextColumn Header="Tên nhà cung cấp" Binding="{Binding Name}" Width="*"/>
-                    <DataGridTextColumn Header="Địa chỉ" Binding="{Binding Address}" Width="*"/>
+                    <DataGridTextColumn Header="Tên nhà cung cấp" Binding="{Binding Name}" Width="200"/>
+                    <DataGridTextColumn Header="Địa chỉ" Binding="{Binding Address}" Width="220"/>
                     <DataGridTextColumn Header="Nhóm KH, NCC" Binding="{Binding Group}" Width="120"/>
                     <DataGridTextColumn Header="Mã số thuế" Binding="{Binding TaxCode}" Width="120"/>
                     <DataGridTextColumn Header="Điện thoại" Binding="{Binding Phone}" Width="120"/>

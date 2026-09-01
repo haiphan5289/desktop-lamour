@@ -142,11 +142,15 @@
                       CanUserAddRows="False"
                       CanUserDeleteRows="False"
                       SelectionMode="Single"
-                      GridLinesVisibility="Horizontal"
+                      GridLinesVisibility="All"
+                      HorizontalGridLinesBrush="#9CB8D4"
+                      VerticalGridLinesBrush="#9CB8D4"
                       BorderBrush="{StaticResource AppColor.BorderThin}"
                       BorderThickness="1"
                       RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
                       MouseDoubleClick="OrdersGrid_MouseDoubleClick"
                       PreviewMouseRightButtonDown="OrdersGrid_PreviewMouseRightButtonDown"
                       Visibility="{Binding HasSalesOrders, Converter={StaticResource BoolToVisibilityConverter}}">
@@ -208,7 +212,7 @@
                                         Width="100"/>
 
                     <DataGridTextColumn Header="Diễn giải" Binding="{Binding Description}" Width="200"/>
-                    <DataGridTextColumn Header="Khách hàng" Binding="{Binding CustomerName}" Width="*"/>
+                    <DataGridTextColumn Header="Khách hàng" Binding="{Binding CustomerName}" Width="180"/>
                     <DataGridTextColumn Header="Nhân viên" Binding="{Binding EmployeeName}" Width="140"/>
 
                     <DataGridTextColumn Header="Tổng tiền hàng" Binding="{Binding TotalGross, StringFormat=\{0:N0\}}" Width="130">
@@ -247,7 +251,7 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTextColumn Header="Ghi chú" Binding="{Binding Notes}" Width="*"/>
+                    <DataGridTextColumn Header="Ghi chú" Binding="{Binding Notes}" Width="180"/>
 
                 </DataGrid.Columns>
             </DataGrid>

@@ -85,10 +85,13 @@
             <DataGrid ItemsSource="{Binding Items}"
                       AutoGenerateColumns="False"
                       CanUserAddRows="False" CanUserDeleteRows="False"
-                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                      HeadersVisibility="Column" GridLinesVisibility="All"
+                      HorizontalGridLinesBrush="#9CB8D4" VerticalGridLinesBrush="#9CB8D4"
                       BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="1"
                       RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
                       Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibilityConverter}}">
                 <DataGrid.Columns>
                     <DataGridCheckBoxColumn Header="" Binding="{Binding IsSelected, Mode=TwoWay}" Width="36">
@@ -103,7 +106,7 @@
                     <DataGridTextColumn Header="Số chứng từ"   Binding="{Binding DocumentNumber}" Width="100" IsReadOnly="True"/>
                     <DataGridTextColumn Header="Mã khách hàng" Binding="{Binding CustomerCode}"   Width="100" IsReadOnly="True"/>
                     <DataGridTextColumn Header="Tên khách hàng" Binding="{Binding CustomerName}"  Width="200" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="Diễn giải"     Binding="{Binding Description}"    Width="*"   IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Diễn giải"     Binding="{Binding Description}"    Width="220" IsReadOnly="True"/>
                     <DataGridTextColumn Header="Còn nợ" Binding="{Binding RemainingAmount, StringFormat=\{0:N0\}}" Width="110" IsReadOnly="True">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">

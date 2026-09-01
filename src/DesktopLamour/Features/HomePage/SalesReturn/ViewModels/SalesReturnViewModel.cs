@@ -33,6 +33,7 @@ public partial class SalesReturnViewModel : ViewModelBase
     private readonly ICreateSalesReturnUseCase      _createReturn;
     private readonly IUpdateSalesReturnUseCase      _updateReturn;
     private readonly IDeleteSalesReturnUseCase      _deleteReturn;
+    private readonly IConfirmSalesReturnUseCase     _confirmReturn;
     private readonly IGetNextSalesReturnCodeUseCase _getNextCode;
     private readonly IGetCustomersUseCase           _getCustomers;
     private readonly IGetEmployeesUseCase           _getEmployees;
@@ -119,12 +120,17 @@ public partial class SalesReturnViewModel : ViewModelBase
     partial void OnCurrentReturnChanged(SalesReturnResponseDto? value)
     {
         OnPropertyChanged(nameof(HasExistingReturn));
+        OnPropertyChanged(nameof(CanDeleteReturn));
         PrintCommand.NotifyCanExecuteChanged();
         DeleteCommand.NotifyCanExecuteChanged();
         CreateWarehouseReceiptCommand.NotifyCanExecuteChanged();
     }
 
     public bool HasExistingReturn => CurrentReturn is not null;
+
+    // Xóa chỉ cho phép khi còn Nháp — khớp guard mới ở DeleteSalesReturnUseCase (BE), tránh mở popup
+    // vẫn cho bấm Xóa rồi mới nhận lỗi 400 "Chỉ chứng từ ở trạng thái Nháp mới được xóa".
+    public bool CanDeleteReturn => CurrentReturn is not null && CurrentReturn.Status == "Draft";
 
     // ── Điều hướng Trước/Sau/Thêm trong popup — gọi từ SalesReturnWindow.Initialize khi mở từ
     // 1 danh sách (SalesReturnListViewModel). Không set (mặc định rỗng) → CanNavigatePrev/Next
@@ -210,6 +216,7 @@ public partial class SalesReturnViewModel : ViewModelBase
         ICreateSalesReturnUseCase      createReturn,
         IUpdateSalesReturnUseCase      updateReturn,
         IDeleteSalesReturnUseCase      deleteReturn,
+        IConfirmSalesReturnUseCase     confirmReturn,
         IGetNextSalesReturnCodeUseCase getNextCode,
         IGetCustomersUseCase           getCustomers,
         IGetEmployeesUseCase           getEmployees,
@@ -229,6 +236,7 @@ public partial class SalesReturnViewModel : ViewModelBase
         _createReturn              = createReturn;
         _updateReturn              = updateReturn;
         _deleteReturn              = deleteReturn;
+        _confirmReturn             = confirmReturn;
         _getNextCode               = getNextCode;
         _getCustomers              = getCustomers;
         _getEmployees              = getEmployees;
@@ -373,6 +381,19 @@ public partial class SalesReturnViewModel : ViewModelBase
                 _logger.LogInformation("SalesReturn updated: {Id}", result.Id);
             }
 
+            // Nút toolbar tên "Ghi sổ" phải THẬT SỰ ghi sổ — chuyển Draft → Confirmed, cộng tồn
+            // kho thật (side-effect nằm ở BE ConfirmSalesReturnUseCase). Create/Update chỉ tạo
+            // bản ghi ở Draft (theo thiết kế mới, xem sales-return.md 2026-08-31); không tự Confirm
+            // ở đây thì chứng từ sẽ kẹt ở Nháp mãi mãi dù toolbar hiển thị y như đã "Ghi sổ" xong.
+            // Update trên 1 bản ghi ĐÃ Confirmed sẽ không tới được dòng này (BE ném 400 ở bước
+            // UpdateAsync phía trên rồi) — CanDeleteReturn/List-level CanExecute cũng đã chặn Sửa
+            // trên bản ghi Confirmed từ trước khi mở được popup này.
+            if (result.Status == "Draft")
+            {
+                result = await _confirmReturn.ExecuteAsync(result.Id, ct);
+                _logger.LogInformation("SalesReturn confirmed (Ghi sổ): {DocumentNumber}", result.DocumentNumber);
+            }
+
             StopDirtyTracking();
             ReturnSaved?.Invoke();
             // Gán lại CurrentReturn (trước đây bỏ trống cho tới khi InitializeAsync chạy lại) — cần
@@ -435,13 +456,13 @@ public partial class SalesReturnViewModel : ViewModelBase
         ShowPrintPreview(CurrentReturn);
     }
 
-    [RelayCommand(CanExecute = nameof(HasExistingReturn))]
+    [RelayCommand(CanExecute = nameof(CanDeleteReturn))]
     private async Task DeleteAsync(CancellationToken ct = default)
     {
         if (CurrentReturn is null) return;
 
         var confirm = MessageBox.Show(
-            $"Bạn có chắc muốn xóa chứng từ '{CurrentReturn.DocumentNumber}'?\nTồn kho sẽ được trừ lại.",
+            $"Bạn có chắc muốn xóa chứng từ '{CurrentReturn.DocumentNumber}'?",
             "Xác nhận xóa",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);

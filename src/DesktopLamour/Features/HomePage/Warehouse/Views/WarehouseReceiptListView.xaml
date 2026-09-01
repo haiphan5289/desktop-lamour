@@ -89,18 +89,22 @@
                       CanUserResizeColumns="True"
                       SelectionMode="Single"
                       HeadersVisibility="Column"
-                      GridLinesVisibility="Horizontal"
+                      GridLinesVisibility="All"
+                      HorizontalGridLinesBrush="#9CB8D4"
+                      VerticalGridLinesBrush="#9CB8D4"
                       BorderBrush="{StaticResource AppColor.BorderThin}"
                       BorderThickness="1"
                       RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
                       Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibilityConverter}}">
 
                 <DataGrid.Columns>
 
                     <DataGridTextColumn Header="Số phiếu" Binding="{Binding ReceiptNumber}" Width="130"/>
                     <DataGridTextColumn Header="Mã hàng" Binding="{Binding ProductCode}" Width="110"/>
-                    <DataGridTextColumn Header="Tên hàng" Binding="{Binding ProductName}" Width="*"/>
+                    <DataGridTextColumn Header="Tên hàng" Binding="{Binding ProductName}" Width="200"/>
 
                     <DataGridTemplateColumn Header="Loại phiếu" Width="160">
                         <DataGridTemplateColumn.CellTemplate>

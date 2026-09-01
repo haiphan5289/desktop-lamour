@@ -20,5 +20,9 @@ public class SalesReturnResponseDto
     [JsonPropertyName("total_discount")]  public decimal TotalDiscount  { get; set; }
     [JsonPropertyName("total_payment")]   public decimal TotalPayment   { get; set; }
     [JsonPropertyName("created_at")]      public DateTime CreatedAt     { get; set; }
+    // "Draft" | "Confirmed" — Ghi sổ/Bỏ ghi (2026-08-31). Cùng convention string-enum như
+    // PaymentResponseDto/WarehouseReceiptResponseDto (Status serialize theo tên enum, không phải số).
+    [JsonPropertyName("status")]          public string  Status         { get; set; } = "Draft";
+    [JsonPropertyName("confirmed_at")]    public DateTime? ConfirmedAt  { get; set; }
     [JsonPropertyName("lines")]           public List<SalesReturnLineDto> Lines { get; set; } = new();
 }

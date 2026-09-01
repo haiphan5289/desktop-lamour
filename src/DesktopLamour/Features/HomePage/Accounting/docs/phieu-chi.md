@@ -258,3 +258,5 @@ Phiếu Thu (`ReceiptWindow`) **chưa** được áp dụng các thay đổi 202
 ## "Sổ Kế Toán Chi Tiết Quỹ Tiền Mặt" — click-để-Xem + cột mới (2026-08-28)
 
 `AccountingView` (màn Sổ quỹ, dùng chung cho cả Phiếu thu và Phiếu chi) thêm click-để-Xem (`SelectedEntry`/`ViewEntryCommand`, mở lại `PaymentWindow` qua `InitialDocumentNumber` nếu dòng là Phiếu chi) + 2 cột "Lý do thu/chi"/"Loại chứng từ" — xem chi tiết đầy đủ ở [`phieu-thu.md`](phieu-thu.md) (viết chung 1 chỗ vì cùng 1 màn WPF, không tách riêng theo Thu/Chi). BE side: `ConfirmPaymentUseCase` set `CashTransaction.PaymentReason`/`DocumentType = "Phiếu chi"` — xem `be-window-lamour/.../Accounting/docs/phieu-chi.md`.
+
+**2026-08-31**: `AccountingViewModel`/`BulkCustomerReceiptSearchViewModel` đổi mặc định lọc ngày sang "Đầu tháng đến hiện tại" (đồng bộ toàn app) — chi tiết đầy đủ ở [`phieu-thu.md`](phieu-thu.md) mục "Đổi mặc định lọc ngày..." (cùng 1 màn WPF, viết chung 1 chỗ như trên).

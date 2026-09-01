@@ -63,8 +63,20 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TabControl">
-                        <StackPanel>
-                            <Border Background="{StaticResource AppColor.BackgroundSecondary}"
+                        <!-- Grid (không phải StackPanel) — StackPanel cấp chiều rộng VÔ HẠN cho
+                             children theo trục ngang (chỉ ràng buộc theo trục xếp chồng dọc), khiến
+                             DataGrid nhiều cột bên trong tự phình rộng bằng tổng độ rộng cột thay vì
+                             bị ép theo đúng chiều rộng TabControl thật — ScrollViewer nội bộ của
+                             DataGrid vì vậy không bao giờ kích hoạt (không thấy mình bị tràn), cột
+                             tràn ra ngoài cửa sổ mà không có thanh cuộn ngang nào để kéo tới. Grid với
+                             RowDefinition Auto/* ràng buộc đúng chiều rộng như Window/Grid cha thật sự có. -->
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0"
+                                    Background="{StaticResource AppColor.BackgroundSecondary}"
                                     CornerRadius="{StaticResource AppRadius.Medium}"
                                     Padding="4"
                                     Margin="0,0,0,8">
@@ -72,13 +84,14 @@
                                           Background="Transparent"
                                           HorizontalAlignment="Left"/>
                             </Border>
-                            <Border Background="{StaticResource AppColor.BackgroundPrimary}"
+                            <Border Grid.Row="1"
+                                    Background="{StaticResource AppColor.BackgroundPrimary}"
                                     BorderBrush="{StaticResource AppColor.BorderThin}"
                                     BorderThickness="1"
                                     CornerRadius="{StaticResource AppRadius.Large}">
                                 <ContentPresenter ContentSource="SelectedContent"/>
                             </Border>
-                        </StackPanel>
+                        </Grid>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -319,6 +332,8 @@
                               BorderThickness="0"
                               RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                               AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                              ScrollViewer.VerticalScrollBarVisibility="Auto"
                               behaviors:DataGridRowNavigationBehavior.EnableArrowRowNavigation="True"
                               behaviors:DataGridLineContextMenuBehavior.EnableLineContextMenu="True">
                         <DataGrid.Columns>
@@ -350,7 +365,7 @@
                             </DataGridTemplateColumn>
 
                             <!-- Tên hàng — product picker, cùng control với Mã hàng ở trên -->
-                            <DataGridTemplateColumn Header="Tên hàng" Width="*">
+                            <DataGridTemplateColumn Header="Tên hàng" Width="220">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding ProductName}"
@@ -559,10 +574,12 @@
                           VerticalGridLinesBrush="#9CB8D4"
                           BorderThickness="0"
                           RowBackground="{StaticResource AppColor.BackgroundPrimary}"
-                          AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}">
+                          AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Mã hàng" Binding="{Binding ProductCode}" Width="90" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="Tên hàng" Binding="{Binding ProductName}" Width="*" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Tên hàng" Binding="{Binding ProductName}" Width="220" IsReadOnly="True"/>
 
                         <!-- Diễn giải thuế — tự sinh theo tên hàng, không lưu riêng ở BE. TaxDescription
                              (computed property) tự trả rỗng khi chưa chọn sản phẩm — StringFormat trong
@@ -633,10 +650,12 @@
                           VerticalGridLinesBrush="#9CB8D4"
                           BorderThickness="0"
                           RowBackground="{StaticResource AppColor.BackgroundPrimary}"
-                          AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}">
+                          AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Mã hàng" Binding="{Binding ProductCode}" Width="90" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="Tên hàng" Binding="{Binding ProductName}" Width="*" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Tên hàng" Binding="{Binding ProductName}" Width="220" IsReadOnly="True"/>
 
                         <!-- Kho — chỉ hiển thị, sửa thật ở tab "1. Hàng tiền" (cùng WarehouseId) -->
                         <DataGridTextColumn Header="Kho" Binding="{Binding WarehouseName}" Width="100" IsReadOnly="True"/>
@@ -736,10 +755,12 @@
                           VerticalGridLinesBrush="#9CB8D4"
                           BorderThickness="0"
                           RowBackground="{StaticResource AppColor.BackgroundPrimary}"
-                          AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}">
+                          AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Mã hàng" Binding="{Binding ProductCode}" Width="90" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="Tên hàng" Binding="{Binding ProductName}" Width="*" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Tên hàng" Binding="{Binding ProductName}" Width="220" IsReadOnly="True"/>
 
                         <!-- Đơn vị — combo tra cứu Department -->
                         <DataGridTemplateColumn Header="Đơn vị" Width="180">

@@ -234,12 +234,16 @@
                       CanUserResizeColumns="False"
                       SelectionMode="Single"
                       HeadersVisibility="Column"
-                      GridLinesVisibility="Horizontal"
+                      GridLinesVisibility="All"
+                      HorizontalGridLinesBrush="#9CB8D4"
+                      VerticalGridLinesBrush="#9CB8D4"
                       BorderBrush="{StaticResource AppColor.BorderThin}"
                       BorderThickness="1"
                       RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
                       ColumnHeaderStyle="{StaticResource CleanHeaderStyle}"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
                       MouseDoubleClick="SummaryDataGrid_MouseDoubleClick"
                       Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibilityConverter}}">
 
@@ -277,7 +281,7 @@
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
-                    <DataGridTextColumn Binding="{Binding Name}" Width="*"
+                    <DataGridTextColumn Binding="{Binding Name}" Width="200"
                                         ElementStyle="{StaticResource CellText}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>

@@ -208,3 +208,9 @@ Theo yêu cầu ("cái chỗ quỹ bấm vào xem để xem chi tiết bên tron
 - **`AccountingView.xaml`**: `DataGrid` bind `SelectedItem="{Binding SelectedEntry}"` (TwoWay) + `MouseDoubleClick` gọi `ViewEntryCommand`, thêm nút toolbar "👁 Xem".
 - **Cột mới**: "Lý do thu/chi" (`PaymentReason`, qua `PaymentReasonDisplayConverter` có sẵn) và "Loại chứng từ" (`DocumentType`, ví dụ "Phiếu thu"/"Phiếu chi") — 2 field mới trên BE `CashLedgerEntryDto` (xem `be-window-lamour/.../Accounting/docs/phieu-thu.md`/`phieu-chi.md`, migration `AddCashTransactionReasonAndDocType`). Cắt bớt vài cột kỹ thuật ít dùng (Nợ/Có riêng lẻ, Trạng thái tài khoản, TK đối ứng) để nhường chỗ — gộp hiển thị số tiền qua 1 cột "Số tiền" duy nhất thay vì tách Nợ/Có.
 - Không cần EF migration thêm cho phần WPF (BE migration đã chạy ở đợt sửa cùng ngày). WPF build 0 lỗi.
+
+## Đổi mặc định lọc ngày sang "Đầu tháng đến hiện tại" (2026-08-31, đồng bộ toàn app)
+
+- **`AccountingViewModel`** ("Sổ Kế Toán Chi Tiết Quỹ Tiền Mặt"): `PeriodOptions` trước đây không có lựa chọn "Đầu tháng đến hiện tại", mặc định là "Tháng này" (tính tới **hết** tháng — `FromDate.AddMonths(1).AddDays(-1)`, bao gồm cả ngày tương lai nếu đang ở giữa tháng). Thêm option mới "Đầu tháng đến hiện tại" (1 đầu tháng → hôm nay) vào cuối `PeriodOptions`, đặt làm mặc định — giữ nguyên "Tháng này" (trọn tháng) cho ai vẫn cần xem cả phần còn lại của tháng.
+- **`BulkCustomerReceiptSearchViewModel`** ("Thu tiền khách hàng hàng loạt"): mặc định trước đây là "Hôm nay". Đổi tên option "Tháng này" (case này thực ra đã tính đúng 1-đầu-tháng→hôm-nay từ trước, không phải trọn tháng — chỉ là đặt tên sai) thành **"Đầu tháng đến hiện tại"** cho đúng ngữ nghĩa và khớp tên dùng ở các màn khác, đặt làm mặc định thay cho "Hôm nay".
+- Không có BE change nào — thuần đổi field initializer + option string phía WPF. Xem `SalesReturn/docs/sales-return.md` mục 6 để biết danh sách đầy đủ các màn khác cũng đổi theo cùng đợt. WPF build 0 lỗi.

@@ -115,11 +115,15 @@
                       CanUserAddRows="False"
                       CanUserDeleteRows="False"
                       SelectionMode="Single"
-                      GridLinesVisibility="Horizontal"
+                      GridLinesVisibility="All"
+                      HorizontalGridLinesBrush="#9CB8D4"
+                      VerticalGridLinesBrush="#9CB8D4"
                       BorderBrush="{StaticResource AppColor.BorderThin}"
                       BorderThickness="1"
                       RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
                       Visibility="{Binding HasEmployees, Converter={StaticResource BoolToVisibilityConverter}}">
                 <!-- Header co giãn hết chiều rộng cột để chứa ô lọc bên dưới tên cột (không popup) -->
                 <DataGrid.ColumnHeaderStyle>
@@ -140,7 +144,7 @@
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
-                    <DataGridTextColumn Header="Tên nhân viên" Binding="{Binding Name}" Width="*">
+                    <DataGridTextColumn Header="Tên nhân viên" Binding="{Binding Name}" Width="200">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel>

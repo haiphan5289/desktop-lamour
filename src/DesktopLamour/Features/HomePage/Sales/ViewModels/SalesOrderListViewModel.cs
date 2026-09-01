@@ -64,9 +64,9 @@ public partial class SalesOrderListViewModel : ViewModelBase
         _duplicateOrder    = duplicateOrder;
         _formWindowFactory = formWindowFactory;
 
-        // Mặc định mở màn hình chỉ hiện chứng từ của HÔM NAY (không dồn hết lịch sử lại) —
-        // giống MISA. Người dùng vẫn có thể đổi Từ ngày/Đến ngày để xem ngày khác.
-        _filterFromDate = DateTime.Today;
+        // Mặc định "Đầu tháng đến hiện tại" (áp dụng đồng bộ toàn app — 2026-08-31), thay cho chỉ
+        // riêng HÔM NAY trước đây. Người dùng vẫn có thể đổi Từ ngày/Đến ngày để xem khoảng khác.
+        _filterFromDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
         _filterToDate   = DateTime.Today;
     }
 

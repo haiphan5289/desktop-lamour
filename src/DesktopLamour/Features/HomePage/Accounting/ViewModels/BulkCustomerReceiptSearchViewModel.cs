@@ -36,9 +36,12 @@ public partial class BulkCustomerReceiptSearchViewModel : ViewModelBase
     [ObservableProperty] private string  _paymentMethod = "Cash111";
     [ObservableProperty] private string? _bankAccount;
 
-    public static string[] PeriodOptions { get; } = { "Hôm nay", "Hôm qua", "Tuần này", "Tháng này", "Tùy chọn" };
-    [ObservableProperty] private string   _selectedPeriod = "Hôm nay";
-    [ObservableProperty] private DateTime _fromDate = DateTime.Today;
+    // Mặc định "Đầu tháng đến hiện tại" (áp dụng đồng bộ toàn app — 2026-08-31), thay cho "Hôm nay"
+    // trước đây. Nhãn đổi từ "Tháng này" → "Đầu tháng đến hiện tại" cho đúng ngữ nghĩa thật (case
+    // này vốn đã tính 1-đầu-tháng → hôm nay, không phải trọn tháng) và khớp tên dùng ở các màn khác.
+    public static string[] PeriodOptions { get; } = { "Hôm nay", "Hôm qua", "Tuần này", "Đầu tháng đến hiện tại", "Tùy chọn" };
+    [ObservableProperty] private string   _selectedPeriod = "Đầu tháng đến hiện tại";
+    [ObservableProperty] private DateTime _fromDate = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     [ObservableProperty] private DateTime _toDate   = DateTime.Today;
     [ObservableProperty] private ISearchableItem? _selectedEmployee;
 
@@ -92,7 +95,7 @@ public partial class BulkCustomerReceiptSearchViewModel : ViewModelBase
                 FromDate = today.AddDays(-(int)today.DayOfWeek + (today.DayOfWeek == DayOfWeek.Sunday ? -6 : 1));
                 ToDate   = today;
                 break;
-            case "Tháng này":
+            case "Đầu tháng đến hiện tại":
                 FromDate = new DateTime(today.Year, today.Month, 1);
                 ToDate   = today;
                 break;

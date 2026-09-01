@@ -33,7 +33,9 @@ public partial class WarehouseTransactionListViewModel : ViewModelBase
     [ObservableProperty] private bool     _hasError;
     [ObservableProperty] private string   _errorMessage = string.Empty;
     [ObservableProperty] private bool     _hasItems;
-    [ObservableProperty] private DateTime? _fromDate = DateTime.Today.AddMonths(-1);
+    // Mặc định "Đầu tháng đến hiện tại" (áp dụng đồng bộ toàn app — 2026-08-31), thay cho lùi 1
+    // tháng (rolling 30 ngày) trước đây.
+    [ObservableProperty] private DateTime? _fromDate = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     [ObservableProperty] private DateTime? _toDate   = DateTime.Today;
     [ObservableProperty] private WarehouseTransactionResponseDto? _selectedItem;
 

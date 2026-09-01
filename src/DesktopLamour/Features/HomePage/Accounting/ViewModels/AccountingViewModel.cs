@@ -32,16 +32,18 @@ public partial class AccountingViewModel : ViewModelBase
     [ObservableProperty] private bool    _hasItems;
     [ObservableProperty] private decimal _openingBalance;
     [ObservableProperty] private decimal _closingBalance;
+    // Mặc định "Đầu tháng đến hiện tại" (áp dụng đồng bộ toàn app — 2026-08-31), KHÔNG phải "Tháng
+    // này" (vốn kéo dài tới hết tháng, kể cả ngày tương lai) — khớp SelectedPeriod bên dưới.
     [ObservableProperty] private DateTime _fromDate = new(DateTime.Today.Year, DateTime.Today.Month, 1);
-    [ObservableProperty] private DateTime _toDate   = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(1).AddDays(-1);
+    [ObservableProperty] private DateTime _toDate   = DateTime.Today;
 
     // "Kỳ" — chọn nhanh khoảng ngày (theo mẫu MISA), chọn "Tùy chọn" thì để Từ ngày/Đến ngày tự
     // do chỉnh tay. Đổi Period sẽ ghi đè FromDate/ToDate, KHÔNG tự gọi LoadAsync — người dùng vẫn
     // bấm "Lấy dữ liệu" để áp dụng (khớp hành vi màn MISA).
     public static string[] PeriodOptions { get; } =
-        { "Tùy chọn", "Hôm nay", "Hôm qua", "Tuần này", "Tháng này", "Tháng trước", "Quý này", "Năm nay" };
+        { "Tùy chọn", "Hôm nay", "Hôm qua", "Tuần này", "Tháng này", "Tháng trước", "Quý này", "Năm nay", "Đầu tháng đến hiện tại" };
 
-    [ObservableProperty] private string _selectedPeriod = "Tháng này";
+    [ObservableProperty] private string _selectedPeriod = "Đầu tháng đến hiện tại";
 
     // Lọc Trạng thái/Loại áp trực tiếp lên dữ liệu đã tải (không gọi lại BE) — ItemsView là nguồn
     // DataGrid bind vào; Items vẫn là dữ liệu gốc từ LoadAsync.
@@ -146,6 +148,10 @@ public partial class AccountingViewModel : ViewModelBase
             case "Năm nay":
                 FromDate = new DateTime(today.Year, 1, 1);
                 ToDate   = new DateTime(today.Year, 12, 31);
+                break;
+            case "Đầu tháng đến hiện tại":
+                FromDate = new DateTime(today.Year, today.Month, 1);
+                ToDate   = today;
                 break;
             case "Tùy chọn":
             default:

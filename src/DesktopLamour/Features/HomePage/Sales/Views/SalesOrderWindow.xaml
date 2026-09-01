@@ -335,7 +335,9 @@
                               CanUserResizeColumns="True"
                               SelectionMode="Single"
                               HeadersVisibility="Column"
-                              GridLinesVisibility="Horizontal"
+                              GridLinesVisibility="All"
+                              HorizontalGridLinesBrush="#9CB8D4"
+                              VerticalGridLinesBrush="#9CB8D4"
                               BorderThickness="0"
                               RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                               AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
@@ -368,7 +370,7 @@
                             </DataGridTemplateColumn>
 
                             <!-- Tên hàng — filter by name with dropdown (bao gồm cả lựa chọn "Trừ cọc") -->
-                            <DataGridTemplateColumn Header="Tên hàng" Width="*" CellStyle="{StaticResource DisabledWhenLocked}">
+                            <DataGridTemplateColumn Header="Tên hàng" Width="220" CellStyle="{StaticResource DisabledWhenLocked}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding ProductName}"

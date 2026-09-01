@@ -47,8 +47,17 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TabControl">
-                        <StackPanel>
-                            <Border Background="{StaticResource AppColor.BackgroundSecondary}"
+                        <!-- Grid (không phải StackPanel) — StackPanel cấp chiều rộng VÔ HẠN cho
+                             children theo trục ngang, khiến nội dung nhiều cột (nếu có DataGrid) tự
+                             phình rộng thay vì bị ép đúng chiều rộng TabControl thật. File này hiện
+                             chưa có DataGrid nên chưa lộ bug, sửa đồng bộ đề phòng cho tương lai. -->
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0"
+                                    Background="{StaticResource AppColor.BackgroundSecondary}"
                                     CornerRadius="{StaticResource AppRadius.Medium}"
                                     Padding="4"
                                     Margin="0,0,0,12">
@@ -56,14 +65,15 @@
                                           Background="Transparent"
                                           HorizontalAlignment="Left"/>
                             </Border>
-                            <Border Background="{StaticResource AppColor.BackgroundPrimary}"
+                            <Border Grid.Row="1"
+                                    Background="{StaticResource AppColor.BackgroundPrimary}"
                                     BorderBrush="{StaticResource AppColor.BorderThin}"
                                     BorderThickness="1"
                                     CornerRadius="{StaticResource AppRadius.Large}"
                                     Padding="20">
                                 <ContentPresenter ContentSource="SelectedContent"/>
                             </Border>
-                        </StackPanel>
+                        </Grid>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>

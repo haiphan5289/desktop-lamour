@@ -47,8 +47,17 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TabControl">
-                        <StackPanel>
-                            <Border Background="{StaticResource AppColor.BackgroundSecondary}"
+                        <!-- Grid (không phải StackPanel) — StackPanel cấp chiều rộng VÔ HẠN cho
+                             children theo trục ngang, khiến DataGrid nhiều cột bên trong tự phình
+                             rộng thay vì bị ép đúng chiều rộng TabControl thật, nên ScrollViewer nội
+                             bộ của DataGrid không bao giờ kích hoạt dù cột tràn ra ngoài cửa sổ. -->
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0"
+                                    Background="{StaticResource AppColor.BackgroundSecondary}"
                                     CornerRadius="{StaticResource AppRadius.Medium}"
                                     Padding="4"
                                     Margin="0,0,0,8">
@@ -56,13 +65,14 @@
                                           Background="Transparent"
                                           HorizontalAlignment="Left"/>
                             </Border>
-                            <Border Background="{StaticResource AppColor.BackgroundPrimary}"
+                            <Border Grid.Row="1"
+                                    Background="{StaticResource AppColor.BackgroundPrimary}"
                                     BorderBrush="{StaticResource AppColor.BorderThin}"
                                     BorderThickness="1"
                                     CornerRadius="{StaticResource AppRadius.Large}">
                                 <ContentPresenter ContentSource="SelectedContent"/>
                             </Border>
-                        </StackPanel>
+                        </Grid>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -323,11 +333,15 @@
                               CanUserResizeColumns="True"
                               SelectionMode="Single"
                               HeadersVisibility="Column"
-                              GridLinesVisibility="Horizontal"
+                              GridLinesVisibility="All"
+                              HorizontalGridLinesBrush="#9CB8D4"
+                              VerticalGridLinesBrush="#9CB8D4"
                               MaxHeight="320"
                               BorderThickness="0"
                               RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                               AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                              ScrollViewer.VerticalScrollBarVisibility="Auto"
                               behaviors:DataGridRowNavigationBehavior.EnableArrowRowNavigation="True"
                               behaviors:DataGridLineContextMenuBehavior.EnableLineContextMenu="True"
                               behaviors:DataGridLineContextMenuBehavior.AddCommandName="AddEntryCommand"
@@ -339,7 +353,7 @@
                             <!-- Diễn giải -->
                             <DataGridTextColumn Header="Diễn giải"
                                                 Binding="{Binding Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                Width="*"/>
+                                                Width="220"/>
 
                             <!-- TK Nợ — ComboBox luôn hiện sẵn trong ô, không qua "chế độ sửa" của
                                  DataGrid (né hẳn cơ chế commit/edit-mode gây lỗi mất giá trị). -->

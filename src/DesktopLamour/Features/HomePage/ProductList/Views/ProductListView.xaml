@@ -120,15 +120,19 @@
                       CanUserAddRows="False"
                       CanUserDeleteRows="False"
                       SelectionMode="Single"
-                      GridLinesVisibility="Horizontal"
+                      GridLinesVisibility="All"
+                      HorizontalGridLinesBrush="#9CB8D4"
+                      VerticalGridLinesBrush="#9CB8D4"
                       BorderBrush="{StaticResource AppColor.BorderThin}"
                       BorderThickness="1"
                       RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
                       Visibility="{Binding HasProducts, Converter={StaticResource BoolToVisibilityConverter}}">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Mã sản phẩm" Binding="{Binding Code}" Width="130"/>
-                    <DataGridTextColumn Header="Tên sản phẩm" Binding="{Binding Name}" Width="*"/>
+                    <DataGridTextColumn Header="Tên sản phẩm" Binding="{Binding Name}" Width="220"/>
                     <DataGridTextColumn Header="Danh mục" Binding="{Binding CategoryName}" Width="130"/>
                     <DataGridTextColumn Header="Đơn vị" Binding="{Binding Unit}" Width="80"/>
                     <DataGridTextColumn Header="Giá nhập" Binding="{Binding CostPrice, StringFormat=\{0:N0\}}" Width="120">

@@ -250,11 +250,15 @@
                       CanUserResizeColumns="True"
                       SelectionMode="Single"
                       HeadersVisibility="Column"
-                      GridLinesVisibility="Horizontal"
+                      GridLinesVisibility="All"
+                      HorizontalGridLinesBrush="#9CB8D4"
+                      VerticalGridLinesBrush="#9CB8D4"
                       BorderBrush="{StaticResource AppColor.BorderThin}"
                       BorderThickness="1"
                       RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
                       behaviors:DataGridRowNavigationBehavior.EnableArrowRowNavigation="True">
 
                 <DataGrid.Columns>
@@ -262,7 +266,7 @@
                     <!-- Diễn giải -->
                     <DataGridTextColumn Header="Diễn giải"
                                         Binding="{Binding Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                        Width="*"/>
+                                        Width="220"/>
 
                     <!-- TK Nợ -->
                     <DataGridTemplateColumn Header="TK Nợ" Width="130">
