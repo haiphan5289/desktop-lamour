@@ -75,7 +75,17 @@ public partial class SalesOrderPrintWindow : Window
     // 10 từ TÊN SẢN PHẨM (94→84, chấp nhận đánh đổi ngược một phần lần 3) + 4 từ CK (%) (46→42,
     // "0,00%"/"40,00%" vẫn đủ chỗ ở font 13). KHÔNG đụng ĐƠN GIÁ (62) — đơn giá 7 chữ số dạng
     // "1.600.000" cần đủ chỗ, không còn dư để cắt thêm như STT/SL/CK (%).
-    private static readonly int[] ProductTableColumnWidths = { 26, 84, 26, 62, 42, 82, 84, 84 };
+    // 2026-09-01: cột "THUẾ SUẤT" (index 6, 84) tách làm 2 cột vật lý 42+42 — KHÔNG đổi tổng bề
+    // rộng (490) hay bề rộng hiển thị của THUẾ SUẤT (vẫn 84, ColumnSpan=2 ở Header/Data/Deposit
+    // row, xem TaxRateColumnIndex) — mục đích DUY NHẤT là cho hàng "Tổng tiền thanh toán" 1 điểm
+    // chia mới ở GIỮA cột Thuế suất, để ô số tiền lấy thêm nửa cột đó (= 1,5 cột: nửa Thuế suất +
+    // trọn Tổng cộng) thay vì đúng 1 cột Tổng cộng như trước — theo yêu cầu fix lệch viền phải.
+    private static readonly int[] ProductTableColumnWidths = { 26, 84, 26, 62, 42, 82, 42, 42, 84 };
+
+    // Cột "THUẾ SUẤT" giờ trải trên 2 cột vật lý liền nhau (index 6 và 7) — Header/Data/Deposit row
+    // phải tự ColumnSpan=2 tại đây để hiển thị y hệt 1 cột 84 như trước (không đổi giao diện các
+    // hàng đó), chỉ hàng Tổng tiền thanh toán mới thật sự tách rời 2 nửa này.
+    private const int TaxRateColumnIndex = 6;
 
     private static readonly SolidColorBrush OuterBorderBrush = new(Color.FromRgb(0x9D, 0xC1, 0xE0));
 
@@ -287,17 +297,21 @@ public partial class SalesOrderPrintWindow : Window
             FontSize      = 16,
             Margin        = new Thickness(0),
         };
+        // 2026-09-01: ô số tiền trước đây span đúng 1 cột (= TỔNG CỘNG, 84) khiến viền phải bị lệch
+        // ra ngoài khung một chút so với ảnh mẫu — đổi thành 1,5 cột thật (nửa THUẾ SUẤT + trọn TỔNG
+        // CỘNG = 42+84 = 126) bằng cách tách THUẾ SUẤT thành 2 cột vật lý (xem TaxRateColumnIndex).
+        // Nhãn nhường lại đúng nửa cột đó — ColumnSpan giảm từ (Length-1) xuống (Length-2).
         var totalRow = new TableRow();
         totalRow.Cells.Add(new TableCell(totalLabelPara)
         {
-            ColumnSpan      = ProductTableColumnWidths.Length - 1,
+            ColumnSpan      = ProductTableColumnWidths.Length - 2,
             BorderBrush     = Brushes.Black,
             BorderThickness = new Thickness(0.5),
             Padding         = new Thickness(6, 6, 6, 6),
         });
         totalRow.Cells.Add(new TableCell(totalValuePara)
         {
-            ColumnSpan      = 1,
+            ColumnSpan      = 2,
             BorderBrush     = Brushes.Black,
             BorderThickness = new Thickness(0.5),
             Padding         = new Thickness(6, 6, 6, 6),
@@ -373,7 +387,7 @@ public partial class SalesOrderPrintWindow : Window
         for (var i = 0; i < headers.Length; i++)
         {
             var alignment = i == ProductNameColumnIndex ? TextAlignment.Left : TextAlignment.Center;
-            row.Cells.Add(new TableCell(new Paragraph(new Bold(new Run(headers[i]))) { TextAlignment = alignment, FontSize = HeaderFontSize })
+            var cell = new TableCell(new Paragraph(new Bold(new Run(headers[i]))) { TextAlignment = alignment, FontSize = HeaderFontSize })
             {
                 // Padding ngang giảm còn 2 (trước 4) để bù chỗ cho font size lớn hơn (11 → 12) trong
                 // các cột hẹp cố định (CK/ĐƠN GIÁ/THÀNH TIỀN/TỔNG CỘNG) mà không phải nới thêm bề rộng
@@ -381,7 +395,11 @@ public partial class SalesOrderPrintWindow : Window
                 Padding         = new Thickness(1, 6, 1, 6),
                 BorderBrush     = Brushes.Black,
                 BorderThickness = new Thickness(0.5),
-            });
+            };
+            // THUẾ SUẤT trải trên 2 cột vật lý (xem TaxRateColumnIndex) — span cả 2 để hiển thị y hệt
+            // 1 cột như trước, không đổi giao diện hàng tiêu đề.
+            if (i == TaxRateColumnIndex) cell.ColumnSpan = 2;
+            row.Cells.Add(cell);
         }
         return row;
     }
@@ -392,12 +410,14 @@ public partial class SalesOrderPrintWindow : Window
         for (var i = 0; i < values.Length; i++)
         {
             var alignment = i == ProductNameColumnIndex ? TextAlignment.Left : TextAlignment.Center;
-            row.Cells.Add(new TableCell(new Paragraph(new Run(values[i])) { TextAlignment = alignment })
+            var cell = new TableCell(new Paragraph(new Run(values[i])) { TextAlignment = alignment })
             {
                 Padding         = new Thickness(1, 6, 1, 6),
                 BorderBrush     = Brushes.Black,
                 BorderThickness = new Thickness(0.5),
-            });
+            };
+            if (i == TaxRateColumnIndex) cell.ColumnSpan = 2;
+            row.Cells.Add(cell);
         }
         return row;
     }
@@ -412,12 +432,14 @@ public partial class SalesOrderPrintWindow : Window
             var isMoneyColumn = i == 5 || i == 7; // Thành tiền / Tổng cộng
             var alignment = i == ProductNameColumnIndex ? TextAlignment.Left : TextAlignment.Center;
             var run = new Run(values[i]) { Foreground = isMoneyColumn ? Brushes.Red : Brushes.Black };
-            row.Cells.Add(new TableCell(new Paragraph(run) { TextAlignment = alignment })
+            var cell = new TableCell(new Paragraph(run) { TextAlignment = alignment })
             {
                 Padding         = new Thickness(4, 6, 4, 6),
                 BorderBrush     = Brushes.Black,
                 BorderThickness = new Thickness(0.5),
-            });
+            };
+            if (i == TaxRateColumnIndex) cell.ColumnSpan = 2;
+            row.Cells.Add(cell);
         }
         return row;
     }

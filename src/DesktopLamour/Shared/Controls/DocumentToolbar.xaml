@@ -8,10 +8,22 @@
          trả lại, Nhập kho, Phiếu thu, Phiếu chi). Dải ribbon icon-trên/chữ-dưới
          khớp phong cách MISA. Mỗi nút chỉ hiện khi window có bind command tương
          ứng (và cờ *Visibility cho phép) — "chỉ nút có chức năng thật".
+
+         2026-09-01: trước đó toàn bộ icon/chữ đều đen/xám trơn (trừ riêng "Xóa"
+         đã đỏ sẵn) và khung bám sát mép cửa sổ (kiểu ribbon Office) — khác hẳn
+         màu cam brand (#F28A00) + khung thẻ bo tròn có margin dùng ở mọi màn
+         danh sách trong app, khiến popup trông "lạc lõng". Fix: (1) tô màu
+         icon/chữ theo đúng vai trò từng nút (cam = hành động chính, đỏ = xóa,
+         xám = điều hướng/tiện ích — cùng quy ước AppButton.Primary/Destructive/
+         Secondary), (2) đổi khung ngoài từ dải sát mép sang thẻ bo tròn có
+         margin, y hệt Border toolbar trên các màn danh sách (vd. SalesReturnListView).
          ══════════════════════════════════════════════════════════════════════ -->
 
     <UserControl.Resources>
 
+        <!-- Base — điều hướng/tiện ích (Trước, Sau, Bỏ ghi, Treo, In, Đóng): xám trung
+             tính, hover nền xám nhạt. Nút mang hành động chính/nguy hiểm override
+             Foreground + dùng DocRibbonButton.Brand/Destructive bên dưới. -->
         <Style x:Key="DocRibbonButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -40,23 +52,94 @@
             </Setter>
         </Style>
 
+        <!-- Hành động chính (Thêm, Sửa, Ghi sổ, Lập PN/Lập phiếu xuất): hover nền cam nhạt
+             — cùng tông AppColor.BackgroundBrand mà AppButton.Secondary dùng làm hover. -->
+        <Style x:Key="DocRibbonButton.Brand" TargetType="Button" BasedOn="{StaticResource DocRibbonButton}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{StaticResource AppColor.BackgroundBrand}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Xóa: hover nền đỏ nhạt — cùng tông AppColor.BackgroundErrorLight. -->
+        <Style x:Key="DocRibbonButton.Destructive" TargetType="Button" BasedOn="{StaticResource DocRibbonButton}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{StaticResource AppColor.BackgroundErrorLight}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="DocRibbonIcon" TargetType="TextBlock">
             <Setter Property="FontSize" Value="19"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{StaticResource AppColor.TextSecondary}"/>
         </Style>
 
         <Style x:Key="DocRibbonLabel" TargetType="TextBlock">
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="Margin" Value="0,2,0,0"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{StaticResource AppColor.TextSecondary}"/>
+        </Style>
+
+        <!-- Icon/chữ hành động chính — cam brand, cùng tông AppButton.Primary/Secondary. -->
+        <Style x:Key="DocRibbonIcon.Brand" TargetType="TextBlock" BasedOn="{StaticResource DocRibbonIcon}">
+            <Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/>
+        </Style>
+        <Style x:Key="DocRibbonLabel.Brand" TargetType="TextBlock" BasedOn="{StaticResource DocRibbonLabel}">
+            <Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/>
+        </Style>
+
+        <!-- Icon/chữ Xóa — đỏ, cùng tông AppButton.Destructive. -->
+        <Style x:Key="DocRibbonIcon.Destructive" TargetType="TextBlock" BasedOn="{StaticResource DocRibbonIcon}">
+            <Setter Property="Foreground" Value="{StaticResource AppColor.TextError}"/>
+        </Style>
+        <Style x:Key="DocRibbonLabel.Destructive" TargetType="TextBlock" BasedOn="{StaticResource DocRibbonLabel}">
+            <Setter Property="Foreground" Value="{StaticResource AppColor.TextError}"/>
         </Style>
 
     </UserControl.Resources>
 
-    <Border Padding="8,6"
+    <!-- Khung thẻ bo tròn có margin — y hệt Border toolbar trên các màn danh sách
+         (vd. SalesReturnListView Grid.Row="1"), thay cho dải ribbon sát mép trước đây. -->
+    <Border Margin="24,16,24,0"
+            Padding="16,12"
             Background="{StaticResource AppColor.BackgroundPrimary}"
             BorderBrush="{StaticResource AppColor.BorderThin}"
-            BorderThickness="0,0,0,1">
+            BorderThickness="1"
+            CornerRadius="8">
         <StackPanel Orientation="Horizontal">
 
             <!-- ── Nhóm 1: Điều hướng ─────────────────────────────────── -->
@@ -96,7 +179,7 @@
             </Rectangle>
 
             <!-- ── Nhóm 2: Thêm / Sửa / Xóa ───────────────────────────── -->
-            <Button Style="{StaticResource DocRibbonButton}" Command="{Binding AddCommand, ElementName=Self}">
+            <Button Style="{StaticResource DocRibbonButton.Brand}" Command="{Binding AddCommand, ElementName=Self}">
                 <Button.Visibility>
                     <MultiBinding Converter="{StaticResource CommandAndFlagToVisibilityConverter}">
                         <Binding Path="AddCommand" ElementName="Self"/>
@@ -104,11 +187,11 @@
                     </MultiBinding>
                 </Button.Visibility>
                 <StackPanel>
-                    <TextBlock Text="➕" Style="{StaticResource DocRibbonIcon}"/>
-                    <TextBlock Text="Thêm" Style="{StaticResource DocRibbonLabel}"/>
+                    <TextBlock Text="➕" Style="{StaticResource DocRibbonIcon.Brand}"/>
+                    <TextBlock Text="Thêm" Style="{StaticResource DocRibbonLabel.Brand}"/>
                 </StackPanel>
             </Button>
-            <Button Style="{StaticResource DocRibbonButton}" Command="{Binding EditCommand, ElementName=Self}">
+            <Button Style="{StaticResource DocRibbonButton.Brand}" Command="{Binding EditCommand, ElementName=Self}">
                 <Button.Visibility>
                     <MultiBinding Converter="{StaticResource CommandAndFlagToVisibilityConverter}">
                         <Binding Path="EditCommand" ElementName="Self"/>
@@ -116,11 +199,11 @@
                     </MultiBinding>
                 </Button.Visibility>
                 <StackPanel>
-                    <TextBlock Text="✏️" Style="{StaticResource DocRibbonIcon}"/>
-                    <TextBlock Text="Sửa" Style="{StaticResource DocRibbonLabel}"/>
+                    <TextBlock Text="✏️" Style="{StaticResource DocRibbonIcon.Brand}"/>
+                    <TextBlock Text="Sửa" Style="{StaticResource DocRibbonLabel.Brand}"/>
                 </StackPanel>
             </Button>
-            <Button Style="{StaticResource DocRibbonButton}" Command="{Binding DeleteCommand, ElementName=Self}">
+            <Button Style="{StaticResource DocRibbonButton.Destructive}" Command="{Binding DeleteCommand, ElementName=Self}">
                 <Button.Visibility>
                     <MultiBinding Converter="{StaticResource CommandAndFlagToVisibilityConverter}">
                         <Binding Path="DeleteCommand" ElementName="Self"/>
@@ -128,9 +211,8 @@
                     </MultiBinding>
                 </Button.Visibility>
                 <StackPanel>
-                    <TextBlock Text="🗑️" Style="{StaticResource DocRibbonIcon}"/>
-                    <TextBlock Text="Xóa" Style="{StaticResource DocRibbonLabel}"
-                               Foreground="{StaticResource AppColor.TextError}"/>
+                    <TextBlock Text="🗑️" Style="{StaticResource DocRibbonIcon.Destructive}"/>
+                    <TextBlock Text="Xóa" Style="{StaticResource DocRibbonLabel.Destructive}"/>
                 </StackPanel>
             </Button>
 
@@ -145,7 +227,7 @@
             </Rectangle>
 
             <!-- ── Nhóm 3: Ghi sổ / Bỏ ghi / Treo ─────────────────────── -->
-            <Button Style="{StaticResource DocRibbonButton}" Command="{Binding SaveCommand, ElementName=Self}">
+            <Button Style="{StaticResource DocRibbonButton.Brand}" Command="{Binding SaveCommand, ElementName=Self}">
                 <Button.Visibility>
                     <MultiBinding Converter="{StaticResource CommandAndFlagToVisibilityConverter}">
                         <Binding Path="SaveCommand" ElementName="Self"/>
@@ -153,8 +235,8 @@
                     </MultiBinding>
                 </Button.Visibility>
                 <StackPanel>
-                    <TextBlock Text="💾" Style="{StaticResource DocRibbonIcon}"/>
-                    <TextBlock Text="{Binding SaveLabel, ElementName=Self}" Style="{StaticResource DocRibbonLabel}"/>
+                    <TextBlock Text="💾" Style="{StaticResource DocRibbonIcon.Brand}"/>
+                    <TextBlock Text="{Binding SaveLabel, ElementName=Self}" Style="{StaticResource DocRibbonLabel.Brand}"/>
                 </StackPanel>
             </Button>
             <Button Style="{StaticResource DocRibbonButton}" Command="{Binding UnpostCommand, ElementName=Self}">
@@ -186,7 +268,7 @@
                        Visibility="{Binding CreateExportCommand, ElementName=Self, Converter={StaticResource NullToVisibilityConverter}}"/>
 
             <!-- ── Nhóm 4: Lập phiếu xuất / Lập PN ────────────────────── -->
-            <Button Style="{StaticResource DocRibbonButton}" Command="{Binding CreateExportCommand, ElementName=Self}">
+            <Button Style="{StaticResource DocRibbonButton.Brand}" Command="{Binding CreateExportCommand, ElementName=Self}">
                 <Button.Visibility>
                     <MultiBinding Converter="{StaticResource CommandAndFlagToVisibilityConverter}">
                         <Binding Path="CreateExportCommand" ElementName="Self"/>
@@ -194,8 +276,8 @@
                     </MultiBinding>
                 </Button.Visibility>
                 <StackPanel>
-                    <TextBlock Text="🧾" Style="{StaticResource DocRibbonIcon}"/>
-                    <TextBlock Text="{Binding CreateExportLabel, ElementName=Self}" Style="{StaticResource DocRibbonLabel}"/>
+                    <TextBlock Text="🧾" Style="{StaticResource DocRibbonIcon.Brand}"/>
+                    <TextBlock Text="{Binding CreateExportLabel, ElementName=Self}" Style="{StaticResource DocRibbonLabel.Brand}"/>
                 </StackPanel>
             </Button>
 
