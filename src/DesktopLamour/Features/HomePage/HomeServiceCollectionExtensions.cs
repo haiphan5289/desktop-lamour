@@ -411,6 +411,8 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<ICreateReceiptUseCase, CreateReceiptUseCase>();
         services.AddTransient<IUpdateReceiptUseCase, UpdateReceiptUseCase>();
         services.AddTransient<IDeleteReceiptUseCase, DeleteReceiptUseCase>();
+        services.AddTransient<IConfirmReceiptUseCase, ConfirmReceiptUseCase>();
+        services.AddTransient<IUnconfirmReceiptUseCase, UnconfirmReceiptUseCase>();
         services.AddTransient<IGetNextReceiptCodeUseCase, GetNextReceiptCodeUseCase>();
         services.AddTransient<IGetOutstandingSalesOrdersUseCase, GetOutstandingSalesOrdersUseCase>();
         services.AddTransient<ICreateBulkCustomerReceiptUseCase, CreateBulkCustomerReceiptUseCase>();

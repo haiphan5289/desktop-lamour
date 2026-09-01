@@ -51,13 +51,15 @@
                                   AddCommand="{Binding AddNewCommand}"
                                   DeleteCommand="{Binding DeleteCommand}"
                                   SaveCommand="{Binding SaveCommand}"
-                                  UnpostCommand="{Binding CancelCommand}"
+                                  UnpostCommand="{Binding UnconfirmCommand}"
                                   CloseRequested="CloseButton_Click"/>
 
         <!-- ═══════════════════════════════════════════════════════ -->
         <!-- Form — Thông tin chung + Chứng từ                       -->
         <!-- ═══════════════════════════════════════════════════════ -->
-        <Grid Grid.Row="2" Margin="16,12,16,0">
+        <!-- IsEnabled="{Binding IsEditable}" — khóa form khi chứng từ đã Ghi sổ (Confirmed), phải
+             bấm "Bỏ ghi" mới sửa lại được. Mirror WarehouseReceiptFormViewModel/SalesReturnWindow. -->
+        <Grid Grid.Row="2" Margin="16,12,16,0" IsEnabled="{Binding IsEditable}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="16"/>
@@ -220,7 +222,7 @@
         <!-- ═══════════════════════════════════════════════════════ -->
         <!-- Tab area — Hạch toán DataGrid                          -->
         <!-- ═══════════════════════════════════════════════════════ -->
-        <Grid Grid.Row="3" Margin="16,8,16,0">
+        <Grid Grid.Row="3" Margin="16,8,16,0" IsEnabled="{Binding IsEditable}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -368,7 +370,8 @@
                 BorderBrush="{StaticResource AppColor.BorderThin}"
                 BorderThickness="0,1,0,0"
                 Padding="16,10"
-                Margin="0,6,0,0">
+                Margin="0,6,0,0"
+                IsEnabled="{Binding IsEditable}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>

@@ -34,6 +34,7 @@ public partial class SalesReturnViewModel : ViewModelBase
     private readonly IUpdateSalesReturnUseCase      _updateReturn;
     private readonly IDeleteSalesReturnUseCase      _deleteReturn;
     private readonly IConfirmSalesReturnUseCase     _confirmReturn;
+    private readonly IUnconfirmSalesReturnUseCase   _unconfirmReturn;
     private readonly IGetNextSalesReturnCodeUseCase _getNextCode;
     private readonly IGetCustomersUseCase           _getCustomers;
     private readonly IGetEmployeesUseCase           _getEmployees;
@@ -121,9 +122,12 @@ public partial class SalesReturnViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(HasExistingReturn));
         OnPropertyChanged(nameof(CanDeleteReturn));
+        OnPropertyChanged(nameof(IsConfirmed));
+        OnPropertyChanged(nameof(IsEditable));
         PrintCommand.NotifyCanExecuteChanged();
         DeleteCommand.NotifyCanExecuteChanged();
         CreateWarehouseReceiptCommand.NotifyCanExecuteChanged();
+        UnconfirmCommand.NotifyCanExecuteChanged();
     }
 
     public bool HasExistingReturn => CurrentReturn is not null;
@@ -131,6 +135,13 @@ public partial class SalesReturnViewModel : ViewModelBase
     // Xóa chỉ cho phép khi còn Nháp — khớp guard mới ở DeleteSalesReturnUseCase (BE), tránh mở popup
     // vẫn cho bấm Xóa rồi mới nhận lỗi 400 "Chỉ chứng từ ở trạng thái Nháp mới được xóa".
     public bool CanDeleteReturn => CurrentReturn is not null && CurrentReturn.Status == "Draft";
+
+    // 2026-09-01: khớp workflow MISA — "Ghi sổ" (SaveAsync tự Confirm) khóa form lại, phải bấm
+    // "Bỏ ghi" để mở khóa sửa lại. Trước đây form KHÔNG khóa gì cả khi Confirmed (chỉ dựa vào BE
+    // 400 reject Update) — giờ khóa thật trên UI qua IsEditable, khớp đúng cách WarehouseReceiptForm
+    // đang làm (Grid.IsEnabled="{Binding IsEditable}").
+    public bool IsConfirmed => CurrentReturn is not null && CurrentReturn.Status == "Confirmed";
+    public bool IsEditable  => CurrentReturn is null || CurrentReturn.Status == "Draft";
 
     // ── Điều hướng Trước/Sau/Thêm trong popup — gọi từ SalesReturnWindow.Initialize khi mở từ
     // 1 danh sách (SalesReturnListViewModel). Không set (mặc định rỗng) → CanNavigatePrev/Next
@@ -217,6 +228,7 @@ public partial class SalesReturnViewModel : ViewModelBase
         IUpdateSalesReturnUseCase      updateReturn,
         IDeleteSalesReturnUseCase      deleteReturn,
         IConfirmSalesReturnUseCase     confirmReturn,
+        IUnconfirmSalesReturnUseCase   unconfirmReturn,
         IGetNextSalesReturnCodeUseCase getNextCode,
         IGetCustomersUseCase           getCustomers,
         IGetEmployeesUseCase           getEmployees,
@@ -237,6 +249,7 @@ public partial class SalesReturnViewModel : ViewModelBase
         _updateReturn              = updateReturn;
         _deleteReturn              = deleteReturn;
         _confirmReturn             = confirmReturn;
+        _unconfirmReturn           = unconfirmReturn;
         _getNextCode               = getNextCode;
         _getCustomers              = getCustomers;
         _getEmployees              = getEmployees;
@@ -482,6 +495,38 @@ public partial class SalesReturnViewModel : ViewModelBase
             _logger.LogError(ex, "Failed to delete sales return");
             HasError     = true;
             ErrorMessage = ex.Message;
+        }
+        finally { IsBusy = false; }
+    }
+
+    // "Bỏ ghi" — đưa 1 chứng từ ĐÃ Ghi sổ (Confirmed) quay về Nháp (Draft) để sửa lại, mirror đúng
+    // "↩️ Bỏ ghi" đã có ở WarehouseReceiptFormViewModel. BE UnconfirmSalesReturnUseCase tự hoàn lại
+    // tồn kho đã cộng lúc Confirm — nếu tồn kho hiện tại không đủ hoàn (đã phát sinh giao dịch khác
+    // sau đó) sẽ ném DomainException, hiện ở đây qua MessageBox.
+    [RelayCommand(CanExecute = nameof(IsConfirmed))]
+    private async Task UnconfirmAsync(CancellationToken ct = default)
+    {
+        if (CurrentReturn is null) return;
+
+        var confirm = MessageBox.Show(
+            $"Bỏ ghi sổ chứng từ '{CurrentReturn.DocumentNumber}'? Tồn kho đã cộng lúc Ghi sổ sẽ được hoàn tác.",
+            "Xác nhận bỏ ghi",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (confirm != MessageBoxResult.Yes) return;
+
+        IsBusy = true;
+        try
+        {
+            var reverted = await _unconfirmReturn.ExecuteAsync(CurrentReturn.Id, ct);
+            CurrentReturn = reverted;
+            _logger.LogInformation("SalesReturn unconfirmed: {Id}", reverted.Id);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to unconfirm sales return");
+            MessageBox.Show(ex.Message, "Bỏ ghi thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally { IsBusy = false; }
     }

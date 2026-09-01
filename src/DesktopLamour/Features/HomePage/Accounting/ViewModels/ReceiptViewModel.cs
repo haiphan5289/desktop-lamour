@@ -1,5 +1,6 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 using System.Collections.ObjectModel;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.ViewModels;
@@ -24,6 +25,8 @@ public partial class ReceiptViewModel : ViewModelBase
     private readonly ICreateReceiptUseCase    _createReceipt;
     private readonly IUpdateReceiptUseCase    _updateReceipt;
     private readonly IDeleteReceiptUseCase    _deleteReceipt;
+    private readonly IConfirmReceiptUseCase   _confirmReceipt;
+    private readonly IUnconfirmReceiptUseCase _unconfirmReceipt;
     private readonly IGetNextReceiptCodeUseCase _getNextCode;
     private readonly IGetCustomersUseCase     _getCustomers;
     private readonly IGetEmployeesUseCase     _getEmployees;
@@ -64,13 +67,25 @@ public partial class ReceiptViewModel : ViewModelBase
         NavigatePrevCommand.NotifyCanExecuteChanged();
         NavigateNextCommand.NotifyCanExecuteChanged();
         DeleteCommand.NotifyCanExecuteChanged();
+        UnconfirmCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(IsConfirmed));
+        OnPropertyChanged(nameof(IsEditable));
     }
 
     // CanExecute cho NavigatePrev/NavigateNextCommand — WPF tự disable (mờ) nút khi đang ở
     // đầu/cuối danh sách, không phải ẩn hẳn (nút vẫn nằm đúng chỗ trong toolbar).
     public bool CanNavigatePrev => _currentIndex > 0;
     public bool CanNavigateNext => _currentIndex >= 0 && _currentIndex < _receiptListCache.Count - 1;
-    public bool CanDelete => CurrentReceipt is not null;
+
+    // Xóa chỉ cho phép khi còn Nháp — khớp guard mới ở DeleteReceiptUseCase (BE), tránh mở popup
+    // vẫn cho bấm Xóa rồi mới nhận lỗi 400 "Chỉ chứng từ ở trạng thái Nháp mới được xóa" — mirror
+    // SalesReturnViewModel.CanDeleteReturn.
+    public bool CanDelete => CurrentReceipt is not null && CurrentReceipt.Status == "Draft";
+
+    // 2026-09-01: khớp workflow MISA — "Ghi sổ" (SaveAsync tự Confirm) khóa form lại, phải bấm
+    // "Bỏ ghi" để mở khóa sửa lại. Mirror SalesReturnViewModel.IsConfirmed/IsEditable.
+    public bool IsConfirmed => CurrentReceipt is not null && CurrentReceipt.Status == "Confirmed";
+    public bool IsEditable  => CurrentReceipt is null || CurrentReceipt.Status == "Draft";
 
     public ObservableCollection<ReceiptEntryItem> Entries { get; } = new();
 
@@ -96,6 +111,8 @@ public partial class ReceiptViewModel : ViewModelBase
         ICreateReceiptUseCase    createReceipt,
         IUpdateReceiptUseCase    updateReceipt,
         IDeleteReceiptUseCase    deleteReceipt,
+        IConfirmReceiptUseCase   confirmReceipt,
+        IUnconfirmReceiptUseCase unconfirmReceipt,
         IGetNextReceiptCodeUseCase getNextCode,
         IGetCustomersUseCase     getCustomers,
         IGetEmployeesUseCase     getEmployees,
@@ -108,6 +125,8 @@ public partial class ReceiptViewModel : ViewModelBase
         _createReceipt             = createReceipt;
         _updateReceipt             = updateReceipt;
         _deleteReceipt             = deleteReceipt;
+        _confirmReceipt            = confirmReceipt;
+        _unconfirmReceipt          = unconfirmReceipt;
         _getNextCode               = getNextCode;
         _getCustomers              = getCustomers;
         _getEmployees              = getEmployees;
@@ -215,24 +234,35 @@ public partial class ReceiptViewModel : ViewModelBase
         IsBusy = true;
         try
         {
+            ReceiptResponseDto result;
             if (CurrentReceipt is null)
             {
                 // Create
                 var request = BuildCreateRequest();
-                var result  = await _createReceipt.ExecuteAsync(request, ct);
+                result = await _createReceipt.ExecuteAsync(request, ct);
                 _logger.LogInformation("Receipt created: {DocumentNumber}", result.DocumentNumber);
-                await LoadReceiptsAsync(ct);
-                NavigateToReceipt(result.Id);
             }
             else
             {
                 // Update
                 var request = BuildUpdateRequest();
-                var result  = await _updateReceipt.ExecuteAsync(CurrentReceipt.Id, request, ct);
+                result = await _updateReceipt.ExecuteAsync(CurrentReceipt.Id, request, ct);
                 _logger.LogInformation("Receipt updated: {Id}", result.Id);
-                await LoadReceiptsAsync(ct);
-                NavigateToReceipt(result.Id);
             }
+
+            // Nút toolbar "💾 Cất" phải THẬT SỰ ghi sổ — chuyển Draft → Confirmed, mới post
+            // CashTransaction thật (side-effect nằm ở BE ConfirmReceiptUseCase). Create/Update chỉ
+            // tạo bản ghi ở Draft (theo thiết kế "đồng bộ 4 chứng từ" 2026-09-01); không tự Confirm
+            // ở đây thì phiếu thu sẽ kẹt ở Nháp mãi mãi và không lên sổ quỹ tiền mặt. Mirror
+            // SalesReturnViewModel.SaveAsync.
+            if (result.Status == "Draft")
+            {
+                result = await _confirmReceipt.ExecuteAsync(result.Id, ct);
+                _logger.LogInformation("Receipt confirmed (Ghi sổ): {DocumentNumber}", result.DocumentNumber);
+            }
+
+            await LoadReceiptsAsync(ct);
+            NavigateToReceipt(result.Id);
 
             IsEditing = false;
             ReceiptSaved?.Invoke();
@@ -266,6 +296,37 @@ public partial class ReceiptViewModel : ViewModelBase
             _logger.LogError(ex, "Failed to delete receipt");
             HasError     = true;
             ErrorMessage = ex.Message;
+        }
+        finally { IsBusy = false; }
+    }
+
+    // "Bỏ ghi" — đưa 1 chứng từ ĐÃ Ghi sổ (Confirmed) quay về Nháp (Draft) để sửa lại, mirror đúng
+    // SalesReturnViewModel.UnconfirmAsync. BE UnconfirmReceiptUseCase tự xóa CashTransaction đã
+    // post lúc Confirm.
+    [RelayCommand(CanExecute = nameof(IsConfirmed))]
+    private async Task UnconfirmAsync(CancellationToken ct = default)
+    {
+        if (CurrentReceipt is null) return;
+
+        var confirm = MessageBox.Show(
+            $"Bỏ ghi sổ chứng từ '{CurrentReceipt.DocumentNumber}'? Bút toán thu tiền đã ghi lúc Ghi sổ sẽ được hoàn tác.",
+            "Xác nhận bỏ ghi",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (confirm != MessageBoxResult.Yes) return;
+
+        IsBusy = true;
+        try
+        {
+            var reverted = await _unconfirmReceipt.ExecuteAsync(CurrentReceipt.Id, ct);
+            CurrentReceipt = reverted;
+            _logger.LogInformation("Receipt unconfirmed: {Id}", reverted.Id);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to unconfirm receipt");
+            MessageBox.Show(ex.Message, "Bỏ ghi thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally { IsBusy = false; }
     }

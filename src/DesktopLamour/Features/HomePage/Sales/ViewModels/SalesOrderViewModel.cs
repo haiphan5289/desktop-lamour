@@ -43,6 +43,7 @@ public partial class SalesOrderViewModel : ViewModelBase
     partial void OnIsReadOnlyChanged(bool value)
     {
         OnPropertyChanged(nameof(IsEditable));
+        OnPropertyChanged(nameof(CanUnlock));
         OnPropertyChanged(nameof(ShowHoldSection));
         OnPropertyChanged(nameof(HeaderSubtitle));
         EditCommand.NotifyCanExecuteChanged();
@@ -52,7 +53,19 @@ public partial class SalesOrderViewModel : ViewModelBase
         HoldCommand.NotifyCanExecuteChanged();
     }
 
-    public bool IsEditable => !IsReadOnly;
+    // 2026-09-01: khớp workflow MISA — "Cất" tự động đưa chứng từ về Ghi sổ (Normal), lúc đó form
+    // phải KHÓA lại (không cho sửa/xóa trực tiếp) cho tới khi bấm "Bỏ ghi" (= nút "Treo" sẵn có,
+    // xem CanUnlock) để mở khóa lại. IsEditable trước đây chỉ tính theo IsReadOnly (chế độ xem từ
+    // Sổ chi tiết) — giờ thêm điều kiện !IsConfirmed để khớp đúng khái niệm "khóa vì đã Ghi sổ".
+    public bool IsConfirmed => CurrentOrder is not null && CurrentOrder.Status == 0; // 0 = Normal = "Ghi sổ"
+    public bool IsEditable  => !IsReadOnly && !IsConfirmed;
+
+    // CanExecute cho HoldCommand ("Treo"/"Bỏ ghi") — bấm được khi: (a) chứng từ MỚI, chưa Cất lần
+    // nào (CurrentOrder null — Treo dùng để lưu tạm 1 đơn chưa hoàn chỉnh, không cần Ghi sổ trước,
+    // theo yêu cầu riêng), HOẶC (b) chứng từ đã Ghi sổ (IsConfirmed — dùng để MỞ KHÓA lại mà sửa).
+    // Không bấm được khi đã đang Treo sẵn (không có gì để mở khóa thêm — BE cũng chặn double-hold).
+    public bool CanUnlock => !IsReadOnly && (CurrentOrder is null || IsConfirmed);
+
     public bool ShowHoldSection => HasExistingOrder && !IsReadOnly;
     public string HeaderSubtitle => IsReadOnly
         ? "Xem chi tiết chứng từ (chỉ đọc)"
@@ -209,7 +222,13 @@ public partial class SalesOrderViewModel : ViewModelBase
         StatusLabel = value?.Status switch { 1 => "⏸ Treo", _ => "📄 Ghi sổ" };
         OnPropertyChanged(nameof(HasExistingOrder));
         OnPropertyChanged(nameof(ShowHoldSection));
+        OnPropertyChanged(nameof(IsConfirmed));
+        OnPropertyChanged(nameof(IsEditable));
+        OnPropertyChanged(nameof(CanUnlock));
         HoldCommand.NotifyCanExecuteChanged();
+        SaveCommand.NotifyCanExecuteChanged();
+        DeleteCommand.NotifyCanExecuteChanged();
+        CancelCommand.NotifyCanExecuteChanged();
         PrintCommand.NotifyCanExecuteChanged();
     }
 
@@ -902,12 +921,23 @@ public partial class SalesOrderViewModel : ViewModelBase
     // ── Hold ──────────────────────────────────────────────────────────────────
     public bool HasExistingOrder => CurrentOrder is not null;
 
-    // ShowHoldSection (= HasExistingOrder && !IsReadOnly) thay vì chỉ HasExistingOrder — Treo
-    // không có ý nghĩa ở chế độ chỉ xem, disable (mờ) thay vì ẩn hẳn như trước.
-    [RelayCommand(CanExecute = nameof(ShowHoldSection))]
+    // Trước đây CanExecute = ShowHoldSection (= HasExistingOrder && !IsReadOnly) — "Treo" bị disable
+    // hoàn toàn lúc Thêm mới (CurrentOrder null, chưa Ghi sổ lần nào) vì HoldAsync gọi thẳng
+    // _holdOrder.ExecuteAsync(CurrentOrder.Id) cần 1 Id thật đã tồn tại trên BE. Đổi CanExecute
+    // sang CanUnlock (2026-09-01, thay cho IsEditable) — "Treo"/"Bỏ ghi" giờ mang 2 vai trò: (a)
+    // lưu tạm 1 chứng từ MỚI chưa hoàn chỉnh (CurrentOrder null, không cần Ghi sổ trước), (b) MỞ
+    // KHÓA lại 1 chứng từ ĐÃ Ghi sổ để sửa (IsConfirmed) — không dùng IsEditable vì IsEditable giờ
+    // đã loại trừ IsConfirmed (form khóa khi Ghi sổ), ngược hẳn với điều kiện Bỏ ghi cần (chỉ bấm
+    // được KHI đang khóa).
+    [RelayCommand(CanExecute = nameof(CanUnlock))]
     private async Task HoldAsync(CancellationToken ct = default)
     {
-        if (CurrentOrder is null) return;
+        if (CurrentOrder is null)
+        {
+            await CreateThenHoldAsync(ct);
+            return;
+        }
+
         IsBusy = true;
         try
         {
@@ -916,6 +946,56 @@ public partial class SalesOrderViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
+            MessageBox.Show(ex.Message, "Treo đơn thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        finally { IsBusy = false; }
+    }
+
+    // Treo 1 chứng từ hoàn toàn mới — validate y hệt SaveAsync (chọn khách hàng + ít nhất 1 mặt
+    // hàng/Trừ cọc) rồi Create, sau đó gọi Treo ngay trên bản ghi vừa tạo. Đóng popup sau khi xong
+    // (giống SaveAsync đóng sau khi Ghi sổ chứng từ mới) — chứng từ đã thật sự tồn tại trên BE nên
+    // danh sách phía sau cần reload để hiện chứng từ Treo vừa tạo.
+    private async Task CreateThenHoldAsync(CancellationToken ct)
+    {
+        HasError     = false;
+        ErrorMessage = string.Empty;
+
+        if (SelectedCustomer is null)
+        {
+            HasError     = true;
+            ErrorMessage = "Vui lòng chọn khách hàng.";
+            return;
+        }
+
+        var hasProductLine = Lines.Any(l => !l.IsDepositDeductionRow && l.ProductId > 0);
+        var hasDepositLine = Lines.Any(l => l.IsDepositDeductionRow && l.Amount != 0);
+        if (!hasProductLine && !hasDepositLine)
+        {
+            HasError     = true;
+            ErrorMessage = "Vui lòng nhập ít nhất một mặt hàng hoặc chọn Trừ cọc.";
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            var request = BuildCreateRequest();
+            var created = await _createOrder.ExecuteAsync(request, ct);
+            _logger.LogInformation("SalesOrder created for Treo: {DocumentNumber}", created.DocumentNumber);
+
+            var held = await _holdOrder.ExecuteAsync(created.Id, ct);
+            CurrentOrder = held;
+
+            StopDirtyTracking();
+            IsBusy = false;
+            RequestClose?.Invoke();
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create+hold sales order");
+            HasError     = true;
+            ErrorMessage = ex.Message;
             MessageBox.Show(ex.Message, "Treo đơn thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally { IsBusy = false; }

@@ -91,7 +91,11 @@ public partial class PaymentViewModel : ViewModelBase
     public bool CanEdit => CurrentPayment is null || CurrentPayment.Status != "Confirmed";
     public bool CanPrint => CurrentPayment is not null;
     public bool CanUnconfirm => CurrentPayment is not null && CurrentPayment.Status == "Confirmed";
-    public bool CanDelete => CurrentPayment is not null;
+    // 2026-09-01: trước đây chỉ check "có chọn phiếu chưa", không check Status — Xóa vẫn bấm được
+    // (rồi mới nhận lỗi từ BE) trên 1 phiếu ĐÃ Ghi sổ, trong khi Sửa (CanEdit) đã chặn đúng từ lâu.
+    // BE (`DeletePaymentUseCase`) đã ném `DomainException("Phiếu chi đã ghi số, không thể xoá.")`
+    // cho trường hợp này — sửa ở đây chỉ để nút tự disable đúng lúc thay vì bấm xong mới báo lỗi.
+    public bool CanDelete => CurrentPayment is not null && CurrentPayment.Status != "Confirmed";
 
     // CanExecute cho NavigatePrev/NavigateNextCommand — WPF tự disable (mờ) nút khi đang ở
     // đầu/cuối danh sách, không phải ẩn hẳn (nút vẫn nằm đúng chỗ trong toolbar).

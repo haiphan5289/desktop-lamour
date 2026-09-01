@@ -10,6 +10,8 @@ public interface IReceiptService
     Task<ReceiptResponseDto> CreateAsync(CreateReceiptRequestDto request, CancellationToken ct = default);
     Task<ReceiptResponseDto> UpdateAsync(int id, UpdateReceiptRequestDto request, CancellationToken ct = default);
     Task DeleteAsync(int id, CancellationToken ct = default);
+    Task<ReceiptResponseDto> ConfirmAsync(int id, CancellationToken ct = default);
+    Task<ReceiptResponseDto> UnconfirmAsync(int id, CancellationToken ct = default);
 
     Task<string> GetNextCodeAsync(CancellationToken ct = default);
 

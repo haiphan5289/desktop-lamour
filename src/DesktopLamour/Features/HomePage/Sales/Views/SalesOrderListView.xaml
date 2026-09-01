@@ -175,35 +175,28 @@
                     </ContextMenu>
                 </DataGrid.ContextMenu>
 
-                <DataGrid.CellStyle>
-                    <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+                <!-- Trạng thái KHÔNG còn là 1 cột riêng — theo đúng UI MISA (ảnh mẫu: không có cột
+                     "Trạng thái", chỉ tô màu chữ cả dòng theo trạng thái). Trước đây dùng
+                     DataGrid.CellStyle tô nền vàng nhạt (AppColor.BackgroundWarningLight) cho ô
+                     "Trạng thái" của dòng Treo — bug: khi CLICK CHỌN dòng đó, style mặc định của
+                     DataGridCell đổi Foreground sang trắng cho trạng thái Selected, nhưng trigger
+                     nền vàng ở đây vẫn đè lên nền xanh chọn mặc định → chữ trắng trên nền vàng nhạt
+                     gần như vô hình ("click vào không thấy chữ"). Fix: bỏ hẳn nền tô riêng, đổi
+                     sang tô FOREGROUND cả dòng qua RowStyle — TextElement.Foreground là thuộc tính
+                     kế thừa nên mọi TextBlock con (trừ cột đã tự set Foreground riêng như "Tổng
+                     thanh toán") tự động đổi màu theo, không đụng tới nền nên không còn xung đột với
+                     màu nền/chữ lúc Selected nữa. -->
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding StatusLabel}" Value="⏸ Treo">
-                                <Setter Property="Background" Value="{StaticResource AppColor.BackgroundWarningLight}"/>
+                                <Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
-                </DataGrid.CellStyle>
+                </DataGrid.RowStyle>
                 <DataGrid.Columns>
-
-                    <DataGridTemplateColumn Header="Trạng thái" Width="100">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding StatusLabel}" Padding="6,0" VerticalAlignment="Center">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding StatusLabel}" Value="⏸ Treo">
-                                                    <Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/>
-                                                    <Setter Property="FontWeight" Value="Bold"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
 
                     <DataGridTextColumn Header="Số chứng từ" Binding="{Binding DocumentNumber}" Width="120"/>
 

@@ -135,6 +135,7 @@
                                   AddCommand="{Binding AddNewCommand}"
                                   SaveCommand="{Binding SaveCommand}"
                                   DeleteCommand="{Binding DeleteCommand}"
+                                  UnpostCommand="{Binding UnconfirmCommand}"
                                   CreateExportCommand="{Binding CreateWarehouseReceiptCommand}"
                                   CreateExportLabel="Lập PN"
                                   PrintCommand="{Binding PrintCommand}"
@@ -147,7 +148,10 @@
         <TabControl Grid.Row="2" Margin="16,8,16,0"
                     Style="{StaticResource AppTabControl.Modern}">
         <TabItem Header="Giảm trừ công nợ" Style="{StaticResource AppTabItem.Modern}">
-        <Grid>
+        <!-- IsEnabled="{Binding IsEditable}" (2026-09-01) — khóa TOÀN BỘ form (header + 4 tab dòng
+             hàng) khi chứng từ đã Ghi sổ (Confirmed), khớp đúng cách WarehouseReceiptFormWindow
+             đang khóa form của nó. Trước đây form không khóa gì cả, chỉ dựa vào BE reject 400. -->
+        <Grid IsEnabled="{Binding IsEditable}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>   <!-- Form -->
                 <RowDefinition Height="*"/>      <!-- Inner tabs -->

@@ -81,6 +81,30 @@ public sealed class ReceiptService : IReceiptService
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<ReceiptResponseDto> ConfirmAsync(int id, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Confirming receipt {Id}", id);
+        SetBearerToken();
+
+        var response = await _httpClient.PostAsync($"/api/v1/accounting/receipts/{id}/confirm", null, ct);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<ReceiptResponseDto>(ct)
+            ?? throw new InvalidOperationException("Empty response from confirm receipt endpoint.");
+    }
+
+    public async Task<ReceiptResponseDto> UnconfirmAsync(int id, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Unconfirming receipt {Id}", id);
+        SetBearerToken();
+
+        var response = await _httpClient.PostAsync($"/api/v1/accounting/receipts/{id}/unconfirm", null, ct);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<ReceiptResponseDto>(ct)
+            ?? throw new InvalidOperationException("Empty response from unconfirm receipt endpoint.");
+    }
+
     public async Task<string> GetNextCodeAsync(CancellationToken ct = default)
     {
         _logger.LogInformation("Fetching next receipt code from API");

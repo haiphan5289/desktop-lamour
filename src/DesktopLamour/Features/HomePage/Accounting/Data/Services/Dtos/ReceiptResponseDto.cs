@@ -18,6 +18,8 @@ public class ReceiptResponseDto
     [JsonPropertyName("accounting_date")]         public DateTime AccountingDate        { get; set; }
     [JsonPropertyName("document_date")]           public DateTime DocumentDate          { get; set; }
     [JsonPropertyName("document_number")]         public string   DocumentNumber        { get; set; } = "";
+    [JsonPropertyName("status")]                  public string   Status                { get; set; } = "Draft";
+    [JsonPropertyName("confirmed_at")]            public DateTime? ConfirmedAt          { get; set; }
     [JsonPropertyName("created_at")]              public DateTime CreatedAt             { get; set; }
     [JsonPropertyName("entries")]                 public List<ReceiptEntryDto> Entries  { get; set; } = new();
 }
