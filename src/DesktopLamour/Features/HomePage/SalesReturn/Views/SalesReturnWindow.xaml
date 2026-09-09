@@ -135,7 +135,6 @@
                                   AddCommand="{Binding AddNewCommand}"
                                   SaveCommand="{Binding SaveCommand}"
                                   DeleteCommand="{Binding DeleteCommand}"
-                                  UnpostCommand="{Binding UnconfirmCommand}"
                                   CreateExportCommand="{Binding CreateWarehouseReceiptCommand}"
                                   CreateExportLabel="Lập PN"
                                   PrintCommand="{Binding PrintCommand}"

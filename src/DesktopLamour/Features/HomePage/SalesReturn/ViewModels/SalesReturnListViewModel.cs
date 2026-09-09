@@ -30,8 +30,6 @@ public partial class SalesReturnListViewModel : ViewModelBase
     private readonly INavigationService              _navigationService;
     private readonly IGetSalesReturnsUseCase         _getReturns;
     private readonly IDeleteSalesReturnUseCase       _deleteReturn;
-    private readonly IConfirmSalesReturnUseCase      _confirmReturn;
-    private readonly IUnconfirmSalesReturnUseCase    _unconfirmReturn;
     private readonly IGetWarehouseReceiptsUseCase    _getWarehouseReceipts;
     private readonly Func<SalesReturnWindow>         _formWindowFactory;
     private readonly DebounceDispatcher              _searchDebounce = new();
@@ -41,6 +39,13 @@ public partial class SalesReturnListViewModel : ViewModelBase
     [ObservableProperty] private string                _errorMessage    = string.Empty;
     [ObservableProperty] private bool                  _hasSalesReturns;
     [ObservableProperty] private SalesReturnListItem?  _selectedReturn;
+
+    // Hàng tổng cộng cuối lưới — Σ trên toàn bộ danh sách đã tải (giống SalesOrderListViewModel).
+    [ObservableProperty] private int     _totalCount;
+    [ObservableProperty] private decimal _totalGrossSum;
+    [ObservableProperty] private decimal _totalDiscountSum;
+    [ObservableProperty] private decimal _totalTaxSum;
+    [ObservableProperty] private decimal _totalPaymentSum;
     // Mặc định "Đầu tháng đến hiện tại" (áp dụng đồng bộ toàn app — 2026-08-31), khớp SelectedPeriod
     // bên dưới. Field initializer chạy trước constructor nên không kích hoạt OnSelectedPeriodChanged
     // — phải tự set FromDate/ToDate ở đây cho khớp giá trị SelectedPeriod hiển thị trên UI.
@@ -62,7 +67,9 @@ public partial class SalesReturnListViewModel : ViewModelBase
     // Lọc Trạng thái/Kiêm phiếu nhập + filter theo từng cột áp lên dữ liệu ĐÃ tải (client-side, qua
     // SalesReturnsView) — không gọi lại BE, khác với FilterFromDate/ToDate/SearchText ở trên vốn đã
     // lọc server-side sẵn (xem ISalesReturnService.GetAllAsync). Cùng pattern AccountingViewModel.
-    public static string[] StatusOptions      { get; } = { "Tất cả", "Nháp", "Đã ghi sổ" };
+    // Đã bỏ vòng đời Nháp (2026-09-07) — mọi chứng từ luôn "Đã ghi sổ"; giữ dropdown cho nhất
+    // quán bố cục filter bar, chỉ còn 2 lựa chọn.
+    public static string[] StatusOptions      { get; } = { "Tất cả", "Đã ghi sổ" };
     public static string[] HasReceiptOptions  { get; } = { "Tất cả", "Có", "Chưa" };
 
     [ObservableProperty] private string _filterStatus     = "Tất cả";
@@ -102,24 +109,19 @@ public partial class SalesReturnListViewModel : ViewModelBase
     public ICollectionView SalesReturnsView { get; }
 
     private bool HasSelection => SelectedReturn is not null;
-    private bool CanEditSelected   => SelectedReturn is { IsDraft: true };
-    private bool CanGhiSoSelected  => SelectedReturn is { IsDraft: true };
-    private bool CanBoGhiSelected  => SelectedReturn is { IsConfirmed: true };
+    // Đã bỏ vòng đời Nháp (2026-09-07): sửa/xóa được mọi chứng từ đã lưu.
+    private bool CanEditSelected => HasSelection;
 
     public SalesReturnListViewModel(
         INavigationService           navigationService,
         IGetSalesReturnsUseCase      getReturns,
         IDeleteSalesReturnUseCase    deleteReturn,
-        IConfirmSalesReturnUseCase   confirmReturn,
-        IUnconfirmSalesReturnUseCase unconfirmReturn,
         IGetWarehouseReceiptsUseCase getWarehouseReceipts,
         Func<SalesReturnWindow>      formWindowFactory)
     {
         _navigationService     = navigationService;
         _getReturns            = getReturns;
         _deleteReturn          = deleteReturn;
-        _confirmReturn         = confirmReturn;
-        _unconfirmReturn       = unconfirmReturn;
         _getWarehouseReceipts  = getWarehouseReceipts;
         _formWindowFactory     = formWindowFactory;
 
@@ -133,8 +135,6 @@ public partial class SalesReturnListViewModel : ViewModelBase
         ViewSalesReturnCommand.NotifyCanExecuteChanged();
         EditSalesReturnCommand.NotifyCanExecuteChanged();
         DeleteSalesReturnCommand.NotifyCanExecuteChanged();
-        GhiSoCommand.NotifyCanExecuteChanged();
-        BoGhiCommand.NotifyCanExecuteChanged();
     }
 
     // Đổi ngày là thao tác rời rạc (không gõ liên tục như SearchText) — reload ngay, không debounce.
@@ -194,7 +194,6 @@ public partial class SalesReturnListViewModel : ViewModelBase
     {
         if (obj is not SalesReturnListItem item) return false;
 
-        if (FilterStatus == "Nháp"       && !item.IsDraft)     return false;
         if (FilterStatus == "Đã ghi sổ"  && !item.IsConfirmed) return false;
 
         if (FilterHasReceipt == "Có"    && !item.HasLinkedWarehouseReceipt) return false;
@@ -242,7 +241,12 @@ public partial class SalesReturnListViewModel : ViewModelBase
                          .OrderByDescending(o => o.DocumentDate))
                 SalesReturns.Add(dto);
 
-            HasSalesReturns = SalesReturns.Count > 0;
+            HasSalesReturns  = SalesReturns.Count > 0;
+            TotalCount        = SalesReturns.Count;
+            TotalGrossSum     = SalesReturns.Sum(r => r.TotalAmount);
+            TotalDiscountSum  = SalesReturns.Sum(r => r.TotalDiscount);
+            TotalTaxSum       = SalesReturns.Sum(r => r.TotalTax);
+            TotalPaymentSum   = SalesReturns.Sum(r => r.TotalPayment);
 
             // "Kiêm phiếu nhập" — không có trong response, tính lại client-side bằng cách so khớp
             // với danh sách WarehouseReceipt hiện có. Lỗi ở bước này không nên chặn hiển thị danh
@@ -339,60 +343,6 @@ public partial class SalesReturnListViewModel : ViewModelBase
         }
     }
 
-    // "Ghi sổ" — chuyển Nháp → Đã ghi sổ, cộng tồn kho thật (side-effect nằm ở BE
-    // ConfirmSalesReturnUseCase, không phải ở đây). Thao tác trực tiếp trên danh sách, không cần
-    // mở popup trước — khớp đúng vị trí nút "Ghi sổ" trên toolbar màn danh sách theo mẫu MISA.
-    [RelayCommand(CanExecute = nameof(CanGhiSoSelected))]
-    private async Task GhiSoAsync(CancellationToken ct = default)
-    {
-        if (SelectedReturn is null) return;
-
-        HasError     = false;
-        ErrorMessage = string.Empty;
-        IsLoading    = true;
-        try
-        {
-            await _confirmReturn.ExecuteAsync(SelectedReturn.Id, ct);
-            await LoadSalesReturnsAsync(ct);
-        }
-        catch (Exception ex)
-        {
-            HasError     = true;
-            ErrorMessage = $"Ghi sổ thất bại: {ex.Message}";
-        }
-        finally { IsLoading = false; }
-    }
-
-    // "Bỏ ghi" — chuyển Đã ghi sổ → Nháp, hoàn tác tồn kho (BE UnconfirmSalesReturnUseCase từ chối
-    // nếu tồn kho hiện tại không đủ hoàn tác — đã bán/xuất tiếp sau khi Ghi sổ).
-    [RelayCommand(CanExecute = nameof(CanBoGhiSelected))]
-    private async Task BoGhiAsync(CancellationToken ct = default)
-    {
-        if (SelectedReturn is null) return;
-
-        var confirm = MessageBox.Show(
-            $"Bỏ ghi sổ chứng từ '{SelectedReturn.DocumentNumber}'? Tồn kho đã cộng lúc Ghi sổ sẽ được hoàn tác.",
-            "Xác nhận bỏ ghi",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
-        if (confirm != MessageBoxResult.Yes) return;
-
-        HasError     = false;
-        ErrorMessage = string.Empty;
-        IsLoading    = true;
-        try
-        {
-            await _unconfirmReturn.ExecuteAsync(SelectedReturn.Id, ct);
-            await LoadSalesReturnsAsync(ct);
-        }
-        catch (Exception ex)
-        {
-            HasError     = true;
-            ErrorMessage = $"Bỏ ghi thất bại: {ex.Message}";
-        }
-        finally { IsLoading = false; }
-    }
-
     // Xuất đúng những dòng đang hiển thị trên lưới (đã áp mọi filter), không phải toàn bộ SalesReturns.
     [RelayCommand]
     private void ExportExcel()
@@ -412,7 +362,7 @@ public partial class SalesReturnListViewModel : ViewModelBase
             string[] headers =
             {
                 "Loại trả hàng", "Số chứng từ", "Ngày hạch toán", "Ngày chứng từ", "Khách hàng",
-                "Nhân viên", "Diễn giải", "Tổng tiền hàng", "Tổng CK", "Tổng thanh toán",
+                "Nhân viên", "Diễn giải", "Tổng tiền hàng", "Tổng CK", "Tiền thuế GTGT", "Tổng thanh toán",
                 "Trạng thái", "Kiêm phiếu nhập",
             };
             for (var i = 0; i < headers.Length; i++)
@@ -434,9 +384,10 @@ public partial class SalesReturnListViewModel : ViewModelBase
                 worksheet.Cell(row, 7).Value  = item.Description;
                 worksheet.Cell(row, 8).Value  = item.TotalAmount;
                 worksheet.Cell(row, 9).Value  = item.TotalDiscount;
-                worksheet.Cell(row, 10).Value = item.TotalPayment;
-                worksheet.Cell(row, 11).Value = item.StatusLabel;
-                worksheet.Cell(row, 12).Value = item.HasLinkedWarehouseReceipt ? "Có" : "Chưa";
+                worksheet.Cell(row, 10).Value = item.TotalTax;
+                worksheet.Cell(row, 11).Value = item.TotalPayment;
+                worksheet.Cell(row, 12).Value = item.StatusLabel;
+                worksheet.Cell(row, 13).Value = item.HasLinkedWarehouseReceipt ? "Có" : "Chưa";
                 row++;
             }
 

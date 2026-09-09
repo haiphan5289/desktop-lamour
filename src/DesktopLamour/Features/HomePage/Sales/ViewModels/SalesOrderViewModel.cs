@@ -53,17 +53,17 @@ public partial class SalesOrderViewModel : ViewModelBase
         HoldCommand.NotifyCanExecuteChanged();
     }
 
-    // 2026-09-01: khớp workflow MISA — "Cất" tự động đưa chứng từ về Ghi sổ (Normal), lúc đó form
-    // phải KHÓA lại (không cho sửa/xóa trực tiếp) cho tới khi bấm "Bỏ ghi" (= nút "Treo" sẵn có,
-    // xem CanUnlock) để mở khóa lại. IsEditable trước đây chỉ tính theo IsReadOnly (chế độ xem từ
-    // Sổ chi tiết) — giờ thêm điều kiện !IsConfirmed để khớp đúng khái niệm "khóa vì đã Ghi sổ".
+    // 2026-09-07: bỏ hẳn khóa form sau khi Ghi sổ (theo yêu cầu — trùng cách đã làm cho Chứng từ
+    // hàng bán bị trả lại). Mở 1 đơn đã Ghi sổ là sửa/xóa/Cất được ngay, không cần bấm "Treo" trước.
+    // BE (UpdateSalesOrderUseCase/DeleteSalesOrderUseCase) vốn không có guard trạng thái, tự đảo tồn
+    // kho khi sửa/xóa đơn Normal. Form chỉ còn bị disable ở chế độ xem chỉ-đọc từ "Sổ chi tiết bán hàng".
     public bool IsConfirmed => CurrentOrder is not null && CurrentOrder.Status == 0; // 0 = Normal = "Ghi sổ"
-    public bool IsEditable  => !IsReadOnly && !IsConfirmed;
+    public bool IsEditable  => !IsReadOnly;
 
-    // CanExecute cho HoldCommand ("Treo"/"Bỏ ghi") — bấm được khi: (a) chứng từ MỚI, chưa Cất lần
-    // nào (CurrentOrder null — Treo dùng để lưu tạm 1 đơn chưa hoàn chỉnh, không cần Ghi sổ trước,
-    // theo yêu cầu riêng), HOẶC (b) chứng từ đã Ghi sổ (IsConfirmed — dùng để MỞ KHÓA lại mà sửa).
-    // Không bấm được khi đã đang Treo sẵn (không có gì để mở khóa thêm — BE cũng chặn double-hold).
+    // CanExecute cho HoldCommand ("Treo") — bấm được khi: (a) chứng từ MỚI, chưa Cất lần nào
+    // (CurrentOrder null — Treo dùng để lưu tạm 1 đơn chưa hoàn chỉnh, không cần Ghi sổ trước),
+    // HOẶC (b) chứng từ đang Normal (IsConfirmed — treo lại 1 đơn đã Ghi sổ). Không bấm được khi
+    // đã đang Treo sẵn (không có gì để treo thêm — BE cũng chặn double-hold).
     public bool CanUnlock => !IsReadOnly && (CurrentOrder is null || IsConfirmed);
 
     public bool ShowHoldSection => HasExistingOrder && !IsReadOnly;
@@ -293,6 +293,12 @@ public partial class SalesOrderViewModel : ViewModelBase
         PrintCommand.NotifyCanExecuteChanged();
     }
 
+    // Gọi từ SalesOrderWindow.xaml.cs khi 1 ô trên lưới dòng hàng commit (CellEditEnding) — để
+    // tính lại "Tổng tiền thanh toán"/"Tổng thanh toán (gồm thuế)" cho dòng Trừ cọc SAU KHI user
+    // gõ xong (AttachLineHandlers đã hoãn việc này theo từng phím). Không hại gì khi gọi cho ô
+    // dòng sản phẩm (đã cập nhật sống rồi) — chỉ tính lại 1 lần.
+    public void RecalculateTotalsAfterCommit() => OnLinesOrTotalsChanged();
+
     // ── Public init — called by SalesOrderWindow ──────────────────────────
 
     public async Task InitializeAsync(SalesOrderResponseDto? order, CancellationToken ct = default)
@@ -431,7 +437,6 @@ public partial class SalesOrderViewModel : ViewModelBase
                 _logger.LogInformation("SalesOrder updated: {Id}", result.Id);
             }
 
-            var depositDeductionAmountForPrint = 0m;
             if (depositLine is not null)
             {
                 try
@@ -445,9 +450,6 @@ public partial class SalesOrderViewModel : ViewModelBase
                         Description    = $"Trừ cọc thanh toán đơn {result.DocumentNumber}",
                     }, ct);
                     _logger.LogInformation("DepositDeduction created for SalesOrder {Id}", result.Id);
-                    // Chỉ hiển thị dòng "Trừ Cọc" trên hóa đơn in nếu deduction thật sự đã lưu ở BE —
-                    // nếu lỗi (catch bên dưới), hóa đơn không nên hiển thị 1 khoản trừ chưa từng tồn tại.
-                    depositDeductionAmountForPrint = Math.Abs(depositLine.Amount);
                 }
                 catch (Exception depositEx)
                 {
@@ -462,8 +464,8 @@ public partial class SalesOrderViewModel : ViewModelBase
             OrderSaved?.Invoke();
             IsBusy = false;
 
-            ShowPrintPreview(result, depositDeductionAmountForPrint);
-
+            // "Ghi sổ" = CHỈ lưu đơn (+ trừ cọc nếu có). KHÔNG tự mở cửa sổ in — muốn in thì bấm
+            // nút "In" trên toolbar (workflow "từng bước" giống MISA).
             RequestClose?.Invoke();
         }
         catch (OperationCanceledException) { }
@@ -584,7 +586,17 @@ public partial class SalesOrderViewModel : ViewModelBase
     {
         line.PropertyChanged += (_, e) =>
         {
-            OnLinesOrTotalsChanged();
+            // Dòng Trừ cọc: KHÔNG tính lại tổng theo từng phím khi user đang gõ "Thành tiền" —
+            // footer chỉ đổi sau khi commit ô (SalesOrderWindow.xaml.cs bắt CellEditEnding →
+            // RecalculateTotalsAfterCommit). Ô nhập vẫn format nghìn sống bình thường. Các dòng
+            // sản phẩm thường / các property khác vẫn cập nhật tổng ngay như cũ.
+            var deferDepositTotals = line.IsDepositDeductionRow
+                && e.PropertyName is nameof(SalesOrderLineItem.Amount)
+                                  or nameof(SalesOrderLineItem.DisplayAmount)
+                                  or nameof(SalesOrderLineItem.TaxAmount)
+                                  or nameof(SalesOrderLineItem.IsNegativeAmount);
+            if (!deferDepositTotals)
+                OnLinesOrTotalsChanged();
 
             if (e.PropertyName == nameof(SalesOrderLineItem.ProductId) && line.ProductId > 0)
             {
@@ -608,6 +620,9 @@ public partial class SalesOrderViewModel : ViewModelBase
             {
                 var amountDue = TotalPayment + TotalTaxAmount;
                 line.Amount = Math.Max(0, Math.Min(line.AvailableDepositBalance, amountDue));
+                // Gợi ý số trừ này set bằng code (không phải user gõ) → tính lại tổng ngay, không
+                // đợi CellEditEnding (nhánh deferDepositTotals ở trên đã bỏ qua Amount vừa đổi).
+                OnLinesOrTotalsChanged();
             }
         };
     }
@@ -674,9 +689,9 @@ public partial class SalesOrderViewModel : ViewModelBase
     {
         try
         {
-            // Loại cọc do chính chứng từ đang sửa tạo ra (SourceSalesOrderId == CurrentOrder.Id) —
-            // không cho 1 đơn tự trừ cọc của chính nó. CurrentOrder null khi tạo đơn mới → không lọc.
-            var deposits = await _getDepositsByCustomer.ExecuteAsync(customerId, CurrentOrder?.Id);
+            // 2026-09-08: Đặt cọc / Trừ cọc đã tách hẳn khỏi Chứng từ bán hàng — không còn khái
+            // niệm "cọc do đơn này tạo ra", nên lấy mọi cọc còn số dư của khách, không lọc theo đơn.
+            var deposits = await _getDepositsByCustomer.ExecuteAsync(customerId);
             AvailableDeposits = deposits.ToList().AsReadOnly();
             OnPropertyChanged(nameof(AvailableDeposits));
         }

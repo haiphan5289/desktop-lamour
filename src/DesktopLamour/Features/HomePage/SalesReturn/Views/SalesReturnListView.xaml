@@ -45,8 +45,8 @@
                                     Style="{StaticResource AppButton.Primary.Medium}"
                                     Command="{Binding AddSalesReturnCommand}"
                                     Margin="0,0,8,0"/>
-                <!-- Xem không đòi hỏi Nháp — mở được cả chứng từ đã Ghi sổ (chỉ đọc trên thực tế vì
-                     BE tự chặn Update khi Confirmed). Sửa/Xóa chỉ bật khi chứng từ còn Nháp. -->
+                <!-- Đã bỏ vòng đời Nháp → Ghi sổ (2026-09-07): mọi chứng từ đã lưu đều Xem/Sửa/Xóa
+                     được bình thường; không còn nút "Ghi sổ"/"Bỏ ghi". -->
                 <controls:AppButton Content="👁 Xem"
                                     Style="{StaticResource AppButton.Secondary.Medium}"
                                     Command="{Binding ViewSalesReturnCommand}"
@@ -58,15 +58,7 @@
                 <controls:AppButton Content="🗑️ Xóa"
                                     Style="{StaticResource AppButton.Destructive.Medium}"
                                     Command="{Binding DeleteSalesReturnCommand}"
-                                    Margin="0,0,16,0"/>
-                <controls:AppButton Content="📘 Ghi sổ"
-                                    Style="{StaticResource AppButton.Secondary.Medium}"
-                                    Command="{Binding GhiSoCommand}"
                                     Margin="0,0,8,0"/>
-                <controls:AppButton Content="↩️ Bỏ ghi"
-                                    Style="{StaticResource AppButton.Secondary.Medium}"
-                                    Command="{Binding BoGhiCommand}"
-                                    Margin="0,0,16,0"/>
                 <controls:AppButton Content="📤 Xuất khẩu"
                                     Style="{StaticResource AppButton.Secondary.Medium}"
                                     Command="{Binding ExportExcelCommand}"/>
@@ -143,12 +135,16 @@
         </Border>
 
         <!-- ══════════════════════════════════════════════ -->
-        <!--  DataGrid                                      -->
+        <!--  DataGrid + totals footer                      -->
         <!-- ══════════════════════════════════════════════ -->
         <Grid Grid.Row="3" Margin="24,12,24,24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>     <!-- DataGrid (+ overlays) -->
+                <RowDefinition Height="Auto"/>  <!-- Totals footer -->
+            </Grid.RowDefinitions>
 
             <!-- Error banner -->
-            <Border Panel.ZIndex="10"
+            <Border Grid.Row="0" Panel.ZIndex="10"
                     Background="{StaticResource AppColor.BackgroundErrorLight}"
                     CornerRadius="8"
                     Padding="12,10"
@@ -173,7 +169,7 @@
             </Border>
 
             <!-- DataGrid -->
-            <DataGrid x:Name="ReturnsGrid"
+            <DataGrid Grid.Row="0" x:Name="ReturnsGrid"
                       ItemsSource="{Binding SalesReturnsView}"
                       SelectedItem="{Binding SelectedReturn, Mode=TwoWay}"
                       AutoGenerateColumns="False"
@@ -383,6 +379,18 @@
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
+                    <!-- Tiền thuế GTGT — Σ tax_amount các dòng (không có ở cấp header response, tính
+                         client-side trong SalesReturnListItem.FromDto). Khớp cột cùng tên ở màn
+                         Chứng từ bán hàng; không có ô lọc riêng (giống SalesOrderListView). -->
+                    <DataGridTextColumn Header="Tiền thuế GTGT" Binding="{Binding TotalTax, StringFormat=\{0:N0\}}" Width="120">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextAlignment" Value="Right"/>
+                                <Setter Property="Padding" Value="6,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
                     <!-- Tổng thanh toán — numeric column: operator combo (=, ≤, ≥...) + value box, inline -->
                     <DataGridTemplateColumn Header="Tổng thanh toán" Width="140">
                         <DataGridTemplateColumn.HeaderTemplate>
@@ -421,8 +429,8 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <!-- Trạng thái — Nháp/Đã ghi sổ, đã có dropdown lọc riêng ở filter bar phía trên.
-                         Đổi màu nền qua DataTrigger thẳng trong XAML, không cần converter riêng. -->
+                    <!-- Trạng thái — luôn "Đã ghi sổ" từ 2026-09-07 (đã bỏ vòng đời Nháp); giữ cột +
+                         DataTrigger tô nền brand cho nhất quán bố cục với các màn danh sách khác. -->
                     <DataGridTemplateColumn Header="Trạng thái" Width="100">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
@@ -458,8 +466,60 @@
                 </DataGrid.Columns>
             </DataGrid>
 
+            <!-- ══════════════════════════════════════════════ -->
+            <!--  Totals footer — cộng dồn Tổng tiền hàng/Tổng CK/Tiền thuế GTGT/Tổng thanh toán trên -->
+            <!--  danh sách đã tải, canh theo bề rộng cột tương ứng ở DataGrid phía trên. Mirror        -->
+            <!--  đúng hàng "Tổng cộng" của màn Chứng từ bán hàng (SalesOrderListView).                 -->
+            <!-- ══════════════════════════════════════════════ -->
+            <Border Grid.Row="1"
+                    Background="{StaticResource AppColor.BackgroundSecondary}"
+                    BorderBrush="{StaticResource AppColor.BorderThin}"
+                    BorderThickness="1,0,1,1"
+                    Visibility="{Binding HasSalesReturns, Converter={StaticResource BoolToVisibilityConverter}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="140"/>  <!-- Loại trả hàng -->
+                        <ColumnDefinition Width="110"/>  <!-- Số chứng từ -->
+                        <ColumnDefinition Width="120"/>  <!-- Ngày hạch toán -->
+                        <ColumnDefinition Width="110"/>  <!-- Ngày chứng từ -->
+                        <ColumnDefinition Width="160"/>  <!-- Khách hàng -->
+                        <ColumnDefinition Width="130"/>  <!-- Nhân viên -->
+                        <ColumnDefinition Width="200"/>  <!-- Diễn giải -->
+                        <ColumnDefinition Width="140"/>  <!-- Tổng tiền hàng -->
+                        <ColumnDefinition Width="120"/>  <!-- Tổng CK -->
+                        <ColumnDefinition Width="120"/>  <!-- Tiền thuế GTGT -->
+                        <ColumnDefinition Width="140"/>  <!-- Tổng thanh toán -->
+                        <ColumnDefinition Width="*"/>    <!-- Trạng thái + Kiêm phiếu nhập -->
+                    </Grid.ColumnDefinitions>
+
+                    <controls:AppLabel Grid.Column="0" Grid.ColumnSpan="7"
+                                       Text="{Binding TotalCount, StringFormat='Tổng cộng: {0} chứng từ'}"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       VerticalAlignment="Center"
+                                       Padding="6,10"/>
+
+                    <TextBlock Grid.Column="7"
+                               Text="{Binding TotalGrossSum, StringFormat=\{0:N0\}}"
+                               FontWeight="Bold" TextAlignment="Right" VerticalAlignment="Center" Padding="6,10"/>
+
+                    <TextBlock Grid.Column="8"
+                               Text="{Binding TotalDiscountSum, StringFormat=\{0:N0\}}"
+                               FontWeight="Bold" TextAlignment="Right" VerticalAlignment="Center" Padding="6,10"/>
+
+                    <TextBlock Grid.Column="9"
+                               Text="{Binding TotalTaxSum, StringFormat=\{0:N0\}}"
+                               FontWeight="Bold" TextAlignment="Right" VerticalAlignment="Center" Padding="6,10"/>
+
+                    <TextBlock Grid.Column="10"
+                               Text="{Binding TotalPaymentSum, StringFormat=\{0:N0\}}"
+                               FontWeight="Bold" TextAlignment="Right" VerticalAlignment="Center" Padding="6,10"
+                               Foreground="{StaticResource AppColor.TextBrand}"/>
+                </Grid>
+            </Border>
+
             <!-- Empty state -->
-            <StackPanel HorizontalAlignment="Center"
+            <StackPanel Grid.Row="0"
+                        HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         Visibility="{Binding HasSalesReturns, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                 <TextBlock Text="↩️" FontSize="48" HorizontalAlignment="Center" TextAlignment="Center"/>

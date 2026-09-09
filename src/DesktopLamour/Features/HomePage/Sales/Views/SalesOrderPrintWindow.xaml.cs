@@ -258,7 +258,10 @@ public partial class SalesOrderPrintWindow : Window
                 line.ProductName,
                 line.Quantity.ToString(),
                 line.IsDepositProduct ? "" : FormatMoney(line.UnitPrice),
-                line.IsDepositProduct ? "" : line.DiscountRate.ToString("N2", CultureInfo.GetCultureInfo("vi-VN")) + "%",
+                // Cột CK (%) rộng cố định 42px — "35,00%" (có hậu tố %) vỡ 2 dòng ("35,00" rồi "%").
+                // Bỏ "%" (header "CK (%)" đã ghi rõ đơn vị) để "35,00" nằm gọn 1 dòng, không phải
+                // đụng lại ngân sách bề rộng bảng đã tinh chỉnh nhiều lần.
+                line.IsDepositProduct ? "" : line.DiscountRate.ToString("N2", CultureInfo.GetCultureInfo("vi-VN")),
                 FormatMoney(line.Amount),
                 line.IsDepositProduct ? "" : $"{line.TaxRate:0}%",
                 FormatMoney(lineTotal)));

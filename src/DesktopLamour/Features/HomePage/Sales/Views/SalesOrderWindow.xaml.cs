@@ -30,6 +30,12 @@ public partial class SalesOrderWindow : Window
             new RoutedEventHandler((_, _) => Dispatcher.BeginInvoke(
                 System.Windows.Threading.DispatcherPriority.ContextIdle,
                 new Action(() => LinesDataGrid.CommitEdit(DataGridEditingUnit.Row, true)))));
+
+        // Dòng Trừ cọc hoãn tính lại tổng tới khi gõ xong — bắt lúc ô rời chế độ edit để tính 1 lần.
+        // BeginInvoke(Background) để value của ô đã push vào model xong trước khi RecalculateTotals chạy.
+        LinesDataGrid.CellEditEnding += (_, _) => Dispatcher.BeginInvoke(
+            System.Windows.Threading.DispatcherPriority.Background,
+            new Action(ViewModel.RecalculateTotalsAfterCommit));
     }
 
     public void Initialize(SalesOrderResponseDto? order, bool isFromWarehouseExport = false, bool isReadOnly = false)

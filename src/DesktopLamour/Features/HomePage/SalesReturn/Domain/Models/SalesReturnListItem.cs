@@ -14,6 +14,9 @@ public class SalesReturnListItem
     public string?  Description    { get; init; }
     public decimal  TotalAmount    { get; init; }
     public decimal  TotalDiscount  { get; init; }
+    // Response chứng từ trả lại không có sẵn tổng thuế ở cấp header (khác SalesOrderResponseDto) —
+    // cộng dồn từ tax_amount của từng dòng để hiện cột "Tiền thuế GTGT" + hàng tổng cộng cuối lưới.
+    public decimal  TotalTax       { get; init; }
     public decimal  TotalPayment   { get; init; }
     public string   ReturnTypeLabel { get; init; } = "";
 
@@ -44,6 +47,7 @@ public class SalesReturnListItem
         Description     = dto.Description,
         TotalAmount     = dto.TotalAmount,
         TotalDiscount   = dto.TotalDiscount,
+        TotalTax        = dto.Lines.Sum(l => l.TaxAmount),
         TotalPayment    = dto.TotalPayment,
         ReturnTypeLabel = dto.ReturnType == 1 ? "Trả lại tiền mặt" : "Giảm trừ công nợ",
         Status          = dto.Status,

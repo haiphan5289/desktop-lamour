@@ -59,16 +59,12 @@ public sealed class DepositService : IDepositService
         return result?.Code ?? "DC00001";
     }
 
-    public async Task<IEnumerable<DepositResponseDto>> GetByCustomerAsync(int customerId, int? excludeSalesOrderId = null, CancellationToken ct = default)
+    public async Task<IEnumerable<DepositResponseDto>> GetByCustomerAsync(int customerId, CancellationToken ct = default)
     {
         _logger.LogInformation("Fetching deposits with remaining balance for customer {CustomerId}", customerId);
         SetBearerToken();
 
-        var url = $"/api/v1/deposits/by-customer/{customerId}";
-        if (excludeSalesOrderId.HasValue)
-            url += $"?exclude_sales_order_id={excludeSalesOrderId.Value}";
-
-        var response = await _httpClient.GetAsync(url, ct);
+        var response = await _httpClient.GetAsync($"/api/v1/deposits/by-customer/{customerId}", ct);
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadFromJsonAsync<IEnumerable<DepositResponseDto>>(ct)

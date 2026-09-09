@@ -183,6 +183,11 @@ public class SalesOrderLineItem : INotifyPropertyChanged
                 // AccountingAmountConverter trên grid hiển thị lại dạng "(1.814.400)" sau khi commit.
                 _amount = -Math.Abs(value);
                 OnPropertyChanged();
+                // Raise DisplayAmount để ô nhập format nghìn SỐNG theo phím (giống Đơn giá/SL). An
+                // toàn không lặp vô hạn vì DisplayAmount getter trả Math.Abs(_amount) — Convert(abs)
+                // round-trip sạch với ConvertBack, không còn lật dấu làm text phân kỳ như trước.
+                // Việc "footer chỉ đổi sau khi gõ xong" xử lý ở SalesOrderViewModel.AttachLineHandlers
+                // (hoãn RecalculateTotals cho dòng Trừ cọc tới lúc CellEditEnding).
                 OnPropertyChanged(nameof(DisplayAmount));
                 OnPropertyChanged(nameof(IsNegativeAmount));
                 RecalculateTax();
@@ -199,13 +204,14 @@ public class SalesOrderLineItem : INotifyPropertyChanged
         }
     }
 
-    // Ô "Thành tiền" trên grid bind vào đây thay vì thẳng Amount — tách riêng để dành chỗ cho hành vi
-    // UI-only sau này nếu cần. Hiện tại DisplayAmount == Amount (giữ dấu âm thật của dòng Trừ cọc để
-    // AccountingAmountConverter format dạng ngoặc "(xxx)" — không còn ẩn dấu âm bằng Math.Abs như
-    // trước). Set lại đi qua Amount setter ở trên nên dòng Trừ cọc vẫn tự âm hoá đúng.
+    // Ô NHẬP "Thành tiền" (CellEditingTemplate) bind vào đây. Với dòng Trừ cọc, getter trả về số
+    // DƯƠNG (Math.Abs) — đúng số user gõ, không bao giờ bị chèn dấu "-" giữa lúc đang gõ; Amount
+    // setter tự lật thành âm để cộng dồn vào GrandTotal. Dòng sản phẩm thường: DisplayAmount == Amount.
+    // Ô HIỂN THỊ sau commit (CellTemplate) bind thẳng Amount + AccountingAmountConverter để hiện
+    // "(1.814.400)" đỏ cho dòng Trừ cọc.
     public decimal DisplayAmount
     {
-        get => _amount;
+        get => _isDepositDeductionRow ? Math.Abs(_amount) : _amount;
         set => Amount = value;
     }
 

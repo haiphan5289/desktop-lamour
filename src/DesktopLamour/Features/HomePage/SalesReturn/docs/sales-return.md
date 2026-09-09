@@ -3,7 +3,48 @@
 > Module: `Features/HomePage/SalesReturn`
 > BE counterpart: `be-window-lamour/src/Lamour.Application/Features/SalesReturn/docs/sales-return.md`
 > First documented: 2026-08-28 (doc mới — module trước đó chưa có `docs/` riêng phía WPF dù BE đã có)
-> **Last updated: 2026-08-31** — Vietkey fix, gộp thật "Ghi sổ"→"Lập PN" (in Phiếu Nhập Kho), bỏ auto-fill Diễn giải, workflow Ghi sổ/Bỏ ghi thật (BE thêm Draft/Confirmed), redesign màn danh sách theo MISA, đổi mặc định bộ lọc ngày sang "Đầu tháng đến hiện tại" — xem mục "Update — 2026-08-31" bên dưới.
+> **Last updated: 2026-09-08** — tách "Ghi sổ" khỏi in & lập PN (workflow từng bước giống MISA — xem "Update — 2026-09-08" ngay dưới). Trước đó: 2026-09-07 — bỏ hẳn vòng đời Nháp → Ghi sổ. 2026-08-31 — Vietkey fix, gộp thật "Ghi sổ"→"Lập PN" (in Phiếu Nhập Kho), bỏ auto-fill Diễn giải, workflow Ghi sổ/Bỏ ghi thật (BE thêm Draft/Confirmed), redesign màn danh sách theo MISA, đổi mặc định bộ lọc ngày sang "Đầu tháng đến hiện tại".
+
+## Update — 2026-09-08: "Ghi sổ" chỉ lưu — In & Lập PN là bước thủ công riêng
+
+Theo yêu cầu (kèm video mẫu MISA "Chứng từ bán hàng"): bấm **Ghi sổ** không còn tự nhảy ra màn
+in. Workflow "từng bước" — Ghi sổ → (mở lại chứng từ) → bấm **Lập PN** / **In** khi cần.
+
+- **`SalesReturnViewModel.SaveAsync`**: bỏ khối `try { await EnsureWarehouseReceiptPrintedAsync(...) } catch { ... }`
+  chạy sau khi lưu. Giờ chỉ: `StopDirtyTracking()` → `ReturnSaved?.Invoke()` → `CurrentReturn = result`
+  → `RequestClose?.Invoke()` (đóng form, quay về danh sách). **Không tạo `WarehouseReceipt`, không mở
+  cửa sổ in.** BE vẫn cộng tồn kho ngay trong Create/Update như cũ (2026-09-07).
+- **Nút "Lập PN"** (`CreateWarehouseReceiptCommand`) — giờ **CHỈ tạo Phiếu Nhập Kho**, KHÔNG tự
+  mở cửa sổ in. Đã xóa hẳn `EnsureWarehouseReceiptPrintedAsync`; command tự dedup (`ReceiptType == 2
+  && Reference == DocumentNumber`) → nếu đã có thì báo số PN, nếu chưa thì gọi
+  `ICreateSalesReturnWarehouseReceiptUseCase` rồi `MessageBox` báo thành công + hướng dẫn vào màn
+  "Nhập, Xuất Kho" để in. Bỏ luôn 2 dependency chỉ-dùng-để-in: `IGetWarehouseReceiptByIdUseCase`,
+  `Func<WarehouseReceiptPrintWindow>` (DI đăng ký chung vẫn còn cho consumer khác).
+- **Nút "In"** (`PrintCommand` → `SalesReturnPrintWindow` "Phiếu trả lại hàng bán") không đổi — bật
+  khi mở lại 1 chứng từ đã lưu (`HasExistingReturn`).
+- **In Phiếu Nhập Kho**: làm ở màn "Nhập, Xuất Kho" — mở phiếu đó (`WarehouseReceiptFormWindow`) rồi
+  bấm "In" (`WarehouseReceiptFormViewModel.Print`, `CanExecute = IsConfirmed`).
+- **Chứng từ bán hàng** (`SalesOrderViewModel.SaveAsync`) sửa song song cùng lý do: bỏ
+  `ShowPrintPreview(result, ...)` sau khi lưu; muốn in bấm nút "In" trên toolbar (`PrintCommand`,
+  vốn in được cả khi chưa Ghi sổ). Xem `Sales/docs/sales.md`.
+
+## Update — 2026-09-07: bỏ hẳn vòng đời Nháp → Ghi sổ
+
+Chứng từ hàng bán bị trả lại không còn trạng thái **Nháp**. Lưu = đã ghi sổ ngay, BE cộng tồn kho
+luôn; sửa/xóa được mọi chứng từ đã lưu (BE tự đảo tồn kho, giống Chứng từ bán hàng).
+
+- **Màn danh sách** (`SalesReturnListViewModel` / `SalesReturnListView.xaml`): bỏ nút "📘 Ghi sổ" và
+  "↩️ Bỏ ghi" + command `GhiSoCommand`/`BoGhiCommand`; `StatusOptions` còn `{ "Tất cả", "Đã ghi sổ" }`
+  (bỏ "Nháp"); Sửa/Xóa bật khi có dòng chọn (bỏ điều kiện `IsDraft`). **Cột "Trạng thái" giữ nguyên**
+  (luôn hiển thị "Đã ghi sổ").
+- **Popup** (`SalesReturnViewModel` / `SalesReturnWindow.xaml`): bỏ `IConfirmSalesReturnUseCase`/
+  `IUnconfirmSalesReturnUseCase`, bỏ nút "Bỏ ghi" trên `DocumentToolbar`, bỏ khối auto-Confirm trong
+  `SaveAsync`, `IsEditable` luôn `true`, `CanDeleteReturn` chỉ cần `CurrentReturn != null`.
+- **Data layer**: xóa `Confirm/UnconfirmSalesReturnUseCase` + interfaces, `ISalesReturnService.ConfirmAsync/
+  UnconfirmAsync` + impl, `ISalesReturnRepository.ConfirmAsync/UnconfirmAsync` + impl, 2 dòng DI trong
+  `HomeServiceCollectionExtensions.cs`. `SalesReturnResponseDto.Status` default `"Confirmed"`.
+- **BE**: xem `be-window-lamour/.../SalesReturn/docs/sales-return.md` mục cùng ngày — không có migration.
+- **Hàng tổng cộng cuối lưới danh sách** (theo ảnh mẫu MISA): thêm cột "Tiền thuế GTGT" (`SalesReturnListItem.TotalTax` = Σ `lines[].tax_amount`, tính client-side vì response không có tổng thuế cấp header) + `Border` footer canh cột hiển thị `Tổng cộng: N chứng từ` và Σ Tổng tiền hàng / Tổng CK / Tiền thuế GTGT / Tổng thanh toán — mirror đúng `SalesOrderListView`. `SalesReturnListViewModel` thêm `TotalCount`/`TotalGrossSum`/`TotalDiscountSum`/`TotalTaxSum`/`TotalPaymentSum` tính trong `LoadSalesReturnsAsync` (Σ trên toàn bộ list đã tải). Export Excel thêm cột "Tiền thuế GTGT". Thuần WPF — không đụng BE.
 
 ## PRD Summary
 

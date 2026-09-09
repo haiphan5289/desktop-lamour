@@ -560,7 +560,11 @@
                                 </DataGridTemplateColumn.CellStyle>
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding DisplayAmount, Converter={StaticResource AccountingAmountConverter}, ConverterParameter=N0}"
+                                        <!-- Hiển thị sau commit: bind thẳng Amount (giá trị có dấu thật) —
+                                             dòng Trừ cọc âm ⇒ AccountingAmountConverter hiện "(1.814.400)".
+                                             KHÔNG bind DisplayAmount ở đây: getter của nó trả số dương cho
+                                             dòng Trừ cọc (dành cho ô nhập), sẽ mất dạng ngoặc kế toán. -->
+                                        <TextBlock Text="{Binding Amount, Converter={StaticResource AccountingAmountConverter}, ConverterParameter=N0}"
                                                    HorizontalAlignment="Right"
                                                    VerticalAlignment="Center"
                                                    Padding="0,0,6,0"
@@ -580,6 +584,11 @@
                                 </DataGridTemplateColumn.CellTemplate>
                                 <DataGridTemplateColumn.CellEditingTemplate>
                                     <DataTemplate>
+                                        <!-- PropertyChanged: ô nhập format nghìn SỐNG theo phím giống các cột
+                                             số khác (Đơn giá/SL/CK%). Riêng "Tổng tiền thanh toán" / "Tổng
+                                             thanh toán (gồm thuế)" chỉ tính lại sau khi gõ xong dòng Trừ cọc —
+                                             xử lý bằng cách hoãn RecalculateTotals tới CellEditEnding
+                                             (SalesOrderViewModel.AttachLineHandlers + SalesOrderWindow.xaml.cs). -->
                                         <TextBox Text="{Binding DisplayAmount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=N0}"
                                                  TextAlignment="Right"
                                                  VerticalContentAlignment="Center"

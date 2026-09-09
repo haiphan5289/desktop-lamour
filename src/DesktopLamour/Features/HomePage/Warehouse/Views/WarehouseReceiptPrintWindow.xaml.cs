@@ -64,7 +64,7 @@ public partial class WarehouseReceiptPrintWindow : Window
 
     private static readonly SolidColorBrush OuterBorderBrush = new(Color.FromRgb(0x9D, 0xC1, 0xE0));
 
-    private const int HeaderTextLineCount = 5;
+    private const int HeaderTextLineCount = 4;
     private const double HeaderLineHeight = 15;
 
     private static FlowDocument BuildDocument(WarehouseReceiptResponseDto receipt, string? partnerAddress)
@@ -123,8 +123,6 @@ public partial class WarehouseReceiptPrintWindow : Window
         headerPara.Inlines.Add(new Run("Mã số thuế: 0319088143") { FontSize = 12 });
         headerPara.Inlines.Add(new LineBreak());
         headerPara.Inlines.Add(new Run("Tel: 0868858975 - Website: www.skincoachlamour.com") { FontSize = 12 });
-        headerPara.Inlines.Add(new LineBreak());
-        headerPara.Inlines.Add(new Run("Số tài khoản: 0071.0007.93865 - VCB - CN Tân Sơn Nhất") { FontSize = 12 });
         content.Blocks.Add(headerPara);
 
         var firstLine = receipt.Lines.FirstOrDefault();
@@ -172,17 +170,16 @@ public partial class WarehouseReceiptPrintWindow : Window
         });
         dateNoGroup.Rows.Add(dateRow);
 
-        var soPara = new Paragraph { TextAlignment = TextAlignment.Center };
-        soPara.Inlines.Add(new Run("Số: "));
-        soPara.Inlines.Add(new Bold(new Run(receipt.ReceiptNumber)) { Foreground = Brushes.Red });
-        var soRow = new TableRow();
-        soRow.Cells.Add(new TableCell(new Paragraph()));
-        soRow.Cells.Add(new TableCell(soPara));
-        soRow.Cells.Add(new TableCell(new Paragraph(new Run($"Có: {creditAccount}")) { TextAlignment = TextAlignment.Right })
+        // Bỏ hẳn dòng "Số: {ReceiptNumber}" theo yêu cầu — cột giữa để trống, chỉ giữ "Có: {tk}"
+        // bên phải cho cân với "Nợ: {tk}" ở dòng trên.
+        var coRow = new TableRow();
+        coRow.Cells.Add(new TableCell(new Paragraph()));
+        coRow.Cells.Add(new TableCell(new Paragraph()));
+        coRow.Cells.Add(new TableCell(new Paragraph(new Run($"Có: {creditAccount}")) { TextAlignment = TextAlignment.Right })
         {
             Padding = noCoCellPadding,
         });
-        dateNoGroup.Rows.Add(soRow);
+        dateNoGroup.Rows.Add(coRow);
 
         dateNoTable.RowGroups.Add(dateNoGroup);
         content.Blocks.Add(dateNoTable);
@@ -348,7 +345,7 @@ public partial class WarehouseReceiptPrintWindow : Window
 
     private static double EstimateContentHeight(int lineCount)
     {
-        const double header          = 112;
+        const double header          = 97; // bỏ dòng "Số tài khoản" → còn 4 dòng text header
         const double title           = 40;
         const double dateNoRow       = 38;
         const double generalInfo     = 90;
