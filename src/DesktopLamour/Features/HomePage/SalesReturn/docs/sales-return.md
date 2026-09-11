@@ -3,14 +3,15 @@
 > Module: `Features/HomePage/SalesReturn`
 > BE counterpart: `be-window-lamour/src/Lamour.Application/Features/SalesReturn/docs/sales-return.md`
 > First documented: 2026-08-28 (doc mới — module trước đó chưa có `docs/` riêng phía WPF dù BE đã có)
-> **Last updated: 2026-09-11 (cùng ngày, mục mới nhất)** — nút "Bỏ ghi" trên danh sách (list toolbar)
-> bỏ hẳn dialog xác nhận Yes/No, bấm là vào thẳng không hỏi lại — xem "Update — 2026-09-11: bỏ dialog
-> xác nhận..." ngay dưới. Trước đó cùng ngày: danh sách tô màu (TextBrand/SemiBold) cả dòng "Treo"
-> (`IsHeld`), trước đây chỉ "Nháp" (`IsDraft`) được tô nên Treo trông giống hệt Đã ghi sổ; bộ lọc
-> "Trạng thái" thêm lựa chọn "Treo" (tách khỏi "Nháp" — trước đây "Nháp" ngầm hiện cả Held lẫn Draft,
-> chỉ ẩn Confirmed) — xem "Update — 2026-09-11: tô màu dòng..." ngay dưới. Trước đó 2026-09-10 — tách "Cất" và "Ghi sổ"
-> thành 2 hành động riêng, tái kích hoạt
-> trạng thái Treo — xem "Update — 2026-09-10" ngay dưới. Trước đó 2026-09-09 — tách rời "Bỏ ghi" (chỉ đảo trạng thái) khỏi "Sửa" (mới thật sự mở
+> **Last updated: 2026-09-11 — ĐẢO NGƯỢC quyết định 2026-09-10**: "Cất" = "Ghi sổ" ngay (1 lần bấm,
+> không còn qua Treo trung gian/`IsArmed`) — xem "Update — 2026-09-11: Cất = Ghi sổ ngay" ngay dưới,
+> đè lên mô tả "2 lần bấm" ở các mục cũ hơn. Trước đó cùng ngày (thứ tự xảy ra, mới nhất trước): thêm
+> context menu chuột phải + phím tắt trên danh sách; bỏ dialog xác nhận khi bấm "Bỏ ghi" trên danh
+> sách; danh sách tô màu (TextBrand/SemiBold) cả dòng "Treo" (`IsHeld`), trước đây chỉ "Nháp"
+> (`IsDraft`) được tô; bộ lọc "Trạng thái" thêm lựa chọn "Treo" — xem các mục "Update — 2026-09-11..."
+> tương ứng ngay dưới. Trước đó 2026-09-10 — tách "Cất" và "Ghi sổ" thành 2 hành động riêng, tái kích
+> hoạt trạng thái Treo (**mục này nay đã lỗi thời**) — xem "Update — 2026-09-10" ngay dưới. Trước đó
+> 2026-09-09 — tách rời "Bỏ ghi" (chỉ đảo trạng thái) khỏi "Sửa" (mới thật sự mở
 > khóa dữ liệu) — xem "Update — 2026-09-09 (đổi ý lần 2)" ngay dưới. Trước đó cùng ngày: thêm nút
 > "Bỏ ghi" thật (đảo Confirmed→Draft + hoàn tác tồn kho, đảo ngược 1 phần quyết định 2026-09-07),
 > cột/filter "Trạng thái" thêm lại ở danh sách (rồi đổi cột thành highlight cả dòng). Nút "In"
@@ -20,6 +21,54 @@
 > Vietkey fix, gộp thật "Ghi sổ"→"Lập PN" (in Phiếu Nhập Kho), bỏ auto-fill Diễn giải, workflow Ghi
 > sổ/Bỏ ghi thật (BE thêm Draft/Confirmed), redesign màn danh sách theo MISA, đổi mặc định bộ lọc
 > ngày sang "Đầu tháng đến hiện tại".
+
+## Update — 2026-09-11: "Cất" = "Ghi sổ" ngay (ĐẢO NGƯỢC quyết định 2026-09-10)
+
+**Lần đổi ý thứ 3 cho khúc logic này.** Xem đầy đủ bối cảnh (video quay MISA, tách frame xác nhận
+hành vi trước khi sửa, chi tiết thay đổi BE) ở
+`be-window-lamour/.../SalesReturn/docs/sales-return.md` mục cùng tên. Tóm tắt phía WPF
+(`SalesReturnViewModel.cs`):
+
+| Trước (2026-09-10) | Sau (2026-09-11, hôm nay) |
+|---|---|
+| Cờ `IsArmed` (WPF-only) — bấm toggle lần 1 chỉ đổi nhãn "Bỏ ghi"→"Ghi sổ" + mở khóa Xóa, KHÔNG gọi BE; lần 2 mới thật sự Confirm | **Xóa hẳn `IsArmed`** — `ToggleConfirmAsync` bấm 1 lần gọi Confirm/Unconfirm thật ngay |
+| `UnpostButtonLabel => (!IsConfirmed && IsArmed) ? "Ghi sổ" : "Bỏ ghi"` | `UnpostButtonLabel => IsConfirmed ? "Bỏ ghi" : "Ghi sổ"` |
+| `CanDeleteReturn => ... && IsReadOnly && IsArmed` | `CanDeleteReturn => CurrentReturn is not null && !IsConfirmed && IsReadOnly` (bỏ phần `IsArmed`, giữ nguyên `IsReadOnly` — Xóa vẫn tắt khi đang Sửa, không đổi ý định gốc) |
+| `SaveAsync`/`InitializeAsync` reset `IsArmed=false`/set theo `Status=="Draft"` | Bỏ hẳn các dòng liên quan `IsArmed` — chỉ còn khóa form (`IsReadOnly=true`) |
+
+Vì BE (`Create/UpdateSalesReturnUseCase`) giờ luôn trả về `Confirmed` ngay sau khi Cất (đã cộng tồn
+kho), form khóa lại và nút toggle hiện sẵn "Bỏ ghi" dùng được ngay — không cần bấm gì thêm.
+
+Không đổi XAML (`SalesReturnWindow.xaml` không đổi binding nào — `UnpostCommand`/`UnpostLabel` vẫn
+trỏ đúng `ToggleConfirmCommand`/`UnpostButtonLabel` như cũ). Verify:
+`dotnet build -p:EnableWindowsTargeting=true` 0 lỗi. **Chưa test thật trên UTM.**
+
+## Update — 2026-09-11: thêm context menu chuột phải + phím tắt trên danh sách
+
+Theo yêu cầu (screenshot menu chuột phải MISA tham chiếu, phạm vi xác nhận qua nhiều vòng
+`AskUserQuestion`): thêm context menu chuột phải cho `ReturnsGrid` — **mirror đúng quyết định đã có
+sẵn ở `SalesOrderListView`** (chỉ đưa vào menu những action có nghiệp vụ thật, không rập khuôn toàn
+bộ menu MISA — bỏ "Ghi sổ" vì chưa có action riêng ở mức danh sách, bỏ "Lập phiếu nhập.../Sửa
+mẫu..." vì không có nghiệp vụ đó).
+
+| File | Thay đổi |
+|---|---|
+| `Views/SalesReturnListView.xaml` (`DataGrid.ContextMenu`, mới hoàn toàn) | 5 mục: ➕ Thêm (Ctrl+N) · 👁 Xem (Ctrl+E) · ✏️ Sửa (F2) · 🗑️ Xóa (Ctrl+D) · ↩️ Bỏ ghi (Ctrl+B) — đều bind vào command đã có sẵn (không code mới ở tầng ViewModel) |
+| `Views/SalesReturnListView.xaml` (`UserControl.InputBindings`, mới) | `KeyBinding` thật cho cả 5 phím tắt trên — bấm phím chạy thẳng command, không chỉ hiển thị chữ |
+| `Views/SalesReturnListView.xaml` (`DataGrid`) | Thêm `PreviewMouseRightButtonDown="ReturnsGrid_PreviewMouseRightButtonDown"` |
+| `Views/SalesReturnListView.xaml.cs` | Thêm handler `ReturnsGrid_PreviewMouseRightButtonDown` + `FindAncestor<T>` — mirror y hệt `SalesOrderListView.xaml.cs` (dò `DataGridRow` dưới điểm bấm chuột phải, tự `SelectedItem` trước khi menu mở, tránh thao tác nhầm lên dòng đang chọn cũ) |
+
+**Quyết định khác với ảnh mẫu, đã xác nhận qua hỏi đáp:**
+- Không có "Ghi sổ" — chưa có action Confirm riêng ở mức danh sách (chỉ có trong popup qua toggle).
+- Không có "Nhân bản"/"Gửi email, Zalo" — SalesReturn không có command tương ứng (khác SalesOrder).
+- "Sửa" dùng phím **F2** (không có trong ảnh mẫu) vì Ctrl+E đã dành cho "Xem" — 2 action tồn tại
+  song song trong app này (khác ảnh mẫu MISA chỉ có 1 "Xem").
+- Icon emoji thêm mới cho menu (ảnh mẫu trước đây ở `SalesOrderListView` không có icon) — dùng đúng
+  emoji đã có sẵn trên toolbar (➕✏️🗑️↩️👁) để nhất quán, không bịa icon mới.
+
+Không đổi BE, không đổi ViewModel (chỉ dùng lại command sẵn có). Verify:
+`dotnet build -p:EnableWindowsTargeting=true` 0 lỗi (cross-compile trên Mac). **Chưa test thật trên
+UTM** — đặc biệt cần xác nhận KeyBinding không xung đột với control khác trên màn khi dùng thật.
 
 ## Update — 2026-09-11: bỏ dialog xác nhận khi bấm "Bỏ ghi" trên danh sách
 

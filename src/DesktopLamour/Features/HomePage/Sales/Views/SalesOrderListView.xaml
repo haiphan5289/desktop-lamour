@@ -4,6 +4,17 @@
              xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
              Background="{StaticResource AppColor.BackgroundSecondary}">
 
+    <!-- Phím tắt thật (2026-09-11) — khớp danh sách hiển thị trên context menu bên dưới, TRỪ
+         Ctrl+C (Nhân bản): DataGrid mặc định dùng Ctrl+C để copy giá trị ô/dòng đang chọn vào
+         clipboard (dán qua Excel) — không gán đè, "Nhân bản..." trên menu vẫn chỉ hiển thị chữ
+         "Ctrl+C" cho giống ảnh mẫu, không có KeyBinding thật đứng sau. -->
+    <UserControl.InputBindings>
+        <KeyBinding Gesture="Ctrl+N" Command="{Binding AddSalesOrderCommand}"/>
+        <KeyBinding Gesture="Ctrl+E" Command="{Binding EditSalesOrderCommand}"/>
+        <KeyBinding Gesture="Ctrl+D" Command="{Binding DeleteSalesOrderCommand}"/>
+        <KeyBinding Gesture="Ctrl+B" Command="{Binding UnconfirmSalesOrderCommand}"/>
+    </UserControl.InputBindings>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>   <!-- Page header -->
@@ -155,22 +166,28 @@
                       PreviewMouseRightButtonDown="OrdersGrid_PreviewMouseRightButtonDown"
                       Visibility="{Binding HasSalesOrders, Converter={StaticResource BoolToVisibilityConverter}}">
 
-                <!-- Chuột phải trên lưới — chỉ 5 mục thao tác thật có nghiệp vụ tương ứng (Thêm/
-                     Nhân bản/Xem/Xóa/Gửi email,Zalo), không rập khuôn toàn bộ menu tham chiếu (các
-                     mục như "Ghi sổ"/"Lập phiếu xuất..."/"Sửa mẫu..." thuộc phần mềm khác, app này
-                     chưa có nghiệp vụ đó). InputGestureText chỉ hiển thị chữ phím tắt cho giống ảnh
-                     mẫu — KHÔNG wiring KeyBinding thật (ngoài phạm vi yêu cầu ban đầu). -->
+                <!-- Chuột phải trên lưới — chỉ mục thao tác thật có nghiệp vụ tương ứng (Thêm/
+                     Nhân bản/Xem/Xóa/Bỏ ghi/Gửi email,Zalo), không rập khuôn toàn bộ menu tham
+                     chiếu (các mục như "Ghi sổ"/"Lập phiếu xuất..."/"Sửa mẫu..." thuộc phần mềm
+                     khác, app này chưa có nghiệp vụ đó — "Ghi sổ" cũng chưa có action riêng ở mức
+                     danh sách, chỉ có trong popup). 2026-09-11: thêm icon + "Bỏ ghi" (command đã có
+                     sẵn từ trước, trước đó chỉ chưa lên menu) + wiring KeyBinding thật cho Ctrl+N/
+                     Ctrl+E/Ctrl+D/Ctrl+B (xem UserControl.InputBindings phía trên) — RIÊNG Ctrl+C
+                     (Nhân bản) vẫn chỉ hiển thị chữ, không gán thật, để không đè lên copy-ô mặc
+                     định của DataGrid. -->
                 <DataGrid.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Header="Thêm" InputGestureText="Ctrl+N" Command="{Binding AddSalesOrderCommand}"/>
-                        <MenuItem Header="Nhân bản..." InputGestureText="Ctrl+C" Command="{Binding DuplicateSalesOrderCommand}"/>
+                        <MenuItem Header="➕ Thêm" InputGestureText="Ctrl+N" Command="{Binding AddSalesOrderCommand}"/>
+                        <MenuItem Header="📋 Nhân bản..." InputGestureText="Ctrl+C" Command="{Binding DuplicateSalesOrderCommand}"/>
                         <Separator/>
-                        <MenuItem Header="Xem" InputGestureText="Ctrl+E" Command="{Binding EditSalesOrderCommand}"/>
-                        <MenuItem Header="Xóa" InputGestureText="Ctrl+D" Command="{Binding DeleteSalesOrderCommand}"/>
+                        <MenuItem Header="👁 Xem" InputGestureText="Ctrl+E" Command="{Binding EditSalesOrderCommand}"/>
+                        <MenuItem Header="🗑️ Xóa" InputGestureText="Ctrl+D" Command="{Binding DeleteSalesOrderCommand}"/>
                         <Separator/>
-                        <MenuItem Header="Gửi email, Zalo" InputGestureText="Ctrl+Shift+G">
-                            <MenuItem Header="Email" Command="{Binding SendEmailCommand}"/>
-                            <MenuItem Header="Zalo" Command="{Binding SendZaloCommand}"/>
+                        <MenuItem Header="↩️ Bỏ ghi" InputGestureText="Ctrl+B" Command="{Binding UnconfirmSalesOrderCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="📨 Gửi email, Zalo" InputGestureText="Ctrl+Shift+G">
+                            <MenuItem Header="✉️ Email" Command="{Binding SendEmailCommand}"/>
+                            <MenuItem Header="💬 Zalo" Command="{Binding SendZaloCommand}"/>
                         </MenuItem>
                     </ContextMenu>
                 </DataGrid.ContextMenu>

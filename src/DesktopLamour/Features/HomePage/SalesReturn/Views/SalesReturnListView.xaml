@@ -6,6 +6,16 @@
              xmlns:local="clr-namespace:DesktopLamour.Features.HomePage.SalesReturn.ViewModels"
              Background="{StaticResource AppColor.BackgroundSecondary}">
 
+    <!-- Phím tắt thật (2026-09-11) — khớp context menu chuột phải bên dưới, mirror
+         SalesOrderListView cùng ngày. Không có Ctrl+C ở đây (SalesReturn không có "Nhân bản"). -->
+    <UserControl.InputBindings>
+        <KeyBinding Gesture="Ctrl+N" Command="{Binding AddSalesReturnCommand}"/>
+        <KeyBinding Gesture="Ctrl+E" Command="{Binding ViewSalesReturnCommand}"/>
+        <KeyBinding Gesture="F2"     Command="{Binding EditSalesReturnCommand}"/>
+        <KeyBinding Gesture="Ctrl+D" Command="{Binding DeleteSalesReturnCommand}"/>
+        <KeyBinding Gesture="Ctrl+B" Command="{Binding UnconfirmSalesReturnCommand}"/>
+    </UserControl.InputBindings>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>   <!-- Page header -->
@@ -192,12 +202,30 @@
                       RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
                       MouseDoubleClick="ReturnsGrid_MouseDoubleClick"
+                      PreviewMouseRightButtonDown="ReturnsGrid_PreviewMouseRightButtonDown"
                       Visibility="{Binding HasSalesReturns, Converter={StaticResource BoolToVisibilityConverter}}">
                 <DataGrid.ColumnHeaderStyle>
                     <Style TargetType="DataGridColumnHeader">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                     </Style>
                 </DataGrid.ColumnHeaderStyle>
+                <!-- Chuột phải trên lưới — mirror SalesOrderListView cùng ngày, chỉ mục thao tác
+                     thật có nghiệp vụ tương ứng (Thêm/Xem/Sửa/Xóa/Bỏ ghi). Không có "Nhân bản"/
+                     "Gửi email,Zalo" (chưa có command); không có "Ghi sổ"/"Lập phiếu nhập..."/
+                     "Sửa mẫu..." (thuộc phần mềm khác, hoặc "Ghi sổ" chưa có action riêng ở mức
+                     danh sách — chỉ có trong popup). "Sửa" dùng phím F2 vì Ctrl+E đã gán cho "Xem".
+                     KeyBinding thật xem UserControl.InputBindings phía trên. -->
+                <DataGrid.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="➕ Thêm" InputGestureText="Ctrl+N" Command="{Binding AddSalesReturnCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="👁 Xem" InputGestureText="Ctrl+E" Command="{Binding ViewSalesReturnCommand}"/>
+                        <MenuItem Header="✏️ Sửa" InputGestureText="F2" Command="{Binding EditSalesReturnCommand}"/>
+                        <MenuItem Header="🗑️ Xóa" InputGestureText="Ctrl+D" Command="{Binding DeleteSalesReturnCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="↩️ Bỏ ghi" InputGestureText="Ctrl+B" Command="{Binding UnconfirmSalesReturnCommand}"/>
+                    </ContextMenu>
+                </DataGrid.ContextMenu>
                 <!-- Không dùng cột "Trạng thái" riêng — tô màu/đậm chữ cả dòng khi Nháp (đã "Bỏ
                      ghi") hoặc Treo (chưa Ghi sổ), khớp đúng pattern đã dùng cho trạng thái "⏸ Treo"
                      ở SalesOrderListView.xaml (TextElement.Foreground kế thừa xuống mọi TextBlock

@@ -151,6 +151,11 @@ public partial class ProductFormViewModel : ViewModelBase
     public IReadOnlyList<ISearchableItem> Categories       { get; private set; } = Array.Empty<ISearchableItem>();
     public IReadOnlyList<ISearchableItem> ProductUnits     { get; private set; } = Array.Empty<ISearchableItem>();
     public IReadOnlyList<ISearchableItem> Warehouses       { get; private set; } = Array.Empty<ISearchableItem>();
+    // 2026-09-11 (fix bug "Kho ngầm định bị mất khi mở lại sản phẩm", mirror SalesReturn/
+    // SalesOrderViewModel cùng ngày): `Warehouses` ở trên đã lọc IsActive — 1 sản phẩm ĐÃ LƯU trước
+    // đó có thể có `DefaultWarehouseId` trỏ tới 1 Kho vừa bị ngưng hoạt động. Danh sách KHÔNG lọc
+    // này chỉ dùng để RESOLVE giá trị đã lưu, không dùng làm ItemsSource cho combobox.
+    private IReadOnlyList<ISearchableItem> _allWarehouses  = Array.Empty<ISearchableItem>();
     public IReadOnlyList<ISearchableItem> AccountSettings  { get; private set; } = Array.Empty<ISearchableItem>();
 
     public event Action<bool>? RequestClose;
@@ -316,10 +321,16 @@ public partial class ProductFormViewModel : ViewModelBase
         try
         {
             var warehouses = await _getWarehouses.ExecuteAsync(ct);
-            Warehouses = warehouses.Cast<ISearchableItem>().ToList().AsReadOnly();
+            // 2026-09-11: chỉ hiện Kho đang hoạt động — trước đây không lọc IsActive nên "Kho
+            // chính"/"Kho chi nhánh Q.1" (đã ngưng hoạt động, xem migration
+            // DeactivateExtraWarehouses bên BE) vẫn hiện trong combobox "Kho ngầm định".
+            _allWarehouses = warehouses.Cast<ISearchableItem>().ToList().AsReadOnly();
+            Warehouses = warehouses.Where(w => w.IsActive).Cast<ISearchableItem>().ToList().AsReadOnly();
             OnPropertyChanged(nameof(Warehouses));
+            // _allWarehouses (không lọc IsActive) — sản phẩm đã lưu có thể trỏ tới 1 Kho đã ngưng
+            // hoạt động, xem ghi chú tại khai báo `_allWarehouses`.
             if (_pendingWarehouseId is > 0)
-                SelectedDefaultWarehouse = Warehouses.FirstOrDefault(w => w.Id == _pendingWarehouseId);
+                SelectedDefaultWarehouse = _allWarehouses.FirstOrDefault(w => w.Id == _pendingWarehouseId);
             else if (!_isEditMode)
                 SelectedDefaultWarehouse = Warehouses.FirstOrDefault(w => w.Code == DefaultWarehouseCode);
         }
@@ -415,7 +426,8 @@ public partial class ProductFormViewModel : ViewModelBase
         try
         {
             var warehouses = await _getWarehouses.ExecuteAsync(ct);
-            Warehouses = warehouses.Cast<ISearchableItem>().ToList().AsReadOnly();
+            _allWarehouses = warehouses.Cast<ISearchableItem>().ToList().AsReadOnly();
+            Warehouses = warehouses.Where(w => w.IsActive).Cast<ISearchableItem>().ToList().AsReadOnly();
             OnPropertyChanged(nameof(Warehouses));
             var newItem = Warehouses.FirstOrDefault(w => !before.Contains(w.Id));
             if (newItem is not null) SelectedDefaultWarehouse = newItem;

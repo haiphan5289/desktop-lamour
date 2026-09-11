@@ -1,5 +1,46 @@
 # Sales Orders — Feature Document (App)
 
+## Update — 2026-09-11: "Cất" = "Ghi sổ" ngay (ĐẢO NGƯỢC quyết định 2026-09-10)
+
+**Lần đổi ý thứ 3 cho khúc logic này** — mirror y hệt SalesReturn cùng ngày (xem
+`SalesReturn/docs/sales-return.md` mục cùng tên cho bối cảnh đầy đủ: video quay MISA, tách frame xác
+nhận hành vi trước khi sửa). Chi tiết thay đổi BE ở
+`be-window-lamour/.../Sales/docs/sales.md` mục cùng tên. Tóm tắt phía WPF (`SalesOrderViewModel.cs`):
+
+| Trước (2026-09-10) | Sau (2026-09-11, hôm nay) |
+|---|---|
+| Cờ `IsArmed` — bấm toggle lần 1 chỉ đổi nhãn + mở khóa Xóa, KHÔNG gọi BE; lần 2 mới thật sự Confirm | **Xóa hẳn `IsArmed`** — `ToggleConfirmAsync` bấm 1 lần gọi Confirm/Unconfirm thật ngay |
+| `UnpostButtonLabel => (!IsConfirmed && IsArmed) ? "Ghi sổ" : "Bỏ ghi"` | `UnpostButtonLabel => IsConfirmed ? "Bỏ ghi" : "Ghi sổ"` |
+| `CanDeleteOrder => ... && IsReadOnly && IsArmed` | `CanDeleteOrder => CurrentOrder is not null && !IsConfirmed && IsReadOnly` (bỏ `IsArmed`, giữ `IsReadOnly`) |
+| `AddNewAsync`/`InitializeAsync`/`SaveAsync` set/reset `IsArmed` | Bỏ hẳn các dòng liên quan `IsArmed` |
+
+Vì BE (`Create/UpdateSalesOrderUseCase`) giờ luôn trả về `Normal` ngay sau khi Cất (đã trừ tồn kho),
+form khóa lại và nút toggle hiện sẵn "Bỏ ghi" dùng được ngay.
+
+Không đổi XAML. Verify: `dotnet build -p:EnableWindowsTargeting=true` 0 lỗi. **Chưa test thật trên
+UTM.**
+
+## Update — 2026-09-11: mở rộng context menu chuột phải + thêm phím tắt thật trên danh sách
+
+Theo yêu cầu (cùng screenshot menu chuột phải MISA đã dùng khi tạo menu này lần đầu — xem mirror ở
+`SalesReturn/docs/sales-return.md` mục cùng ngày): mở rộng context menu sẵn có trên `OrdersGrid`,
+thêm icon emoji, thêm mục "Bỏ ghi" (command đã có sẵn từ trước nhưng chưa lên menu), và lần đầu tiên
+wiring **KeyBinding thật** cho các phím tắt (trước đây `InputGestureText` chỉ là chữ trang trí).
+
+| File | Thay đổi |
+|---|---|
+| `Views/SalesOrderListView.xaml` (`DataGrid.ContextMenu`) | Thêm icon (➕📋👁🗑️↩️📨✉️💬) cho tất cả mục có sẵn; thêm mục mới ↩️ "Bỏ ghi" (Ctrl+B) → `UnconfirmSalesOrderCommand` |
+| `Views/SalesOrderListView.xaml` (`UserControl.InputBindings`, mới) | `KeyBinding` thật cho Ctrl+N (Thêm) / Ctrl+E (Xem→`EditSalesOrderCommand`) / Ctrl+D (Xóa) / Ctrl+B (Bỏ ghi) |
+
+**Quyết định quan trọng — Ctrl+C ("Nhân bản") KHÔNG được wiring KeyBinding thật**, dù các phím khác
+đều có: WPF `DataGrid` mặc định dùng Ctrl+C để copy giá trị ô/dòng đang chọn vào clipboard (dán qua
+Excel) — đây là hành vi kế toán chắc chắn đang dùng thường xuyên. Nếu gán Ctrl+C cho lệnh "Nhân bản"
+sẽ đè mất tính năng copy-ô mặc định. Đã hỏi và xác nhận: **giữ Ctrl+C = copy ô** (menu vẫn hiển thị
+chữ "Ctrl+C" cho giống ảnh mẫu, nhưng không có `KeyBinding` thật đứng sau nó).
+
+Không đổi BE, không đổi ViewModel. Verify: `dotnet build -p:EnableWindowsTargeting=true` 0 lỗi
+(cross-compile trên Mac). **Chưa test thật trên UTM.**
+
 ## Update — 2026-09-11: bỏ dialog xác nhận khi bấm "Bỏ ghi" trên danh sách
 
 Theo yêu cầu — clone cùng thay đổi vừa làm cho SalesReturn sang SalesOrder (xem

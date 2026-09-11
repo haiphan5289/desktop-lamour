@@ -58,24 +58,11 @@ public partial class SalesOrderViewModel : ViewModelBase
         ToggleConfirmCommand.NotifyCanExecuteChanged();
     }
 
-    // 2026-09-10 (chốt qua mô phỏng tương tác cho SalesReturn, mirror sang đây — xem
-    // sales-return.md mục "State machine đã chốt"): "Ghi sổ" cần đúng 2 lần bấm liên tiếp trên nút
-    // toggle (lần 1 chỉ "tự tin hoá" — đổi nhãn + mở khóa Xóa, KHÔNG gọi BE/đụng tồn kho; lần 2 mới
-    // thật sự gọi Confirm). Cờ này WPF-ONLY, KHÔNG map từ CurrentOrder.Status — reset về false mỗi
-    // khi Cất (Held mới toanh, "chưa đụng"), set thẳng true khi vừa Bỏ ghi xong (hạ cánh ở "Treo đã
-    // đụng" luôn, không bắt bấm "Bỏ ghi" lại từ đầu).
-    [ObservableProperty] private bool _isArmed;
-
-    partial void OnIsArmedChanged(bool value)
-    {
-        OnPropertyChanged(nameof(CanDeleteOrder));
-        OnPropertyChanged(nameof(UnpostButtonLabel));
-        DeleteCommand.NotifyCanExecuteChanged();
-    }
-
-    // 2026-09-10: Xóa chỉ bật khi đang ở "Treo đã đụng toggle" (IsArmed) VÀ form còn khóa — khác
-    // Cất/Sửa/Hủy (dùng IsEditable chung) — khớp bảng đã chốt qua mô phỏng cho SalesReturn.
-    public bool CanDeleteOrder => CurrentOrder is not null && !IsConfirmed && IsReadOnly && IsArmed;
+    // 2026-09-11: đảo ngược quyết định 2026-09-10 ("Ghi sổ" cần 2 lần bấm qua cờ IsArmed) — "Cất"
+    // giờ = "Ghi sổ" ngay (khớp hành vi MISA, mirror SalesReturnViewModel cùng ngày), nên khái niệm
+    // "Treo đã đụng toggle" không còn ý nghĩa. Xóa đơn giản chỉ bật khi đơn đã tồn tại và CHƯA
+    // Confirmed (Normal) — tức đang Draft, sau khi Bỏ ghi.
+    public bool CanDeleteOrder => CurrentOrder is not null && !IsConfirmed && IsReadOnly;
 
     // 2026-09-09 (đảo ngược 1 phần quyết định 2026-09-07 — mirror SalesReturn cùng ngày, theo yêu
     // cầu): đơn đang Normal (đã Ghi sổ) giờ LẠI bị khóa, phải bấm "↩️ Bỏ ghi" trước rồi "Sửa" mới
@@ -148,7 +135,6 @@ public partial class SalesOrderViewModel : ViewModelBase
         // khi chứng từ này được Ghi sổ và mở lại từ danh sách.
         _siblingIndex = -1;
         IsReadOnly    = false;
-        IsArmed       = false;
         await InitializeAsync(null, ct);
         NotifyNavigationChanged();
     }
@@ -284,6 +270,11 @@ public partial class SalesOrderViewModel : ViewModelBase
     public IReadOnlyList<ISearchableItem> Employees { get; private set; } = Array.Empty<ISearchableItem>();
     public ObservableCollection<ISearchableItem> Products { get; } = new();
     public IReadOnlyList<ISearchableItem> Warehouses { get; private set; } = Array.Empty<ISearchableItem>();
+    // 2026-09-11 (fix bug "Kho bị mất khi mở lại chứng từ", mirror SalesReturnViewModel cùng ngày):
+    // `Warehouses` ở trên đã lọc IsActive (chỉ hiện Kho active cho combobox chọn MỚI) — nhưng 1
+    // dòng ĐÃ LƯU trước đó có thể tham chiếu 1 Kho vừa bị ngưng hoạt động. Danh sách KHÔNG lọc này
+    // chỉ dùng để RESOLVE giá trị đã lưu, không dùng làm ItemsSource cho combobox.
+    private IReadOnlyList<ISearchableItem> _allWarehouses = Array.Empty<ISearchableItem>();
     private readonly List<ISearchableItem> _allProducts = new();
 
     private string _nextDocumentNumber = "XK00001";
@@ -361,21 +352,16 @@ public partial class SalesOrderViewModel : ViewModelBase
             {
                 _nextDocumentNumber = await _getNextCode.ExecuteAsync(IsFromWarehouseExport, ct);
                 CurrentOrder        = null;
-                IsArmed             = false;
                 ClearForm();
             }
             else
             {
                 CurrentOrder = order;
-                // 2026-09-10 (mirror SalesReturn cùng ngày, chốt qua mô phỏng tương tác): mở lại BẤT
-                // KỲ đơn đã tồn tại nào (Held/Draft/Normal) từ danh sách đều khóa form ngay — phải
-                // bấm "Sửa" mới sửa được. NGOẠI LỆ: IsViewOnlyMode (Sổ chi tiết bán hàng) đã tự set
-                // IsReadOnly=true từ code-behind trước khi InitializeAsync chạy — set lại true ở đây
-                // không đổi gì, không xung đột.
+                // 2026-09-10 (mirror SalesReturn cùng ngày): mở lại BẤT KỲ đơn đã tồn tại nào từ
+                // danh sách đều khóa form ngay — phải bấm "Sửa" mới sửa được. NGOẠI LỆ:
+                // IsViewOnlyMode (Sổ chi tiết bán hàng) đã tự set IsReadOnly=true từ code-behind
+                // trước khi InitializeAsync chạy — set lại true ở đây không đổi gì, không xung đột.
                 IsReadOnly = true;
-                // Draft (đã từng qua 1 lần Bỏ ghi trước đó) coi như "đã đụng toggle" — mở luôn Xóa +
-                // hiện sẵn "Ghi sổ" thay vì bắt bấm "Bỏ ghi" lại từ đầu. Held mới/Normal thì chưa.
-                IsArmed = order.Status == 2; // 2 = Draft
                 await PopulateFormFromCurrentAsync(ct);
             }
         }
@@ -401,7 +387,11 @@ public partial class SalesOrderViewModel : ViewModelBase
 
         if (warehouseTask.IsCompletedSuccessfully)
         {
-            Warehouses = warehouseTask.Result.Cast<ISearchableItem>().ToList().AsReadOnly();
+            // 2026-09-11: chỉ hiện Kho đang hoạt động — trước đây không lọc IsActive nên "Kho
+            // chính"/"Kho chi nhánh Q.1" (đã ngưng hoạt động, xem migration
+            // DeactivateExtraWarehouses) vẫn hiện trong combobox chọn Kho ở dòng sản phẩm.
+            _allWarehouses = warehouseTask.Result.Cast<ISearchableItem>().ToList().AsReadOnly();
+            Warehouses = warehouseTask.Result.Where(w => w.IsActive).Cast<ISearchableItem>().ToList().AsReadOnly();
             OnPropertyChanged(nameof(Warehouses));
         }
         else
@@ -512,16 +502,13 @@ public partial class SalesOrderViewModel : ViewModelBase
             StopDirtyTracking();
             OrderSaved?.Invoke();
             CurrentOrder = result;
-            // 2026-09-10 (chốt qua mô phỏng tương tác, đảo ngược quyết định trước đó): MỌI lần Cất
-            // đều khóa form lại ngay + reset về "Treo chưa đụng toggle" — phải bấm "Sửa" mới sửa
-            // tiếp được, và phải bấm toggle từ đầu (2 lần) mới Ghi sổ được, kể cả vừa Sửa từ Draft.
+            // Cất xong luôn khóa form lại — phải bấm "Sửa" mới sửa tiếp được.
             IsReadOnly = true;
-            IsArmed    = false;
             IsBusy = false;
 
-            // "Cất" = CHỈ lưu đơn (+ trừ cọc nếu có) ở Held, KHÔNG tự Ghi sổ. KHÔNG tự mở cửa sổ in
-            // — muốn in thì bấm nút "In" trên toolbar (workflow "từng bước" giống MISA). Giữ popup
-            // MỞ sau khi Cất (không RequestClose nữa) để bấm "In" ngay.
+            // 2026-09-11: "Cất" = "Ghi sổ" ngay (BE Create/UpdateSalesOrderUseCase giờ luôn kết thúc
+            // ở Normal + trừ tồn kho ngay, đảo ngược quyết định 2026-09-10). KHÔNG tự mở cửa sổ in —
+            // muốn in thì bấm nút "In" trên toolbar. Giữ popup MỞ sau khi Cất để bấm "In" ngay.
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -834,7 +821,9 @@ public partial class SalesOrderViewModel : ViewModelBase
             // ở trên tự tính lại đè mất giá trị đã lưu từ BE.
             item.LoadAmount(l.Amount, l.IsAmountManual);
             item.SetSelectedProductSilent(_allProducts.FirstOrDefault(p => p.Id == l.ProductId));
-            item.SetSelectedWarehouseSilent(Warehouses.FirstOrDefault(w => w.Id == l.WarehouseId));
+            // _allWarehouses (không lọc IsActive) — dòng đã lưu có thể trỏ tới 1 Kho đã ngưng hoạt
+            // động, xem ghi chú tại khai báo `_allWarehouses`.
+            item.SetSelectedWarehouseSilent(_allWarehouses.FirstOrDefault(w => w.Id == l.WarehouseId));
             AttachLineHandlers(item);
             Lines.Add(item);
         }
@@ -991,29 +980,16 @@ public partial class SalesOrderViewModel : ViewModelBase
     public bool HasExistingOrder => CurrentOrder is not null;
 
     // ── Ghi sổ / Bỏ ghi (nút toggle) ─────────────────────────────────────────
-    // 2026-09-10 (v2 — mirror SalesReturnViewModel cùng ngày, chốt qua mô phỏng tương tác): "Cất"
-    // không còn tự Ghi sổ (luôn ra Held) — nút "Treo" độc lập cũ (HoldAsync/CreateThenHoldAsync) bị
-    // bỏ vì dư thừa. "Ghi sổ" và "Bỏ ghi" dùng CHUNG 1 nút (UnpostCommand), nhưng đi lên (chưa
-    // Normal → Normal) và đi xuống (Normal → chưa Normal) KHÔNG đối xứng:
-    //   - Đi LÊN cần đúng 2 lần bấm liên tiếp: lần 1 (nhãn đang "Bỏ ghi", IsArmed=false) chỉ
-    //     "tự tin hoá" — set IsArmed=true, đổi nhãn thành "Ghi sổ", mở khóa Xóa — KHÔNG gọi BE,
-    //     không đụng tồn kho. Lần 2 (nhãn đang "Ghi sổ", IsArmed=true) mới thật sự gọi Confirm.
-    //   - Đi XUỐNG chỉ 1 lần bấm ("Bỏ ghi" lúc Normal) → gọi Unconfirm ngay, và hạ cánh THẲNG ở
-    //     "chưa Normal, IsArmed=true" (nhãn sẵn "Ghi sổ") — không bắt bấm "Bỏ ghi" lại từ đầu.
+    // 2026-09-11 (đảo ngược quyết định 2026-09-10 "cần 2 lần bấm" — khớp hành vi MISA đối chiếu qua
+    // video, mirror SalesReturnViewModel cùng ngày): "Ghi sổ" và "Bỏ ghi" dùng CHUNG 1 nút
+    // (UnpostCommand), MỖI CHIỀU chỉ cần đúng 1 lần bấm — không còn khái niệm "tự tin hoá"/IsArmed.
     private bool CanToggleConfirm => CurrentOrder is not null && IsReadOnly;
-    public string UnpostButtonLabel => (!IsConfirmed && IsArmed) ? "Ghi sổ" : "Bỏ ghi";
+    public string UnpostButtonLabel => IsConfirmed ? "Bỏ ghi" : "Ghi sổ";
 
     [RelayCommand(CanExecute = nameof(CanToggleConfirm))]
     private async Task ToggleConfirmAsync(CancellationToken ct = default)
     {
         if (CurrentOrder is null) return;
-
-        // Lần bấm đầu tiên khi chưa Normal (Held/Draft) — chỉ "tự tin hoá", không gọi BE.
-        if (!IsConfirmed && !IsArmed)
-        {
-            IsArmed = true;
-            return;
-        }
 
         if (IsConfirmed)
         {
@@ -1036,9 +1012,6 @@ public partial class SalesOrderViewModel : ViewModelBase
             OrderSaved?.Invoke();
             CurrentOrder = result;
             IsReadOnly   = true; // form vẫn khóa tới khi bấm "Sửa"
-            // Bỏ ghi (wasConfirmed) → hạ cánh ở "đã đụng toggle" (Ghi sổ sẵn, Xóa mở) theo bảng đã
-            // chốt. Ghi sổ xong (Normal) → IsArmed hết ý nghĩa, reset cho sạch.
-            IsArmed = wasConfirmed;
             _logger.LogInformation("SalesOrder {Id} toggled confirm — new status {Status}", result.Id, result.Status);
         }
         catch (OperationCanceledException) { }
