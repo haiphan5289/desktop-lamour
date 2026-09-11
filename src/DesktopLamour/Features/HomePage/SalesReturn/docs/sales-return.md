@@ -3,9 +3,14 @@
 > Module: `Features/HomePage/SalesReturn`
 > BE counterpart: `be-window-lamour/src/Lamour.Application/Features/SalesReturn/docs/sales-return.md`
 > First documented: 2026-08-28 (doc mới — module trước đó chưa có `docs/` riêng phía WPF dù BE đã có)
-> **Last updated: 2026-09-11 — ĐẢO NGƯỢC quyết định 2026-09-10**: "Cất" = "Ghi sổ" ngay (1 lần bấm,
-> không còn qua Treo trung gian/`IsArmed`) — xem "Update — 2026-09-11: Cất = Ghi sổ ngay" ngay dưới,
-> đè lên mô tả "2 lần bấm" ở các mục cũ hơn. Trước đó cùng ngày (thứ tự xảy ra, mới nhất trước): thêm
+> **Last updated: 2026-09-11 (cùng ngày, mục mới nhất) — thêm nút "Ghi sổ" trực tiếp trên danh sách**
+> (toolbar + context menu + Ctrl+G), mirror nút "Bỏ ghi" đã có — xem "Update — 2026-09-11: thêm nút
+> Ghi sổ trên danh sách" ngay dưới. Trước đó cùng ngày — gộp "Nháp" và "Treo" thành 1 trạng thái duy
+> nhất "Treo"** — bỏ `IsDraft`, `StatusOptions` chỉ còn 3 lựa chọn (Tất cả/Đã ghi sổ/Treo), RowStyle
+> gộp còn 1 trigger — xem "Update — 2026-09-11: gộp Nháp + Treo thành 1". Trước đó cùng
+> ngày — **ĐẢO NGƯỢC quyết định 2026-09-10**: "Cất" = "Ghi sổ" ngay (1 lần bấm, không còn qua Treo
+> trung gian/`IsArmed`) — xem "Update — 2026-09-11: Cất = Ghi sổ ngay", đè lên mô tả "2 lần bấm" ở
+> các mục cũ hơn. Trước đó cùng ngày (thứ tự xảy ra, mới nhất trước): thêm
 > context menu chuột phải + phím tắt trên danh sách; bỏ dialog xác nhận khi bấm "Bỏ ghi" trên danh
 > sách; danh sách tô màu (TextBrand/SemiBold) cả dòng "Treo" (`IsHeld`), trước đây chỉ "Nháp"
 > (`IsDraft`) được tô; bộ lọc "Trạng thái" thêm lựa chọn "Treo" — xem các mục "Update — 2026-09-11..."
@@ -21,6 +26,45 @@
 > Vietkey fix, gộp thật "Ghi sổ"→"Lập PN" (in Phiếu Nhập Kho), bỏ auto-fill Diễn giải, workflow Ghi
 > sổ/Bỏ ghi thật (BE thêm Draft/Confirmed), redesign màn danh sách theo MISA, đổi mặc định bộ lọc
 > ngày sang "Đầu tháng đến hiện tại".
+
+## Update — 2026-09-11: thêm nút "Ghi sổ" trên danh sách
+
+Theo yêu cầu (screenshot toolbar danh sách thật, khoanh đỏ các nút — báo thiếu "Ghi sổ" dù "Bỏ ghi"
+đã có), xác nhận phạm vi qua `AskUserQuestion`: thêm action "Ghi sổ" trực tiếp từ danh sách, mirror
+y hệt "Bỏ ghi" đã có (bấm thẳng, không hỏi xác nhận, dùng chung `IConfirmSalesReturnUseCase` với
+popup). Áp dụng đồng bộ cho cả SalesOrder cùng lúc.
+
+| File | Thay đổi |
+|---|---|
+| `ViewModels/SalesReturnListViewModel.cs` | Inject `IConfirmSalesReturnUseCase`; thêm `CanConfirmSelected => SelectedReturn is { IsHeld: true }`; thêm `ConfirmSalesReturnAsync` command (mirror `UnconfirmSalesReturnAsync`) |
+| `Views/SalesReturnListView.xaml` | Nút toolbar "📗 Ghi sổ" (trước "↩️ Bỏ ghi"); thêm vào context menu + `KeyBinding Ctrl+G` |
+
+Verify: `dotnet build -p:EnableWindowsTargeting=true` 0 lỗi. **Chưa test thật trên UTM.**
+
+**Xác nhận sau khi hỏi lại (cùng ngày)**: user hỏi "có check hợp lệ trước khi enable Ghi sổ không" —
+ban đầu hiểu nhầm thành "kiểm tra đủ tồn kho thật trước khi bật nút" (sẽ cần thêm 1 API mới + refactor
+`ConfirmSalesOrderUseCase` để tách logic check ra dùng chung — xem investigation đã làm), nhưng sau
+khi hỏi lại thì ý user chỉ là **enable/disable theo đúng trạng thái vòng đời** (Treo → bật, Đã ghi sổ
+→ tắt) — đúng như `CanConfirmSelected` đang làm sẵn, **không cần sửa gì thêm**. Ghi lại rõ ở đây để
+không đề xuất lại tính năng "pre-check tồn kho" này lần nữa trừ khi user chủ động yêu cầu lại.
+
+## Update — 2026-09-11: gộp "Nháp" và "Treo" thành 1 trạng thái duy nhất "Treo"
+
+Theo yêu cầu ("gộp status nháp & treo thành 1"). Bối cảnh đầy đủ + quyết định (tên gọi "Treo", migrate
+DB, áp dụng đồng bộ SalesOrder) ở `be-window-lamour/.../SalesReturn/docs/sales-return.md` mục cùng
+tên. Tóm tắt phía WPF (`SalesReturnListItem.cs`, `SalesReturnListViewModel.cs`,
+`SalesReturnListView.xaml`, `SalesReturnViewModel.cs`):
+
+| Trước | Sau (2026-09-11, hôm nay) |
+|---|---|
+| `IsDraft`/`IsHeld` 2 property riêng biệt | **Bỏ hẳn `IsDraft`** — chỉ còn `IsHeld => Status == "Held" \|\| Status == "Draft"` (bao trọn cả 2 raw status, phòng dữ liệu cũ chưa migrate) |
+| `StatusLabel`: `"Held" → "⏸ Treo"`, `"Confirmed" → "📄 Đã ghi sổ"`, `_ → "↩️ Nháp"` | `StatusLabel`: `"Confirmed" → "📄 Đã ghi sổ"`, `_ → "⏸ Treo"` — không còn nhánh "Nháp" |
+| `StatusOptions = {"Tất cả", "Đã ghi sổ", "Treo", "Nháp"}` | `StatusOptions = {"Tất cả", "Đã ghi sổ", "Treo"}` |
+| `FilterItem` có 2 dòng check riêng cho "Treo"/"Nháp" | Chỉ còn 1 dòng: `FilterStatus == "Treo" && !item.IsHeld` |
+| `SalesReturnListView.xaml` RowStyle có 2 `DataTrigger` (IsDraft, IsHeld) cùng 1 màu | Gộp còn **1 `DataTrigger`** duy nhất trên `IsHeld` |
+| `SalesReturnViewModel.IsHeld => Status == "Held"` (popup) | `IsHeld => Status is "Held" or "Draft"` |
+
+Verify: `dotnet build -p:EnableWindowsTargeting=true` 0 lỗi. **Chưa test thật trên UTM.**
 
 ## Update — 2026-09-11: "Cất" = "Ghi sổ" ngay (ĐẢO NGƯỢC quyết định 2026-09-10)
 
@@ -445,6 +489,14 @@ So ảnh mẫu MISA, màn danh sách thiếu toolbar đầy đủ, bộ lọc th
 ### 6. Mặc định bộ lọc ngày đổi thành "Đầu tháng đến hiện tại" (áp dụng đồng bộ toàn app)
 
 `FilterFromDate`/`FilterToDate` + `SelectedPeriod` đổi mặc định từ "Tùy chọn" (không lọc, hiện toàn bộ lịch sử) sang "Đầu tháng đến hiện tại" — cùng đợt đổi áp dụng cho `SalesOrderListViewModel`, `AccountingViewModel`, `BulkCustomerReceiptSearchViewModel`, `DepositDeductionReportViewModel`, `WarehouseTransactionListViewModel` (xem doc từng module để biết default cũ của từng cái). Lưu ý kỹ thuật: field initializer của `[ObservableProperty]` chạy TRƯỚC constructor nên không tự kích hoạt `OnSelectedPeriodChanged` — phải tự set `FilterFromDate`/`FilterToDate` khớp tay với `SelectedPeriod` ngay tại field initializer, không thể chỉ đổi 1 trong 2.
+
+## Update — 2026-09-11: Bug fix "In Phiếu Nhập Kho ra sản phẩm cũ sau khi sửa chứng từ"
+
+Sửa chứng từ trả hàng (thêm/đổi dòng) SAU khi đã bấm "In" (tức đã tự lập PN) → bấm "In" lại vẫn ra PN cũ, không khớp dòng hàng hiện tại. Root cause + fix đầy đủ nằm ở phía BE — xem "Update — 2026-09-11" trong `be-window-lamour/.../SalesReturn/docs/sales-return.md`. Tóm tắt phần đổi ở WPF:
+
+- `PrintAsync` bỏ hẳn bước tự `FindExistingWarehouseReceiptAsync` trước khi gọi Create — giờ gọi thẳng `_createWarehouseReceipt.ExecuteAsync(CurrentReturn.Id, ct)`, để BE tự so khớp dòng hàng và quyết định tái dùng PN cũ hay supersede + lập PN mới.
+- `WarehouseReceiptResponseDto` thêm field `is_superseded` (khớp BE).
+- `FindExistingWarehouseReceiptAsync` (chỉ còn dùng bởi lệnh "Lập PN" cũ — đã gỡ khỏi UI nhưng code còn tồn tại) lọc thêm `!IsSuperseded`.
 
 ## Known Gaps / Follow-ups
 

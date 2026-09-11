@@ -70,10 +70,10 @@ public partial class SalesOrderViewModel : ViewModelBase
     // chỉnh) và Draft ("đã Bỏ ghi") không bị khóa bởi vế `!IsConfirmed` (chỉ Normal mới bị) — vẫn
     // sửa được ngay, chỉ khác ở việc Draft cần đã đi qua bước Bỏ ghi trước đó.
     public bool IsConfirmed => CurrentOrder is not null && CurrentOrder.Status == 0; // 0 = Normal = "Ghi sổ"
-    // 2026-09-10: "Cất" không còn tự Ghi sổ — đơn mới/vừa sửa luôn ở Held ("Treo"). Nút "Ghi sổ"/
-    // "Bỏ ghi" giờ dùng chung 1 nút toggle (xem ToggleConfirmCommand/UnpostButtonLabel bên dưới),
-    // thay cho nút "Treo" độc lập đã bỏ (CanUnlock/HoldCommand — dư thừa với luồng mới).
-    public bool IsHeld => CurrentOrder is not null && CurrentOrder.Status == 1; // 1 = Held = "Treo"
+    // 2026-09-11: gộp "Nháp" (2) và "Treo" (1) thành 1 — coi cả 2 raw status là "Treo" (mirror
+    // SalesOrderListItem.StatusLabel cùng ngày). Nút "Ghi sổ"/"Bỏ ghi" dùng chung 1 nút toggle (xem
+    // ToggleConfirmCommand/UnpostButtonLabel bên dưới).
+    public bool IsHeld => CurrentOrder is not null && CurrentOrder.Status is 1 or 2; // 1=Held, 2=Draft, cả 2 = "Treo"
     // IsViewOnlyMode ở đây là NGOẠI LỆ bắt buộc, không phải tùy chọn: nếu chỉ viết
     // `!IsConfirmed && !IsReadOnly`, form sẽ KHÔNG BAO GIỜ mở khóa được cho 1 đơn Normal xem từ Sổ
     // chi tiết bán hàng dù đã bấm "Sửa" (CanEdit đã cho phép bấm — xem CanEdit — nhưng IsEditable

@@ -12,6 +12,7 @@
         <KeyBinding Gesture="Ctrl+N" Command="{Binding AddSalesOrderCommand}"/>
         <KeyBinding Gesture="Ctrl+E" Command="{Binding EditSalesOrderCommand}"/>
         <KeyBinding Gesture="Ctrl+D" Command="{Binding DeleteSalesOrderCommand}"/>
+        <KeyBinding Gesture="Ctrl+G" Command="{Binding ConfirmSalesOrderCommand}"/>
         <KeyBinding Gesture="Ctrl+B" Command="{Binding UnconfirmSalesOrderCommand}"/>
     </UserControl.InputBindings>
 
@@ -57,6 +58,12 @@
                 <controls:AppButton Content="✏️ Sửa"
                                     Style="{StaticResource AppButton.Secondary.Medium}"
                                     Command="{Binding EditSalesOrderCommand}"
+                                    Margin="0,0,8,0"/>
+                <!-- 2026-09-11: thêm "Ghi sổ" thẳng từ danh sách — mirror SalesReturnListView cùng
+                     ngày, trước đó chỉ có "Bỏ ghi", không có action đối xứng. -->
+                <controls:AppButton Content="📗 Ghi sổ"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding ConfirmSalesOrderCommand}"
                                     Margin="0,0,8,0"/>
                 <controls:AppButton Content="↩️ Bỏ ghi"
                                     Style="{StaticResource AppButton.Secondary.Medium}"
@@ -167,14 +174,13 @@
                       Visibility="{Binding HasSalesOrders, Converter={StaticResource BoolToVisibilityConverter}}">
 
                 <!-- Chuột phải trên lưới — chỉ mục thao tác thật có nghiệp vụ tương ứng (Thêm/
-                     Nhân bản/Xem/Xóa/Bỏ ghi/Gửi email,Zalo), không rập khuôn toàn bộ menu tham
-                     chiếu (các mục như "Ghi sổ"/"Lập phiếu xuất..."/"Sửa mẫu..." thuộc phần mềm
-                     khác, app này chưa có nghiệp vụ đó — "Ghi sổ" cũng chưa có action riêng ở mức
-                     danh sách, chỉ có trong popup). 2026-09-11: thêm icon + "Bỏ ghi" (command đã có
-                     sẵn từ trước, trước đó chỉ chưa lên menu) + wiring KeyBinding thật cho Ctrl+N/
-                     Ctrl+E/Ctrl+D/Ctrl+B (xem UserControl.InputBindings phía trên) — RIÊNG Ctrl+C
-                     (Nhân bản) vẫn chỉ hiển thị chữ, không gán thật, để không đè lên copy-ô mặc
-                     định của DataGrid. -->
+                     Nhân bản/Xem/Xóa/Ghi sổ/Bỏ ghi/Gửi email,Zalo), không rập khuôn toàn bộ menu
+                     tham chiếu (các mục như "Lập phiếu xuất..."/"Sửa mẫu..." thuộc phần mềm khác,
+                     app này chưa có nghiệp vụ đó). 2026-09-11: thêm icon + "Bỏ ghi" + "Ghi sổ"
+                     (command đã có sẵn từ trước, trước đó chỉ chưa lên menu) + wiring KeyBinding
+                     thật cho Ctrl+N/Ctrl+E/Ctrl+D/Ctrl+G/Ctrl+B (xem UserControl.InputBindings phía
+                     trên) — RIÊNG Ctrl+C (Nhân bản) vẫn chỉ hiển thị chữ, không gán thật, để không
+                     đè lên copy-ô mặc định của DataGrid. -->
                 <DataGrid.ContextMenu>
                     <ContextMenu>
                         <MenuItem Header="➕ Thêm" InputGestureText="Ctrl+N" Command="{Binding AddSalesOrderCommand}"/>
@@ -183,6 +189,7 @@
                         <MenuItem Header="👁 Xem" InputGestureText="Ctrl+E" Command="{Binding EditSalesOrderCommand}"/>
                         <MenuItem Header="🗑️ Xóa" InputGestureText="Ctrl+D" Command="{Binding DeleteSalesOrderCommand}"/>
                         <Separator/>
+                        <MenuItem Header="📗 Ghi sổ" InputGestureText="Ctrl+G" Command="{Binding ConfirmSalesOrderCommand}"/>
                         <MenuItem Header="↩️ Bỏ ghi" InputGestureText="Ctrl+B" Command="{Binding UnconfirmSalesOrderCommand}"/>
                         <Separator/>
                         <MenuItem Header="📨 Gửi email, Zalo" InputGestureText="Ctrl+Shift+G">
@@ -203,15 +210,13 @@
                      kế thừa nên mọi TextBlock con (trừ cột đã tự set Foreground riêng như "Tổng
                      thanh toán") tự động đổi màu theo, không đụng tới nền nên không còn xung đột với
                      màu nền/chữ lúc Selected nữa. -->
+                <!-- 2026-09-11: gộp "Nháp" và "Treo" thành 1 label duy nhất "⏸ Treo" (xem
+                     SalesOrderListItem.StatusLabel) — trigger "↩️ Bỏ ghi" cũ đã bỏ vì StatusLabel
+                     không còn bao giờ trả về giá trị đó nữa. -->
                 <DataGrid.RowStyle>
                     <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding StatusLabel}" Value="⏸ Treo">
-                                <Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/>
-                                <Setter Property="FontWeight" Value="SemiBold"/>
-                            </DataTrigger>
-                            <!-- "↩️ Bỏ ghi" (Draft, mới 2026-09-09) — cùng kiểu tô với "⏸ Treo". -->
-                            <DataTrigger Binding="{Binding StatusLabel}" Value="↩️ Bỏ ghi">
                                 <Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/>
                                 <Setter Property="FontWeight" Value="SemiBold"/>
                             </DataTrigger>

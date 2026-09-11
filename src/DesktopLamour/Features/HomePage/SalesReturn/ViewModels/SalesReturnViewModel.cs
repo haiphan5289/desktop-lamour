@@ -169,9 +169,10 @@ public partial class SalesReturnViewModel : ViewModelBase
     // (Phiếu Nhập Kho liên kết vẫn in được dù chứng từ gốc đang bị bỏ ghi).
     public bool IsEditable  => CurrentReturn is null || (!IsConfirmed && !IsReadOnly);
     public bool IsConfirmed => CurrentReturn?.Status == "Confirmed";
-    // 2026-09-10: "Cất" không còn tự Ghi sổ — chứng từ mới/vừa sửa luôn ở Held ("Treo"). "Ghi sổ"/
-    // "Bỏ ghi" giờ dùng chung 1 nút toggle (xem ToggleConfirmCommand/UnpostButtonLabel bên dưới).
-    public bool IsHeld => CurrentReturn?.Status == "Held";
+    // 2026-09-11: gộp "Nháp" và "Treo" thành 1 — coi cả 2 raw status là "Treo" (mirror
+    // SalesReturnListItem.IsHeld cùng ngày). "Ghi sổ"/"Bỏ ghi" dùng chung 1 nút toggle (xem
+    // ToggleConfirmCommand/UnpostButtonLabel bên dưới).
+    public bool IsHeld => CurrentReturn?.Status is "Held" or "Draft";
 
     // "Sửa" — chỉ hiện/bật khi chứng từ đang Held/Draft (chưa Confirmed) VÀ còn bị khóa (_isReadOnly);
     // Confirmed thì phải Bỏ ghi trước, không có đường tắt. Bấm vào mới thật sự mở khóa form + bắt
@@ -531,9 +532,14 @@ public partial class SalesReturnViewModel : ViewModelBase
     // "In" ở toolbar — in "PHIẾU NHẬP KHO" (mẫu 01-VT) của Phiếu Nhập Kho LIÊN KẾT với chứng từ này,
     // tái dùng nguyên Warehouse/Views/WarehouseReceiptPrintWindow thay vì layout "Phiếu trả lại hàng
     // bán" riêng cũ (SalesReturnPrintWindow — đã xóa hẳn, xem sales-return.md) — khớp đúng phiếu vật
-    // lý doanh nghiệp dùng khi nhận lại hàng vào kho (ảnh mẫu user cung cấp). Tự động Lập PN nếu
-    // chứng từ chưa có (findOrCreate, dùng chung logic dedup với "Lập PN" — xem
-    // FindExistingWarehouseReceiptAsync) — user không cần biết/bấm bước "Lập PN" trước.
+    // lý doanh nghiệp dùng khi nhận lại hàng vào kho (ảnh mẫu user cung cấp).
+    //
+    // 2026-09-11 (bug fix "In ra sản phẩm cũ sau khi sửa chứng từ"): trước đây tự tìm PN qua
+    // FindExistingWarehouseReceiptAsync rồi CHỈ gọi Create khi chưa có — nếu chứng từ bị sửa (thêm/
+    // đổi dòng) SAU khi đã lập PN, bước tìm này vẫn thấy PN cũ và tái dùng luôn, in ra dữ liệu cũ.
+    // Giờ luôn gọi thẳng _createWarehouseReceipt.ExecuteAsync — BE tự so khớp dòng hàng mỗi lần gọi
+    // (tái dùng PN nếu khớp, tự supersede PN cũ + lập PN mới nếu lệch), nên WPF không cần tự
+    // tiền-kiểm tra nữa.
     [RelayCommand(CanExecute = nameof(HasExistingReturn))]
     private async Task PrintAsync(CancellationToken ct = default)
     {
@@ -542,8 +548,7 @@ public partial class SalesReturnViewModel : ViewModelBase
         IsBusy = true;
         try
         {
-            var existing  = await FindExistingWarehouseReceiptAsync(CurrentReturn.DocumentNumber, ct);
-            var receiptId = existing?.Id ?? (await _createWarehouseReceipt.ExecuteAsync(CurrentReturn.Id, ct)).Id;
+            var receiptId = (await _createWarehouseReceipt.ExecuteAsync(CurrentReturn.Id, ct)).Id;
 
             var receipt = await _getWarehouseReceiptById.ExecuteAsync(receiptId, ct);
             if (receipt is null)
@@ -605,13 +610,15 @@ public partial class SalesReturnViewModel : ViewModelBase
     // trùng. Giá trị này khớp đúng logic đó ở phía WPF để tự KIỂM TRA TRƯỚC khi gọi Create.
     private const int ReturnedGoodsReceiptType = 2;
 
-    // Dùng chung bởi "Lập PN" (CreateWarehouseReceiptAsync) và "In" (PrintAsync) — cả 2 đều cần biết
-    // chứng từ này đã có Phiếu Nhập Kho liên kết hay chưa trước khi quyết định tạo mới hay tái dùng.
+    // Dùng bởi "Lập PN" (CreateWarehouseReceiptAsync) — kiểm tra chứng từ này đã có Phiếu Nhập Kho
+    // liên kết còn hiệu lực hay chưa. PrintAsync không dùng hàm này nữa (xem PrintAsync ở trên) —
+    // luôn gọi thẳng BE, tự so khớp/supersede. Lọc !IsSuperseded vì PN đã bị thay thế (do chứng từ
+    // sửa sau khi lập PN) không còn là bản ghi hiện hành của chứng từ này nữa.
     private async Task<WarehouseReceiptResponseDto?> FindExistingWarehouseReceiptAsync(string documentNumber, CancellationToken ct)
     {
         var allReceipts = await _getWarehouseReceipts.ExecuteAsync(ct);
         return allReceipts.FirstOrDefault(r =>
-            r.ReceiptType == ReturnedGoodsReceiptType && r.Reference == documentNumber);
+            r.ReceiptType == ReturnedGoodsReceiptType && r.Reference == documentNumber && !r.IsSuperseded);
     }
 
     // "Lập PN" — bước thủ công: CHỈ tạo Phiếu Nhập Kho (không tự mở cửa sổ in — bấm "In" riêng nếu

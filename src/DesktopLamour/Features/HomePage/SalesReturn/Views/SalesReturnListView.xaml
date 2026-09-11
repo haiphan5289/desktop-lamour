@@ -13,6 +13,7 @@
         <KeyBinding Gesture="Ctrl+E" Command="{Binding ViewSalesReturnCommand}"/>
         <KeyBinding Gesture="F2"     Command="{Binding EditSalesReturnCommand}"/>
         <KeyBinding Gesture="Ctrl+D" Command="{Binding DeleteSalesReturnCommand}"/>
+        <KeyBinding Gesture="Ctrl+G" Command="{Binding ConfirmSalesReturnCommand}"/>
         <KeyBinding Gesture="Ctrl+B" Command="{Binding UnconfirmSalesReturnCommand}"/>
     </UserControl.InputBindings>
 
@@ -67,6 +68,13 @@
                 <controls:AppButton Content="✏️ Sửa"
                                     Style="{StaticResource AppButton.Secondary.Medium}"
                                     Command="{Binding EditSalesReturnCommand}"
+                                    Margin="0,0,8,0"/>
+                <!-- 2026-09-11: thêm "Ghi sổ" thẳng từ danh sách — trước đó chỉ có "Bỏ ghi", không
+                     có action đối xứng dù popup đã có (qua nút toggle) — theo yêu cầu, mirror
+                     UnconfirmSalesReturnCommand (dùng chung IConfirmSalesReturnUseCase với popup). -->
+                <controls:AppButton Content="📗 Ghi sổ"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding ConfirmSalesReturnCommand}"
                                     Margin="0,0,8,0"/>
                 <controls:AppButton Content="↩️ Bỏ ghi"
                                     Style="{StaticResource AppButton.Secondary.Medium}"
@@ -210,10 +218,10 @@
                     </Style>
                 </DataGrid.ColumnHeaderStyle>
                 <!-- Chuột phải trên lưới — mirror SalesOrderListView cùng ngày, chỉ mục thao tác
-                     thật có nghiệp vụ tương ứng (Thêm/Xem/Sửa/Xóa/Bỏ ghi). Không có "Nhân bản"/
-                     "Gửi email,Zalo" (chưa có command); không có "Ghi sổ"/"Lập phiếu nhập..."/
-                     "Sửa mẫu..." (thuộc phần mềm khác, hoặc "Ghi sổ" chưa có action riêng ở mức
-                     danh sách — chỉ có trong popup). "Sửa" dùng phím F2 vì Ctrl+E đã gán cho "Xem".
+                     thật có nghiệp vụ tương ứng (Thêm/Xem/Sửa/Xóa/Ghi sổ/Bỏ ghi). Không có "Nhân
+                     bản"/"Gửi email,Zalo" (chưa có command); không có "Lập phiếu nhập.../Sửa mẫu..."
+                     (thuộc phần mềm khác). "Sửa" dùng phím F2 vì Ctrl+E đã gán cho "Xem". 2026-09-11:
+                     thêm "Ghi sổ" — trước đó danh sách chỉ có "Bỏ ghi", nay đã có action đối xứng.
                      KeyBinding thật xem UserControl.InputBindings phía trên. -->
                 <DataGrid.ContextMenu>
                     <ContextMenu>
@@ -223,21 +231,19 @@
                         <MenuItem Header="✏️ Sửa" InputGestureText="F2" Command="{Binding EditSalesReturnCommand}"/>
                         <MenuItem Header="🗑️ Xóa" InputGestureText="Ctrl+D" Command="{Binding DeleteSalesReturnCommand}"/>
                         <Separator/>
+                        <MenuItem Header="📗 Ghi sổ" InputGestureText="Ctrl+G" Command="{Binding ConfirmSalesReturnCommand}"/>
                         <MenuItem Header="↩️ Bỏ ghi" InputGestureText="Ctrl+B" Command="{Binding UnconfirmSalesReturnCommand}"/>
                     </ContextMenu>
                 </DataGrid.ContextMenu>
-                <!-- Không dùng cột "Trạng thái" riêng — tô màu/đậm chữ cả dòng khi Nháp (đã "Bỏ
-                     ghi") hoặc Treo (chưa Ghi sổ), khớp đúng pattern đã dùng cho trạng thái "⏸ Treo"
-                     ở SalesOrderListView.xaml (TextElement.Foreground kế thừa xuống mọi TextBlock
-                     con, không đụng nền nên không xung đột màu lúc Selected). 2026-09-11: thêm
-                     trigger IsHeld — trước đây chỉ IsDraft tô màu, Treo trông giống hệt Đã ghi sổ. -->
+                <!-- Không dùng cột "Trạng thái" riêng — tô màu/đậm chữ cả dòng khi Treo (chưa Ghi
+                     sổ), khớp đúng pattern đã dùng ở SalesOrderListView.xaml (TextElement.Foreground
+                     kế thừa xuống mọi TextBlock con, không đụng nền nên không xung đột màu lúc
+                     Selected). 2026-09-11: gộp "Nháp" và "Treo" thành 1 trigger duy nhất — trước đó
+                     có 2 trigger riêng (IsDraft/IsHeld) cùng cho ra 1 màu, nay IsHeld tự bao trọn cả
+                     2 raw status (xem SalesReturnListItem.IsHeld). -->
                 <DataGrid.RowStyle>
                     <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsDraft}" Value="True">
-                                <Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/>
-                                <Setter Property="FontWeight" Value="SemiBold"/>
-                            </DataTrigger>
                             <DataTrigger Binding="{Binding IsHeld}" Value="True">
                                 <Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/>
                                 <Setter Property="FontWeight" Value="SemiBold"/>

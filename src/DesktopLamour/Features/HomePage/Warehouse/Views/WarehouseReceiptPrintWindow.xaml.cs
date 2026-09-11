@@ -218,9 +218,6 @@ public partial class WarehouseReceiptPrintWindow : Window
 
         var rowGroup = new TableRowGroup();
         rowGroup.Rows.Add(HeaderRow("STT", "Mã hàng", "Tên hàng", "Mã quy cách", "ĐVT", "Số lượng", "Đơn giá", "Thành tiền"));
-        // Hàng ký hiệu A/B/C/.../3 — BẮT BUỘC theo đúng mẫu 01-VT chính thức, không phải cột dữ liệu
-        // tự thêm (khác với "Nhóm HHDV mua vào"/"Số lô"... đã bỏ qua ở các tab trước vì không có data).
-        rowGroup.Rows.Add(HeaderRow("A", "B", "C", "D", "E", "1", "2", "3"));
 
         var stt = 1;
         foreach (var line in receipt.Lines)

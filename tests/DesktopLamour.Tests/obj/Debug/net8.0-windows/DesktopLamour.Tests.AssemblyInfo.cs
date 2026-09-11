@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DesktopLamour.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c93a63df9128922504fecbbccbbd0c19a82fbaac")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8288399e99dd4111875b8612ba4cd6c8d3d7c801")]
 [assembly: System.Reflection.AssemblyProductAttribute("DesktopLamour.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DesktopLamour.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

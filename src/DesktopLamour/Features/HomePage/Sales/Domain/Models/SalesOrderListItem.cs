@@ -39,8 +39,10 @@ public class SalesOrderListItem
             TotalPayment   = dto.TotalAmount,
             Notes          = dto.Notes,
             Status         = dto.Status,
-            // 2 = Draft ("Bỏ ghi" — xem SalesOrderStatus BE) — thêm 2026-09-09, khác "Treo" (1).
-            StatusLabel    = dto.Status switch { 1 => "⏸ Treo", 2 => "↩️ Bỏ ghi", _ => "📄 Ghi sổ" },
+            // 2026-09-11: gộp "Nháp" (Draft=2) và "Treo" (Held=1) thành 1 label duy nhất "⏸ Treo" —
+            // mirror SalesReturnListItem cùng ngày, theo yêu cầu sau khi xác nhận BE không còn phân
+            // biệt nghiệp vụ giữa 2 giá trị này (UnconfirmSalesOrderUseCase giờ luôn gán Held).
+            StatusLabel    = dto.Status switch { 0 => "📄 Ghi sổ", _ => "⏸ Treo" },
             Original       = dto,
         };
     }

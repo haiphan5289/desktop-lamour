@@ -1,5 +1,43 @@
 # Sales Orders — Feature Document (App)
 
+## Update — 2026-09-11: thêm nút "Ghi sổ" trên danh sách
+
+Theo yêu cầu, mirror y hệt SalesReturn cùng ngày (xem `SalesReturn/docs/sales-return.md` mục cùng
+tên cho bối cảnh đầy đủ — screenshot khoanh đỏ toolbar báo thiếu "Ghi sổ" dù "Bỏ ghi" đã có).
+
+| File | Thay đổi |
+|---|---|
+| `ViewModels/SalesOrderListViewModel.cs` | Inject `IConfirmSalesOrderUseCase`; thêm `CanConfirmSelected => SelectedOrder is { Status: 1 or 2 }` (Held/Draft — cả 2 đều "Treo" sau khi gộp); thêm `ConfirmSalesOrderAsync` command (mirror `UnconfirmSalesOrderAsync`, dùng `MessageBox.Show` khi lỗi giống pattern sẵn có của module này) |
+| `Views/SalesOrderListView.xaml` | Nút toolbar "📗 Ghi sổ" (trước "↩️ Bỏ ghi"); thêm vào context menu + `KeyBinding Ctrl+G` |
+
+Verify: `dotnet build -p:EnableWindowsTargeting=true` 0 lỗi. **Chưa test thật trên UTM.**
+
+**Xác nhận sau khi hỏi lại (cùng ngày)**: user hỏi "có check hợp lệ trước khi enable Ghi sổ không" —
+ban đầu hiểu nhầm thành "kiểm tra đủ tồn kho thật trước khi bật nút" (SalesOrder Ghi sổ TRỪ kho nên
+về lý thuyết có thể fail thật nếu hết tồn giữa lúc Treo và lúc bấm — khác SalesReturn luôn cộng kho
+nên không bao giờ fail; đã investigate: cần 1 API mới + refactor `ConfirmSalesOrderUseCase` để tách
+logic check dùng chung, hiện chưa tồn tại). Nhưng sau khi hỏi lại thì ý user chỉ là **enable/disable
+theo đúng trạng thái vòng đời** (Treo → bật, Normal → tắt) — đúng như `CanConfirmSelected` đang làm
+sẵn, **không cần sửa gì thêm**. Ghi lại rõ ở đây để không đề xuất lại tính năng "pre-check tồn kho"
+này lần nữa trừ khi user chủ động yêu cầu lại.
+
+## Update — 2026-09-11: gộp "Nháp" và "Treo" thành 1 trạng thái duy nhất "Treo"
+
+Theo yêu cầu, mirror y hệt SalesReturn cùng ngày (xem `SalesReturn/docs/sales-return.md` mục cùng
+tên cho bối cảnh đầy đủ). Chi tiết BE ở `be-window-lamour/.../Sales/docs/sales.md` mục cùng tên.
+Tóm tắt phía WPF (`SalesOrderListItem.cs`, `SalesOrderListView.xaml`, `SalesOrderViewModel.cs`):
+
+| Trước | Sau (2026-09-11, hôm nay) |
+|---|---|
+| `StatusLabel`: `1 → "⏸ Treo"`, `2 → "↩️ Bỏ ghi"`, `_ → "📄 Ghi sổ"` | `StatusLabel`: `0 → "📄 Ghi sổ"`, `_ → "⏸ Treo"` — Held(1) và Draft(2) giờ cùng 1 label |
+| `SalesOrderListView.xaml` RowStyle có 2 `DataTrigger` (StatusLabel="⏸ Treo", StatusLabel="↩️ Bỏ ghi") | Gộp còn **1 `DataTrigger`** duy nhất (StatusLabel="⏸ Treo") — trigger "↩️ Bỏ ghi" bỏ hẳn vì không còn giá trị nào khớp |
+| `SalesOrderViewModel.IsHeld => Status == 1` (popup) | `IsHeld => Status is 1 or 2` |
+
+Không có bộ lọc "Trạng thái" riêng ở danh sách SalesOrder (khác SalesReturn) nên không có
+`StatusOptions`/`FilterItem` nào cần sửa ở module này.
+
+Verify: `dotnet build -p:EnableWindowsTargeting=true` 0 lỗi. **Chưa test thật trên UTM.**
+
 ## Update — 2026-09-11: "Cất" = "Ghi sổ" ngay (ĐẢO NGƯỢC quyết định 2026-09-10)
 
 **Lần đổi ý thứ 3 cho khúc logic này** — mirror y hệt SalesReturn cùng ngày (xem

@@ -46,6 +46,9 @@ public class WarehouseReceiptResponseDto
     [JsonPropertyName("total_amount")]     public decimal  TotalAmount    { get; set; }
     [JsonPropertyName("created_at")]       public DateTime CreatedAt      { get; set; }
     [JsonPropertyName("confirmed_at")]     public DateTime? ConfirmedAt   { get; set; }
+    // 2026-09-11: chỉ có ý nghĩa cho PN tự động lập từ SalesReturn (ReceiptType.ReturnedGoods) —
+    // true khi chứng từ trả hàng gốc đã bị sửa sau khi lập PN này, PN mới đã được lập thay thế.
+    [JsonPropertyName("is_superseded")]    public bool      IsSuperseded   { get; set; }
     [JsonPropertyName("lines")]            public List<WarehouseReceiptLineDto> Lines { get; set; } = new();
 }
 
