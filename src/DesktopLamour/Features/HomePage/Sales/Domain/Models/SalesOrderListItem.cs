@@ -39,7 +39,8 @@ public class SalesOrderListItem
             TotalPayment   = dto.TotalAmount,
             Notes          = dto.Notes,
             Status         = dto.Status,
-            StatusLabel    = dto.Status switch { 1 => "⏸ Treo", _ => "📄 Ghi sổ" },
+            // 2 = Draft ("Bỏ ghi" — xem SalesOrderStatus BE) — thêm 2026-09-09, khác "Treo" (1).
+            StatusLabel    = dto.Status switch { 1 => "⏸ Treo", 2 => "↩️ Bỏ ghi", _ => "📄 Ghi sổ" },
             Original       = dto,
         };
     }

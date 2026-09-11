@@ -169,14 +169,24 @@ public sealed class SalesOrderService : ISalesOrderService
                 : null;
     }
 
-    public async Task<SalesOrderResponseDto> HoldAsync(int id, CancellationToken ct = default)
+    public async Task<SalesOrderResponseDto> ConfirmAsync(int id, CancellationToken ct = default)
     {
-        _logger.LogInformation("Holding sales order {Id}", id);
+        _logger.LogInformation("Confirming sales order {Id}", id);
         SetBearerToken();
-        var response = await _httpClient.PutAsync($"/api/v1/sales-orders/{id}/hold", null, ct);
+        var response = await _httpClient.PostAsync($"/api/v1/sales-orders/{id}/confirm", null, ct);
         await EnsureSuccessOrThrowAsync(response, ct);
         return await response.Content.ReadFromJsonAsync<SalesOrderResponseDto>(ct)
-            ?? throw new InvalidOperationException("Empty response from hold endpoint.");
+            ?? throw new InvalidOperationException("Empty response from confirm endpoint.");
+    }
+
+    public async Task<SalesOrderResponseDto> UnconfirmAsync(int id, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Unconfirming sales order {Id}", id);
+        SetBearerToken();
+        var response = await _httpClient.PostAsync($"/api/v1/sales-orders/{id}/unconfirm", null, ct);
+        await EnsureSuccessOrThrowAsync(response, ct);
+        return await response.Content.ReadFromJsonAsync<SalesOrderResponseDto>(ct)
+            ?? throw new InvalidOperationException("Empty response from unconfirm endpoint.");
     }
 
     public async Task<SalesOrderResponseDto> DuplicateAsync(int id, CancellationToken ct = default)

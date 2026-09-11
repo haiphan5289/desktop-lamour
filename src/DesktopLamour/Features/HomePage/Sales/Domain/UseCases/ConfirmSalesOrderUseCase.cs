@@ -4,12 +4,12 @@ using DesktopLamour.Features.HomePage.Sales.Data.Services.Dtos;
 
 namespace DesktopLamour.Features.HomePage.Sales.Domain.UseCases;
 
-public class HoldSalesOrderUseCase : IHoldSalesOrderUseCase
+public class ConfirmSalesOrderUseCase : IConfirmSalesOrderUseCase
 {
     private readonly ISalesOrderRepository _repository;
 
-    public HoldSalesOrderUseCase(ISalesOrderRepository repository) => _repository = repository;
+    public ConfirmSalesOrderUseCase(ISalesOrderRepository repository) => _repository = repository;
 
     public Task<SalesOrderResponseDto> ExecuteAsync(int id, CancellationToken ct = default)
-        => _repository.HoldAsync(id, ct);
+        => _repository.ConfirmAsync(id, ct);
 }

@@ -88,6 +88,30 @@ public sealed class SalesReturnService : ISalesReturnService
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task<SalesReturnResponseDto> ConfirmAsync(int id, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Confirming sales return {Id}", id);
+        SetBearerToken();
+
+        var response = await _httpClient.PostAsync($"/api/v1/sales-returns/{id}/confirm", null, ct);
+        await EnsureSuccessOrThrowAsync(response, ct);
+
+        return await response.Content.ReadFromJsonAsync<SalesReturnResponseDto>(ct)
+            ?? throw new InvalidOperationException("Empty response from confirm sales-return endpoint.");
+    }
+
+    public async Task<SalesReturnResponseDto> UnconfirmAsync(int id, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Unconfirming sales return {Id}", id);
+        SetBearerToken();
+
+        var response = await _httpClient.PostAsync($"/api/v1/sales-returns/{id}/unconfirm", null, ct);
+        await EnsureSuccessOrThrowAsync(response, ct);
+
+        return await response.Content.ReadFromJsonAsync<SalesReturnResponseDto>(ct)
+            ?? throw new InvalidOperationException("Empty response from unconfirm sales-return endpoint.");
+    }
+
     public async Task<string> GetNextCodeAsync(CancellationToken ct = default)
     {
         _logger.LogInformation("Fetching next sales return code");

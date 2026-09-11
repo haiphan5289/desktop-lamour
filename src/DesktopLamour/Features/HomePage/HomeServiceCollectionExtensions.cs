@@ -542,7 +542,8 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<ICreateSalesOrderUseCase, CreateSalesOrderUseCase>();
         services.AddTransient<IUpdateSalesOrderUseCase, UpdateSalesOrderUseCase>();
         services.AddTransient<IDeleteSalesOrderUseCase, DeleteSalesOrderUseCase>();
-        services.AddTransient<IHoldSalesOrderUseCase, HoldSalesOrderUseCase>();
+        services.AddTransient<IConfirmSalesOrderUseCase, ConfirmSalesOrderUseCase>();
+        services.AddTransient<IUnconfirmSalesOrderUseCase, UnconfirmSalesOrderUseCase>();
         services.AddTransient<IDuplicateSalesOrderUseCase, DuplicateSalesOrderUseCase>();
         services.AddTransient<IGetNextSalesOrderCodeUseCase, GetNextSalesOrderCodeUseCase>();
         services.AddTransient<IGetSalesOrderReportUseCase, GetSalesOrderReportUseCase>();
@@ -569,11 +570,11 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<SalesReturnListViewModel>();
         services.AddTransient<SalesReturnWindow>();
         services.AddTransient<SalesReturnViewModel>();
-        services.AddTransient<SalesReturnPrintWindow>();
 
         // ── SalesReturn: Window factory ──────────────────────────────────────────
+        // "In" giờ tái dùng Warehouse/Views/WarehouseReceiptPrintWindow (Func<WarehouseReceiptPrintWindow>
+        // đã đăng ký chung ở khối Warehouse bên trên) — SalesReturnPrintWindow riêng đã xóa hẳn.
         services.AddTransient<Func<SalesReturnWindow>>(sp => () => sp.GetRequiredService<SalesReturnWindow>());
-        services.AddTransient<Func<SalesReturnPrintWindow>>(sp => () => sp.GetRequiredService<SalesReturnPrintWindow>());
 
         // ── Deposits: Views + ViewModels ─────────────────────────────────────────
         services.AddTransient<DepositWindow>();
@@ -615,6 +616,8 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<ICreateSalesReturnUseCase, CreateSalesReturnUseCase>();
         services.AddTransient<IUpdateSalesReturnUseCase, UpdateSalesReturnUseCase>();
         services.AddTransient<IDeleteSalesReturnUseCase, DeleteSalesReturnUseCase>();
+        services.AddTransient<IConfirmSalesReturnUseCase, ConfirmSalesReturnUseCase>();
+        services.AddTransient<IUnconfirmSalesReturnUseCase, UnconfirmSalesReturnUseCase>();
         services.AddTransient<IGetNextSalesReturnCodeUseCase, GetNextSalesReturnCodeUseCase>();
         services.AddTransient<ICreateSalesReturnWarehouseReceiptUseCase, CreateSalesReturnWarehouseReceiptUseCase>();
 

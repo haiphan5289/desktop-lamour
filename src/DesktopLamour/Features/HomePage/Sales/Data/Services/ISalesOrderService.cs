@@ -12,7 +12,8 @@ public interface ISalesOrderService
     Task<SalesOrderResponseDto> UpdateAsync(int id, UpdateSalesOrderRequestDto request, CancellationToken ct = default);
     Task DeleteAsync(int id, CancellationToken ct = default);
     Task<string> GetNextCodeAsync(bool isFromWarehouseExport = true, CancellationToken ct = default);
-    Task<SalesOrderResponseDto> HoldAsync(int id, CancellationToken ct = default);
+    Task<SalesOrderResponseDto> ConfirmAsync(int id, CancellationToken ct = default);
+    Task<SalesOrderResponseDto> UnconfirmAsync(int id, CancellationToken ct = default);
     Task<SalesOrderResponseDto> DuplicateAsync(int id, CancellationToken ct = default);
 
     Task<IEnumerable<SalesOrderReportLineDto>> GetReportAsync(

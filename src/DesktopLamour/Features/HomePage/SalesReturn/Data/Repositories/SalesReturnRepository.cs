@@ -26,6 +26,12 @@ public class SalesReturnRepository : ISalesReturnRepository
     public Task DeleteAsync(int id, CancellationToken ct = default)
         => _service.DeleteAsync(id, ct);
 
+    public Task<SalesReturnResponseDto> ConfirmAsync(int id, CancellationToken ct = default)
+        => _service.ConfirmAsync(id, ct);
+
+    public Task<SalesReturnResponseDto> UnconfirmAsync(int id, CancellationToken ct = default)
+        => _service.UnconfirmAsync(id, ct);
+
     public Task<string> GetNextCodeAsync(CancellationToken ct = default)
         => _service.GetNextCodeAsync(ct);
 

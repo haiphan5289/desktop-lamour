@@ -30,6 +30,7 @@ public partial class SalesReturnListViewModel : ViewModelBase
     private readonly INavigationService              _navigationService;
     private readonly IGetSalesReturnsUseCase         _getReturns;
     private readonly IDeleteSalesReturnUseCase       _deleteReturn;
+    private readonly IUnconfirmSalesReturnUseCase    _unconfirmReturn;
     private readonly IGetWarehouseReceiptsUseCase    _getWarehouseReceipts;
     private readonly Func<SalesReturnWindow>         _formWindowFactory;
     private readonly DebounceDispatcher              _searchDebounce = new();
@@ -67,9 +68,11 @@ public partial class SalesReturnListViewModel : ViewModelBase
     // Lọc Trạng thái/Kiêm phiếu nhập + filter theo từng cột áp lên dữ liệu ĐÃ tải (client-side, qua
     // SalesReturnsView) — không gọi lại BE, khác với FilterFromDate/ToDate/SearchText ở trên vốn đã
     // lọc server-side sẵn (xem ISalesReturnService.GetAllAsync). Cùng pattern AccountingViewModel.
-    // Đã bỏ vòng đời Nháp (2026-09-07) — mọi chứng từ luôn "Đã ghi sổ"; giữ dropdown cho nhất
-    // quán bố cục filter bar, chỉ còn 2 lựa chọn.
-    public static string[] StatusOptions      { get; } = { "Tất cả", "Đã ghi sổ" };
+    // 2026-09-09: thêm lại StatusOptions/FilterStatus (đã bỏ lúc "mọi chứng từ luôn Đã ghi sổ") —
+    // nút "Bỏ ghi" mới tái kích hoạt Draft thật nên cột/filter Trạng thái lại có ý nghĩa phân biệt.
+    // 2026-09-11: thêm "Treo" — trước đây "Nháp" ngầm hiện cả Held lẫn Draft (chỉ ẩn Confirmed) vì
+    // chưa có lựa chọn riêng cho Treo; nay 3 lựa chọn tách bạch đúng 3 status (xem FilterItem).
+    public static string[] StatusOptions      { get; } = { "Tất cả", "Đã ghi sổ", "Treo", "Nháp" };
     public static string[] HasReceiptOptions  { get; } = { "Tất cả", "Có", "Chưa" };
 
     [ObservableProperty] private string _filterStatus     = "Tất cả";
@@ -111,17 +114,22 @@ public partial class SalesReturnListViewModel : ViewModelBase
     private bool HasSelection => SelectedReturn is not null;
     // Đã bỏ vòng đời Nháp (2026-09-07): sửa/xóa được mọi chứng từ đã lưu.
     private bool CanEditSelected => HasSelection;
+    // "Bỏ ghi" chỉ khả dụng khi CHỌN 1 dòng VÀ dòng đó đang thật sự Confirmed — khớp đúng
+    // CanExecute=IsConfirmed của UnconfirmCommand trong popup (SalesReturnViewModel).
+    private bool CanUnconfirmSelected => SelectedReturn is { IsConfirmed: true };
 
     public SalesReturnListViewModel(
         INavigationService           navigationService,
         IGetSalesReturnsUseCase      getReturns,
         IDeleteSalesReturnUseCase    deleteReturn,
+        IUnconfirmSalesReturnUseCase unconfirmReturn,
         IGetWarehouseReceiptsUseCase getWarehouseReceipts,
         Func<SalesReturnWindow>      formWindowFactory)
     {
         _navigationService     = navigationService;
         _getReturns            = getReturns;
         _deleteReturn          = deleteReturn;
+        _unconfirmReturn       = unconfirmReturn;
         _getWarehouseReceipts  = getWarehouseReceipts;
         _formWindowFactory     = formWindowFactory;
 
@@ -135,6 +143,7 @@ public partial class SalesReturnListViewModel : ViewModelBase
         ViewSalesReturnCommand.NotifyCanExecuteChanged();
         EditSalesReturnCommand.NotifyCanExecuteChanged();
         DeleteSalesReturnCommand.NotifyCanExecuteChanged();
+        UnconfirmSalesReturnCommand.NotifyCanExecuteChanged();
     }
 
     // Đổi ngày là thao tác rời rạc (không gõ liên tục như SearchText) — reload ngay, không debounce.
@@ -194,7 +203,9 @@ public partial class SalesReturnListViewModel : ViewModelBase
     {
         if (obj is not SalesReturnListItem item) return false;
 
-        if (FilterStatus == "Đã ghi sổ"  && !item.IsConfirmed) return false;
+        if (FilterStatus == "Đã ghi sổ" && !item.IsConfirmed) return false;
+        if (FilterStatus == "Treo"      && !item.IsHeld)      return false;
+        if (FilterStatus == "Nháp"      && !item.IsDraft)     return false;
 
         if (FilterHasReceipt == "Có"    && !item.HasLinkedWarehouseReceipt) return false;
         if (FilterHasReceipt == "Chưa"  &&  item.HasLinkedWarehouseReceipt) return false;
@@ -340,6 +351,29 @@ public partial class SalesReturnListViewModel : ViewModelBase
         {
             HasError     = true;
             ErrorMessage = $"Xóa thất bại: {ex.Message}";
+        }
+    }
+
+    // "Bỏ ghi" thẳng từ danh sách — dùng chung IUnconfirmSalesReturnUseCase với popup
+    // (SalesReturnViewModel.UnconfirmAsync), không mở popup trước. BE tự hoàn tác tồn kho + trả
+    // Status=Draft; reload lại danh sách để cập nhật màu highlight dòng (DataGrid.RowStyle,
+    // xem SalesReturnListView.xaml) và filter "Trạng thái".
+    // 2026-09-11: bỏ hẳn dialog xác nhận Yes/No — bấm là vào thẳng, không hỏi lại (theo yêu cầu).
+    // Popup chi tiết (SalesReturnViewModel.ToggleConfirmAsync) KHÔNG đổi, vẫn còn cảnh báo riêng.
+    [RelayCommand(CanExecute = nameof(CanUnconfirmSelected))]
+    private async Task UnconfirmSalesReturnAsync(CancellationToken ct = default)
+    {
+        if (SelectedReturn is null) return;
+
+        try
+        {
+            await _unconfirmReturn.ExecuteAsync(SelectedReturn.Id, ct);
+            await LoadSalesReturnsAsync(ct); // tự quản lý IsLoading — reload theo đúng filter đang xem
+        }
+        catch (Exception ex)
+        {
+            HasError     = true;
+            ErrorMessage = $"Bỏ ghi thất bại: {ex.Message}";
         }
     }
 

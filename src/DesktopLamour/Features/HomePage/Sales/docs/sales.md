@@ -1,6 +1,130 @@
 # Sales Orders — Feature Document (App)
 
-> **Jira:** — | **Branch:** `dev` | **Last updated:** 2026-09-08 (tách "Ghi sổ" khỏi in — `SalesOrderViewModel.SaveAsync` bỏ `ShowPrintPreview(result, …)` sau khi lưu; Ghi sổ giờ chỉ lưu đơn (+ trừ cọc nếu có) rồi đóng form về danh sách. Muốn in bấm nút "In" trên toolbar (`PrintCommand` — in được cả khi chưa Ghi sổ). Workflow "từng bước" giống MISA, đồng bộ với `SalesReturnViewModel` cùng ngày) | 2026-09-07 (bỏ khóa form popup `SalesOrderWindow` sau khi Ghi sổ — `IsEditable => !IsReadOnly`, đơn Normal sửa/xóa/Cất trực tiếp không cần bấm "Treo" trước; BE vốn đã không guard trạng thái. Chỉ còn khóa ở chế độ xem chỉ-đọc từ "Sổ chi tiết bán hàng") | **Generated:** 2026-05-01 | 2026-08-31 (đổi mặc định lọc ngày trên "Chứng từ bán hàng" từ Hôm nay → Đầu tháng đến hiện tại, đồng bộ toàn app — xem changelog cuối file) | 2026-08-26 (khôi phục tile "📊 Báo cáo" trên `SalesView`, mở lại `SalesOrderReportView` — chạy song song với panel nhúng, không thay thế) | 2026-08-22 (panel "Báo cáo bán hàng theo Mặt hàng" trên `SalesView` giờ có đầy đủ field lọc — Kỳ báo cáo/Từ-Đến ngày/ĐVT/Nhóm VTHH/Nhân viên/Khách hàng/Mặt hàng — chuyển nguyên từ popup `SalesOrderReportFilterWindow` cũ; xoá tile "📊 Báo cáo", panel này giờ là cách duy nhất xem báo cáo bán hàng) | 2026-08-22 (thêm panel "Báo cáo theo Mặt hàng" nhúng thẳng trên `SalesView` — màn hình hub "Bán hàng" vào từ Trang chủ, KHÔNG phải `SalesOrderListView`/"Chứng từ bán hàng" như thử ban đầu — thu gọn được, tự load đầu tháng đến hiện tại khi mở màn hình) | 2026-08-22 (nút "📊 Báo cáo" — chuyển ra toolbar `SalesOrderListView` rồi chuyển NGAY LẠI tile menu `SalesView` cùng ngày theo yêu cầu sửa lại — vị trí cuối cùng: tile trên `SalesView`, y hệt trước khi có thay đổi này) | 2026-08-22 (Sổ chi tiết bán hàng — thêm filter textbox riêng theo từng cột trên `SalesOrderReportDetailView`) | 2026-08-15 (Đặt cọc qua dòng sản phẩm trên chính XK — dropdown Trừ cọc giờ hiện số XK gốc thay vì số DC — xem `Features/Deposits/docs/deposits.md` BE cho chi tiết đầy đủ) | 2026-08-15 (đổi prefix Chứng từ bán hàng BC → XK toàn project, kể cả 14 đơn cũ đã ghi sổ) | 2026-08-09 (Trừ cọc tích hợp vào dropdown chọn sản phẩm)
+## Update — 2026-09-11: bỏ dialog xác nhận khi bấm "Bỏ ghi" trên danh sách
+
+Theo yêu cầu — clone cùng thay đổi vừa làm cho SalesReturn sang SalesOrder (xem
+`SalesReturn/docs/sales-return.md` mục "Update — 2026-09-11: bỏ dialog xác nhận..."): nút "Bỏ ghi"
+trên toolbar danh sách bấm vào thẳng, không còn hỏi lại Yes/No.
+
+| File | Thay đổi |
+|---|---|
+| `ViewModels/SalesOrderListViewModel.cs` (`UnconfirmSalesOrderAsync`) | Xóa khối `MessageBox.Show("Xác nhận bỏ ghi", ...)` + check `confirm != MessageBoxResult.Yes` — gọi thẳng `_unconfirmOrder.ExecuteAsync` |
+
+**Chỉ áp dụng cho nút trên danh sách** — dialog xác nhận tương tự trong popup chi tiết
+(`SalesOrderViewModel.ToggleConfirmAsync`, khi đang Confirmed bấm "Bỏ ghi") **KHÔNG đổi**, vẫn còn
+cảnh báo Yes/No trước khi trừ lại tồn kho.
+
+Không đổi BE. Verify: `dotnet build -p:EnableWindowsTargeting=true` 0 lỗi (cross-compile trên Mac).
+**Chưa test thật trên UTM.**
+
+## Update — 2026-09-10: tách "Cất" và "Ghi sổ", bỏ nút "Treo" độc lập
+
+Theo yêu cầu (áp dụng đồng bộ cho cả SalesReturn — xem `SalesReturn/docs/sales-return.md` mục cùng
+ngày): **"Cất" không còn tự Ghi sổ**. BE (`be-window-lamour`) đổi `CreateSalesOrderUseCase`/
+`UpdateSalesOrderUseCase` luôn kết thúc ở `Status = Held` thay vì `Normal`, không đụng tồn kho;
+thêm `POST /{id}/confirm` ("Ghi sổ" thật — trừ tồn kho) tách khỏi Create/Update. Xem
+`be-window-lamour/.../Sales/docs/sales.md` mục "Update — 2026-09-10" cho chi tiết BE.
+
+Phía WPF:
+
+- **`DocumentToolbar`** — thêm DP `UnpostLabel` (mirror `SaveLabel` có sẵn), bind
+  `Text="{Binding UnpostLabel, ElementName=Self}"` cho nút "Bỏ ghi" thay vì text tĩnh — cho phép đổi
+  label động theo trạng thái (dùng chung control với Payment/Receipt/WarehouseReceipt, không đổi mặc định).
+- **`SalesOrderViewModel`** — bỏ hẳn `HoldCommand`/`HoldAsync`/`CreateThenHoldAsync`/`CanUnlock`/
+  `ShowHoldSection` (nút "Treo" độc lập, dư thừa với luồng mới — muốn về Treo từ Confirmed thì đi
+  Bỏ ghi → Sửa → Cất). Thêm `IsHeld`, `IConfirmSalesOrderUseCase _confirmOrder`. `UnconfirmCommand`
+  đổi tên/gộp thành `ToggleConfirmCommand` (`CanExecute = IsHeld || IsConfirmed`) — 1 nút duy nhất
+  trên toolbar: Held → hiện "Ghi sổ" (gọi Confirm, cộng/trừ kho), Confirmed → hiện "Bỏ ghi" (gọi
+  Unconfirm, logic hoàn tồn kho không đổi). `UnpostButtonLabel` computed property cấp label động.
+- **`SalesOrderWindow.xaml`** — `UnpostCommand="{Binding ToggleConfirmCommand}"` +
+  `UnpostLabel="{Binding UnpostButtonLabel}"`; bỏ binding `HoldCommand`.
+- **`SalesOrderListViewModel`/`SalesOrderListView.xaml`** — bỏ nút "⏸ Treo" độc lập trên toolbar
+  danh sách (`HoldSalesOrderCommand`/`HoldSalesOrderAsync`, cùng lý do dư thừa như trên popup).
+- **Client-side use case chain** (`Data/Services/ISalesOrderService.cs` + impl,
+  `Data/Repositories/ISalesOrderRepository.cs` + impl, `Domain/UseCases/`) — đổi `HoldAsync`
+  (`PUT /{id}/hold`) → `ConfirmAsync` (`POST /{id}/confirm`) xuyên suốt 3 lớp; xóa
+  `IHoldSalesOrderUseCase`/`HoldSalesOrderUseCase.cs`, thêm `IConfirmSalesOrderUseCase`/
+  `ConfirmSalesOrderUseCase.cs`. DI trong `HomeServiceCollectionExtensions.cs` đổi tương ứng.
+- **`SalesOrderListItem`** — không đổi (đã có sẵn case `1 => "⏸ Treo"` từ trước).
+
+**Verify**: `dotnet build src/DesktopLamour/DesktopLamour.csproj -p:EnableWindowsTargeting=true` —
+0 lỗi, 0 warning (build cross-compile được trên Mac dù target `net8.0-windows`, bắt lỗi C#/XAML dù
+không chạy được runtime thật). Logic BE tương đương đã test thật qua curl+psql trên SalesReturn (xem
+sales-return.md) — SalesOrder dùng chung pattern, đảo chiều trừ/cộng kho, **chưa test qua UTM thật**.
+
+### State machine toggle sửa lại (cùng ngày) — mirror SalesReturn sau khi chốt qua mô phỏng tương tác
+
+Test tay lộ ra toggle 2 chiều đơn giản ở trên (1 lần bấm = gọi thẳng Confirm/Unconfirm) không đúng
+ý — đã sửa theo đúng state machine chốt cho `SalesReturnViewModel` qua 1 Artifact mô phỏng tương
+tác, xem đầy đủ bảng + link ở `SalesReturn/docs/sales-return.md` mục "State machine đã chốt":
+
+- Thêm cờ WPF-only `IsArmed` (không map từ `CurrentOrder.Status`). `ToggleConfirmAsync`: lần bấm
+  đầu khi chưa Normal (`!IsConfirmed && !IsArmed`) chỉ set `IsArmed=true`, KHÔNG gọi BE; lần bấm sau
+  mới gọi `_confirmOrder`/`_unconfirmOrder` thật. Bỏ ghi (Normal→Draft) hạ cánh với `IsArmed=true`
+  sẵn (không bắt bấm "Bỏ ghi" lại từ đầu để Ghi sổ tiếp).
+- `CanDeleteOrder` (mới, thay `DeleteCommand` dùng chung `IsEditable` như trước) =
+  `!IsConfirmed && IsReadOnly && IsArmed`.
+- `SaveAsync` giờ luôn `IsReadOnly=true; IsArmed=false;` sau Cất (đảo ngược "form không khóa sau
+  Cất" lúc đầu phiên). `InitializeAsync` mở chứng từ có sẵn từ danh sách cũng luôn khóa
+  (`IsReadOnly=true`), `IsArmed = (Status == 2)` (Draft).
+- BE `ConfirmSalesOrderUseCase` guard nới từ `Status != Held` → chỉ chặn khi `Status == Normal`.
+
+---
+
+## Update — 2026-09-09: "Bỏ ghi" thật + Cất giữ popup mở (clone từ SalesReturn cùng ngày)
+
+Theo yêu cầu "clone action đã làm bên Chứng từ hàng trả lại" — tái kích hoạt Draft/Confirmed thật
+cho SalesOrder, đảo ngược 1 phần quyết định "2026-09-07" bên dưới (form không còn sửa được ngay sau
+Ghi sổ nữa).
+
+**Quan trọng — "Treo" và "Bỏ ghi" giờ CÙNG TỒN TẠI, có phần chồng chéo chức năng:**
+`HoldAsync`/"⏸ Treo" đã có sẵn từ trước (comment 2026-09-01 tại `CanUnlock`) vốn ĐÃ được thiết kế
+để "mở khóa nhanh 1 đơn Normal" (đảo tồn kho, chuyển Held) — nhưng KHÔNG khóa form lại (Held vẫn
+`IsEditable = true` ngay). "↩️ Bỏ ghi" (Draft, mới) làm việc tương tự (đảo tồn kho) nhưng CÓ khóa
+form, cần bấm thêm "Sửa". Cả 2 nút cùng có mặt trên toolbar — không gộp/xóa "Treo" (ngoài phạm vi
+yêu cầu, "Treo" còn dùng để lưu tạm 1 đơn MỚI chưa hoàn chỉnh — vai trò "Bỏ ghi" không có).
+
+- **BE — `SalesOrder.cs`**: thêm `SalesOrderStatus.Draft = 2` (song song `Normal=0`/`Held=1`).
+  `IUnconfirmSalesOrderUseCase`/`UnconfirmSalesOrderUseCase.cs` (mới) — mirror `HoldSalesOrderUseCase`
+  gần như nguyên vẹn (guard 2-pass hoàn tồn kho) nhưng guard `Status == Normal` (không phải
+  `!= Held`) và target `Draft`. `UpdateSalesOrderUseCase`: `wasHeld` đổi thành
+  `stockNotCurrentlyDeducted = Held || Draft` — tránh double-revert khi Update 1 đơn đang Draft.
+  `DeleteSalesOrderUseCase` không đổi (đã sẵn `if (Status == Normal)`, Draft tự động an toàn).
+  `POST /api/v1/sales-orders/{id}/unconfirm` (Controller + DI).
+- **BE — validate Kho**: `CreateSalesOrderUseCase`/`UpdateSalesOrderUseCase` thêm `IWarehouseRepository`,
+  validate `dto.WarehouseId` tồn tại (cho dòng không phải khuyến mại/đặt cọc) trước khi dùng — tránh
+  lặp lại bug đã gặp ở SalesReturn (FK `warehouse_id` vi phạm → 500 chung chung thay vì 400 rõ ràng).
+  `tests/SalesOrderAmountManualTests.cs` cập nhật mock `IWarehouseRepository` cho 6 test case hiện có.
+- **WPF — `SalesOrderViewModel.cs`**: `IsEditable` đổi từ `!IsReadOnly` → `CurrentOrder is null ||
+  (!IsConfirmed && !IsReadOnly)` — đơn Normal giờ LUÔN khóa, phải Bỏ ghi trước. `CanEdit`/`Edit()`
+  đổi tương tự SalesReturn (`!IsConfirmed && IsReadOnly`, `Edit()` thêm 100 dòng trống). Thêm
+  `UnconfirmCommand`/`UnconfirmAsync` (`CanExecute = IsConfirmed`, set `IsReadOnly = true` sau khi
+  BE trả Draft — KHÔNG tự mở khóa). `SaveAsync` bỏ `RequestClose?.Invoke()`, thêm
+  `CurrentOrder = result` — giữ popup mở sau Ghi sổ để bấm "In" ngay (mirror SalesReturn).
+  `StatusLabel` switch thêm case `2 => "↩️ Bỏ ghi"`.
+- **WPF — `SalesOrderWindow.xaml`**: `UnpostCommand` đổi từ `CancelCommand` (trước đó "Bỏ ghi" bị
+  gán NHẦM vào lệnh Hủy/discard-changes, chưa từng là Unconfirm thật) → `UnconfirmCommand`.
+  `SalesOrderWindow.xaml.cs` thêm cờ `_hasSaved` (set qua event `OrderSaved`) để `DialogResult = true`
+  khi đóng popup sau khi đã Ghi sổ/Bỏ ghi mà không qua `RequestClose` — nếu không danh sách sẽ
+  không reload (mirror bug đã fix ở SalesReturn cùng ngày).
+- **WPF — danh sách**: `SalesOrderListItem.StatusLabel` + popup's `StatusLabel` switch đều thêm
+  case Draft. Thêm nút "↩️ Bỏ ghi" vào toolbar `SalesOrderListView.xaml` (giữa "Treo" và "Xóa") +
+  `UnconfirmSalesOrderCommand`/`CanUnconfirmSelected` (`SelectedOrder is { Status: 0 }`) trong
+  `SalesOrderListViewModel.cs`. `DataGrid.RowStyle` thêm `DataTrigger` cho `"↩️ Bỏ ghi"` (cùng kiểu
+  tô với "⏸ Treo").
+- **Bug tự phát hiện + fix trong lúc code (chưa kịp chạy thật đã thấy qua rà logic)**: công thức
+  `IsEditable`/`CanEdit` mới (`!IsConfirmed && ...`) vô tình xóa mất lối thoát cũ của chế độ xem
+  chỉ-đọc (mở từ "Sổ chi tiết bán hàng", `Initialize(..., isReadOnly: true)`) — trước đây bấm "Sửa"
+  ở đó mở khóa được NGAY bất kể đơn Normal hay không (`CanEdit` cũ chỉ là `IsReadOnly`). Vì view-mode
+  và trạng thái "vừa Bỏ ghi" đều có `IsReadOnly=true`, không có cách phân biệt 2 case chỉ bằng
+  `IsConfirmed`. Fix: thêm cờ mới `IsViewOnlyMode` (set 1 lần bởi `SalesOrderWindow.Initialize`,
+  KHÔNG đổi sau đó — khác `IsReadOnly` vốn mutable qua `Edit()`/`UnconfirmAsync`) để phân biệt rõ 2
+  trường hợp: `CanEdit => CurrentOrder is not null && IsReadOnly && (IsViewOnlyMode || !IsConfirmed)`,
+  `IsEditable => CurrentOrder is null || (!IsReadOnly && (IsViewOnlyMode || !IsConfirmed))` — giữ
+  nguyên hành vi cũ cho chế độ xem, chỉ áp rule mới cho luồng mở bình thường.
+- Build + `dotnet test` (6/6 pass) 0 lỗi. **Chưa test thật trên UTM.**
+
+> **Jira:** — | **Branch:** `dev` | **Last updated:** 2026-09-09 (bỏ hẳn validate "Số tiền trừ cọc vượt quá tổng số dư cọc còn lại" ở client trong `SalesOrderViewModel.SaveAsync` — theo yêu cầu, chặn sớm này redundant với validate thật ở BE `CreateDepositDeductionUseCase` (tự phân bổ FIFO qua nhiều Deposit, cùng message, trả 400 nếu vượt) nên bỏ không mất ràng buộc; biến `depositLine` vẫn giữ, chỉ bỏ khối `if (deductAmount > depositLine.AvailableDepositBalance)`) | 2026-09-08 (tách "Ghi sổ" khỏi in — `SalesOrderViewModel.SaveAsync` bỏ `ShowPrintPreview(result, …)` sau khi lưu; Ghi sổ giờ chỉ lưu đơn (+ trừ cọc nếu có) rồi đóng form về danh sách. Muốn in bấm nút "In" trên toolbar (`PrintCommand` — in được cả khi chưa Ghi sổ). Workflow "từng bước" giống MISA, đồng bộ với `SalesReturnViewModel` cùng ngày) | 2026-09-07 (bỏ khóa form popup `SalesOrderWindow` sau khi Ghi sổ — `IsEditable => !IsReadOnly`, đơn Normal sửa/xóa/Cất trực tiếp không cần bấm "Treo" trước; BE vốn đã không guard trạng thái. Chỉ còn khóa ở chế độ xem chỉ-đọc từ "Sổ chi tiết bán hàng") | **Generated:** 2026-05-01 | 2026-08-31 (đổi mặc định lọc ngày trên "Chứng từ bán hàng" từ Hôm nay → Đầu tháng đến hiện tại, đồng bộ toàn app — xem changelog cuối file) | 2026-08-26 (khôi phục tile "📊 Báo cáo" trên `SalesView`, mở lại `SalesOrderReportView` — chạy song song với panel nhúng, không thay thế) | 2026-08-22 (panel "Báo cáo bán hàng theo Mặt hàng" trên `SalesView` giờ có đầy đủ field lọc — Kỳ báo cáo/Từ-Đến ngày/ĐVT/Nhóm VTHH/Nhân viên/Khách hàng/Mặt hàng — chuyển nguyên từ popup `SalesOrderReportFilterWindow` cũ; xoá tile "📊 Báo cáo", panel này giờ là cách duy nhất xem báo cáo bán hàng) | 2026-08-22 (thêm panel "Báo cáo theo Mặt hàng" nhúng thẳng trên `SalesView` — màn hình hub "Bán hàng" vào từ Trang chủ, KHÔNG phải `SalesOrderListView`/"Chứng từ bán hàng" như thử ban đầu — thu gọn được, tự load đầu tháng đến hiện tại khi mở màn hình) | 2026-08-22 (nút "📊 Báo cáo" — chuyển ra toolbar `SalesOrderListView` rồi chuyển NGAY LẠI tile menu `SalesView` cùng ngày theo yêu cầu sửa lại — vị trí cuối cùng: tile trên `SalesView`, y hệt trước khi có thay đổi này) | 2026-08-22 (Sổ chi tiết bán hàng — thêm filter textbox riêng theo từng cột trên `SalesOrderReportDetailView`) | 2026-08-15 (Đặt cọc qua dòng sản phẩm trên chính XK — dropdown Trừ cọc giờ hiện số XK gốc thay vì số DC — xem `Features/Deposits/docs/deposits.md` BE cho chi tiết đầy đủ) | 2026-08-15 (đổi prefix Chứng từ bán hàng BC → XK toàn project, kể cả 14 đơn cũ đã ghi sổ) | 2026-08-09 (Trừ cọc tích hợp vào dropdown chọn sản phẩm)
 
 ---
 

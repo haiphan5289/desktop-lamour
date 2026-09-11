@@ -47,9 +47,9 @@
                                     Style="{StaticResource AppButton.Secondary.Medium}"
                                     Command="{Binding EditSalesOrderCommand}"
                                     Margin="0,0,8,0"/>
-                <controls:AppButton Content="⏸ Treo"
+                <controls:AppButton Content="↩️ Bỏ ghi"
                                     Style="{StaticResource AppButton.Secondary.Medium}"
-                                    Command="{Binding HoldSalesOrderCommand}"
+                                    Command="{Binding UnconfirmSalesOrderCommand}"
                                     Margin="0,0,8,0"/>
                 <controls:AppButton Content="🗑️ Xóa"
                                     Style="{StaticResource AppButton.Destructive.Medium}"
@@ -190,6 +190,11 @@
                     <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding StatusLabel}" Value="⏸ Treo">
+                                <Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </DataTrigger>
+                            <!-- "↩️ Bỏ ghi" (Draft, mới 2026-09-09) — cùng kiểu tô với "⏸ Treo". -->
+                            <DataTrigger Binding="{Binding StatusLabel}" Value="↩️ Bỏ ghi">
                                 <Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/>
                                 <Setter Property="FontWeight" Value="SemiBold"/>
                             </DataTrigger>

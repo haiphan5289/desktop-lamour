@@ -14,12 +14,20 @@ public partial class SalesReturnWindow : Window
 
     private SalesReturnResponseDto? _initialReturn;
 
+    // Cất giờ KHÔNG còn tự đóng popup (xem SalesReturnViewModel.SaveAsync — chỉ IsEditable = false,
+    // giữ popup mở để bấm "In" ngay). Vì vậy nút "Đóng"/X có thể đóng popup sau khi đã lưu mà
+    // KHÔNG đi qua RequestClose (RequestClose giờ chỉ còn dùng cho DeleteAsync) — phải tự nhớ đã
+    // lưu hay chưa để set DialogResult = true khi đóng, nếu không SalesReturnListViewModel sẽ
+    // không reload danh sách (chỉ reload khi ShowDialog() == true).
+    private bool _hasSaved;
+
     public SalesReturnWindow(SalesReturnViewModel viewModel)
     {
         InitializeComponent();
         ViewModel   = viewModel;
         DataContext = viewModel;
         viewModel.RequestClose += () => { if (IsVisible) DialogResult = true; };
+        viewModel.ReturnSaved  += () => _hasSaved = true;
 
         // Chọn xong 1 sản phẩm trong AppSearchableComboBox (Mã hàng/Tên hàng) → CommitEdit ngay
         // cho cả dòng, không đợi user bấm ra ngoài — tránh các cột tự điền (ĐVT/Đơn giá/TK...)
@@ -65,8 +73,10 @@ public partial class SalesReturnWindow : Window
                 "Xác nhận đóng",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
-            if (result != MessageBoxResult.Yes) e.Cancel = true;
+            if (result != MessageBoxResult.Yes) { e.Cancel = true; return; }
         }
+
+        if (_hasSaved && DialogResult is null) DialogResult = true;
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)

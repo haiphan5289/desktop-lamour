@@ -80,6 +80,12 @@ public partial class DocumentToolbar : UserControl
         DependencyProperty.Register(nameof(SaveLabel), typeof(string), typeof(DocumentToolbar),
             new PropertyMetadata("Ghi sổ"));
 
+    // 2026-09-10: mirror SaveLabel — nút "Bỏ ghi" giờ dùng chung 1 nút toggle với "Ghi sổ" (Treo →
+    // "Ghi sổ", Confirmed/Normal → "Bỏ ghi"), label cần đổi động theo trạng thái thay vì text tĩnh.
+    public static readonly DependencyProperty UnpostLabelProperty =
+        DependencyProperty.Register(nameof(UnpostLabel), typeof(string), typeof(DocumentToolbar),
+            new PropertyMetadata("Bỏ ghi"));
+
     public static readonly DependencyProperty CreateExportLabelProperty =
         DependencyProperty.Register(nameof(CreateExportLabel), typeof(string), typeof(DocumentToolbar),
             new PropertyMetadata("Lập phiếu xuất"));
@@ -89,6 +95,7 @@ public partial class DocumentToolbar : UserControl
             new PropertyMetadata(true));
 
     public string SaveLabel         { get => (string)GetValue(SaveLabelProperty);         set => SetValue(SaveLabelProperty, value); }
+    public string UnpostLabel       { get => (string)GetValue(UnpostLabelProperty);       set => SetValue(UnpostLabelProperty, value); }
     public string CreateExportLabel { get => (string)GetValue(CreateExportLabelProperty); set => SetValue(CreateExportLabelProperty, value); }
     public bool   ShowClose         { get => (bool)GetValue(ShowCloseProperty);           set => SetValue(ShowCloseProperty, value); }
 

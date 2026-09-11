@@ -121,8 +121,9 @@
                                   EditCommand="{Binding EditCommand}"
                                   DeleteCommand="{Binding DeleteCommand}"
                                   SaveCommand="{Binding SaveCommand}"
-                                  UnpostCommand="{Binding CancelCommand}"
-                                  HoldCommand="{Binding HoldCommand}"
+                                  SaveLabel="Cất"
+                                  UnpostCommand="{Binding ToggleConfirmCommand}"
+                                  UnpostLabel="{Binding UnpostButtonLabel}"
                                   PrintCommand="{Binding PrintCommand}"
                                   CloseRequested="CloseButton_Click"/>
 

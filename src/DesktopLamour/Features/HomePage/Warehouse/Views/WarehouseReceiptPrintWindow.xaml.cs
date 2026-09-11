@@ -191,8 +191,12 @@ public partial class WarehouseReceiptPrintWindow : Window
         content.Blocks.Add(new Paragraph(new Run($"- Họ và tên người giao: {deliverer}")) { Margin = new Thickness(0, 0, 0, 3) });
         content.Blocks.Add(new Paragraph(new Run($"- Địa chỉ: {partnerAddress}")) { Margin = new Thickness(0, 0, 0, 3) });
         content.Blocks.Add(new Paragraph(new Run($"- Diễn giải: {receipt.Description}")) { Margin = new Thickness(0, 0, 0, 3) });
+        // "Theo ..." — giữ đúng dòng mẫu 01-VT (KHÔNG bỏ) nhưng để trống chỗ số chứng từ gốc bằng
+        // dấu chấm (khớp ảnh mẫu MISA gốc user cung cấp: "Theo ................. ngày ... của ...")
+        // thay vì tự điền receipt.Reference (mã chứng từ trả hàng nội bộ) — field này đúng nghĩa
+        // mẫu 01-VT là ghi tay số hóa đơn/chứng từ gốc bên ngoài, không phải mã hệ thống tự có.
         content.Blocks.Add(new Paragraph(new Run(
-            $"- Theo {receipt.Reference} ngày {documentDate.Day} tháng {documentDate.Month} năm {documentDate.Year} của {receipt.CustomerName ?? receipt.SupplierName}"))
+            $"- Theo ................. ngày {documentDate.Day} tháng {documentDate.Month} năm {documentDate.Year} của {receipt.CustomerName ?? receipt.SupplierName}"))
         { Margin = new Thickness(0, 0, 0, 3) });
 
         var warehouseName = firstLine?.WarehouseName ?? "";
@@ -348,7 +352,7 @@ public partial class WarehouseReceiptPrintWindow : Window
         const double header          = 97; // bỏ dòng "Số tài khoản" → còn 4 dòng text header
         const double title           = 40;
         const double dateNoRow       = 38;
-        const double generalInfo     = 90;
+        const double generalInfo     = 90; // 4 dòng: Họ và tên/Địa chỉ/Diễn giải/Theo...
         const double tableHeaderRow  = 48; // 2 hàng tiêu đề
         const double perProductRow   = 32;
         const double congRow         = 32;

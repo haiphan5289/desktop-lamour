@@ -35,6 +35,12 @@ public partial class SalesOrderViewModel : ViewModelBase
     // KH}" theo khách hàng (OnSelectedCustomerChanged) vốn chỉ hợp lý khi mở từ module Bán hàng.
     public bool IsFromWarehouseExport { private get; set; }
 
+    // Set 1 LẦN bởi SalesOrderWindow.Initialize (cùng lúc với IsReadOnly ban đầu) — khác IsReadOnly
+    // (mutable, đổi liên tục qua Edit()/UnconfirmAsync), cờ này CỐ ĐỊNH suốt vòng đời popup để phân
+    // biệt "mở ở chế độ chỉ xem thật" (Sổ chi tiết bán hàng) khỏi "đang khóa vì vừa Bỏ ghi/Ghi sổ"
+    // — cả 2 đều có IsReadOnly=true nhưng CanEdit cần xử lý khác nhau (xem CanEdit bên dưới).
+    public bool IsViewOnlyMode { private get; set; }
+
     // Set bởi SalesOrderWindow.Initialize khi mở popup ở chế độ chỉ xem (double-click 1 dòng từ
     // "Sổ chi tiết bán hàng") — disable toàn bộ field nhập liệu + ẩn các nút hành động thay đổi
     // dữ liệu (Ghi sổ/Xóa/Treo/Hoàn), chỉ giữ In Hoá Đơn/Đóng.
@@ -43,30 +49,51 @@ public partial class SalesOrderViewModel : ViewModelBase
     partial void OnIsReadOnlyChanged(bool value)
     {
         OnPropertyChanged(nameof(IsEditable));
-        OnPropertyChanged(nameof(CanUnlock));
-        OnPropertyChanged(nameof(ShowHoldSection));
         OnPropertyChanged(nameof(HeaderSubtitle));
+        OnPropertyChanged(nameof(CanDeleteOrder));
         EditCommand.NotifyCanExecuteChanged();
         SaveCommand.NotifyCanExecuteChanged();
         DeleteCommand.NotifyCanExecuteChanged();
         CancelCommand.NotifyCanExecuteChanged();
-        HoldCommand.NotifyCanExecuteChanged();
+        ToggleConfirmCommand.NotifyCanExecuteChanged();
     }
 
-    // 2026-09-07: bỏ hẳn khóa form sau khi Ghi sổ (theo yêu cầu — trùng cách đã làm cho Chứng từ
-    // hàng bán bị trả lại). Mở 1 đơn đã Ghi sổ là sửa/xóa/Cất được ngay, không cần bấm "Treo" trước.
-    // BE (UpdateSalesOrderUseCase/DeleteSalesOrderUseCase) vốn không có guard trạng thái, tự đảo tồn
-    // kho khi sửa/xóa đơn Normal. Form chỉ còn bị disable ở chế độ xem chỉ-đọc từ "Sổ chi tiết bán hàng".
+    // 2026-09-10 (chốt qua mô phỏng tương tác cho SalesReturn, mirror sang đây — xem
+    // sales-return.md mục "State machine đã chốt"): "Ghi sổ" cần đúng 2 lần bấm liên tiếp trên nút
+    // toggle (lần 1 chỉ "tự tin hoá" — đổi nhãn + mở khóa Xóa, KHÔNG gọi BE/đụng tồn kho; lần 2 mới
+    // thật sự gọi Confirm). Cờ này WPF-ONLY, KHÔNG map từ CurrentOrder.Status — reset về false mỗi
+    // khi Cất (Held mới toanh, "chưa đụng"), set thẳng true khi vừa Bỏ ghi xong (hạ cánh ở "Treo đã
+    // đụng" luôn, không bắt bấm "Bỏ ghi" lại từ đầu).
+    [ObservableProperty] private bool _isArmed;
+
+    partial void OnIsArmedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanDeleteOrder));
+        OnPropertyChanged(nameof(UnpostButtonLabel));
+        DeleteCommand.NotifyCanExecuteChanged();
+    }
+
+    // 2026-09-10: Xóa chỉ bật khi đang ở "Treo đã đụng toggle" (IsArmed) VÀ form còn khóa — khác
+    // Cất/Sửa/Hủy (dùng IsEditable chung) — khớp bảng đã chốt qua mô phỏng cho SalesReturn.
+    public bool CanDeleteOrder => CurrentOrder is not null && !IsConfirmed && IsReadOnly && IsArmed;
+
+    // 2026-09-09 (đảo ngược 1 phần quyết định 2026-09-07 — mirror SalesReturn cùng ngày, theo yêu
+    // cầu): đơn đang Normal (đã Ghi sổ) giờ LẠI bị khóa, phải bấm "↩️ Bỏ ghi" trước rồi "Sửa" mới
+    // sửa được — không còn sửa/Cất trực tiếp ngay sau Ghi sổ nữa. Đơn Held ("Treo", chưa hoàn
+    // chỉnh) và Draft ("đã Bỏ ghi") không bị khóa bởi vế `!IsConfirmed` (chỉ Normal mới bị) — vẫn
+    // sửa được ngay, chỉ khác ở việc Draft cần đã đi qua bước Bỏ ghi trước đó.
     public bool IsConfirmed => CurrentOrder is not null && CurrentOrder.Status == 0; // 0 = Normal = "Ghi sổ"
-    public bool IsEditable  => !IsReadOnly;
+    // 2026-09-10: "Cất" không còn tự Ghi sổ — đơn mới/vừa sửa luôn ở Held ("Treo"). Nút "Ghi sổ"/
+    // "Bỏ ghi" giờ dùng chung 1 nút toggle (xem ToggleConfirmCommand/UnpostButtonLabel bên dưới),
+    // thay cho nút "Treo" độc lập đã bỏ (CanUnlock/HoldCommand — dư thừa với luồng mới).
+    public bool IsHeld => CurrentOrder is not null && CurrentOrder.Status == 1; // 1 = Held = "Treo"
+    // IsViewOnlyMode ở đây là NGOẠI LỆ bắt buộc, không phải tùy chọn: nếu chỉ viết
+    // `!IsConfirmed && !IsReadOnly`, form sẽ KHÔNG BAO GIỜ mở khóa được cho 1 đơn Normal xem từ Sổ
+    // chi tiết bán hàng dù đã bấm "Sửa" (CanEdit đã cho phép bấm — xem CanEdit — nhưng IsEditable
+    // vẫn tự khóa Grid vì IsConfirmed=true bất kể IsReadOnly) — vỡ mất lối thoát cũ vốn đã hoạt
+    // động trước khi có tính năng "Bỏ ghi" này.
+    public bool IsEditable  => CurrentOrder is null || (!IsReadOnly && (IsViewOnlyMode || !IsConfirmed));
 
-    // CanExecute cho HoldCommand ("Treo") — bấm được khi: (a) chứng từ MỚI, chưa Cất lần nào
-    // (CurrentOrder null — Treo dùng để lưu tạm 1 đơn chưa hoàn chỉnh, không cần Ghi sổ trước),
-    // HOẶC (b) chứng từ đang Normal (IsConfirmed — treo lại 1 đơn đã Ghi sổ). Không bấm được khi
-    // đã đang Treo sẵn (không có gì để treo thêm — BE cũng chặn double-hold).
-    public bool CanUnlock => !IsReadOnly && (CurrentOrder is null || IsConfirmed);
-
-    public bool ShowHoldSection => HasExistingOrder && !IsReadOnly;
     public string HeaderSubtitle => IsReadOnly
         ? "Xem chi tiết chứng từ (chỉ đọc)"
         : "Bán hàng hóa, dịch vụ trong nước chưa thu tiền";
@@ -121,14 +148,30 @@ public partial class SalesOrderViewModel : ViewModelBase
         // khi chứng từ này được Ghi sổ và mở lại từ danh sách.
         _siblingIndex = -1;
         IsReadOnly    = false;
+        IsArmed       = false;
         await InitializeAsync(null, ct);
         NotifyNavigationChanged();
     }
 
-    private bool CanEdit => IsReadOnly;
+    // "Sửa" — chỉ bật khi đơn đang bị khóa (IsReadOnly). Với đơn Normal (Confirmed) mở BÌNH THƯỜNG
+    // (không phải chế độ xem), phải bấm "↩️ Bỏ ghi" trước — không có đường tắt qua "Sửa" thẳng
+    // (mirror SalesReturn cùng ngày). NGOẠI LỆ: chế độ xem chỉ-đọc thật (IsViewOnlyMode, mở từ Sổ
+    // chi tiết bán hàng) giữ nguyên hành vi CŨ — "Sửa" vẫn là lối thoát để mở khóa xem-thành-sửa
+    // ngay, bất kể Confirmed hay không (đã vậy từ trước, không phải hệ quả của tính năng Bỏ ghi
+    // mới nên không đổi).
+    private bool CanEdit => CurrentOrder is not null && IsReadOnly && (IsViewOnlyMode || !IsConfirmed);
 
     [RelayCommand(CanExecute = nameof(CanEdit))]
-    private void Edit() => IsReadOnly = false;
+    private void Edit()
+    {
+        IsReadOnly = false;
+        BeginDirtyTracking();
+
+        // PopulateFormFromCurrentAsync chỉ nạp đúng số dòng THẬT — không có dòng trống dư như
+        // ClearForm() cho đơn mới. Bấm "Sửa" xong thêm luôn InitialEmptyLineCount dòng trống để gõ
+        // thêm sản phẩm ngay, không phải tự bấm "Thêm dòng" nhiều lần (mirror SalesReturn).
+        for (var i = 0; i < InitialEmptyLineCount; i++) AddLine();
+    }
 
     // Dùng chung cho Trước/Sau/Thêm — cảnh báo mất dữ liệu chưa lưu, khớp text đã dùng ở
     // SalesOrderWindow.OnClosing.
@@ -149,7 +192,8 @@ public partial class SalesOrderViewModel : ViewModelBase
     private readonly ICreateSalesOrderUseCase       _createOrder;
     private readonly IUpdateSalesOrderUseCase       _updateOrder;
     private readonly IDeleteSalesOrderUseCase       _deleteOrder;
-    private readonly IHoldSalesOrderUseCase         _holdOrder;
+    private readonly IConfirmSalesOrderUseCase      _confirmOrder;
+    private readonly IUnconfirmSalesOrderUseCase    _unconfirmOrder;
     private readonly IGetNextSalesOrderCodeUseCase  _getNextCode;
     private readonly IGetCustomersUseCase           _getCustomers;
     private readonly IGetEmployeesUseCase           _getEmployees;
@@ -219,17 +263,19 @@ public partial class SalesOrderViewModel : ViewModelBase
 
     partial void OnCurrentOrderChanged(SalesOrderResponseDto? value)
     {
-        StatusLabel = value?.Status switch { 1 => "⏸ Treo", _ => "📄 Ghi sổ" };
+        StatusLabel = value?.Status switch { 1 => "⏸ Treo", 2 => "↩️ Bỏ ghi", _ => "📄 Ghi sổ" };
         OnPropertyChanged(nameof(HasExistingOrder));
-        OnPropertyChanged(nameof(ShowHoldSection));
         OnPropertyChanged(nameof(IsConfirmed));
+        OnPropertyChanged(nameof(IsHeld));
         OnPropertyChanged(nameof(IsEditable));
-        OnPropertyChanged(nameof(CanUnlock));
-        HoldCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(CanDeleteOrder));
+        OnPropertyChanged(nameof(UnpostButtonLabel));
         SaveCommand.NotifyCanExecuteChanged();
         DeleteCommand.NotifyCanExecuteChanged();
         CancelCommand.NotifyCanExecuteChanged();
         PrintCommand.NotifyCanExecuteChanged();
+        EditCommand.NotifyCanExecuteChanged();
+        ToggleConfirmCommand.NotifyCanExecuteChanged();
     }
 
     public ObservableCollection<SalesOrderLineItem> Lines { get; } = new();
@@ -246,7 +292,8 @@ public partial class SalesOrderViewModel : ViewModelBase
         ICreateSalesOrderUseCase       createOrder,
         IUpdateSalesOrderUseCase       updateOrder,
         IDeleteSalesOrderUseCase       deleteOrder,
-        IHoldSalesOrderUseCase         holdOrder,
+        IConfirmSalesOrderUseCase      confirmOrder,
+        IUnconfirmSalesOrderUseCase    unconfirmOrder,
         IGetNextSalesOrderCodeUseCase  getNextCode,
         IGetCustomersUseCase           getCustomers,
         IGetEmployeesUseCase           getEmployees,
@@ -263,7 +310,8 @@ public partial class SalesOrderViewModel : ViewModelBase
         _createOrder                = createOrder;
         _updateOrder                = updateOrder;
         _deleteOrder                = deleteOrder;
-        _holdOrder                  = holdOrder;
+        _confirmOrder               = confirmOrder;
+        _unconfirmOrder             = unconfirmOrder;
         _getNextCode                = getNextCode;
         _getCustomers               = getCustomers;
         _getEmployees               = getEmployees;
@@ -313,11 +361,21 @@ public partial class SalesOrderViewModel : ViewModelBase
             {
                 _nextDocumentNumber = await _getNextCode.ExecuteAsync(IsFromWarehouseExport, ct);
                 CurrentOrder        = null;
+                IsArmed             = false;
                 ClearForm();
             }
             else
             {
                 CurrentOrder = order;
+                // 2026-09-10 (mirror SalesReturn cùng ngày, chốt qua mô phỏng tương tác): mở lại BẤT
+                // KỲ đơn đã tồn tại nào (Held/Draft/Normal) từ danh sách đều khóa form ngay — phải
+                // bấm "Sửa" mới sửa được. NGOẠI LỆ: IsViewOnlyMode (Sổ chi tiết bán hàng) đã tự set
+                // IsReadOnly=true từ code-behind trước khi InitializeAsync chạy — set lại true ở đây
+                // không đổi gì, không xung đột.
+                IsReadOnly = true;
+                // Draft (đã từng qua 1 lần Bỏ ghi trước đó) coi như "đã đụng toggle" — mở luôn Xóa +
+                // hiện sẵn "Ghi sổ" thay vì bắt bấm "Bỏ ghi" lại từ đầu. Held mới/Normal thì chưa.
+                IsArmed = order.Status == 2; // 2 = Draft
                 await PopulateFormFromCurrentAsync(ct);
             }
         }
@@ -407,19 +465,10 @@ public partial class SalesOrderViewModel : ViewModelBase
         // (Amount != 0) — nếu dòng tự động thêm nhưng user bỏ trống thì bỏ qua, không lỗi.
         var depositLine = Lines.FirstOrDefault(l => l.IsDepositDeductionRow && l.Amount != 0);
 
-        // Validate tạm ở client theo AvailableDepositBalance chụp lúc chọn "Trừ cọc" — BE mới là
-        // nơi quyết định thật (tự phân bổ FIFO qua nhiều Deposit, xem CreateDepositDeductionUseCase).
-        if (depositLine is not null)
-        {
-            var deductAmount = Math.Abs(depositLine.Amount);
-            if (deductAmount > depositLine.AvailableDepositBalance)
-            {
-                HasError     = true;
-                ErrorMessage = "Số tiền trừ cọc vượt quá tổng số dư cọc còn lại của khách hàng.";
-                return;
-            }
-        }
-
+        // Bỏ hẳn validate "vượt quá số dư cọc" ở client (theo yêu cầu) — BE
+        // (CreateDepositDeductionUseCase) đã có đúng validate này (tự phân bổ FIFO qua nhiều
+        // Deposit) và trả lỗi 400 nếu vượt, nên không mất đi ràng buộc thật, chỉ bỏ bước chặn sớm
+        // dư thừa ở client.
         IsBusy = true;
         try
         {
@@ -462,11 +511,17 @@ public partial class SalesOrderViewModel : ViewModelBase
 
             StopDirtyTracking();
             OrderSaved?.Invoke();
+            CurrentOrder = result;
+            // 2026-09-10 (chốt qua mô phỏng tương tác, đảo ngược quyết định trước đó): MỌI lần Cất
+            // đều khóa form lại ngay + reset về "Treo chưa đụng toggle" — phải bấm "Sửa" mới sửa
+            // tiếp được, và phải bấm toggle từ đầu (2 lần) mới Ghi sổ được, kể cả vừa Sửa từ Draft.
+            IsReadOnly = true;
+            IsArmed    = false;
             IsBusy = false;
 
-            // "Ghi sổ" = CHỈ lưu đơn (+ trừ cọc nếu có). KHÔNG tự mở cửa sổ in — muốn in thì bấm
-            // nút "In" trên toolbar (workflow "từng bước" giống MISA).
-            RequestClose?.Invoke();
+            // "Cất" = CHỈ lưu đơn (+ trừ cọc nếu có) ở Held, KHÔNG tự Ghi sổ. KHÔNG tự mở cửa sổ in
+            // — muốn in thì bấm nút "In" trên toolbar (workflow "từng bước" giống MISA). Giữ popup
+            // MỞ sau khi Cất (không RequestClose nữa) để bấm "In" ngay.
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -491,7 +546,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         printWindow.ShowDialog();
     }
 
-    [RelayCommand(CanExecute = nameof(IsEditable))]
+    [RelayCommand(CanExecute = nameof(CanDeleteOrder))]
     private async Task DeleteAsync(CancellationToken ct = default)
     {
         if (CurrentOrder is null) return;
@@ -933,85 +988,64 @@ public partial class SalesOrderViewModel : ViewModelBase
         RevenueAccount    = item.RevenueAccount,
     };
 
-    // ── Hold ──────────────────────────────────────────────────────────────────
     public bool HasExistingOrder => CurrentOrder is not null;
 
-    // Trước đây CanExecute = ShowHoldSection (= HasExistingOrder && !IsReadOnly) — "Treo" bị disable
-    // hoàn toàn lúc Thêm mới (CurrentOrder null, chưa Ghi sổ lần nào) vì HoldAsync gọi thẳng
-    // _holdOrder.ExecuteAsync(CurrentOrder.Id) cần 1 Id thật đã tồn tại trên BE. Đổi CanExecute
-    // sang CanUnlock (2026-09-01, thay cho IsEditable) — "Treo"/"Bỏ ghi" giờ mang 2 vai trò: (a)
-    // lưu tạm 1 chứng từ MỚI chưa hoàn chỉnh (CurrentOrder null, không cần Ghi sổ trước), (b) MỞ
-    // KHÓA lại 1 chứng từ ĐÃ Ghi sổ để sửa (IsConfirmed) — không dùng IsEditable vì IsEditable giờ
-    // đã loại trừ IsConfirmed (form khóa khi Ghi sổ), ngược hẳn với điều kiện Bỏ ghi cần (chỉ bấm
-    // được KHI đang khóa).
-    [RelayCommand(CanExecute = nameof(CanUnlock))]
-    private async Task HoldAsync(CancellationToken ct = default)
+    // ── Ghi sổ / Bỏ ghi (nút toggle) ─────────────────────────────────────────
+    // 2026-09-10 (v2 — mirror SalesReturnViewModel cùng ngày, chốt qua mô phỏng tương tác): "Cất"
+    // không còn tự Ghi sổ (luôn ra Held) — nút "Treo" độc lập cũ (HoldAsync/CreateThenHoldAsync) bị
+    // bỏ vì dư thừa. "Ghi sổ" và "Bỏ ghi" dùng CHUNG 1 nút (UnpostCommand), nhưng đi lên (chưa
+    // Normal → Normal) và đi xuống (Normal → chưa Normal) KHÔNG đối xứng:
+    //   - Đi LÊN cần đúng 2 lần bấm liên tiếp: lần 1 (nhãn đang "Bỏ ghi", IsArmed=false) chỉ
+    //     "tự tin hoá" — set IsArmed=true, đổi nhãn thành "Ghi sổ", mở khóa Xóa — KHÔNG gọi BE,
+    //     không đụng tồn kho. Lần 2 (nhãn đang "Ghi sổ", IsArmed=true) mới thật sự gọi Confirm.
+    //   - Đi XUỐNG chỉ 1 lần bấm ("Bỏ ghi" lúc Normal) → gọi Unconfirm ngay, và hạ cánh THẲNG ở
+    //     "chưa Normal, IsArmed=true" (nhãn sẵn "Ghi sổ") — không bắt bấm "Bỏ ghi" lại từ đầu.
+    private bool CanToggleConfirm => CurrentOrder is not null && IsReadOnly;
+    public string UnpostButtonLabel => (!IsConfirmed && IsArmed) ? "Ghi sổ" : "Bỏ ghi";
+
+    [RelayCommand(CanExecute = nameof(CanToggleConfirm))]
+    private async Task ToggleConfirmAsync(CancellationToken ct = default)
     {
-        if (CurrentOrder is null)
+        if (CurrentOrder is null) return;
+
+        // Lần bấm đầu tiên khi chưa Normal (Held/Draft) — chỉ "tự tin hoá", không gọi BE.
+        if (!IsConfirmed && !IsArmed)
         {
-            await CreateThenHoldAsync(ct);
+            IsArmed = true;
             return;
+        }
+
+        if (IsConfirmed)
+        {
+            var confirm = MessageBox.Show(
+                $"Bạn có chắc muốn bỏ ghi đơn hàng '{CurrentOrder.DocumentNumber}'? Tồn kho đã trừ lúc ghi sổ sẽ được hoàn tác.",
+                "Xác nhận bỏ ghi", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (confirm != MessageBoxResult.Yes) return;
         }
 
         IsBusy = true;
         try
         {
-            var updated = await _holdOrder.ExecuteAsync(CurrentOrder.Id, ct);
-            CurrentOrder = updated;
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(ex.Message, "Treo đơn thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
-        finally { IsBusy = false; }
-    }
-
-    // Treo 1 chứng từ hoàn toàn mới — validate y hệt SaveAsync (chọn khách hàng + ít nhất 1 mặt
-    // hàng/Trừ cọc) rồi Create, sau đó gọi Treo ngay trên bản ghi vừa tạo. Đóng popup sau khi xong
-    // (giống SaveAsync đóng sau khi Ghi sổ chứng từ mới) — chứng từ đã thật sự tồn tại trên BE nên
-    // danh sách phía sau cần reload để hiện chứng từ Treo vừa tạo.
-    private async Task CreateThenHoldAsync(CancellationToken ct)
-    {
-        HasError     = false;
-        ErrorMessage = string.Empty;
-
-        if (SelectedCustomer is null)
-        {
-            HasError     = true;
-            ErrorMessage = "Vui lòng chọn khách hàng.";
-            return;
-        }
-
-        var hasProductLine = Lines.Any(l => !l.IsDepositDeductionRow && l.ProductId > 0);
-        var hasDepositLine = Lines.Any(l => l.IsDepositDeductionRow && l.Amount != 0);
-        if (!hasProductLine && !hasDepositLine)
-        {
-            HasError     = true;
-            ErrorMessage = "Vui lòng nhập ít nhất một mặt hàng hoặc chọn Trừ cọc.";
-            return;
-        }
-
-        IsBusy = true;
-        try
-        {
-            var request = BuildCreateRequest();
-            var created = await _createOrder.ExecuteAsync(request, ct);
-            _logger.LogInformation("SalesOrder created for Treo: {DocumentNumber}", created.DocumentNumber);
-
-            var held = await _holdOrder.ExecuteAsync(created.Id, ct);
-            CurrentOrder = held;
-
-            StopDirtyTracking();
-            IsBusy = false;
-            RequestClose?.Invoke();
+            var wasConfirmed = IsConfirmed;
+            var result = wasConfirmed
+                ? await _unconfirmOrder.ExecuteAsync(CurrentOrder.Id, ct)
+                : await _confirmOrder.ExecuteAsync(CurrentOrder.Id, ct);
+            // Bắn OrderSaved dù không phải "Save" — tín hiệu duy nhất SalesOrderWindow.xaml.cs dùng
+            // để set cờ _hasSaved → DialogResult=true khi đóng popup, để SalesOrderListViewModel
+            // reload danh sách.
+            OrderSaved?.Invoke();
+            CurrentOrder = result;
+            IsReadOnly   = true; // form vẫn khóa tới khi bấm "Sửa"
+            // Bỏ ghi (wasConfirmed) → hạ cánh ở "đã đụng toggle" (Ghi sổ sẵn, Xóa mở) theo bảng đã
+            // chốt. Ghi sổ xong (Normal) → IsArmed hết ý nghĩa, reset cho sạch.
+            IsArmed = wasConfirmed;
+            _logger.LogInformation("SalesOrder {Id} toggled confirm — new status {Status}", result.Id, result.Status);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create+hold sales order");
-            HasError     = true;
-            ErrorMessage = ex.Message;
-            MessageBox.Show(ex.Message, "Treo đơn thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+            _logger.LogError(ex, "Failed to toggle confirm for sales order {Id}", CurrentOrder.Id);
+            MessageBox.Show(ex.Message, "Thao tác thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally { IsBusy = false; }
     }

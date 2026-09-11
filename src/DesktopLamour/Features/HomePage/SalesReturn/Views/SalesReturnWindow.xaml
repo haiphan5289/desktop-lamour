@@ -133,10 +133,12 @@
                                   PrevCommand="{Binding NavigatePrevCommand}"
                                   NextCommand="{Binding NavigateNextCommand}"
                                   AddCommand="{Binding AddNewCommand}"
+                                  EditCommand="{Binding EditCommand}"
                                   SaveCommand="{Binding SaveCommand}"
+                                  SaveLabel="Cất"
+                                  UnpostCommand="{Binding ToggleConfirmCommand}"
+                                  UnpostLabel="{Binding UnpostButtonLabel}"
                                   DeleteCommand="{Binding DeleteCommand}"
-                                  CreateExportCommand="{Binding CreateWarehouseReceiptCommand}"
-                                  CreateExportLabel="Lập PN"
                                   PrintCommand="{Binding PrintCommand}"
                                   CloseRequested="CloseButton_Click"/>
 

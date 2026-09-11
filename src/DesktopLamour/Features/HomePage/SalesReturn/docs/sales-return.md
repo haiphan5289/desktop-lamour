@@ -3,7 +3,254 @@
 > Module: `Features/HomePage/SalesReturn`
 > BE counterpart: `be-window-lamour/src/Lamour.Application/Features/SalesReturn/docs/sales-return.md`
 > First documented: 2026-08-28 (doc mới — module trước đó chưa có `docs/` riêng phía WPF dù BE đã có)
-> **Last updated: 2026-09-08** — tách "Ghi sổ" khỏi in & lập PN (workflow từng bước giống MISA — xem "Update — 2026-09-08" ngay dưới). Trước đó: 2026-09-07 — bỏ hẳn vòng đời Nháp → Ghi sổ. 2026-08-31 — Vietkey fix, gộp thật "Ghi sổ"→"Lập PN" (in Phiếu Nhập Kho), bỏ auto-fill Diễn giải, workflow Ghi sổ/Bỏ ghi thật (BE thêm Draft/Confirmed), redesign màn danh sách theo MISA, đổi mặc định bộ lọc ngày sang "Đầu tháng đến hiện tại".
+> **Last updated: 2026-09-11 (cùng ngày, mục mới nhất)** — nút "Bỏ ghi" trên danh sách (list toolbar)
+> bỏ hẳn dialog xác nhận Yes/No, bấm là vào thẳng không hỏi lại — xem "Update — 2026-09-11: bỏ dialog
+> xác nhận..." ngay dưới. Trước đó cùng ngày: danh sách tô màu (TextBrand/SemiBold) cả dòng "Treo"
+> (`IsHeld`), trước đây chỉ "Nháp" (`IsDraft`) được tô nên Treo trông giống hệt Đã ghi sổ; bộ lọc
+> "Trạng thái" thêm lựa chọn "Treo" (tách khỏi "Nháp" — trước đây "Nháp" ngầm hiện cả Held lẫn Draft,
+> chỉ ẩn Confirmed) — xem "Update — 2026-09-11: tô màu dòng..." ngay dưới. Trước đó 2026-09-10 — tách "Cất" và "Ghi sổ"
+> thành 2 hành động riêng, tái kích hoạt
+> trạng thái Treo — xem "Update — 2026-09-10" ngay dưới. Trước đó 2026-09-09 — tách rời "Bỏ ghi" (chỉ đảo trạng thái) khỏi "Sửa" (mới thật sự mở
+> khóa dữ liệu) — xem "Update — 2026-09-09 (đổi ý lần 2)" ngay dưới. Trước đó cùng ngày: thêm nút
+> "Bỏ ghi" thật (đảo Confirmed→Draft + hoàn tác tồn kho, đảo ngược 1 phần quyết định 2026-09-07),
+> cột/filter "Trạng thái" thêm lại ở danh sách (rồi đổi cột thành highlight cả dòng). Nút "In"
+> chuyển sang in "PHIẾU NHẬP KHO" (tái dùng `WarehouseReceiptPrintWindow`, `SalesReturnPrintWindow`
+> đã xóa hẳn); "Ghi sổ" giữ popup mở thay vì tự đóng. Trước đó: 2026-09-08 — tách "Ghi sổ" khỏi in &
+> lập PN (workflow từng bước giống MISA). 2026-09-07 — bỏ hẳn vòng đời Nháp → Ghi sổ. 2026-08-31 —
+> Vietkey fix, gộp thật "Ghi sổ"→"Lập PN" (in Phiếu Nhập Kho), bỏ auto-fill Diễn giải, workflow Ghi
+> sổ/Bỏ ghi thật (BE thêm Draft/Confirmed), redesign màn danh sách theo MISA, đổi mặc định bộ lọc
+> ngày sang "Đầu tháng đến hiện tại".
+
+## Update — 2026-09-11: bỏ dialog xác nhận khi bấm "Bỏ ghi" trên danh sách
+
+Theo yêu cầu (screenshot dialog `MessageBox` "Xác nhận bỏ ghi" từ máy thật, xác nhận phạm vi qua
+`AskUserQuestion`): nút "Bỏ ghi" trên toolbar danh sách bấm vào thẳng, không còn hỏi lại Yes/No.
+
+| File | Thay đổi |
+|---|---|
+| `ViewModels/SalesReturnListViewModel.cs` (`UnconfirmSalesReturnAsync`) | Xóa khối `MessageBox.Show("Xác nhận bỏ ghi", ...)` + check `confirm != MessageBoxResult.Yes` — gọi thẳng `_unconfirmReturn.ExecuteAsync` |
+
+**Chỉ áp dụng cho nút trên danh sách** — dialog xác nhận tương tự trong popup chi tiết
+(`SalesReturnViewModel.ToggleConfirmAsync`, khi đang `Confirmed` bấm "Bỏ ghi") **KHÔNG đổi**, vẫn còn
+cảnh báo Yes/No trước khi trừ lại tồn kho. Lúc đầu **không** đồng bộ sang SalesOrder theo yêu cầu ban
+đầu — nhưng ngay sau đó đã được clone sang `SalesOrderListViewModel.UnconfirmSalesOrderAsync` (xem
+`Sales/docs/sales.md` mục "Update — 2026-09-11: bỏ dialog xác nhận..." cùng ngày), nên hiện tại cả 2
+module đã đồng bộ như các lần sửa trước.
+
+Không đổi BE. Verify: `dotnet build -p:EnableWindowsTargeting=true` 0 lỗi (cross-compile trên Mac).
+**Chưa test thật trên UTM.**
+
+## Update — 2026-09-11: tô màu dòng "Treo" trên danh sách + thêm filter "Treo"
+
+Theo phản hồi (screenshot MISA tham chiếu, xác nhận qua `AskUserQuestion`): danh sách trước đây
+không phân biệt màu giữa "Treo" và "Đã ghi sổ" (chỉ "Nháp" được tô `AppColor.TextBrand`/SemiBold),
+và bộ lọc "Trạng thái" không có lựa chọn "Treo".
+
+| File | Thay đổi |
+|---|---|
+| `Views/SalesReturnListView.xaml` (`DataGrid.RowStyle`) | Thêm `DataTrigger Binding="{Binding IsHeld}" Value="True"` — cùng màu/độ đậm với trigger `IsDraft` đã có (khớp pattern `SalesOrderListView.xaml` đã dùng cho "⏸ Treo") |
+| `ViewModels/SalesReturnListViewModel.cs` (`StatusOptions`) | `{"Tất cả", "Đã ghi sổ", "Nháp"}` → **`{"Tất cả", "Đã ghi sổ", "Treo", "Nháp"}`** |
+| `ViewModels/SalesReturnListViewModel.cs` (`FilterItem`) | "Nháp" đổi từ `!item.IsConfirmed` (ngầm hiện cả Held+Draft) → `!item.IsDraft` (chỉ Draft thật); thêm dòng lọc riêng cho "Treo" → `!item.IsHeld` |
+
+Không đổi BE — `SalesReturnStatus.Held` đã tồn tại sẵn từ 2026-09-10, `SalesReturnListItem.IsHeld`
+cũng có sẵn, chỉ chưa được dùng ở UI danh sách. Verify: `dotnet build -p:EnableWindowsTargeting=true`
+0 lỗi (cross-compile trên Mac). **Chưa test thật trên UTM.**
+
+## Review Artifact — workflow cho kế toán
+
+Trang review 2 màn hình (popup + danh sách) + luồng Cất/Ghi sổ/Bỏ ghi cho kế toán xác nhận trước
+khi vận hành — xem chi tiết + link tại
+`be-window-lamour/.../SalesReturn/docs/sales-return.md` mục "Review Artifact — workflow cho kế
+toán". Kế toán để lại góp ý bằng comment trực tiếp trên trang.
+
+**Export tĩnh**: artifact yêu cầu tài khoản Claude + bật chia sẻ thủ công qua Share
+trên claude.ai — không public ra URL khác được. Để gửi kế toán qua Zalo/email không cần tài khoản,
+có 1 bản HTML tĩnh (nội dung giống hệt, bỏ checkbox tick "đã xem qua" vì chỉ lưu
+`localStorage` theo trình duyệt, đổi thành danh sách đánh số) tại
+`be-window-lamour/src/Lamour.Application/Features/SalesReturn/docs/ChungTuTraHangBan-Review.html`
+(chuyển vào repo BE 2026-09-11, trước đó ở `~/Desktop/` — giờ version-controlled cùng doc BE)
+— không tự đồng bộ khi artifact gốc đổi, cần export lại thủ công (ghi đè file này) nếu cập nhật thêm.
+
+**Đối chiếu lại lần 2 (2026-09-11, cùng ngày)**: sau khi bỏ nút "Lập PN" (mục "Update — 2026-09-11"
+ngay trên) và fix màu Treo/filter ở danh sách, đã đọc lại code lần nữa và cập nhật cả artifact lẫn
+bản export tĩnh cho khớp — mockup popup bỏ nút "🧾 Lập PN", Bước 7 đổi thành "In — tự tạo Phiếu Nhập
+Kho khi cần" (verify: `PrintAsync` trong `SalesReturnViewModel.cs` vẫn gọi
+`_createWarehouseReceipt.ExecuteAsync` nếu chưa có Phiếu Nhập Kho liên kết — hành vi auto-create khi
+in không đổi, chỉ mất nút bấm riêng), mockup danh sách thêm ví dụ dòng "Treo" tô cùng màu "Nháp",
+điểm xác nhận #3 trong 6 điểm đánh dấu ✅ Đã fix thay vì để nguyên câu hỏi lỗi thời.
+
+## Update — 2026-09-10: tách "Cất" và "Ghi sổ", tái kích hoạt trạng thái Treo
+
+Theo yêu cầu (áp dụng đồng bộ cho cả SalesOrder — xem `Sales/docs/sales.md` mục cùng ngày): **"Cất"
+không còn tự Ghi sổ**. BE (`be-window-lamour`) thêm lại `SalesReturnStatus.Held` ("Treo"),
+`CreateSalesReturnUseCase`/`UpdateSalesReturnUseCase` giờ luôn kết thúc ở `Held`, không cộng tồn kho;
+thêm `POST /{id}/confirm` ("Ghi sổ" thật — cộng tồn kho) tách khỏi Create/Update. Xem
+`be-window-lamour/.../SalesReturn/docs/sales-return.md` mục "Update — 2026-09-10" cho chi tiết BE
+(đã test thật qua curl + psql: Create→Held(kho không đổi)→Confirm(kho đổi đúng chiều)→Unconfirm
+(hoàn tác) hoạt động đúng).
+
+Phía WPF:
+
+- **`DocumentToolbar`** — thêm DP `UnpostLabel` (mirror `SaveLabel` có sẵn), bind
+  `Text="{Binding UnpostLabel, ElementName=Self}"` cho nút "Bỏ ghi" thay vì text tĩnh.
+- **`SalesReturnViewModel`** — thêm `IsHeld` (`CurrentReturn?.Status == "Held"`),
+  `IConfirmSalesReturnUseCase _confirmReturn`. `UnconfirmCommand` đổi tên/gộp thành
+  `ToggleConfirmCommand` (`CanExecute = IsHeld || IsConfirmed`) — 1 nút duy nhất trên toolbar: Held
+  → hiện "Ghi sổ" (gọi Confirm, cộng tồn kho), Confirmed → hiện "Bỏ ghi" (gọi Unconfirm, logic hoàn
+  tồn kho không đổi). `UnpostButtonLabel` computed property cấp label động. `IsEditable`/`CanEdit`
+  không cần đổi công thức (`!IsConfirmed` đã tự đúng với Held).
+- **`SalesReturnWindow.xaml`** — `UnpostCommand="{Binding ToggleConfirmCommand}"` +
+  `UnpostLabel="{Binding UnpostButtonLabel}"`.
+- **`SalesReturnListItem`** — thêm `IsHeld`, `StatusLabel` đổi thành switch 3 nhánh
+  (`Held → "⏸ Treo"`, `Confirmed → "📄 Đã ghi sổ"`, còn lại `"↩️ Nháp"`) — mirror
+  `SalesOrderListItem`. Không thêm filter riêng cho Treo (SalesOrder cũng không có).
+- **Client-side use case chain** (`Data/Services/ISalesReturnService.cs` + impl,
+  `Data/Repositories/ISalesReturnRepository.cs` + impl, `Domain/UseCases/`) — thêm `ConfirmAsync`
+  (`POST /{id}/confirm`) xuyên suốt 3 lớp, `IConfirmSalesReturnUseCase`/`ConfirmSalesReturnUseCase.cs`
+  mới. DI trong `HomeServiceCollectionExtensions.cs` thêm dòng tương ứng cạnh Unconfirm.
+
+**Verify**: `dotnet build src/DesktopLamour/DesktopLamour.csproj -p:EnableWindowsTargeting=true` —
+0 lỗi, 0 warning (build cross-compile được trên Mac dù target `net8.0-windows`). **Chưa test qua
+UTM thật** — cần verify: mở chứng từ mới → Cất → status Treo, tồn kho không đổi → bấm "Ghi sổ" → status
+Confirmed, tồn kho cộng đúng → bấm lại (giờ hiện "Bỏ ghi") → status Draft, tồn kho hoàn tác.
+
+### ⚠️ State machine thật đã chốt lại KHÁC bản implement trên (2026-09-10, cùng ngày)
+
+Test tay trên UTM lộ ra toggle 2 chiều đơn giản ở trên **sai** — hành vi đúng phức tạp hơn, đã chốt
+qua 1 Artifact mô phỏng tương tác (user bấm thử trực tiếp, không đoán bằng lời), xem đầy đủ bảng +
+lý do ở `be-window-lamour/.../SalesReturn/docs/sales-return.md` mục "Toolbar toggle — state machine
+đã chốt qua mô phỏng tương tác":
+
+**https://claude.ai/code/artifact/687a0075-a307-4379-aea5-d0dd61b17a06**
+
+**✅ Đã sửa code (cùng ngày)** — tóm tắt state machine đã implement:
+- **Đi lên (Treo → Confirmed) cần đúng 2 lần bấm toggle**: lần 1 (label đang "Bỏ ghi") CHỈ đổi label
+  thành "Ghi sổ" + mở khóa thêm nút Xóa, KHÔNG đụng tồn kho, KHÔNG gọi BE; lần 2 (label đang "Ghi sổ")
+  mới thật sự gọi `ConfirmAsync` (cộng tồn kho) → Confirmed.
+- **Đi xuống (Confirmed → Treo) chỉ 1 lần bấm** ("Bỏ ghi") → gọi `UnconfirmAsync` ngay (trừ tồn kho),
+  và hạ cánh thẳng ở trạng thái "Treo đã đụng toggle" (label sẵn "Ghi sổ", Xóa đã mở) — KHÔNG phải
+  trạng thái Treo gốc (label "Bỏ ghi", Xóa khóa) như vừa Cất lần đầu.
+- Cần thêm 1 cờ **WPF-only** (không map từ `CurrentReturn.Status`) đánh dấu "đã đụng toggle lần 1
+  chưa" — mirror đúng cách `IsReadOnly` đã làm cho luồng Bỏ ghi/Sửa ở mục 2026-09-09 bên dưới, vì BE
+  chỉ có 3 status thật (Draft/Confirmed/Held), không đủ diễn tả trạng thái UI thứ 4 này.
+- **Đã đồng bộ sang `SalesOrderViewModel` cùng ngày** — mirror y hệt (Normal thay cho Confirmed) —
+  xem `Sales/docs/sales.md` mục cùng ngày.
+
+**Chưa test qua UTM thật** — chỉ verify `dotnet build -p:EnableWindowsTargeting=true` (cross-compile
+trên Mac) sạch 0 lỗi/warning.
+
+---
+
+## Update — 2026-09-09 (đổi ý lần 2): "Bỏ ghi" chỉ đảo trạng thái — không tự mở khóa form
+
+Theo yêu cầu: tách rời 2 hành động "Bỏ ghi" (chỉ đảo Confirmed→Draft + tồn kho ở BE) và "Sửa" (thật
+sự mở khóa dữ liệu để chỉnh sửa) — trước đó (mục "Bỏ ghi thật" ngay dưới) `IsEditable` tính thẳng
+từ `CurrentReturn.Status` nên bấm "Bỏ ghi" xong là form mở khóa NGAY, không qua bước "Sửa" nào.
+
+- **`SalesReturnViewModel.cs`**: thêm `[ObservableProperty] _isReadOnly` (cờ WPF-only, KHÔNG map từ
+  BE `Status` — cần vì UI có 3 trạng thái thật: Confirmed/khóa, Draft-vừa-bỏ-ghi/khóa,
+  Draft-đang-sửa/mở, trong khi `Status` chỉ có 2 giá trị). `IsEditable` đổi thành
+  `CurrentReturn is null || (!IsConfirmed && !IsReadOnly)`. Thêm `CanEdit`/`EditCommand`/`Edit()`
+  (mirror đúng `SalesOrderViewModel.CanEdit`/`Edit()` đã có sẵn — `IsReadOnly = true` → bấm "Sửa" →
+  `false` + `BeginDirtyTracking()`).
+  - `UnconfirmAsync`: sau khi BE trả `Status=Draft`, set `IsReadOnly = true` (thay vì để `IsEditable`
+    tự mở khóa qua Status) — bỏ luôn `BeginDirtyTracking()` cũ ở đây (dời sang `Edit()`, đúng thời
+    điểm sửa THẬT bắt đầu).
+  - `InitializeAsync`: cả 2 nhánh (chứng từ mới/mở lại từ danh sách) đều set `IsReadOnly = false` —
+    CHỈ Bỏ ghi NGAY TRONG phiên popup hiện tại mới kích hoạt khóa chờ "Sửa"; mở lại 1 chứng từ đã
+    tồn tại (Confirmed hay Draft có sẵn từ trước) từ danh sách vẫn giữ hành vi cũ, không bắt bấm
+    "Sửa" 2 lần (1 ở danh sách + 1 trong popup) — ngoài phạm vi yêu cầu.
+- **`SalesReturnWindow.xaml`**: `DocumentToolbar` thêm `EditCommand="{Binding EditCommand}"` — tái
+  dùng nút "Sửa" built-in đã có sẵn trong `DocumentToolbar` (label cứng "Sửa", tự ẩn khi không bind
+  command), không cần thêm control mới.
+- Build 0 lỗi. **Chưa test thật trên UTM.**
+
+**Bổ sung cùng ngày**: bấm "Sửa" (`Edit()`) giờ append thêm `InitialEmptyLineCount` (100) dòng
+trống vào `Lines` — `PopulateFormFromCurrent` (chạy lúc `InitializeAsync` mở chứng từ có sẵn) chỉ
+nạp đúng số dòng THẬT, không có dòng trống dư như `ClearForm()` (chứng từ mới). Không dùng
+`Lines.Clear()` — chỉ APPEND, giữ nguyên các dòng thật đã có, để gõ thêm sản phẩm ngay không cần tự
+bấm "Thêm dòng" nhiều lần.
+
+## Update — 2026-09-09: "Bỏ ghi" thật (đảo Confirmed→Draft + hoàn tác tồn kho)
+
+Đảo ngược 1 phần quyết định "Update — 2026-09-07" bên dưới (dòng "`ConfirmSalesReturnUseCase` /
+`UnconfirmSalesReturnUseCase` ... Đã xóa"): theo yêu cầu, "Bỏ ghi" giờ là đảo trạng thái THẬT (không
+chỉ mở khóa form phía client), xác nhận qua `AskUserQuestion` — xem chi tiết BE ở
+`be-window-lamour/.../SalesReturn/docs/sales-return.md`, mục "Update — 2026-09-09".
+
+- **`SalesReturnViewModel.cs`**:
+  - `IsEditable`/`IsConfirmed` đổi từ cờ `[ObservableProperty] _isEditable` thủ công (set `false` sau
+    `SaveAsync`) sang **computed property tính thẳng từ `CurrentReturn.Status`** — nguồn sự thật duy
+    nhất giờ là status BE trả về, không phải cờ tạm phía client nữa.
+  - Thêm `UnconfirmCommand`/`UnconfirmAsync` (`CanExecute = IsConfirmed`) — confirm `MessageBox`, gọi
+    `IUnconfirmSalesReturnUseCase` mới, gán `CurrentReturn = result` (Status → Draft, form tự mở khóa
+    qua `IsEditable`), `BeginDirtyTracking()` lại (form editable trở lại, cần track dirty từ đây).
+  - `SaveAsync`: bỏ dòng set thủ công `IsEditable = false` — tự động khóa lại vì `Update`/`Create` BE
+    luôn ép `Status = Confirmed`.
+  - Constructor: thêm `IUnconfirmSalesReturnUseCase`.
+- **Data layer mới** (mirror pattern `DeleteAsync`): `ISalesReturnService`/`SalesReturnService`
+  (`POST /{id}/unconfirm`), `ISalesReturnRepository`/`SalesReturnRepository`,
+  `IUnconfirmSalesReturnUseCase`/`UnconfirmSalesReturnUseCase` (Domain/UseCases — chỉ forward tới
+  repository, không có logic riêng).
+- **DI**: `HomeServiceCollectionExtensions.cs` — thêm `IUnconfirmSalesReturnUseCase`.
+- **`SalesReturnWindow.xaml`**: `DocumentToolbar` thêm `UnpostCommand="{Binding UnconfirmCommand}"`
+  (label mặc định "Bỏ ghi" của `DocumentToolbar`, không override).
+- **`SalesReturnListView.xaml`/`SalesReturnListViewModel.cs`**: **thêm lại** cột "Trạng thái" (badge
+  màu, brand khi Confirmed/xám khi Draft) + filter ComboBox "Trạng thái:" (`StatusOptions`,
+  `FilterStatus`) đã bị bỏ lúc "mọi chứng từ luôn Đã ghi sổ" (xem mục 5 dưới) — giờ có ý nghĩa phân
+  biệt thật trở lại. `SalesReturnListItem.cs` (Status/IsDraft/IsConfirmed/StatusLabel) không đổi —
+  các property này vẫn còn nguyên từ trước, chỉ UI bị gỡ.
+- Build `dotnet build src/DesktopLamour` 0 lỗi. **Chưa test thật trên UTM.**
+
+**Bug phát sinh (đã fix cùng ngày, phát hiện qua test UTM thật)**: `UnconfirmAsync` thiếu
+`ReturnSaved?.Invoke()` — đây là tín hiệu DUY NHẤT `SalesReturnWindow.xaml.cs` dùng để set cờ
+`_hasSaved` → `DialogResult = true` khi đóng popup, kích hoạt `SalesReturnListViewModel` reload
+danh sách (`if (window.ShowDialog() == true) ...`). Thiếu dòng này thì đóng popup ngay sau "Bỏ ghi"
+(không Cất lại) để danh sách không reload — chứng từ vẫn hiện dữ liệu CŨ. Fix: thêm
+`ReturnSaved?.Invoke()` ngay đầu khối try, trước khi gán `CurrentReturn = result`.
+
+**Đổi UI hiển thị trạng thái (user feedback sau khi thấy cột không rõ ràng)**: bỏ hẳn cột
+"Trạng thái" riêng (đã thêm rồi bỏ lại trong cùng ngày) — chuyển sang **tô đậm + đổi màu chữ (brand)
+cho CẢ DÒNG** khi `IsDraft == true`, qua `DataGrid.RowStyle` với `DataTrigger`. Mirror ĐÚNG pattern
+đã có sẵn cho trạng thái "⏸ Treo" ở `Sales/Views/SalesOrderListView.xaml` (set `TextElement.Foreground`
+kế thừa xuống mọi `TextBlock` con, không đụng `Background` nên không xung đột màu lúc dòng
+Selected) — không phải thiết kế mới. Filter ComboBox "Trạng thái:" (`FilterStatus`/`StatusOptions`)
+vẫn giữ nguyên, không đổi.
+
+**Nút "Bỏ ghi" thêm vào toolbar danh sách** (`SalesReturnListView.xaml`, giữa "Sửa" và "Xóa`): bỏ
+ghi thẳng 1 dòng đã chọn mà không cần mở popup trước. `SalesReturnListViewModel.cs` — thêm
+`IUnconfirmSalesReturnUseCase` (constructor, đã đăng ký DI sẵn từ trước), `CanUnconfirmSelected`
+(`SelectedReturn is { IsConfirmed: true }`), `UnconfirmSalesReturnCommand`/`UnconfirmSalesReturnAsync`
+(confirm `MessageBox` → gọi use case → `LoadSalesReturnsAsync` reload) — mirror đúng cấu trúc
+`DeleteSalesReturnAsync` cùng file. `OnSelectedReturnChanged` thêm
+`UnconfirmSalesReturnCommand.NotifyCanExecuteChanged()`.
+
+## Update — 2026-09-09: Nút "In" → Phiếu Nhập Kho; "Ghi sổ" giữ popup mở
+
+Giải quyết Known Gap đã flag ở bản doc trước (nút "In" vẫn trỏ "Phiếu trả lại hàng bán" cũ) — theo
+ảnh mẫu MISA "PHIẾU NHẬP KHO" user cung cấp, xác nhận qua `AskUserQuestion`: chứng từ vật lý doanh
+nghiệp thực sự dùng khi nhận lại hàng là Phiếu Nhập Kho, không phải 1 layout hóa đơn riêng.
+
+- **`PrintCommand`/`PrintAsync`** (đổi từ `Print()` sync) — không còn mở `SalesReturnPrintWindow`.
+  Giờ: tìm PN liên kết qua `FindExistingWarehouseReceiptAsync` (helper mới, dùng chung với "Lập PN"),
+  tự tạo nếu chưa có (`ICreateSalesReturnWarehouseReceiptUseCase`), lấy đầy đủ `WarehouseReceiptResponseDto`
+  qua `IGetWarehouseReceiptByIdUseCase`, mở `Warehouse/Views/WarehouseReceiptPrintWindow` (Mẫu 01-VT).
+  User không cần biết/bấm "Lập PN" trước — "In" tự lo bước đó.
+- **`Views/SalesReturnPrintWindow.xaml(.cs)` đã XÓA HẲN** — không còn dùng ở đâu sau khi đổi nút In.
+  DI: bỏ `services.AddTransient<SalesReturnPrintWindow>()` và `Func<SalesReturnPrintWindow>` khỏi
+  `HomeServiceCollectionExtensions.cs`.
+- Constructor `SalesReturnViewModel`: bỏ `Func<SalesReturnPrintWindow>`, thêm `IGetWarehouseReceiptByIdUseCase`
+  + `Func<WarehouseReceiptPrintWindow>` (cả 2 đã đăng ký chung sẵn cho `WarehouseReceiptFormViewModel`,
+  không cần đăng ký thêm).
+- **"Ghi sổ" (`SaveAsync`) không còn tự đóng popup** — đổi từ `RequestClose?.Invoke()` sang
+  `IsEditable = false` (property mới, khóa `Grid IsEnabled="{Binding IsEditable}"` của form + disable
+  `SaveCommand` qua `CanExecute`); nút "In" tự bật lại qua `HasExistingReturn`/`OnCurrentReturnChanged`
+  không đổi. `IsEditable` reset `true` mỗi lần `InitializeAsync` (mở chứng từ mới/mở lại từ danh sách).
+  **Side-effect đã tự vá**: vì popup không tự đóng sau lưu nữa, `SalesReturnWindow.xaml.cs` thêm cờ
+  `_hasSaved` (set qua event `ReturnSaved`) để set `DialogResult = true` khi cuối cùng user đóng bằng
+  nút "Đóng"/X — nếu không, `SalesReturnListViewModel` (check `ShowDialog() == true`) sẽ không reload
+  danh sách dù đã lưu.
+- Đã build 0 lỗi từ máy Mac; **chưa test thật trên UTM** cho cả 2 thay đổi này.
 
 ## Update — 2026-09-08: "Ghi sổ" chỉ lưu — In & Lập PN là bước thủ công riêng
 
@@ -57,8 +304,8 @@ Features/HomePage/SalesReturn/
   Domain/Models/SalesReturnLineItem.cs      — 1 dòng sản phẩm, INotifyPropertyChanged thủ công
   ViewModels/SalesReturnViewModel.cs        — toàn bộ logic popup: Lines, 4 tab, Ghi sổ, Lập PN, In
   Views/SalesReturnWindow.xaml(.cs)         — popup chính, 2 TabControl lồng nhau
-  Views/SalesReturnPrintWindow.xaml(.cs)    — MỚI (2026-08-22) — "PHIẾU TRẢ LẠI HÀNG BÁN"
 ```
+(Không còn `Views/SalesReturnPrintWindow.xaml(.cs)` — đã xóa 2026-09-09, xem "Update — 2026-09-09".)
 
 Phụ thuộc chéo module khác (không sửa, chỉ gọi):
 - `Warehouse/Views/WarehouseReceiptPrintWindow.xaml(.cs)` — dùng chung cho luồng "Lập PN" (xem `Warehouse/docs/warehouse.md`, changelog 2026-08-28).
@@ -152,7 +399,7 @@ So ảnh mẫu MISA, màn danh sách thiếu toolbar đầy đủ, bộ lọc th
 
 ## Known Gaps / Follow-ups
 
-- Nút "In" riêng trên toolbar `SalesReturnWindow` (không phải "Ghi sổ") vẫn trỏ tới `SalesReturnPrintWindow`/"Phiếu trả lại hàng bán" cũ — chưa xác nhận có cần đổi sang in lại "Phiếu Nhập Kho" đã liên kết hay không (được flag cho user, chưa yêu cầu/xác nhận sửa).
+- ~~Nút "In" riêng trên toolbar `SalesReturnWindow` vẫn trỏ tới `SalesReturnPrintWindow`/"Phiếu trả lại hàng bán" cũ~~ — **đã giải quyết 2026-09-09**, xem "Update — 2026-09-09" (nút "In" giờ mở `WarehouseReceiptPrintWindow`, tự Lập PN nếu chưa có).
 - Export Excel/Print (nếu có báo cáo tổng hợp dùng lại dữ liệu SalesReturn) chưa cập nhật để show cột Status/Kiêm phiếu nhập mới.
 - Chưa test thật trên UTM cho đợt sửa 2026-08-31 này — chỉ verify qua `dotnet build` 0 lỗi từ máy Mac; user tự xác nhận từng bước qua screenshot trong quá trình làm (đã fix 2 bug runtime thật do đó: duplicate WarehouseReceipt, "Item belongs to another collection").
 - Chưa test thật trên UTM cho toàn bộ layout redesign + 2 workflow in ngày 2026-08-22 (mục cũ, vẫn còn hiệu lực).

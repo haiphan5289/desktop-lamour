@@ -14,12 +14,21 @@ public partial class SalesOrderWindow : Window
 
     private SalesOrderResponseDto? _initialOrder;
 
+    // Ghi sổ giờ KHÔNG còn tự đóng popup (xem SalesOrderViewModel.SaveAsync — chỉ gán CurrentOrder,
+    // giữ popup mở để bấm "In" ngay, mirror SalesReturn cùng ngày). Vì vậy nút "Đóng"/X có thể đóng
+    // popup sau khi đã lưu/bỏ ghi mà KHÔNG đi qua RequestClose (RequestClose giờ chỉ còn dùng cho
+    // Delete/CreateThenHold) — phải tự nhớ đã lưu/bỏ ghi hay chưa để set DialogResult = true khi
+    // đóng, nếu không SalesOrderListViewModel sẽ không reload danh sách (chỉ reload khi
+    // ShowDialog() == true).
+    private bool _hasSaved;
+
     public SalesOrderWindow(SalesOrderViewModel viewModel)
     {
         InitializeComponent();
         ViewModel   = viewModel;
         DataContext = viewModel;
         viewModel.RequestClose += () => { if (IsVisible) DialogResult = true; };
+        viewModel.OrderSaved   += () => _hasSaved = true;
 
         // Chọn xong 1 sản phẩm trong AppSearchableComboBox (Mã hàng/Tên hàng) → CommitEdit ngay
         // cho cả dòng, không đợi user bấm ra ngoài — tránh các cột tự điền (ĐVT/Đơn giá/TK...)
@@ -43,6 +52,7 @@ public partial class SalesOrderWindow : Window
         _initialOrder = order;
         ViewModel.IsFromWarehouseExport = isFromWarehouseExport;
         ViewModel.IsReadOnly            = isReadOnly;
+        ViewModel.IsViewOnlyMode        = isReadOnly;
         // Chỉ đổi gợi ý hiển thị (placeholder) khi ô Số chứng từ còn trống — không đụng số chứng
         // từ thật, vốn luôn sinh dạng "XK{5 digits}" bất kể mở từ đâu (xem GetNextSalesOrderCodeUseCase).
         ViewModel.DocumentNumberPlaceholder = isFromWarehouseExport ? "XK00001" : "BH00001";
@@ -78,8 +88,10 @@ public partial class SalesOrderWindow : Window
                 "Xác nhận đóng",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
-            if (result != MessageBoxResult.Yes) e.Cancel = true;
+            if (result != MessageBoxResult.Yes) { e.Cancel = true; return; }
         }
+
+        if (_hasSaved && DialogResult is null) DialogResult = true;
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)

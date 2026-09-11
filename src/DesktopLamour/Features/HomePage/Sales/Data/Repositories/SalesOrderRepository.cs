@@ -29,8 +29,11 @@ public class SalesOrderRepository : ISalesOrderRepository
     public Task<string> GetNextCodeAsync(bool isFromWarehouseExport = true, CancellationToken ct = default)
         => _service.GetNextCodeAsync(isFromWarehouseExport, ct);
 
-    public Task<SalesOrderResponseDto> HoldAsync(int id, CancellationToken ct = default)
-        => _service.HoldAsync(id, ct);
+    public Task<SalesOrderResponseDto> ConfirmAsync(int id, CancellationToken ct = default)
+        => _service.ConfirmAsync(id, ct);
+
+    public Task<SalesOrderResponseDto> UnconfirmAsync(int id, CancellationToken ct = default)
+        => _service.UnconfirmAsync(id, ct);
 
     public Task<SalesOrderResponseDto> DuplicateAsync(int id, CancellationToken ct = default)
         => _service.DuplicateAsync(id, ct);

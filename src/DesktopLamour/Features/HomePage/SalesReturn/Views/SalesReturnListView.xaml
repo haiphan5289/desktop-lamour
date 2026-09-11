@@ -46,7 +46,10 @@
                                     Command="{Binding AddSalesReturnCommand}"
                                     Margin="0,0,8,0"/>
                 <!-- Đã bỏ vòng đời Nháp → Ghi sổ (2026-09-07): mọi chứng từ đã lưu đều Xem/Sửa/Xóa
-                     được bình thường; không còn nút "Ghi sổ"/"Bỏ ghi". -->
+                     được bình thường. 2026-09-09: tái kích hoạt "Bỏ ghi" thật (đảo Confirmed→Draft +
+                     hoàn tác tồn kho) — thêm nút ở đây để bỏ ghi thẳng từ danh sách, không bắt buộc
+                     phải mở popup trước (popup vẫn có nút riêng, dùng chung UnconfirmCommand qua
+                     IUnconfirmSalesReturnUseCase). -->
                 <controls:AppButton Content="👁 Xem"
                                     Style="{StaticResource AppButton.Secondary.Medium}"
                                     Command="{Binding ViewSalesReturnCommand}"
@@ -54,6 +57,10 @@
                 <controls:AppButton Content="✏️ Sửa"
                                     Style="{StaticResource AppButton.Secondary.Medium}"
                                     Command="{Binding EditSalesReturnCommand}"
+                                    Margin="0,0,8,0"/>
+                <controls:AppButton Content="↩️ Bỏ ghi"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding UnconfirmSalesReturnCommand}"
                                     Margin="0,0,8,0"/>
                 <controls:AppButton Content="🗑️ Xóa"
                                     Style="{StaticResource AppButton.Destructive.Medium}"
@@ -191,6 +198,25 @@
                         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                     </Style>
                 </DataGrid.ColumnHeaderStyle>
+                <!-- Không dùng cột "Trạng thái" riêng — tô màu/đậm chữ cả dòng khi Nháp (đã "Bỏ
+                     ghi") hoặc Treo (chưa Ghi sổ), khớp đúng pattern đã dùng cho trạng thái "⏸ Treo"
+                     ở SalesOrderListView.xaml (TextElement.Foreground kế thừa xuống mọi TextBlock
+                     con, không đụng nền nên không xung đột màu lúc Selected). 2026-09-11: thêm
+                     trigger IsHeld — trước đây chỉ IsDraft tô màu, Treo trông giống hệt Đã ghi sổ. -->
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsDraft}" Value="True">
+                                <Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsHeld}" Value="True">
+                                <Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
                 <DataGrid.Columns>
 
                     <!-- Loại trả hàng — text column: plain Contains filter, inline -->
@@ -429,29 +455,6 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <!-- Trạng thái — luôn "Đã ghi sổ" từ 2026-09-07 (đã bỏ vòng đời Nháp); giữ cột +
-                         DataTrigger tô nền brand cho nhất quán bố cục với các màn danh sách khác. -->
-                    <DataGridTemplateColumn Header="Trạng thái" Width="100">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <Border CornerRadius="4" Padding="8,3" HorizontalAlignment="Center">
-                                    <Border.Style>
-                                        <Style TargetType="Border">
-                                            <Setter Property="Background" Value="{StaticResource AppColor.TextSecondary}"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsConfirmed}" Value="True">
-                                                    <Setter Property="Background" Value="{StaticResource AppColor.TextBrand}"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Border.Style>
-                                    <TextBlock Text="{Binding StatusLabel}" FontSize="11" FontWeight="SemiBold"
-                                               Foreground="White"/>
-                                </Border>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
                     <!-- Kiêm phiếu nhập — đã lập Phiếu Nhập Kho liên kết hay chưa, tính client-side
                          (xem SalesReturnListViewModel.LoadSalesReturnsAsync). Label tính sẵn trong
                          SalesReturnListItem.HasLinkedWarehouseReceiptLabel — không cần converter. -->
@@ -489,7 +492,7 @@
                         <ColumnDefinition Width="120"/>  <!-- Tổng CK -->
                         <ColumnDefinition Width="120"/>  <!-- Tiền thuế GTGT -->
                         <ColumnDefinition Width="140"/>  <!-- Tổng thanh toán -->
-                        <ColumnDefinition Width="*"/>    <!-- Trạng thái + Kiêm phiếu nhập -->
+                        <ColumnDefinition Width="*"/>    <!-- Kiêm phiếu nhập -->
                     </Grid.ColumnDefinitions>
 
                     <controls:AppLabel Grid.Column="0" Grid.ColumnSpan="7"

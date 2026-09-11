@@ -20,12 +20,14 @@ public class SalesReturnListItem
     public decimal  TotalPayment   { get; init; }
     public string   ReturnTypeLabel { get; init; } = "";
 
-    // "Draft" | "Confirmed" — nguyên giá trị BE trả về, dùng để so sánh CanExecute (Sửa/Xóa/Ghi
-    // sổ/Bỏ ghi) mà không cần switch chuỗi lặp lại ở nhiều nơi.
+    // "Draft" | "Held" | "Confirmed" — nguyên giá trị BE trả về, dùng để so sánh CanExecute (Sửa/
+    // Xóa/Ghi sổ/Bỏ ghi) mà không cần switch chuỗi lặp lại ở nhiều nơi. "Held" ("Treo") thêm
+    // 2026-09-10 — mirror SalesOrderListItem.
     public string  Status      { get; init; } = "Draft";
     public bool    IsDraft     => Status == "Draft";
+    public bool    IsHeld      => Status == "Held";
     public bool    IsConfirmed => Status == "Confirmed";
-    public string  StatusLabel => IsConfirmed ? "Đã ghi sổ" : "Nháp";
+    public string  StatusLabel => Status switch { "Held" => "⏸ Treo", "Confirmed" => "📄 Đã ghi sổ", _ => "↩️ Nháp" };
 
     // "Kiêm phiếu nhập" — tính client-side sau khi FromDto (không có trong DTO gốc), so khớp với
     // danh sách WarehouseReceipt hiện có (ReceiptType=ReturnedGoods + Reference=DocumentNumber),

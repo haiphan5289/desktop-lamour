@@ -21,7 +21,7 @@ public partial class SalesOrderListViewModel : ViewModelBase
     private readonly INavigationService          _navigationService;
     private readonly IGetSalesOrdersUseCase      _getOrders;
     private readonly IDeleteSalesOrderUseCase    _deleteOrder;
-    private readonly IHoldSalesOrderUseCase      _holdOrder;
+    private readonly IUnconfirmSalesOrderUseCase _unconfirmOrder;
     private readonly IDuplicateSalesOrderUseCase _duplicateOrder;
     private readonly Func<SalesOrderWindow>      _formWindowFactory;
     private readonly DebounceDispatcher          _searchDebounce = new();
@@ -48,19 +48,22 @@ public partial class SalesOrderListViewModel : ViewModelBase
     public ObservableCollection<SalesOrderListItem> SalesOrders { get; } = new();
 
     private bool HasSelection => SelectedOrder is not null;
+    // "Bỏ ghi" chỉ khả dụng khi dòng chọn đang thật sự Normal (Status == 0 = "Ghi sổ") — khớp
+    // đúng CanExecute=IsConfirmed của UnconfirmCommand trong popup (SalesOrderViewModel).
+    private bool CanUnconfirmSelected => SelectedOrder is { Status: 0 };
 
     public SalesOrderListViewModel(
         INavigationService         navigationService,
         IGetSalesOrdersUseCase     getOrders,
         IDeleteSalesOrderUseCase   deleteOrder,
-        IHoldSalesOrderUseCase     holdOrder,
+        IUnconfirmSalesOrderUseCase unconfirmOrder,
         IDuplicateSalesOrderUseCase duplicateOrder,
         Func<SalesOrderWindow>     formWindowFactory)
     {
         _navigationService = navigationService;
         _getOrders         = getOrders;
         _deleteOrder       = deleteOrder;
-        _holdOrder         = holdOrder;
+        _unconfirmOrder    = unconfirmOrder;
         _duplicateOrder    = duplicateOrder;
         _formWindowFactory = formWindowFactory;
 
@@ -74,7 +77,7 @@ public partial class SalesOrderListViewModel : ViewModelBase
     {
         EditSalesOrderCommand.NotifyCanExecuteChanged();
         DeleteSalesOrderCommand.NotifyCanExecuteChanged();
-        HoldSalesOrderCommand.NotifyCanExecuteChanged();
+        UnconfirmSalesOrderCommand.NotifyCanExecuteChanged();
         DuplicateSalesOrderCommand.NotifyCanExecuteChanged();
         SendEmailCommand.NotifyCanExecuteChanged();
         SendZaloCommand.NotifyCanExecuteChanged();
@@ -163,19 +166,25 @@ public partial class SalesOrderListViewModel : ViewModelBase
             await LoadSalesOrdersCommand.ExecuteAsync(null);
     }
 
-    [RelayCommand(CanExecute = nameof(HasSelection))]
-    private async Task HoldSalesOrderAsync(CancellationToken ct = default)
+    // "Bỏ ghi" thẳng từ danh sách — dùng chung IUnconfirmSalesOrderUseCase với popup
+    // (SalesOrderViewModel.UnconfirmAsync), không mở popup trước. Mirror SalesReturnListViewModel
+    // cùng ngày.
+    // 2026-09-11: bỏ hẳn dialog xác nhận Yes/No — bấm là vào thẳng, không hỏi lại (mirror
+    // SalesReturnListViewModel.UnconfirmSalesReturnAsync cùng ngày, theo yêu cầu đồng bộ sang
+    // SalesOrder). Popup chi tiết (SalesOrderViewModel.ToggleConfirmAsync) KHÔNG đổi.
+    [RelayCommand(CanExecute = nameof(CanUnconfirmSelected))]
+    private async Task UnconfirmSalesOrderAsync(CancellationToken ct = default)
     {
         if (SelectedOrder is null) return;
 
         try
         {
-            await _holdOrder.ExecuteAsync(SelectedOrder.Id, ct);
+            await _unconfirmOrder.ExecuteAsync(SelectedOrder.Id, ct);
             await LoadSalesOrdersAsync(ct); // tự quản lý IsLoading — reload theo đúng filter đang xem
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "Treo đơn thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(ex.Message, "Bỏ ghi thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 

@@ -248,7 +248,7 @@
                 </Button.Visibility>
                 <StackPanel>
                     <TextBlock Text="↩️" Style="{StaticResource DocRibbonIcon}"/>
-                    <TextBlock Text="Bỏ ghi" Style="{StaticResource DocRibbonLabel}"/>
+                    <TextBlock Text="{Binding UnpostLabel, ElementName=Self}" Style="{StaticResource DocRibbonLabel}"/>
                 </StackPanel>
             </Button>
             <Button Style="{StaticResource DocRibbonButton}" Command="{Binding HoldCommand, ElementName=Self}">

@@ -11,6 +11,8 @@ public interface ISalesReturnRepository
     Task<SalesReturnResponseDto> CreateAsync(CreateSalesReturnRequestDto request, CancellationToken ct = default);
     Task<SalesReturnResponseDto> UpdateAsync(int id, UpdateSalesReturnRequestDto request, CancellationToken ct = default);
     Task DeleteAsync(int id, CancellationToken ct = default);
+    Task<SalesReturnResponseDto> ConfirmAsync(int id, CancellationToken ct = default);
+    Task<SalesReturnResponseDto> UnconfirmAsync(int id, CancellationToken ct = default);
     Task<string> GetNextCodeAsync(CancellationToken ct = default);
     Task<CreateWarehouseReceiptResultDto> CreateWarehouseReceiptAsync(int id, CancellationToken ct = default);
 }
