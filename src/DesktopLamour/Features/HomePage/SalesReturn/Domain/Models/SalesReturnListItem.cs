@@ -20,6 +20,12 @@ public class SalesReturnListItem
     public decimal  TotalPayment   { get; init; }
     public string   ReturnTypeLabel { get; init; } = "";
 
+    // "Loại chứng từ" — khớp mẫu MISA (cột "Loại chứng từ" hiện "Hàng bán bị trả lại - {loại trả
+    // hàng}", không phải chỉ riêng loại trả hàng như cột "Loại trả hàng" cũ). Ghép tĩnh vì toàn bộ
+    // danh sách này luôn là 1 loại chứng từ duy nhất (Hàng bán bị trả lại) — chỉ phần loại trả hàng
+    // thay đổi theo dòng.
+    public string DocumentTypeLabel => $"Hàng bán bị trả lại - {ReturnTypeLabel}";
+
     // "Draft" | "Held" | "Confirmed" — nguyên giá trị BE trả về, dùng để so sánh CanExecute (Sửa/
     // Xóa/Ghi sổ/Bỏ ghi) mà không cần switch chuỗi lặp lại ở nhiều nơi.
     // 2026-09-11: gộp "Nháp" (Draft) và "Treo" (Held) thành 1 khái niệm duy nhất "Treo" — theo yêu

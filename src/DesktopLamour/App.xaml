@@ -12,6 +12,19 @@
                 <!-- 3. Design system component styles -->
                 <ResourceDictionary Source="/DesktopLamour;component/Shared/ComponentLibrary.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- 2026-09-13: chữ toàn app bị phản ánh "mờ, nhạt, đau mắt" nhiều vòng dù màu Foreground
+                 (TextPrimary #1A1A1A) đã gần đen tuyệt đối — không phải do sai màu, mà do WPF mặc định
+                 dùng TextFormattingMode="Ideal" (tối ưu layout chính xác theo pixel phân số, nhưng làm
+                 nét chữ mảnh/mờ ở size nhỏ, đặc biệt khi UTM VM chạy ở tỉ lệ scale lẻ). Đổi sang
+                 "Display" (snap theo pixel nguyên, nét đậm/rõ hơn hẳn — cách chuẩn khắc phục chữ mờ
+                 trong app WPF nhiều textbox/label nhỏ) — set 1 lần ở implicit Style cho Window, tự kế
+                 thừa xuống toàn bộ control con (TextOptions.* là inherited attached property) nên áp
+                 dụng cho MỌI cửa sổ trong app, không cần sửa từng control riêng lẻ. -->
+            <Style TargetType="{x:Type Window}">
+                <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+                <Setter Property="TextOptions.TextRenderingMode"  Value="ClearType"/>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 

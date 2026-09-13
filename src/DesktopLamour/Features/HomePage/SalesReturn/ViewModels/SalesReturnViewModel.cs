@@ -497,13 +497,10 @@ public partial class SalesReturnViewModel : ViewModelBase
     {
         if (CurrentReturn is null) return;
 
-        if (IsConfirmed)
-        {
-            var confirm = MessageBox.Show(
-                $"Bạn có chắc muốn bỏ ghi chứng từ '{CurrentReturn.DocumentNumber}'? Tồn kho đã cộng lúc ghi sổ sẽ được hoàn tác.",
-                "Xác nhận bỏ ghi", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-            if (confirm != MessageBoxResult.Yes) return;
-        }
+        // 2026-09-13: bỏ hẳn hộp thoại Yes/No khi "Bỏ ghi" theo yêu cầu — chỉ "Xóa" (DeleteAsync)
+        // mới cần xác nhận. Khớp đúng hành vi "Bỏ ghi" từ danh sách (SalesReturnListViewModel.
+        // UnconfirmSalesReturnAsync) vốn đã không hỏi từ trước — trước đây chỉ riêng popup này hỏi,
+        // gây bất nhất (đã ghi nhận ở sales-return.md, điểm xác nhận #3 review artifact).
 
         IsBusy = true;
         try

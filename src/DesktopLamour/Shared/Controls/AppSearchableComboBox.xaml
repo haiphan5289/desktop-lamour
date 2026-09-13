@@ -26,6 +26,14 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- Search input -->
+                <!-- 2026-09-13: đo pixel thật xác nhận chữ ở đây luôn hiện ra ~#7F7F82 (xám) thay vì
+                     #1A1A1A (TextPrimary) khi cả field bị khoá (Grid.IsEnabled=False ở cửa sổ cha) —
+                     dù Foreground đã set cứng TextPrimary. Nguyên nhân: TextBox này dùng ControlTemplate
+                     MẶC ĐỊNH của WPF, có sẵn hiệu ứng Opacity giảm khi Disabled (bên trong template hệ
+                     thống, Foreground không chặn được vì Opacity là lớp render riêng, không cạnh tranh
+                     với giá trị Foreground). Cho hẳn 1 Template tối giản (không VisualState Disabled)
+                     để loại bỏ hiệu ứng mờ mặc định này — mirror cách AppTextField đã tự viết
+                     ControlTemplate riêng và không bị mờ. -->
                 <TextBox x:Name="SearchBox"
                          Grid.Column="0"
                          FontFamily="Segoe UI"
@@ -34,14 +42,24 @@
                          CaretBrush="{StaticResource AppColor.TextPrimary}"
                          Background="Transparent"
                          BorderThickness="0"
-                         VerticalContentAlignment="Center"/>
+                         VerticalContentAlignment="Center">
+                    <TextBox.Template>
+                        <ControlTemplate TargetType="TextBox">
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Background="{TemplateBinding Background}"
+                                          Focusable="False"/>
+                        </ControlTemplate>
+                    </TextBox.Template>
+                </TextBox>
 
                 <!-- Placeholder overlay -->
+                <!-- 2026-09-13: đồng bộ với AppTextField — TextDisabled (#B0B0B0) quá nhạt, đổi
+                     sang TextSecondary (#6B6B6B) cho dễ đọc hơn, vẫn phân biệt được với chữ thật. -->
                 <TextBlock x:Name="PlaceholderText"
                            Grid.Column="0"
                            FontFamily="Segoe UI"
                            FontSize="14"
-                           Foreground="{StaticResource AppColor.TextDisabled}"
+                           Foreground="{StaticResource AppColor.TextSecondary}"
                            VerticalAlignment="Center"
                            IsHitTestVisible="False"/>
 

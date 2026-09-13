@@ -65,14 +65,14 @@ public partial class WarehouseReceiptPrintWindow : Window
     private static readonly SolidColorBrush OuterBorderBrush = new(Color.FromRgb(0x9D, 0xC1, 0xE0));
 
     private const int HeaderTextLineCount = 4;
-    private const double HeaderLineHeight = 15;
+    private const double HeaderLineHeight = 17;
 
     private static FlowDocument BuildDocument(WarehouseReceiptResponseDto receipt, string? partnerAddress)
     {
         var doc = new FlowDocument
         {
             FontFamily    = new FontFamily("Segoe UI"),
-            FontSize      = 12,
+            FontSize      = 13,
             TextAlignment = TextAlignment.Left,
             Background    = Brushes.White,
             PagePadding   = new Thickness(16),
@@ -116,13 +116,13 @@ public partial class WarehouseReceiptPrintWindow : Window
 
         var headerPara = new Paragraph { Margin = new Thickness(0, 0, 0, 10), LineHeight = HeaderLineHeight };
         headerPara.Inlines.Add(logoFloater);
-        headerPara.Inlines.Add(new Bold(new Run("CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ LAMOUR")) { FontSize = 13 });
+        headerPara.Inlines.Add(new Bold(new Run("CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ LAMOUR")) { FontSize = 14 });
         headerPara.Inlines.Add(new LineBreak());
-        headerPara.Inlines.Add(new Run("Số 110/20/38 Đường số 30, Phường An Nhơn, TP Hồ Chí Minh.") { FontSize = 12 });
+        headerPara.Inlines.Add(new Run("Số 110/20/38 Đường số 30, Phường An Nhơn, TP Hồ Chí Minh.") { FontSize = 13 });
         headerPara.Inlines.Add(new LineBreak());
-        headerPara.Inlines.Add(new Run("Mã số thuế: 0319088143") { FontSize = 12 });
+        headerPara.Inlines.Add(new Run("Mã số thuế: 0319088143") { FontSize = 13 });
         headerPara.Inlines.Add(new LineBreak());
-        headerPara.Inlines.Add(new Run("Tel: 0868858975 - Website: www.skincoachlamour.com") { FontSize = 12 });
+        headerPara.Inlines.Add(new Run("Tel: 0868858975 - Website: www.skincoachlamour.com") { FontSize = 13 });
         content.Blocks.Add(headerPara);
 
         var firstLine = receipt.Lines.FirstOrDefault();
@@ -170,16 +170,17 @@ public partial class WarehouseReceiptPrintWindow : Window
         });
         dateNoGroup.Rows.Add(dateRow);
 
-        // Bỏ hẳn dòng "Số: {ReceiptNumber}" theo yêu cầu — cột giữa để trống, chỉ giữ "Có: {tk}"
-        // bên phải cho cân với "Nợ: {tk}" ở dòng trên.
-        var coRow = new TableRow();
-        coRow.Cells.Add(new TableCell(new Paragraph()));
-        coRow.Cells.Add(new TableCell(new Paragraph()));
-        coRow.Cells.Add(new TableCell(new Paragraph(new Run($"Có: {creditAccount}")) { TextAlignment = TextAlignment.Right })
+        var soPara = new Paragraph { TextAlignment = TextAlignment.Center };
+        soPara.Inlines.Add(new Run("Số: "));
+        soPara.Inlines.Add(new Bold(new Run(receipt.ReceiptNumber)) { Foreground = Brushes.Red });
+        var soRow = new TableRow();
+        soRow.Cells.Add(new TableCell(new Paragraph()));
+        soRow.Cells.Add(new TableCell(soPara));
+        soRow.Cells.Add(new TableCell(new Paragraph(new Run($"Có: {creditAccount}")) { TextAlignment = TextAlignment.Right })
         {
             Padding = noCoCellPadding,
         });
-        dateNoGroup.Rows.Add(coRow);
+        dateNoGroup.Rows.Add(soRow);
 
         dateNoTable.RowGroups.Add(dateNoGroup);
         content.Blocks.Add(dateNoTable);
@@ -218,6 +219,9 @@ public partial class WarehouseReceiptPrintWindow : Window
 
         var rowGroup = new TableRowGroup();
         rowGroup.Rows.Add(HeaderRow("STT", "Mã hàng", "Tên hàng", "Mã quy cách", "ĐVT", "Số lượng", "Đơn giá", "Thành tiền"));
+        // Hàng ký hiệu A/B/C/.../3 — BẮT BUỘC theo đúng mẫu 01-VT chính thức, không phải cột dữ liệu
+        // tự thêm (khác với "Nhóm HHDV mua vào"/"Số lô"... đã bỏ qua ở các tab trước vì không có data).
+        rowGroup.Rows.Add(HeaderRow("A", "B", "C", "D", "E", "1", "2", "3"));
 
         var stt = 1;
         foreach (var line in receipt.Lines)
@@ -273,7 +277,7 @@ public partial class WarehouseReceiptPrintWindow : Window
         content.Blocks.Add(new Paragraph(new Italic(new Run("Ngày ..... tháng ..... năm .........")))
         {
             TextAlignment = TextAlignment.Right,
-            FontSize      = 12,
+            FontSize      = 13,
             Margin        = new Thickness(0, 0, 0, 22),
         });
 
@@ -287,10 +291,10 @@ public partial class WarehouseReceiptPrintWindow : Window
             var cellPara = new Paragraph(new Bold(new Run(signLabels[i])))
             {
                 TextAlignment = TextAlignment.Center,
-                FontSize      = 12,
+                FontSize      = 13,
             };
             cellPara.Inlines.Add(new LineBreak());
-            cellPara.Inlines.Add(new Italic(new Run(signNotes[i])) { FontSize = 10 });
+            cellPara.Inlines.Add(new Italic(new Run(signNotes[i])) { FontSize = 11 });
             signRow.Cells.Add(new TableCell(cellPara) { Padding = new Thickness(2, 3, 2, 48) });
         }
         var signGroup = new TableRowGroup();
@@ -315,7 +319,7 @@ public partial class WarehouseReceiptPrintWindow : Window
             row.Cells.Add(new TableCell(new Paragraph(new Bold(new Run(headers[i])))
             {
                 TextAlignment = TextAlignment.Center,
-                FontSize      = 10,
+                FontSize      = 11,
             })
             {
                 Padding         = new Thickness(1, 4, 1, 4),
@@ -332,7 +336,7 @@ public partial class WarehouseReceiptPrintWindow : Window
         for (var i = 0; i < values.Length; i++)
         {
             var alignment = i == ProductNameColumnIndex ? TextAlignment.Left : TextAlignment.Center;
-            row.Cells.Add(new TableCell(new Paragraph(new Run(values[i])) { TextAlignment = alignment, FontSize = 11 })
+            row.Cells.Add(new TableCell(new Paragraph(new Run(values[i])) { TextAlignment = alignment, FontSize = 12 })
             {
                 Padding         = new Thickness(1, 5, 1, 5),
                 BorderBrush     = Brushes.Black,
@@ -346,15 +350,18 @@ public partial class WarehouseReceiptPrintWindow : Window
 
     private static double EstimateContentHeight(int lineCount)
     {
-        const double header          = 97; // bỏ dòng "Số tài khoản" → còn 4 dòng text header
-        const double title           = 40;
-        const double dateNoRow       = 38;
-        const double generalInfo     = 90; // 4 dòng: Họ và tên/Địa chỉ/Diễn giải/Theo...
-        const double tableHeaderRow  = 48; // 2 hàng tiêu đề
-        const double perProductRow   = 32;
-        const double congRow         = 32;
-        const double amountInWords   = 44;
-        const double dateAndSignature = 100;
+        // Cỡ chữ toàn bộ phiếu tăng thêm ~1pt (2026-09-12, theo yêu cầu "nhìn mờ, chữ nhỏ") — các hằng
+        // số ước lượng chiều cao bên dưới tăng theo ~8-10% để giữ vị trí footer/chữ ký tương đối
+        // giống trước, không bị chồng lấn do dòng chữ giờ cao hơn.
+        const double header          = 105; // bỏ dòng "Số tài khoản" → còn 4 dòng text header
+        const double title           = 42;
+        const double dateNoRow       = 40;
+        const double generalInfo     = 97; // 4 dòng: Họ và tên/Địa chỉ/Diễn giải/Theo...
+        const double tableHeaderRow  = 52; // 2 hàng tiêu đề
+        const double perProductRow   = 34;
+        const double congRow         = 34;
+        const double amountInWords   = 46;
+        const double dateAndSignature = 106;
         const double framePadding    = 28;
         const double pagePadding     = 32;
 

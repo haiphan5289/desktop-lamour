@@ -32,9 +32,14 @@
                                           HorizontalScrollBarVisibility="Hidden"
                                           VerticalScrollBarVisibility="Hidden"
                                           VerticalAlignment="Center"/>
+                            <!-- 2026-09-13: TextDisabled (#B0B0B0) quá nhạt — đổi sang TextSecondary
+                                 (#6B6B6B), vẫn đủ tối để phân biệt rõ với chữ thật (TextPrimary
+                                 #1A1A1A) nhưng dễ đọc hơn hẳn. Debug bằng màu đỏ đã xác nhận build/sync
+                                 hoạt động đúng — xem thêm fix TextFormattingMode ở App.xaml cho vấn đề
+                                 "chữ mờ" tổng thể. -->
                             <TextBlock x:Name="PlaceholderText"
                                        Text="{TemplateBinding Placeholder}"
-                                       Foreground="{StaticResource AppColor.TextDisabled}"
+                                       Foreground="{StaticResource AppColor.TextSecondary}"
                                        VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                        IsHitTestVisible="False"
                                        Visibility="Collapsed"/>

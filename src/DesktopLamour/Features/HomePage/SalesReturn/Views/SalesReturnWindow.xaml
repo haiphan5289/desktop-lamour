@@ -27,6 +27,38 @@
             <Setter Property="BorderThickness" Value="0,0,1,1"/>
         </Style>
 
+        <!-- 2026-09-13 (theo yêu cầu "chữ mờ, đau mắt" khi popup bị khóa sau Cất/Ghi sổ): style
+             AppTextField gốc (AppTextFieldStyles.xaml) có trigger IsEnabled=False → Foreground =
+             AppColor.TextDisabled (#B0B0B0, rất nhạt) — đúng cho control THẬT SỰ bị vô hiệu hoá,
+             nhưng ở popup này "IsEnabled" bị khoá luôn cho MỌI field khi Xem/đã Ghi sổ (Grid gốc
+             IsEnabled="{Binding IsEditable}"), nên "Diễn giải" và các AppTextField read-only khác
+             bị nhạt đi dù chỉ đang ở chế độ xem, không phải thật sự "disabled" — trong khi
+             AppSearchableComboBox (Mã khách hàng) không có trigger tương tự nên vẫn đen, gây lệch
+             tông ngay trong cùng 1 form (ảnh user khoanh đỏ). Override cục bộ CHỈ trong file này:
+             giữ nguyên viền nhạt đi (vẫn báo hiệu "không sửa được") nhưng chữ vẫn giữ tông đen. -->
+        <Style TargetType="{x:Type controls:AppTextField}"
+               BasedOn="{StaticResource {x:Type controls:AppTextField}}">
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Foreground" Value="{StaticResource AppColor.TextPrimary}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 2026-09-13: cùng nguyên nhân với AppTextField/AppSearchableComboBox ở trên — DataGridCell
+             mặc định của WPF có sẵn hiệu ứng mờ (Opacity) khi Disabled, áp dụng cho mọi bảng "Hàng
+             tiền/Thuế/Giá vốn/Thống kê" trong popup này khi form bị khoá. Override cục bộ giữ đúng
+             tông đen cho dữ liệu, không đổi border/selection mặc định. -->
+        <Style TargetType="{x:Type DataGridCell}"
+               BasedOn="{StaticResource {x:Type DataGridCell}}">
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Foreground" Value="{StaticResource AppColor.TextPrimary}"/>
+                    <Setter Property="Opacity"    Value="1"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <!-- Tab style tái dùng nguyên từ PaymentWindow.xaml (style cục bộ per-file, chưa tách vào
              ResourceDictionary chung — theo đúng cách các cửa sổ khác trong app đang làm). -->
         <Style x:Key="AppTabItem.Modern" TargetType="TabItem">
@@ -207,6 +239,7 @@
                             SelectedItem="{Binding SelectedCustomer, Mode=TwoWay}"
                             Placeholder="Chọn khách hàng"
                             IsNullable="True"
+                            CodeOnlyDisplay="True"
                             AddCommand="{Binding AddCustomerCommand}"/>
                         <controls:AppLabel Grid.Column="3" Text="Tên khách hàng"
                                            Style="{StaticResource AppTypography.LabelSection}"

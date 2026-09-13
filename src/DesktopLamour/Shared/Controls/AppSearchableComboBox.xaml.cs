@@ -41,6 +41,14 @@ public partial class AppSearchableComboBox : UserControl
             typeof(AppSearchableComboBox),
             new PropertyMetadata(null, OnAddCommandChanged));
 
+    // Khi true, ô field (sau khi chọn / khi rời focus) chỉ hiện item.Code thay vì DisplayText
+    // ("Mã — Tên") — dùng cho màn hình đã có sẵn 1 ô "Tên ..." riêng bên cạnh, hiện cả Mã lẫn Tên
+    // trong ô search là dư thừa. Dropdown list khi mở vẫn hiện đầy đủ DropdownText để còn tìm theo tên.
+    public static readonly DependencyProperty CodeOnlyDisplayProperty =
+        DependencyProperty.Register(nameof(CodeOnlyDisplay), typeof(bool),
+            typeof(AppSearchableComboBox),
+            new PropertyMetadata(false));
+
     // Bắn khi user THẬT SỰ chọn 1 item (click item trong dropdown) — không bắn khi chỉ gõ tay
     // (SelectedItem bị set null trong OnSearchTextChanged, không đi qua SelectItem). Bubble lên để
     // container (ví dụ DataGrid chứa control này trong CellEditingTemplate) có thể bắt và tự
@@ -89,6 +97,12 @@ public partial class AppSearchableComboBox : UserControl
         set => SetValue(AddCommandProperty, value);
     }
 
+    public bool CodeOnlyDisplay
+    {
+        get => (bool)GetValue(CodeOnlyDisplayProperty);
+        set => SetValue(CodeOnlyDisplayProperty, value);
+    }
+
     // ─── Internal ─────────────────────────────────────────────────────────────
 
     private readonly ObservableCollection<ISearchableItem> _filtered = new();
@@ -127,7 +141,7 @@ public partial class AppSearchableComboBox : UserControl
         if (combo._suppressTextChange) return;
         combo._suppressTextChange = true;
         if (combo.SearchBox is not null)
-            combo.SearchBox.Text = (e.NewValue as ISearchableItem)?.DisplayText ?? string.Empty;
+            combo.SearchBox.Text = e.NewValue is ISearchableItem item ? combo.FieldText(item) : string.Empty;
         combo._suppressTextChange = false;
         combo.UpdatePlaceholder();
         combo.UpdateClearButton();
@@ -156,10 +170,10 @@ public partial class AppSearchableComboBox : UserControl
     {
         FieldBorder.BorderBrush = (Brush)FindResource("AppColor.BorderRegular");
         // Restore display text if user typed without selecting
-        if (SelectedItem is not null && SearchBox.Text != SelectedItem.DisplayText)
+        if (SelectedItem is not null && SearchBox.Text != FieldText(SelectedItem))
         {
             _suppressTextChange = true;
-            SearchBox.Text      = SelectedItem.DisplayText;
+            SearchBox.Text      = FieldText(SelectedItem);
             _suppressTextChange = false;
         }
         DropdownPopup.IsOpen = false;
@@ -242,11 +256,13 @@ public partial class AppSearchableComboBox : UserControl
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
+    private string FieldText(ISearchableItem item) => CodeOnlyDisplay ? item.Code : item.DisplayText;
+
     private void SelectItem(ISearchableItem item)
     {
         _suppressTextChange  = true;
         SelectedItem         = item;
-        SearchBox.Text       = item.DisplayText;
+        SearchBox.Text       = FieldText(item);
         _suppressTextChange  = false;
         DropdownPopup.IsOpen = false;
         UpdatePlaceholder();

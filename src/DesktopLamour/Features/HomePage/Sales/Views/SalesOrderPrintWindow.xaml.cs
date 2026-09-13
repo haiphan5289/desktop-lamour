@@ -258,10 +258,9 @@ public partial class SalesOrderPrintWindow : Window
                 line.ProductName,
                 line.Quantity.ToString(),
                 line.IsDepositProduct ? "" : FormatMoney(line.UnitPrice),
-                // Cột CK (%) rộng cố định 42px — "35,00%" (có hậu tố %) vỡ 2 dòng ("35,00" rồi "%").
-                // Bỏ "%" (header "CK (%)" đã ghi rõ đơn vị) để "35,00" nằm gọn 1 dòng, không phải
-                // đụng lại ngân sách bề rộng bảng đã tinh chỉnh nhiều lần.
-                line.IsDepositProduct ? "" : line.DiscountRate.ToString("N2", CultureInfo.GetCultureInfo("vi-VN")),
+                // 2026-09-13: thêm lại "%" theo yêu cầu (trước đây bỏ vì vỡ dòng ở font 13 — xem
+                // DataRow, cột này (index 4) giờ tự giảm FontSize riêng để "35,00%" nằm gọn 1 dòng).
+                line.IsDepositProduct ? "" : $"{line.DiscountRate.ToString("N2", CultureInfo.GetCultureInfo("vi-VN"))}%",
                 FormatMoney(line.Amount),
                 line.IsDepositProduct ? "" : $"{line.TaxRate:0}%",
                 FormatMoney(lineTotal)));
@@ -288,7 +287,9 @@ public partial class SalesOrderPrintWindow : Window
         // 2 ô riêng (nhãn span hết trừ cột cuối + số tiền span đúng 1 cột cuối, thẳng hàng dưới
         // "TỔNG CỘNG") thay vì 1 ô gộp span hết bảng — khớp mẫu hoá đơn tham chiếu (đường kẻ dọc
         // ngăn nhãn và số tiền, số tiền canh dưới cột Tổng cộng).
-        var totalLabelPara = new Paragraph(new Bold(new Run("Tổng tiền thanh toán :")))
+        // 2026-09-13: bỏ in đậm nhãn "Tổng tiền thanh toán" theo yêu cầu — chỉ giữ đậm ở số tiền
+        // (totalValuePara ngay dưới) để số tiền nổi bật hơn nhãn.
+        var totalLabelPara = new Paragraph(new Run("Tổng tiền thanh toán :"))
         {
             TextAlignment = TextAlignment.Right,
             FontSize      = 16,
@@ -322,8 +323,9 @@ public partial class SalesOrderPrintWindow : Window
         rowGroup.Rows.Add(totalRow);
 
         // Ghi chú đơn hàng — always rendered as a bordered row, empty or not.
+        // 2026-09-13: bỏ in đậm nhãn "GHI CHÚ ĐƠN HÀNG" theo yêu cầu.
         var notePara = new Paragraph { Margin = new Thickness(0) };
-        notePara.Inlines.Add(new Bold(new Run("GHI CHÚ ĐƠN HÀNG: ")));
+        notePara.Inlines.Add(new Run("GHI CHÚ ĐƠN HÀNG: "));
         notePara.Inlines.Add(new Run(order.Notes ?? string.Empty));
         var noteRow = new TableRow();
         noteRow.Cells.Add(new TableCell(notePara)
@@ -407,13 +409,22 @@ public partial class SalesOrderPrintWindow : Window
         return row;
     }
 
+    // CK (%)/THUẾ SUẤT (index 4/TaxRateColumnIndex) dùng font nhỏ hơn data thường (13 → 11) —
+    // 2026-09-13: theo yêu cầu "thuế suất cho nhỏ lại" + thêm lại "%" vào CK khiến chuỗi dài hơn,
+    // hạ font riêng 2 cột này để không vỡ dòng trong 2 cột hẹp cố định (42/84px).
+    private const int DiscountRateColumnIndex = 4;
+    private const double NarrowColumnFontSize = 11;
+
     private static TableRow DataRow(params string[] values)
     {
         var row = new TableRow();
         for (var i = 0; i < values.Length; i++)
         {
             var alignment = i == ProductNameColumnIndex ? TextAlignment.Left : TextAlignment.Center;
-            var cell = new TableCell(new Paragraph(new Run(values[i])) { TextAlignment = alignment })
+            var isNarrowColumn = i == DiscountRateColumnIndex || i == TaxRateColumnIndex;
+            var para = new Paragraph(new Run(values[i])) { TextAlignment = alignment };
+            if (isNarrowColumn) para.FontSize = NarrowColumnFontSize;
+            var cell = new TableCell(para)
             {
                 Padding         = new Thickness(1, 6, 1, 6),
                 BorderBrush     = Brushes.Black,

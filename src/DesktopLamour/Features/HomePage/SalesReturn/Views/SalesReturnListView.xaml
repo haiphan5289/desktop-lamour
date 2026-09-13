@@ -253,12 +253,15 @@
                 </DataGrid.RowStyle>
                 <DataGrid.Columns>
 
-                    <!-- Loại trả hàng — text column: plain Contains filter, inline -->
-                    <DataGridTextColumn Header="Loại trả hàng" Binding="{Binding ReturnTypeLabel}" Width="140">
+                    <!-- Loại chứng từ — khớp mẫu MISA (2026-09-13, thay cho "Loại trả hàng" cũ):
+                         hiện "Hàng bán bị trả lại - {loại trả hàng}" thay vì chỉ riêng loại trả hàng.
+                         Vẫn lọc theo FilterReturnType (giữ nguyên tên biến/cột lọc cũ, chỉ đổi
+                         nguồn text hiển thị + label cột) — text column: plain Contains filter, inline. -->
+                    <DataGridTextColumn Header="Loại chứng từ" Binding="{Binding DocumentTypeLabel}" Width="240">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel>
-                                    <TextBlock Text="Loại trả hàng" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Loại chứng từ" FontWeight="SemiBold"/>
                                     <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
                                                             Text="{Binding DataContext.FilterReturnType, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
                                                             FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
@@ -315,9 +318,41 @@
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
+                    <!-- Ngày chứng từ — date column: operator combo (=, ≤, ≥...) + DatePicker, inline
+                         (2026-09-13, trước đây thiếu hẳn HeaderTemplate lọc — copy đúng pattern "Ngày
+                         hạch toán" ngay trên). -->
                     <DataGridTextColumn Header="Ngày chứng từ"
                                         Binding="{Binding DocumentDate, StringFormat=\{0:dd/MM/yyyy\}}"
-                                        Width="110"/>
+                                        Width="110">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Ngày chứng từ" FontWeight="SemiBold"/>
+                                    <Grid Margin="0,4,4,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0"
+                                                  ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
+                                                  SelectedItem="{Binding DataContext.DocumentDateFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
+                                                               ToolTip="{Binding Converter={StaticResource FilterOperatorLabelConverter}}"
+                                                               HorizontalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <DatePicker Grid.Column="1" HorizontalAlignment="Stretch"
+                                                    SelectedDate="{Binding DataContext.DocumentDateFilter.Value, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                    FontSize="10" Height="22"/>
+                                    </Grid>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
 
                     <!-- Khách hàng — text column: plain Contains filter, inline -->
                     <DataGridTextColumn Header="Khách hàng" Binding="{Binding CustomerName}" Width="160">
@@ -483,8 +518,12 @@
                         </DataGridTemplateColumn.HeaderTemplate>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
+                                <!-- Bỏ Foreground cứng (trước luôn màu brand bất kể trạng thái dòng) — để
+                                     kế thừa đúng theo DataGridRow.Foreground (đen mặc định, chỉ chuyển
+                                     màu brand khi IsHeld qua DataGrid.RowStyle phía trên), khớp các cột
+                                     còn lại trong cùng dòng thay vì lệch màu riêng. -->
                                 <TextBlock Text="{Binding TotalPayment, StringFormat=\{0:N0\}}" Padding="6,0" VerticalAlignment="Center" TextAlignment="Right"
-                                           Foreground="{StaticResource AppColor.TextBrand}" FontWeight="SemiBold"/>
+                                           FontWeight="SemiBold"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -515,7 +554,7 @@
                     Visibility="{Binding HasSalesReturns, Converter={StaticResource BoolToVisibilityConverter}}">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="140"/>  <!-- Loại trả hàng -->
+                        <ColumnDefinition Width="240"/>  <!-- Loại chứng từ -->
                         <ColumnDefinition Width="110"/>  <!-- Số chứng từ -->
                         <ColumnDefinition Width="120"/>  <!-- Ngày hạch toán -->
                         <ColumnDefinition Width="110"/>  <!-- Ngày chứng từ -->

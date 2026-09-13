@@ -97,6 +97,7 @@ public partial class SalesReturnListViewModel : ViewModelBase
     partial void OnFilterHasReceiptChanged(string value)     => SalesReturnsView.Refresh();
 
     public DateColumnFilter    AccountingDateFilter { get; } = new();
+    public DateColumnFilter    DocumentDateFilter   { get; } = new();
     public NumericColumnFilter TotalAmountFilter    { get; } = new();
     public NumericColumnFilter TotalDiscountFilter  { get; } = new();
     public NumericColumnFilter TotalPaymentFilter   { get; } = new();
@@ -104,6 +105,7 @@ public partial class SalesReturnListViewModel : ViewModelBase
     private void WireColumnFilters()
     {
         AccountingDateFilter.Changed = SalesReturnsView.Refresh;
+        DocumentDateFilter.Changed   = SalesReturnsView.Refresh;
         TotalAmountFilter.Changed    = SalesReturnsView.Refresh;
         TotalDiscountFilter.Changed  = SalesReturnsView.Refresh;
         TotalPaymentFilter.Changed   = SalesReturnsView.Refresh;
@@ -221,8 +223,9 @@ public partial class SalesReturnListViewModel : ViewModelBase
             && Matches(FilterCustomerName, item.CustomerName)
             && Matches(FilterEmployeeName, item.EmployeeName ?? "")
             && Matches(FilterDescription, item.Description ?? "")
-            && Matches(FilterReturnType, item.ReturnTypeLabel)
+            && Matches(FilterReturnType, item.DocumentTypeLabel)
             && AccountingDateFilter.Matches(item.AccountingDate)
+            && DocumentDateFilter.Matches(item.DocumentDate)
             && TotalAmountFilter.Matches(item.TotalAmount)
             && TotalDiscountFilter.Matches(item.TotalDiscount)
             && TotalPaymentFilter.Matches(item.TotalPayment);
@@ -423,7 +426,7 @@ public partial class SalesReturnListViewModel : ViewModelBase
 
             string[] headers =
             {
-                "Loại trả hàng", "Số chứng từ", "Ngày hạch toán", "Ngày chứng từ", "Khách hàng",
+                "Loại chứng từ", "Số chứng từ", "Ngày hạch toán", "Ngày chứng từ", "Khách hàng",
                 "Nhân viên", "Diễn giải", "Tổng tiền hàng", "Tổng CK", "Tiền thuế GTGT", "Tổng thanh toán",
                 "Trạng thái", "Kiêm phiếu nhập",
             };
@@ -437,7 +440,7 @@ public partial class SalesReturnListViewModel : ViewModelBase
             var row = 2;
             foreach (var item in SalesReturnsView.Cast<SalesReturnListItem>())
             {
-                worksheet.Cell(row, 1).Value  = item.ReturnTypeLabel;
+                worksheet.Cell(row, 1).Value  = item.DocumentTypeLabel;
                 worksheet.Cell(row, 2).Value  = item.DocumentNumber;
                 worksheet.Cell(row, 3).Value  = item.AccountingDate;
                 worksheet.Cell(row, 4).Value  = item.DocumentDate;
