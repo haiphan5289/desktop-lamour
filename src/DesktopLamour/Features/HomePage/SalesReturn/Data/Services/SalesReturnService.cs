@@ -136,6 +136,18 @@ public sealed class SalesReturnService : ISalesReturnService
             ?? throw new InvalidOperationException("Empty response from create-warehouse-receipt endpoint.");
     }
 
+    public async Task<SalesReturnResponseDto> DuplicateAsync(int id, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Duplicating sales return {Id}", id);
+        SetBearerToken();
+
+        var response = await _httpClient.PostAsync($"/api/v1/sales-returns/{id}/duplicate", null, ct);
+        await EnsureSuccessOrThrowAsync(response, ct);
+
+        return await response.Content.ReadFromJsonAsync<SalesReturnResponseDto>(ct)
+            ?? throw new InvalidOperationException("Empty response from duplicate sales-return endpoint.");
+    }
+
     private void SetBearerToken()
     {
         var token = _tokenStorage.GetToken();

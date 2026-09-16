@@ -26,6 +26,12 @@
 
                 <!-- Free-text input — Text luôn phản ánh đúng những gì user gõ, KHÔNG tự
                      trả về gợi ý cũ khi rời ô (khác AppSearchableComboBox). -->
+                <!-- 2026-09-14: TextBox dùng ControlTemplate mặc định của WPF có hiệu ứng giảm
+                     opacity khi Disabled (đè lên cả Foreground đã set cứng TextPrimary) — chứng
+                     từ sau khi "cất" (IsEditable=False) khoá field này (VD Tên Khách hàng) qua
+                     Grid.IsEnabled ở cửa sổ cha, khiến chữ hiện mờ dù đã chọn màu đen. Cho hẳn 1
+                     Template tối giản (không VisualState Disabled) để loại bỏ hiệu ứng mờ mặc
+                     định — mirror cách AppSearchableComboBox.SearchBox đã sửa cùng vấn đề này. -->
                 <TextBox x:Name="SearchBox"
                          Grid.Column="0"
                          FontFamily="Segoe UI"
@@ -34,7 +40,15 @@
                          CaretBrush="{StaticResource AppColor.TextPrimary}"
                          Background="Transparent"
                          BorderThickness="0"
-                         VerticalContentAlignment="Center"/>
+                         VerticalContentAlignment="Center">
+                    <TextBox.Template>
+                        <ControlTemplate TargetType="TextBox">
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Background="{TemplateBinding Background}"
+                                          Focusable="False"/>
+                        </ControlTemplate>
+                    </TextBox.Template>
+                </TextBox>
 
                 <!-- Placeholder overlay -->
                 <TextBlock x:Name="PlaceholderText"

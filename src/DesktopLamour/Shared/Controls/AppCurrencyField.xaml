@@ -21,6 +21,12 @@
                        IsHitTestVisible="False"/>
 
             <!-- Input -->
+            <!-- 2026-09-14: TextBox dùng ControlTemplate mặc định của WPF có hiệu ứng giảm
+                 opacity khi Disabled (đè lên cả Foreground đã set cứng TextPrimary) — chứng từ
+                 sau khi "cất" (IsEditable=False) khoá field này qua Grid.IsEnabled ở cửa sổ cha,
+                 khiến số tiền hiện mờ dù đã chọn màu đen. Cho hẳn 1 Template tối giản (không
+                 VisualState Disabled) để loại bỏ hiệu ứng mờ mặc định — mirror cách
+                 AppSearchableComboBox.SearchBox đã sửa cùng vấn đề này. -->
             <TextBox x:Name="InputBox"
                      FontFamily="Segoe UI"
                      FontSize="14"
@@ -29,7 +35,15 @@
                      TextAlignment="Right"
                      Background="Transparent"
                      BorderThickness="0"
-                     VerticalContentAlignment="Center"/>
+                     VerticalContentAlignment="Center">
+                <TextBox.Template>
+                    <ControlTemplate TargetType="TextBox">
+                        <ScrollViewer x:Name="PART_ContentHost"
+                                      Background="{TemplateBinding Background}"
+                                      Focusable="False"/>
+                    </ControlTemplate>
+                </TextBox.Template>
+            </TextBox>
         </Grid>
     </Border>
 

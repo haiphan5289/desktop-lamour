@@ -620,6 +620,7 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<IUnconfirmSalesReturnUseCase, UnconfirmSalesReturnUseCase>();
         services.AddTransient<IGetNextSalesReturnCodeUseCase, GetNextSalesReturnCodeUseCase>();
         services.AddTransient<ICreateSalesReturnWarehouseReceiptUseCase, CreateSalesReturnWarehouseReceiptUseCase>();
+        services.AddTransient<IDuplicateSalesReturnUseCase, DuplicateSalesReturnUseCase>();
 
         // ── SalesReturn: Repository ──────────────────────────────────────────────
         services.AddTransient<ISalesReturnRepository, SalesReturnRepository>();

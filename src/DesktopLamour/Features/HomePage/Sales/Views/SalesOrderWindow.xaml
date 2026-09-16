@@ -11,6 +11,128 @@
         ResizeMode="CanResize">
 
     <Window.Resources>
+        <!-- 2026-09-14: TabControl (Grid.Row=3) bọc ngoài cả DataGrid cũng bị khoá qua cùng
+             Binding IsEditable — và bản thân TabControl cũng có hiệu ứng mờ nội bộ khi Disabled
+             (dim cả vùng nội dung tab dù từng DataGridCell bên trong đã hết mờ riêng), vì Opacity
+             bị áp ở ContentPanel bọc ngoài ContentPresenter, một tầng cao hơn DataGridCell nên fix
+             DataGridCell không chặn được. Template dưới đây là cấu trúc chuẩn của TabControl (header
+             TabPanel + Border/ContentPresenter) nhưng bỏ hẳn phần Trigger mờ khi Disabled — chỉ áp
+             khi Disabled, lúc đang sửa (Enabled) vẫn dùng Template mặc định của WPF như cũ. -->
+        <Style TargetType="TabControl">
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="TabControl">
+                                <Grid KeyboardNavigation.TabNavigation="Local">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TabPanel x:Name="HeaderPanel"
+                                              Grid.Row="0"
+                                              Panel.ZIndex="1"
+                                              IsItemsHost="True"
+                                              KeyboardNavigation.TabIndex="1"
+                                              Background="Transparent"/>
+                                    <Border x:Name="ContentPanel"
+                                            Grid.Row="1"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                            Background="{TemplateBinding Background}"
+                                            KeyboardNavigation.DirectionalNavigation="Contained"
+                                            KeyboardNavigation.TabIndex="2"
+                                            KeyboardNavigation.TabNavigation="Local">
+                                        <ContentPresenter x:Name="PART_SelectedContentHost"
+                                                          Margin="{TemplateBinding Padding}"
+                                                          ContentSource="SelectedContent"
+                                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                                    </Border>
+                                </Grid>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 2026-09-14: chứng từ đã "cất" khoá cả lưới hàng qua DataGrid.IsEnabled (kéo theo mọi
+             DataGridCell con cũng IsEnabled=False), và các dòng đặc biệt (Trừ cọc/Khuyến mãi/Khoá
+             cứng) tự khoá riêng từng cell qua IsEnabled=False bên dưới. Template mặc định của
+             DataGridCell có Trigger nội bộ giảm Opacity khi Disabled (nằm trong
+             ControlTemplate.Triggers của chính nó) — Style Setter/Trigger từ bên ngoài (Foreground,
+             Opacity trên DataGridCell) không chặn được vì trigger nội bộ có độ ưu tiên cao hơn, y
+             hệt nguyên nhân đã gặp và đã sửa ở AppTextField/AppCurrencyField/AppSuggestTextBox (xem
+             comment ở các file đó). Style ngầm định này (không x:Key, áp cho MỌI DataGridCell của
+             cửa sổ) chỉ đổi hẳn sang Template tối giản (không Trigger mờ) khi Disabled — lúc đang
+             sửa (Enabled) vẫn dùng Template mặc định của WPF, không đổi hành vi chọn/sửa ô. Style
+             DisabledForDepositRow/DisabledWhenLocked bên dưới BasedOn style này nên tự động thừa
+             hưởng fix, không cần sửa riêng. -->
+        <Style TargetType="DataGridCell">
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="DataGridCell">
+                                <Border Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        Padding="{TemplateBinding Padding}"
+                                        SnapsToDevicePixels="True">
+                                    <ContentPresenter VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 2026-09-14: DataGridCell đã hết mờ nhưng "Tên hàng" (và các cột dùng
+             DataGridTemplateColumn khác) vẫn còn mờ — vì DataGridRow (cha trực tiếp của các
+             DataGridCell, cũng bị IsEnabled=False lây từ DataGrid/TabControl) có Template mặc định
+             riêng với cùng kiểu Trigger giảm Opacity nội bộ, bọc NGOÀI toàn bộ DataGridCellsPresenter
+             (tức mọi cell trong dòng) — dim ở tầng Row này xảy ra TRƯỚC/BỌC NGOÀI nên fix riêng từng
+             Cell không chặn hết được. Template dưới đây là cấu trúc chuẩn của DataGridRow
+             (SelectiveScrollingGrid + DataGridCellsPresenter) — bỏ DataGridRowHeader vì
+             HeadersVisibility="Column" (không hiện row header) — chỉ áp khi Disabled, lúc đang sửa
+             vẫn dùng Template mặc định của WPF. -->
+        <Style TargetType="DataGridRow">
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="DataGridRow">
+                                <Border x:Name="DGR_Border"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        SnapsToDevicePixels="True">
+                                    <SelectiveScrollingGrid>
+                                        <SelectiveScrollingGrid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </SelectiveScrollingGrid.ColumnDefinitions>
+                                        <SelectiveScrollingGrid.RowDefinitions>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </SelectiveScrollingGrid.RowDefinitions>
+                                        <DataGridCellsPresenter Grid.Column="1"
+                                                                 ItemsPanel="{TemplateBinding ItemsPanel}"
+                                                                 SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical"/>
+                                        <DataGridDetailsPresenter Grid.Column="1"
+                                                                   Grid.Row="1"
+                                                                   SelectiveScrollingGrid.SelectiveScrollingOrientation="Horizontal"
+                                                                   Visibility="{TemplateBinding DetailsVisibility}"/>
+                                    </SelectiveScrollingGrid>
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <!-- Disable các cột không liên quan cho dòng ảo "Trừ cọc" (IsDepositDeductionRow) -->
         <Style x:Key="DisabledForDepositRow" TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
             <Style.Triggers>
@@ -71,40 +193,9 @@
                                            Foreground="{StaticResource AppColor.TextSecondary}"/>
                     </StackPanel>
                 </StackPanel>
-
-                <!-- Status badge -->
-                <Border Grid.Column="1"
-                        VerticalAlignment="Center"
-                        Padding="12,6"
-                        CornerRadius="20"
-                        BorderThickness="1">
-                    <Border.Style>
-                        <Style TargetType="Border">
-                            <Setter Property="Background" Value="{StaticResource AppColor.BackgroundSecondary}"/>
-                            <Setter Property="BorderBrush" Value="{StaticResource AppColor.BorderThin}"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding StatusLabel}" Value="⏸ Treo">
-                                    <Setter Property="Background" Value="{StaticResource AppColor.BackgroundWarningLight}"/>
-                                    <Setter Property="BorderBrush" Value="{StaticResource AppColor.BorderBrand}"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Border.Style>
-                    <TextBlock Text="{Binding StatusLabel}"
-                               FontSize="13"
-                               FontWeight="SemiBold">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Foreground" Value="{StaticResource AppColor.TextPrimary}"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding StatusLabel}" Value="⏸ Treo">
-                                        <Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                </Border>
+                <!-- 2026-09-14: bỏ hẳn badge trạng thái "Treo" ở góc phải header theo yêu cầu — trạng
+                     thái vẫn hiển thị đủ qua HeaderSubtitle ("Xem chi tiết chứng từ (chỉ đọc)") và
+                     nút "Ghi sổ/Bỏ ghi" trên toolbar, không cần thêm badge riêng. -->
             </Grid>
         </Border>
 
@@ -320,10 +411,14 @@
         <!-- ══════════════════════════════════════════════════════════ -->
         <!-- Tab area                                                   -->
         <!-- ══════════════════════════════════════════════════════════ -->
+        <!-- 2026-09-14: bỏ IsEnabled={Binding IsEditable} ở đây — khóa cả TabControl làm WPF tự
+             làm mờ toàn bộ nội dung tab (kể cả sau khi đã sửa DataGridCell/DataGridRow riêng, vẫn
+             còn 1 lớp mờ ở chính TabControl không chặn hết được). Đổi sang DataGrid.IsReadOnly bên
+             dưới (chặn sửa ô, KHÔNG đụng IsEnabled) — tránh hẳn cơ chế mờ của theme, đồng thời được
+             thêm lợi: xem được các tab khác (Thuế/Giá vốn/...) cả khi chứng từ đang khóa. -->
         <TabControl Grid.Row="3" Margin="16,8,16,0"
                     BorderBrush="{StaticResource AppColor.BorderThin}"
-                    BorderThickness="1"
-                    IsEnabled="{Binding IsEditable}">
+                    BorderThickness="1">
 
             <!-- ── Tab 1: Hàng tiền ── -->
             <TabItem Header="1. Hàng tiền">
@@ -334,6 +429,7 @@
                               CanUserAddRows="False"
                               CanUserDeleteRows="False"
                               CanUserResizeColumns="True"
+                              IsReadOnly="{Binding IsGridLocked}"
                               SelectionMode="Single"
                               HeadersVisibility="Column"
                               GridLinesVisibility="All"
@@ -420,7 +516,13 @@
                             <DataGridTemplateColumn Header="Hàng KM" Width="70" CellStyle="{StaticResource DisabledForDepositRow}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
+                                        <!-- 2026-09-14: CheckBox nằm thẳng trong CellTemplate (không qua
+                                             CellEditingTemplate) nên KHÔNG bị DataGrid.IsReadOnly chặn —
+                                             phải tự khóa qua IsEnabled, nếu không sau khi bỏ IsEnabled ở
+                                             TabControl (fix "chữ mờ"), user tick được cả trên hóa đơn đã
+                                             khóa/đã ghi sổ (đổi luôn Đơn giá/CK/thuế về 0, sai dữ liệu). -->
                                         <CheckBox IsChecked="{Binding IsPromotion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                  IsEnabled="{Binding DataContext.IsEditable, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                   HorizontalAlignment="Center"
                                                   VerticalAlignment="Center"/>
                                     </DataTemplate>
@@ -492,7 +594,7 @@
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                                 <DataGridTextColumn.CellStyle>
-                                    <Style TargetType="DataGridCell">
+                                    <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsPromotion}" Value="True">
                                                 <Setter Property="IsEnabled" Value="False"/>
@@ -519,7 +621,7 @@
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                                 <DataGridTextColumn.CellStyle>
-                                    <Style TargetType="DataGridCell">
+                                    <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsPromotion}" Value="True">
                                                 <Setter Property="IsEnabled" Value="False"/>
@@ -546,7 +648,7 @@
                                  chèn thêm ký tự "(" ")" giữa lúc đang gõ làm "-99" bị bung thành "(9)99". -->
                             <DataGridTemplateColumn Header="Thành tiền" Width="110">
                                 <DataGridTemplateColumn.CellStyle>
-                                    <Style TargetType="DataGridCell">
+                                    <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsPromotion}" Value="True">
                                                 <Setter Property="IsEnabled" Value="False"/>

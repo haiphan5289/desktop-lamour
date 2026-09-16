@@ -32,6 +32,7 @@ public partial class SalesReturnListViewModel : ViewModelBase
     private readonly IDeleteSalesReturnUseCase       _deleteReturn;
     private readonly IUnconfirmSalesReturnUseCase    _unconfirmReturn;
     private readonly IConfirmSalesReturnUseCase      _confirmReturn;
+    private readonly IDuplicateSalesReturnUseCase    _duplicateReturn;
     private readonly IGetWarehouseReceiptsUseCase    _getWarehouseReceipts;
     private readonly Func<SalesReturnWindow>         _formWindowFactory;
     private readonly DebounceDispatcher              _searchDebounce = new();
@@ -48,10 +49,10 @@ public partial class SalesReturnListViewModel : ViewModelBase
     [ObservableProperty] private decimal _totalDiscountSum;
     [ObservableProperty] private decimal _totalTaxSum;
     [ObservableProperty] private decimal _totalPaymentSum;
-    // Mặc định "Đầu tháng đến hiện tại" (áp dụng đồng bộ toàn app — 2026-08-31), khớp SelectedPeriod
-    // bên dưới. Field initializer chạy trước constructor nên không kích hoạt OnSelectedPeriodChanged
-    // — phải tự set FromDate/ToDate ở đây cho khớp giá trị SelectedPeriod hiển thị trên UI.
-    [ObservableProperty] private DateTime? _filterFromDate = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    // 2026-09-16: đổi lại mặc định "Hôm nay" (đảo ngược quyết định 2026-08-31 "Đầu tháng đến hiện
+    // tại"), khớp SelectedPeriod bên dưới. Field initializer chạy trước constructor nên không kích
+    // hoạt OnSelectedPeriodChanged — phải tự set FromDate/ToDate ở đây cho khớp SelectedPeriod.
+    [ObservableProperty] private DateTime? _filterFromDate = DateTime.Today;
     [ObservableProperty] private DateTime? _filterToDate   = DateTime.Today;
 
     // 1 ô tìm kiếm chung (AND với FilterFromDate/FilterToDate ở trên) — khớp OR trên các trường
@@ -64,7 +65,7 @@ public partial class SalesReturnListViewModel : ViewModelBase
     public static string[] PeriodOptions { get; } =
         { "Tùy chọn", "Hôm nay", "Hôm qua", "Tuần này", "Tháng này", "Tháng trước", "Quý này", "Năm nay", "Đầu tháng đến hiện tại" };
 
-    [ObservableProperty] private string _selectedPeriod = "Đầu tháng đến hiện tại";
+    [ObservableProperty] private string _selectedPeriod = "Hôm nay";
 
     // Lọc Trạng thái/Kiêm phiếu nhập + filter theo từng cột áp lên dữ liệu ĐÃ tải (client-side, qua
     // SalesReturnsView) — không gọi lại BE, khác với FilterFromDate/ToDate/SearchText ở trên vốn đã
@@ -131,6 +132,7 @@ public partial class SalesReturnListViewModel : ViewModelBase
         IDeleteSalesReturnUseCase    deleteReturn,
         IUnconfirmSalesReturnUseCase unconfirmReturn,
         IConfirmSalesReturnUseCase   confirmReturn,
+        IDuplicateSalesReturnUseCase duplicateReturn,
         IGetWarehouseReceiptsUseCase getWarehouseReceipts,
         Func<SalesReturnWindow>      formWindowFactory)
     {
@@ -139,6 +141,7 @@ public partial class SalesReturnListViewModel : ViewModelBase
         _deleteReturn          = deleteReturn;
         _unconfirmReturn       = unconfirmReturn;
         _confirmReturn         = confirmReturn;
+        _duplicateReturn       = duplicateReturn;
         _getWarehouseReceipts  = getWarehouseReceipts;
         _formWindowFactory     = formWindowFactory;
 
@@ -154,6 +157,7 @@ public partial class SalesReturnListViewModel : ViewModelBase
         DeleteSalesReturnCommand.NotifyCanExecuteChanged();
         UnconfirmSalesReturnCommand.NotifyCanExecuteChanged();
         ConfirmSalesReturnCommand.NotifyCanExecuteChanged();
+        DuplicateSalesReturnCommand.NotifyCanExecuteChanged();
     }
 
     // Đổi ngày là thao tác rời rạc (không gõ liên tục như SearchText) — reload ngay, không debounce.
@@ -405,6 +409,35 @@ public partial class SalesReturnListViewModel : ViewModelBase
         {
             HasError     = true;
             ErrorMessage = $"Ghi sổ thất bại: {ex.Message}";
+        }
+    }
+
+    // "Nhân bản" — mirror SalesOrderListViewModel.DuplicateSalesOrderAsync: tạo NGAY 1 chứng từ trả
+    // hàng mới (số chứng từ tự sinh, ngày = hôm nay, cùng khách hàng/dòng hàng) qua
+    // DuplicateSalesReturnUseCase. BE tái dùng CreateSalesReturnUseCase (Cất = Ghi sổ ngay) rồi tự
+    // gọi Unconfirm ngay sau đó — bản sao luôn dừng ở Treo, không tự kèm phiếu nhập kho.
+    [RelayCommand(CanExecute = nameof(HasSelection))]
+    private async Task DuplicateSalesReturnAsync(CancellationToken ct = default)
+    {
+        if (SelectedReturn is null) return;
+
+        // Chụp lại trước — LoadSalesReturnsAsync bên dưới build lại SalesReturns, khiến
+        // DataGrid.SelectedItem (two-way bind SelectedReturn) rơi về null ngay khi collection đổi.
+        var sourceId             = SelectedReturn.Id;
+        var sourceDocumentNumber = SelectedReturn.DocumentNumber;
+
+        try
+        {
+            var duplicated = await _duplicateReturn.ExecuteAsync(sourceId, ct);
+            await LoadSalesReturnsAsync(ct); // tự quản lý IsLoading — reload theo đúng filter đang xem
+
+            MessageBox.Show(
+                $"Đã nhân bản chứng từ '{sourceDocumentNumber}' thành '{duplicated.DocumentNumber}'.",
+                "Nhân bản thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Nhân bản thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 

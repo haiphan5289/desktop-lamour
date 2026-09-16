@@ -7,6 +7,7 @@ public class SalesOrderListItem
 {
     public int      Id             { get; init; }
     public string   DocumentNumber { get; init; } = "";
+    public DateTime AccountingDate { get; init; }
     public DateTime DocumentDate   { get; init; }
     public string?  Description    { get; init; }
     public string   CustomerName   { get; init; } = "";
@@ -19,6 +20,19 @@ public class SalesOrderListItem
     public int      Status         { get; init; }
     public string   StatusLabel    { get; init; } = "";
 
+    // 2026-09-13: thêm để dùng trong SalesOrderListViewModel.FilterItem (mirror
+    // SalesReturnListItem.IsConfirmed/IsHeld) — dễ đọc hơn so sánh Status == 0 / is 1 or 2 lặp lại.
+    public bool IsConfirmed => Status == 0;
+    public bool IsHeld      => Status is 1 or 2;
+
+    // 2026-09-14 (theo ảnh mẫu MISA — cột "Đã xuất hàng"/"Loại chứng từ"): app xuất kho NGAY lúc
+    // Ghi sổ chứng từ bán hàng (không có bước xuất kho tách rời), nên "Đã xuất hàng" chỉ là nhãn
+    // suy ra từ IsConfirmed, không phải field/API mới. "Loại chứng từ" luôn 1 câu cố định cho mọi
+    // chứng từ bán hàng (giống HeaderSubtitle không đổi trong SalesOrderWindow), không có field
+    // BE tương ứng.
+    public string StockExportedLabel => IsConfirmed ? "Đã xuất" : "Chưa xuất";
+    public string DocumentTypeLabel  => "Bán hàng hóa, dịch vụ trong nước chưa thu tiền";
+
     public SalesOrderResponseDto Original { get; init; } = null!;
 
     public static SalesOrderListItem FromDto(SalesOrderResponseDto dto)
@@ -29,6 +43,7 @@ public class SalesOrderListItem
         {
             Id             = dto.Id,
             DocumentNumber = dto.DocumentNumber,
+            AccountingDate = dto.AccountingDate.ToLocalTime(),
             DocumentDate   = dto.DocumentDate.ToLocalTime(),
             Description    = dto.Description,
             CustomerName   = dto.CustomerName,

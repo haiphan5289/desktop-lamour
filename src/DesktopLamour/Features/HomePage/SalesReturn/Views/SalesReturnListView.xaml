@@ -7,7 +7,10 @@
              Background="{StaticResource AppColor.BackgroundSecondary}">
 
     <!-- Phím tắt thật (2026-09-11) — khớp context menu chuột phải bên dưới, mirror
-         SalesOrderListView cùng ngày. Không có Ctrl+C ở đây (SalesReturn không có "Nhân bản"). -->
+         SalesOrderListView cùng ngày. 2026-09-16: thêm "Nhân bản" vào context menu (mirror
+         SalesOrderListView) — vẫn KHÔNG có KeyBinding Ctrl+C thật ở đây, giống SalesOrderListView:
+         "Ctrl+C" trong MenuItem.InputGestureText chỉ là text hiển thị, tránh đè phím copy-cell mặc
+         định của DataGrid. -->
     <UserControl.InputBindings>
         <KeyBinding Gesture="Ctrl+N" Command="{Binding AddSalesReturnCommand}"/>
         <KeyBinding Gesture="Ctrl+E" Command="{Binding ViewSalesReturnCommand}"/>
@@ -142,20 +145,14 @@
                                    Style="{StaticResource AppTypography.LabelSection}"
                                    VerticalAlignment="Center"
                                    Margin="0,0,8,0"/>
+                <!-- 2026-09-14: bỏ ô "Tìm kiếm chứng từ..." + nút "Lọc" theo yêu cầu — các bộ lọc
+                     khác (Kỳ/Từ-Đến ngày/Trạng thái/Kiểm phiếu nhập) và từng cột "Lọc..." riêng ở
+                     header DataGrid bên dưới đã tự áp dụng ngay khi đổi (live filter, xem
+                     OnFilterFromDateChanged/FilterItem trong ViewModel), không phụ thuộc vào nút
+                     "Lọc" hay ô tìm kiếm tổng quát này. -->
                 <ComboBox ItemsSource="{x:Static local:SalesReturnListViewModel.HasReceiptOptions}"
                           SelectedItem="{Binding FilterHasReceipt, Mode=TwoWay}"
-                          Width="100" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
-                          Margin="0,0,16,0"/>
-
-                <controls:AppTextField Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                       Placeholder="🔍 Tìm kiếm chứng từ..."
-                                       Width="260" Height="36" VerticalAlignment="Center"/>
-
-                <controls:AppButton Content="🔍 Lọc"
-                                    Style="{StaticResource AppButton.Primary.Medium}"
-                                    Command="{Binding FilterCommand}"
-                                    Height="36" VerticalAlignment="Center"
-                                    Margin="12,0,0,0"/>
+                          Width="100" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"/>
             </StackPanel>
         </Border>
 
@@ -229,6 +226,7 @@
                         <Separator/>
                         <MenuItem Header="👁 Xem" InputGestureText="Ctrl+E" Command="{Binding ViewSalesReturnCommand}"/>
                         <MenuItem Header="✏️ Sửa" InputGestureText="F2" Command="{Binding EditSalesReturnCommand}"/>
+                        <MenuItem Header="📋 Nhân bản..." InputGestureText="Ctrl+C" Command="{Binding DuplicateSalesReturnCommand}"/>
                         <MenuItem Header="🗑️ Xóa" InputGestureText="Ctrl+D" Command="{Binding DeleteSalesReturnCommand}"/>
                         <Separator/>
                         <MenuItem Header="📗 Ghi sổ" InputGestureText="Ctrl+G" Command="{Binding ConfirmSalesReturnCommand}"/>
@@ -251,6 +249,40 @@
                         </Style.Triggers>
                     </Style>
                 </DataGrid.RowStyle>
+                <!-- 2026-09-16 (bug user report): dòng Treo lúc SELECTED trước đây trùng màu xanh mặc
+                     định với dòng bình thường — Foreground/FontWeight ở RowStyle trên KHÔNG áp dụng
+                     lúc Selected vì DataGridCell mặc định tự đặt Background/Foreground riêng ngay
+                     trong ControlTemplate.Triggers của chính nó khi IsSelected=True (ưu tiên cao hơn
+                     mọi Style/Trigger đặt từ ngoài lên cùng property — cùng nguyên nhân đã ghi nhận ở
+                     SalesReturnWindow.xaml cho bug "chữ mờ" IsEnabled=False). Fix duy nhất hiệu quả là
+                     thay hẳn Template của cell khi Held+Selected, giống cách đã làm ở đó. -->
+                <DataGrid.CellStyle>
+                    <Style TargetType="DataGridCell">
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsHeld}" Value="True"/>
+                                    <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type DataGridCell}">
+                                            <Border Padding="{TemplateBinding Padding}"
+                                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                                    Background="{StaticResource AppColor.ButtonPrimaryHover}"
+                                                    SnapsToDevicePixels="True">
+                                                <ContentPresenter VerticalAlignment="Center"
+                                                                  TextElement.Foreground="{StaticResource AppColor.TextInverted}"
+                                                                  TextElement.FontWeight="SemiBold"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.CellStyle>
                 <DataGrid.Columns>
 
                     <!-- Loại chứng từ — khớp mẫu MISA (2026-09-13, thay cho "Loại trả hàng" cũ):

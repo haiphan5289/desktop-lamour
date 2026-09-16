@@ -29,7 +29,9 @@ public partial class SalesOrderReportFilterViewModel : ViewModelBase
     [ObservableProperty] private ISearchableItem? _selectedCustomer;
     [ObservableProperty] private string?          _selectedUnit;
     [ObservableProperty] private string?          _selectedCategory;
-    [ObservableProperty] private string           _selectedPeriod = SalesOrderReportPeriods.MonthToDate;
+    // 2026-09-16: đổi lại mặc định "Hôm nay" (đảo ngược quyết định 2026-08-31 dùng MonthToDate),
+    // đồng bộ lại với các màn chứng từ khác (SalesOrderListViewModel/SalesReturnListViewModel/...).
+    [ObservableProperty] private string           _selectedPeriod = SalesOrderReportPeriods.Today;
     [ObservableProperty] private string           _selectedReportType = SalesOrderReportTypes.ByProduct;
     [ObservableProperty] private bool             _areAllProductsSelected;
 

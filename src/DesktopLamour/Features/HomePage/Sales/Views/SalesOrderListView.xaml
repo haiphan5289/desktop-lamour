@@ -2,6 +2,8 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+             xmlns:models="clr-namespace:DesktopLamour.Shared.Models"
+             xmlns:local="clr-namespace:DesktopLamour.Features.HomePage.Sales.ViewModels"
              Background="{StaticResource AppColor.BackgroundSecondary}">
 
     <!-- Phím tắt thật (2026-09-11) — khớp danh sách hiển thị trên context menu bên dưới, TRỪ
@@ -71,7 +73,24 @@
                                     Margin="0,0,8,0"/>
                 <controls:AppButton Content="🗑️ Xóa"
                                     Style="{StaticResource AppButton.Destructive.Medium}"
-                                    Command="{Binding DeleteSalesOrderCommand}"/>
+                                    Command="{Binding DeleteSalesOrderCommand}"
+                                    Margin="0,0,8,0"/>
+                <!-- 2026-09-13: mirror SalesReturnListView — trước đây thiếu hẳn nút xuất Excel ở
+                     màn này. -->
+                <controls:AppButton Content="📤 Xuất khẩu"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding ExportExcelCommand}"
+                                    Margin="0,0,8,0"/>
+                <!-- 2026-09-14: tách "Gửi email, Zalo" (trước đây 1 nút dropdown) thành 2 nút riêng
+                     biệt theo yêu cầu — Command gán thẳng như Sửa/Xóa nên WPF tự gray từng nút theo
+                     CanExecute=HasSelection, không cần IsEnabled/Click code-behind thủ công nữa. -->
+                <controls:AppButton Content="✉️ Gửi email"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding SendEmailCommand}"
+                                    Margin="0,0,8,0"/>
+                <controls:AppButton Content="💬 Gửi Zalo"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding SendZaloCommand}"/>
             </StackPanel>
         </Border>
 
@@ -89,24 +108,45 @@
                  Lọc canh giữa theo cùng 1 baseline (AppButton.Primary.Medium mặc định cao 40, các ô
                  khác 34 — lệch nhau nên phải ép về cùng chiều cao). -->
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- 2026-09-13: mirror SalesReturnListView — trước đây thiếu hẳn "Kỳ" ở màn này. -->
+                <controls:AppLabel Text="Kỳ:"
+                                   Style="{StaticResource AppTypography.LabelSection}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"/>
+                <ComboBox ItemsSource="{x:Static local:SalesOrderListViewModel.PeriodOptions}"
+                          SelectedItem="{Binding SelectedPeriod, Mode=TwoWay}"
+                          Width="150" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                          Margin="0,0,16,0"/>
+
                 <controls:AppLabel Text="Từ ngày:"
                                    Style="{StaticResource AppTypography.LabelSection}"
                                    VerticalAlignment="Center"
-                                   Margin="20,0,8,0"/>
+                                   Margin="0,0,8,0"/>
                 <DatePicker SelectedDate="{Binding FilterFromDate, Mode=TwoWay}"
-                            Width="130" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"/>
+                            Width="130" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                            Margin="0,0,16,0"/>
 
                 <controls:AppLabel Text="Đến ngày:"
                                    Style="{StaticResource AppTypography.LabelSection}"
                                    VerticalAlignment="Center"
-                                   Margin="16,0,8,0"/>
+                                   Margin="0,0,8,0"/>
                 <DatePicker SelectedDate="{Binding FilterToDate, Mode=TwoWay}"
-                            Width="130" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"/>
+                            Width="130" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                            Margin="0,0,16,0"/>
+
+                <!-- 2026-09-13: mirror SalesReturnListView — trước đây thiếu hẳn "Trạng thái" ở màn này. -->
+                <controls:AppLabel Text="Trạng thái:"
+                                   Style="{StaticResource AppTypography.LabelSection}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"/>
+                <ComboBox ItemsSource="{x:Static local:SalesOrderListViewModel.StatusOptions}"
+                          SelectedItem="{Binding FilterStatus, Mode=TwoWay}"
+                          Width="120" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                          Margin="0,0,16,0"/>
 
                 <controls:AppTextField Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                        Placeholder="🔍 Tìm kiếm chứng từ..."
-                                       Width="320" Height="36" VerticalAlignment="Center"
-                                       Margin="24,0,0,0"/>
+                                       Width="260" Height="36" VerticalAlignment="Center"/>
 
                 <controls:AppButton Content="🔍 Lọc"
                                     Style="{StaticResource AppButton.Primary.Medium}"
@@ -153,7 +193,7 @@
             <!-- DataGrid -->
             <DataGrid x:Name="OrdersGrid"
                       Grid.Row="0"
-                      ItemsSource="{Binding SalesOrders}"
+                      ItemsSource="{Binding SalesOrdersView}"
                       SelectedItem="{Binding SelectedOrder, Mode=TwoWay}"
                       AutoGenerateColumns="False"
                       IsReadOnly="True"
@@ -225,16 +265,123 @@
                 </DataGrid.RowStyle>
                 <DataGrid.Columns>
 
-                    <DataGridTextColumn Header="Số chứng từ" Binding="{Binding DocumentNumber}" Width="120"/>
+                    <!-- 2026-09-14 (theo ảnh mẫu MISA): "Ngày hạch toán" mới — hiển thị thêm cạnh
+                         "Ngày chứng từ" (trước đây chỉ có 1 cột "Ngày" = DocumentDate).
+                         2026-09-16: thêm ô lọc riêng (AccountingDateFilter) theo yêu cầu — mirror
+                         đúng pattern "Ngày chứng từ" ngay bên dưới. -->
+                    <DataGridTextColumn Header="Ngày hạch toán"
+                                        Binding="{Binding AccountingDate, StringFormat=\{0:dd/MM/yyyy\}}"
+                                        Width="100">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Ngày hạch toán" FontWeight="SemiBold"/>
+                                    <Grid Margin="0,4,4,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0"
+                                                  ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
+                                                  SelectedItem="{Binding DataContext.AccountingDateFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
+                                                               ToolTip="{Binding Converter={StaticResource FilterOperatorLabelConverter}}"
+                                                               HorizontalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <DatePicker Grid.Column="1" HorizontalAlignment="Stretch"
+                                                    SelectedDate="{Binding DataContext.AccountingDateFilter.Value, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                    FontSize="10" Height="22"/>
+                                    </Grid>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
 
-                    <DataGridTextColumn Header="Ngày"
+                    <!-- Ngày chứng từ (2026-09-14: đổi tên từ "Ngày" cho khớp ảnh mẫu) — date column:
+                         operator combo (=, ≤, ≥...) + DatePicker, inline -->
+                    <DataGridTextColumn Header="Ngày chứng từ"
                                         Binding="{Binding DocumentDate, StringFormat=\{0:dd/MM/yyyy\}}"
-                                        Width="100"/>
+                                        Width="100">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Ngày chứng từ" FontWeight="SemiBold"/>
+                                    <Grid Margin="0,4,4,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0"
+                                                  ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
+                                                  SelectedItem="{Binding DataContext.DocumentDateFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
+                                                               ToolTip="{Binding Converter={StaticResource FilterOperatorLabelConverter}}"
+                                                               HorizontalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <DatePicker Grid.Column="1" HorizontalAlignment="Stretch"
+                                                    SelectedDate="{Binding DataContext.DocumentDateFilter.Value, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                    FontSize="10" Height="22"/>
+                                    </Grid>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
 
-                    <DataGridTextColumn Header="Diễn giải" Binding="{Binding Description}" Width="200"/>
-                    <DataGridTextColumn Header="Khách hàng" Binding="{Binding CustomerName}" Width="180"/>
-                    <DataGridTextColumn Header="Nhân viên" Binding="{Binding EmployeeName}" Width="140"/>
+                    <!-- Số chứng từ — text column: plain Contains filter, inline (2026-09-13, mirror
+                         SalesReturnListView — trước đây không có ô lọc riêng theo cột nào cả). -->
+                    <DataGridTextColumn Header="Số chứng từ" Binding="{Binding DocumentNumber}" Width="120">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Số chứng từ" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                                            Text="{Binding DataContext.FilterDocumentNumber, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
 
+                    <!-- Khách hàng — text column: plain Contains filter, inline (2026-09-14: chuyển
+                         lên trước Diễn giải, khớp thứ tự ảnh mẫu) -->
+                    <DataGridTextColumn Header="Khách hàng" Binding="{Binding CustomerName}" Width="180">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Khách hàng" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                                            Text="{Binding DataContext.FilterCustomerName, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- Diễn giải — text column: plain Contains filter, inline -->
+                    <DataGridTextColumn Header="Diễn giải" Binding="{Binding Description}" Width="200">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Diễn giải" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                                            Text="{Binding DataContext.FilterDescription, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- Tổng tiền hàng — numeric column: operator combo (=, ≤, ≥...) + value box, inline -->
                     <DataGridTextColumn Header="Tổng tiền hàng" Binding="{Binding TotalGross, StringFormat=\{0:N0\}}" Width="130">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
@@ -242,17 +389,76 @@
                                 <Setter Property="Padding" Value="6,0"/>
                             </Style>
                         </DataGridTextColumn.ElementStyle>
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Tổng tiền hàng" FontWeight="SemiBold" TextAlignment="Right"/>
+                                    <Grid Margin="0,4,4,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0"
+                                                  ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
+                                                  SelectedItem="{Binding DataContext.TotalGrossFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
+                                                               ToolTip="{Binding Converter={StaticResource FilterOperatorLabelConverter}}"
+                                                               HorizontalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <controls:AppTextField Grid.Column="1" Placeholder="Giá trị" TextAlignment="Right" HorizontalAlignment="Stretch"
+                                                                Text="{Binding DataContext.TotalGrossFilter.ValueText, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                                FontWeight="Normal" FontSize="11" Height="22"/>
+                                    </Grid>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
-                    <DataGridTextColumn Header="Tổng CK" Binding="{Binding TotalDiscount, StringFormat=\{0:N0\}}" Width="110">
+                    <!-- Tiền chiết khấu (2026-09-14: đổi tên từ "Tổng CK" cho khớp ảnh mẫu) — numeric
+                         column: operator combo (=, ≤, ≥...) + value box, inline -->
+                    <DataGridTextColumn Header="Tiền chiết khấu" Binding="{Binding TotalDiscount, StringFormat=\{0:N0\}}" Width="120">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="TextAlignment" Value="Right"/>
                                 <Setter Property="Padding" Value="6,0"/>
                             </Style>
                         </DataGridTextColumn.ElementStyle>
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Tiền chiết khấu" FontWeight="SemiBold" TextAlignment="Right"/>
+                                    <Grid Margin="0,4,4,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0"
+                                                  ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
+                                                  SelectedItem="{Binding DataContext.TotalDiscountFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
+                                                               ToolTip="{Binding Converter={StaticResource FilterOperatorLabelConverter}}"
+                                                               HorizontalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <controls:AppTextField Grid.Column="1" Placeholder="Giá trị" TextAlignment="Right" HorizontalAlignment="Stretch"
+                                                                Text="{Binding DataContext.TotalDiscountFilter.ValueText, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                                FontWeight="Normal" FontSize="11" Height="22"/>
+                                    </Grid>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
+                    <!-- Tiền thuế GTGT — không có ô lọc riêng (giống SalesReturnListView). -->
                     <DataGridTextColumn Header="Tiền thuế GTGT" Binding="{Binding TotalTax, StringFormat=\{0:N0\}}" Width="120">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
@@ -262,7 +468,37 @@
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
 
-                    <DataGridTemplateColumn Header="Tổng thanh toán" Width="140">
+                    <!-- Tổng tiền thanh toán (2026-09-14: đổi tên từ "Tổng thanh toán" cho khớp ảnh
+                         mẫu) — numeric column: operator combo (=, ≤, ≥...) + value box, inline -->
+                    <DataGridTemplateColumn Header="Tổng tiền thanh toán" Width="150">
+                        <DataGridTemplateColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Tổng tiền thanh toán" FontWeight="SemiBold" TextAlignment="Right"/>
+                                    <Grid Margin="0,4,4,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0"
+                                                  ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
+                                                  SelectedItem="{Binding DataContext.TotalPaymentFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
+                                                               ToolTip="{Binding Converter={StaticResource FilterOperatorLabelConverter}}"
+                                                               HorizontalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <controls:AppTextField Grid.Column="1" Placeholder="Giá trị" TextAlignment="Right" HorizontalAlignment="Stretch"
+                                                                Text="{Binding DataContext.TotalPaymentFilter.ValueText, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                                FontWeight="Normal" FontSize="11" Height="22"/>
+                                    </Grid>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.HeaderTemplate>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding TotalPayment, StringFormat=\{0:N0\}}" Padding="6,0" VerticalAlignment="Center" TextAlignment="Right"
@@ -270,6 +506,37 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
+
+                    <!-- 2026-09-14 (theo ảnh mẫu MISA): "Đã xuất hàng" — nhãn suy ra từ IsConfirmed
+                         (xem StockExportedLabel/comment trong SalesOrderListItem), không phải field
+                         BE riêng vì app xuất kho ngay lúc Ghi sổ. -->
+                    <DataGridTextColumn Header="Đã xuất hàng" Binding="{Binding StockExportedLabel}" Width="100">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                    <!-- 2026-09-14 (theo ảnh mẫu MISA): "Loại chứng từ" — luôn 1 câu cố định cho mọi
+                         chứng từ bán hàng (xem DocumentTypeLabel), không phải field BE riêng. -->
+                    <DataGridTextColumn Header="Loại chứng từ" Binding="{Binding DocumentTypeLabel}" Width="260"/>
+
+                    <!-- Nhân viên — text column: plain Contains filter, inline (2026-09-14: không có
+                         trong ảnh mẫu nhưng vẫn giữ lại theo yêu cầu — đẩy ra cuối, sau các cột khớp
+                         ảnh mẫu) -->
+                    <DataGridTextColumn Header="Nhân viên" Binding="{Binding EmployeeName}" Width="140">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Nhân viên" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                                            Text="{Binding DataContext.FilterEmployeeName, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
 
                     <DataGridTextColumn Header="Ghi chú" Binding="{Binding Notes}" Width="180"/>
 
@@ -286,18 +553,25 @@
                     BorderBrush="{StaticResource AppColor.BorderThin}"
                     BorderThickness="1,0,1,1"
                     Visibility="{Binding HasSalesOrders, Converter={StaticResource BoolToVisibilityConverter}}">
+                <!-- 2026-09-14: cập nhật lại ColumnDefinitions khớp đúng thứ tự/độ rộng cột mới của
+                     DataGrid phía trên (thêm "Ngày hạch toán"/"Đã xuất hàng"/"Loại chứng từ", đổi tên
+                     "Tổng CK"→"Tiền chiết khấu"/"Tổng thanh toán"→"Tổng tiền thanh toán", chuyển
+                     "Nhân viên" ra sau "Loại chứng từ") — nếu không sửa, 4 số tổng cộng bên dưới sẽ
+                     lệch cột so với header thật. -->
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="100"/>  <!-- Trạng thái -->
+                        <ColumnDefinition Width="100"/>  <!-- Ngày hạch toán -->
+                        <ColumnDefinition Width="100"/>  <!-- Ngày chứng từ -->
                         <ColumnDefinition Width="120"/>  <!-- Số chứng từ -->
-                        <ColumnDefinition Width="100"/>  <!-- Ngày -->
-                        <ColumnDefinition Width="200"/>  <!-- Diễn giải -->
-                        <ColumnDefinition Width="*"/>    <!-- Khách hàng -->
-                        <ColumnDefinition Width="140"/>  <!-- Nhân viên -->
+                        <ColumnDefinition Width="180"/>  <!-- Khách hàng -->
+                        <ColumnDefinition Width="*"/>    <!-- Diễn giải -->
                         <ColumnDefinition Width="130"/>  <!-- Tổng tiền hàng -->
-                        <ColumnDefinition Width="110"/>  <!-- Tổng CK -->
+                        <ColumnDefinition Width="120"/>  <!-- Tiền chiết khấu -->
                         <ColumnDefinition Width="120"/>  <!-- Tiền thuế GTGT -->
-                        <ColumnDefinition Width="140"/>  <!-- Tổng thanh toán -->
+                        <ColumnDefinition Width="150"/>  <!-- Tổng tiền thanh toán -->
+                        <ColumnDefinition Width="100"/>  <!-- Đã xuất hàng -->
+                        <ColumnDefinition Width="260"/>  <!-- Loại chứng từ -->
+                        <ColumnDefinition Width="140"/>  <!-- Nhân viên -->
                         <ColumnDefinition Width="*"/>    <!-- Ghi chú -->
                     </Grid.ColumnDefinitions>
 
@@ -307,28 +581,28 @@
                                        VerticalAlignment="Center"
                                        Padding="6,10"/>
 
-                    <TextBlock Grid.Column="6"
+                    <TextBlock Grid.Column="5"
                                Text="{Binding TotalGrossSum, StringFormat=\{0:N0\}}"
                                FontWeight="Bold"
                                TextAlignment="Right"
                                VerticalAlignment="Center"
                                Padding="6,10"/>
 
-                    <TextBlock Grid.Column="7"
+                    <TextBlock Grid.Column="6"
                                Text="{Binding TotalDiscountSum, StringFormat=\{0:N0\}}"
                                FontWeight="Bold"
                                TextAlignment="Right"
                                VerticalAlignment="Center"
                                Padding="6,10"/>
 
-                    <TextBlock Grid.Column="8"
+                    <TextBlock Grid.Column="7"
                                Text="{Binding TotalTaxSum, StringFormat=\{0:N0\}}"
                                FontWeight="Bold"
                                TextAlignment="Right"
                                VerticalAlignment="Center"
                                Padding="6,10"/>
 
-                    <TextBlock Grid.Column="9"
+                    <TextBlock Grid.Column="8"
                                Text="{Binding TotalPaymentSum, StringFormat=\{0:N0\}}"
                                FontWeight="Bold"
                                TextAlignment="Right"

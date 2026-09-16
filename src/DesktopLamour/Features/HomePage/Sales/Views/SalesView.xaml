@@ -146,41 +146,12 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Phiếu cọc -->
-                        <Border Style="{StaticResource SalesTile}">
-                            <Border.InputBindings>
-                                <MouseBinding MouseAction="LeftClick" Command="{Binding OpenDepositCommand}"/>
-                            </Border.InputBindings>
-                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <Border Style="{StaticResource SalesTileIconBadge}">
-                                    <TextBlock Text="💰" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <controls:AppLabel Text="Phiếu cọc"
-                                                   Style="{StaticResource AppTypography.LabelSection}"
-                                                   FontWeight="SemiBold"
-                                                   HorizontalAlignment="Center"
-                                                   HorizontalContentAlignment="Center"
-                                                   Margin="0,14,0,0"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Báo cáo trừ cọc -->
-                        <Border Style="{StaticResource SalesTile}">
-                            <Border.InputBindings>
-                                <MouseBinding MouseAction="LeftClick" Command="{Binding NavigateToDepositDeductionReportCommand}"/>
-                            </Border.InputBindings>
-                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <Border Style="{StaticResource SalesTileIconBadge}">
-                                    <TextBlock Text="📉" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <controls:AppLabel Text="Báo cáo trừ cọc"
-                                                   Style="{StaticResource AppTypography.LabelSection}"
-                                                   FontWeight="SemiBold"
-                                                   HorizontalAlignment="Center"
-                                                   HorizontalContentAlignment="Center"
-                                                   Margin="0,14,0,0"/>
-                            </StackPanel>
-                        </Border>
+                        <!-- 2026-09-16: ẩn 2 ô "Phiếu cọc"/"Báo cáo trừ cọc" khỏi menu theo yêu cầu —
+                             CHỈ ẩn UI, KHÔNG xóa OpenDepositCommand/NavigateToDepositDeductionReportCommand
+                             (SalesViewModel.cs), KHÔNG đụng DepositWindow/DepositDeductionReportView,
+                             route điều hướng, DI, hay API/DB Deposit — dòng "Trừ cọc" trong Chứng từ
+                             bán hàng vẫn hoạt động bình thường vì nó gọi thẳng UseCase, không qua 2 ô
+                             menu này. Muốn hiện lại chỉ cần khôi phục lại 2 khối Border bên dưới. -->
 
                     </WrapPanel>
 

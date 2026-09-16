@@ -36,12 +36,12 @@ public partial class BulkCustomerReceiptSearchViewModel : ViewModelBase
     [ObservableProperty] private string  _paymentMethod = "Cash111";
     [ObservableProperty] private string? _bankAccount;
 
-    // Mặc định "Đầu tháng đến hiện tại" (áp dụng đồng bộ toàn app — 2026-08-31), thay cho "Hôm nay"
-    // trước đây. Nhãn đổi từ "Tháng này" → "Đầu tháng đến hiện tại" cho đúng ngữ nghĩa thật (case
-    // này vốn đã tính 1-đầu-tháng → hôm nay, không phải trọn tháng) và khớp tên dùng ở các màn khác.
+    // 2026-09-16: đổi lại mặc định "Hôm nay" (đảo ngược quyết định 2026-08-31 "Đầu tháng đến hiện
+    // tại" — vốn dĩ chính là mặc định gốc trước đó). Nhãn "Đầu tháng đến hiện tại" vẫn còn trong
+    // PeriodOptions để chọn tay khi cần.
     public static string[] PeriodOptions { get; } = { "Hôm nay", "Hôm qua", "Tuần này", "Đầu tháng đến hiện tại", "Tùy chọn" };
-    [ObservableProperty] private string   _selectedPeriod = "Đầu tháng đến hiện tại";
-    [ObservableProperty] private DateTime _fromDate = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    [ObservableProperty] private string   _selectedPeriod = "Hôm nay";
+    [ObservableProperty] private DateTime _fromDate = DateTime.Today;
     [ObservableProperty] private DateTime _toDate   = DateTime.Today;
     [ObservableProperty] private ISearchableItem? _selectedEmployee;
 

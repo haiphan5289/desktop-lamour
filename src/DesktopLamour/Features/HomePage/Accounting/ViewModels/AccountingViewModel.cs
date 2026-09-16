@@ -32,9 +32,9 @@ public partial class AccountingViewModel : ViewModelBase
     [ObservableProperty] private bool    _hasItems;
     [ObservableProperty] private decimal _openingBalance;
     [ObservableProperty] private decimal _closingBalance;
-    // Mặc định "Đầu tháng đến hiện tại" (áp dụng đồng bộ toàn app — 2026-08-31), KHÔNG phải "Tháng
-    // này" (vốn kéo dài tới hết tháng, kể cả ngày tương lai) — khớp SelectedPeriod bên dưới.
-    [ObservableProperty] private DateTime _fromDate = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    // 2026-09-16: đổi lại mặc định "Hôm nay" (đảo ngược quyết định 2026-08-31 "Đầu tháng đến hiện
+    // tại") — khớp SelectedPeriod bên dưới.
+    [ObservableProperty] private DateTime _fromDate = DateTime.Today;
     [ObservableProperty] private DateTime _toDate   = DateTime.Today;
 
     // "Kỳ" — chọn nhanh khoảng ngày (theo mẫu MISA), chọn "Tùy chọn" thì để Từ ngày/Đến ngày tự
@@ -43,7 +43,7 @@ public partial class AccountingViewModel : ViewModelBase
     public static string[] PeriodOptions { get; } =
         { "Tùy chọn", "Hôm nay", "Hôm qua", "Tuần này", "Tháng này", "Tháng trước", "Quý này", "Năm nay", "Đầu tháng đến hiện tại" };
 
-    [ObservableProperty] private string _selectedPeriod = "Đầu tháng đến hiện tại";
+    [ObservableProperty] private string _selectedPeriod = "Hôm nay";
 
     // Lọc Trạng thái/Loại áp trực tiếp lên dữ liệu đã tải (không gọi lại BE) — ItemsView là nguồn
     // DataGrid bind vào; Items vẫn là dữ liệu gốc từ LoadAsync.

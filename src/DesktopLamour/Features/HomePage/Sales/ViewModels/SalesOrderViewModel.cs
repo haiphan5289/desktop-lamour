@@ -49,6 +49,7 @@ public partial class SalesOrderViewModel : ViewModelBase
     partial void OnIsReadOnlyChanged(bool value)
     {
         OnPropertyChanged(nameof(IsEditable));
+        OnPropertyChanged(nameof(IsGridLocked));
         OnPropertyChanged(nameof(HeaderSubtitle));
         OnPropertyChanged(nameof(CanDeleteOrder));
         EditCommand.NotifyCanExecuteChanged();
@@ -56,6 +57,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         DeleteCommand.NotifyCanExecuteChanged();
         CancelCommand.NotifyCanExecuteChanged();
         ToggleConfirmCommand.NotifyCanExecuteChanged();
+        RemoveLineCommand.NotifyCanExecuteChanged();
     }
 
     // 2026-09-11: đảo ngược quyết định 2026-09-10 ("Ghi sổ" cần 2 lần bấm qua cờ IsArmed) — "Cất"
@@ -80,6 +82,13 @@ public partial class SalesOrderViewModel : ViewModelBase
     // vẫn tự khóa Grid vì IsConfirmed=true bất kể IsReadOnly) — vỡ mất lối thoát cũ vốn đã hoạt
     // động trước khi có tính năng "Bỏ ghi" này.
     public bool IsEditable  => CurrentOrder is null || (!IsReadOnly && (IsViewOnlyMode || !IsConfirmed));
+
+    // 2026-09-14: TabControl/DataGrid trước đây khóa qua IsEnabled={Binding IsEditable} — theme mặc
+    // định của WPF (.NET 10) tự làm mờ (giảm opacity) toàn bộ nội dung control khi Disabled, không
+    // chặn được bằng Foreground/Opacity override (xem comment trong SalesOrderWindow.xaml). Chuyển
+    // sang DataGrid.IsReadOnly (chặn sửa ô mà KHÔNG đổi IsEnabled) để tránh hẳn cơ chế mờ đó — chữ
+    // luôn hiện đen bình thường dù chứng từ đang khóa.
+    public bool IsGridLocked => !IsEditable;
 
     public string HeaderSubtitle => IsReadOnly
         ? "Xem chi tiết chứng từ (chỉ đọc)"
@@ -254,6 +263,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsConfirmed));
         OnPropertyChanged(nameof(IsHeld));
         OnPropertyChanged(nameof(IsEditable));
+        OnPropertyChanged(nameof(IsGridLocked));
         OnPropertyChanged(nameof(CanDeleteOrder));
         OnPropertyChanged(nameof(UnpostButtonLabel));
         SaveCommand.NotifyCanExecuteChanged();
@@ -262,6 +272,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         PrintCommand.NotifyCanExecuteChanged();
         EditCommand.NotifyCanExecuteChanged();
         ToggleConfirmCommand.NotifyCanExecuteChanged();
+        RemoveLineCommand.NotifyCanExecuteChanged();
     }
 
     public ObservableCollection<SalesOrderLineItem> Lines { get; } = new();
@@ -669,7 +680,11 @@ public partial class SalesOrderViewModel : ViewModelBase
         };
     }
 
-    [RelayCommand]
+    // 2026-09-14: thêm CanExecute=IsEditable — trước đây nút "✕" chỉ bị khóa GIÁN TIẾP qua
+    // TabControl.IsEnabled cascade xuống Button. Bỏ IsEnabled ở TabControl (fix "chữ mờ") làm mất
+    // luôn khóa gián tiếp này — command tự nó chưa từng gate theo IsEditable, nếu không thêm ở đây
+    // người dùng xoá được dòng hàng của hóa đơn ĐÃ khóa/đã ghi sổ.
+    [RelayCommand(CanExecute = nameof(IsEditable))]
     private void RemoveLine(SalesOrderLineItem line)
     {
         if (line.IsLocked)
@@ -991,13 +1006,9 @@ public partial class SalesOrderViewModel : ViewModelBase
     {
         if (CurrentOrder is null) return;
 
-        if (IsConfirmed)
-        {
-            var confirm = MessageBox.Show(
-                $"Bạn có chắc muốn bỏ ghi đơn hàng '{CurrentOrder.DocumentNumber}'? Tồn kho đã trừ lúc ghi sổ sẽ được hoàn tác.",
-                "Xác nhận bỏ ghi", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-            if (confirm != MessageBoxResult.Yes) return;
-        }
+        // 2026-09-13: bỏ hẳn hộp thoại Yes/No khi "Bỏ ghi" — mirror SalesReturnViewModel.
+        // ToggleConfirmAsync (đã sửa trước đó theo yêu cầu, lúc đó chỉ nêu tên SalesReturn nên
+        // SalesOrder chưa đổi theo — nay đồng bộ luôn). Chỉ "Xóa" (DeleteAsync) mới cần xác nhận.
 
         IsBusy = true;
         try

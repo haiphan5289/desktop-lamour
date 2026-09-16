@@ -45,16 +45,72 @@
             </Style.Triggers>
         </Style>
 
-        <!-- 2026-09-13: cùng nguyên nhân với AppTextField/AppSearchableComboBox ở trên — DataGridCell
-             mặc định của WPF có sẵn hiệu ứng mờ (Opacity) khi Disabled, áp dụng cho mọi bảng "Hàng
-             tiền/Thuế/Giá vốn/Thống kê" trong popup này khi form bị khoá. Override cục bộ giữ đúng
-             tông đen cho dữ liệu, không đổi border/selection mặc định. -->
-        <Style TargetType="{x:Type DataGridCell}"
-               BasedOn="{StaticResource {x:Type DataGridCell}}">
+        <!-- 2026-09-14 (thay bản 2026-09-13 — vẫn còn mờ theo phản ánh thực tế của user, cùng vấn đề
+             đã gặp và xử lý dứt điểm ở SalesOrderWindow "Chứng từ bán hàng"): Foreground/Opacity
+             Setter từ Style bên ngoài KHÔNG chặn được hiệu ứng mờ — vì hiệu ứng đó nằm trong
+             ControlTemplate.Triggers CỦA CHÍNH DataGridCell (độ ưu tiên cao hơn Style Trigger từ
+             ngoài, dù cùng target property). Chỉ có cách thay HẲN Template (không còn Trigger mờ) khi
+             Disabled — Template tối giản dưới đây (Border + ContentPresenter) là cấu trúc chuẩn của
+             DataGridCell, chỉ áp khi Disabled, lúc đang sửa vẫn dùng Template mặc định của WPF như
+             cũ (không đổi hành vi chọn/sửa ô). -->
+        <Style TargetType="{x:Type DataGridCell}">
             <Style.Triggers>
                 <Trigger Property="IsEnabled" Value="False">
-                    <Setter Property="Foreground" Value="{StaticResource AppColor.TextPrimary}"/>
-                    <Setter Property="Opacity"    Value="1"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="DataGridCell">
+                                <Border Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        Padding="{TemplateBinding Padding}"
+                                        SnapsToDevicePixels="True">
+                                    <ContentPresenter VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 2026-09-14: cùng lý do như DataGridCell ở trên — DataGridRow (cha trực tiếp bọc quanh
+             mọi DataGridCell trong 1 dòng, cũng bị IsEnabled=False lây khi form khoá) có Template mặc
+             định riêng với cùng kiểu Trigger giảm Opacity, bọc NGOÀI DataGridCellsPresenter nên dim ở
+             tầng Row xảy ra trước/bọc ngoài, fix riêng Cell không chặn hết. Cấu trúc chuẩn của
+             DataGridRow (SelectiveScrollingGrid + DataGridCellsPresenter) — bỏ DataGridRowHeader vì
+             không grid nào trong popup này hiện row header. -->
+        <Style TargetType="{x:Type DataGridRow}">
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="DataGridRow">
+                                <Border x:Name="DGR_Border"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        SnapsToDevicePixels="True">
+                                    <SelectiveScrollingGrid>
+                                        <SelectiveScrollingGrid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </SelectiveScrollingGrid.ColumnDefinitions>
+                                        <SelectiveScrollingGrid.RowDefinitions>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </SelectiveScrollingGrid.RowDefinitions>
+                                        <DataGridCellsPresenter Grid.Column="1"
+                                                                 ItemsPanel="{TemplateBinding ItemsPanel}"
+                                                                 SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical"/>
+                                        <DataGridDetailsPresenter Grid.Column="1"
+                                                                   Grid.Row="1"
+                                                                   SelectiveScrollingGrid.SelectiveScrollingOrientation="Horizontal"
+                                                                   Visibility="{TemplateBinding DetailsVisibility}"/>
+                                    </SelectiveScrollingGrid>
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -181,10 +237,15 @@
         <TabControl Grid.Row="2" Margin="16,8,16,0"
                     Style="{StaticResource AppTabControl.Modern}">
         <TabItem Header="Giảm trừ công nợ" Style="{StaticResource AppTabItem.Modern}">
-        <!-- IsEnabled="{Binding IsEditable}" (2026-09-01) — khóa TOÀN BỘ form (header + 4 tab dòng
-             hàng) khi chứng từ đã Ghi sổ (Confirmed), khớp đúng cách WarehouseReceiptFormWindow
-             đang khóa form của nó. Trước đây form không khóa gì cả, chỉ dựa vào BE reject 400. -->
-        <Grid IsEnabled="{Binding IsEditable}">
+        <!-- IsEnabled="{Binding IsEditable}" (2026-09-01) — khóa phần Form (header) khi chứng từ đã
+             Ghi sổ (Confirmed), khớp đúng cách WarehouseReceiptFormWindow đang khóa form của nó.
+             Trước đây form không khóa gì cả, chỉ dựa vào BE reject 400.
+             2026-09-14: TÁCH IsEnabled ra khỏi Grid cha (trước đây bọc cả Form + Inner tabs) — khóa
+             cả DataGrid dòng hàng qua IsEnabled làm WPF tự mờ toàn bộ nội dung (theme mặc định,
+             không chặn được bằng Foreground/Opacity override, xem style DataGridCell/DataGridRow ở
+             Window.Resources). Giờ chỉ Grid Form (dưới đây) còn khóa qua IsEnabled — DataGrid dùng
+             IsReadOnly riêng (xem LinesDataGrid), tránh hẳn cơ chế mờ. -->
+        <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>   <!-- Form -->
                 <RowDefinition Height="*"/>      <!-- Inner tabs -->
@@ -193,7 +254,7 @@
         <!-- ══════════════════════════════════════════════════════════ -->
         <!-- Form — Thông tin chung + Chứng từ                         -->
         <!-- ══════════════════════════════════════════════════════════ -->
-        <Grid Grid.Row="0" Margin="16,12,16,0">
+        <Grid Grid.Row="0" Margin="16,12,16,0" IsEnabled="{Binding IsEditable}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="16"/>
@@ -361,6 +422,7 @@
                               CanUserAddRows="False"
                               CanUserDeleteRows="False"
                               CanUserResizeColumns="True"
+                              IsReadOnly="{Binding IsGridLocked}"
                               SelectionMode="Single"
                               HeadersVisibility="Column"
                               ColumnHeaderStyle="{StaticResource GridHeaderStyle}"
@@ -604,6 +666,7 @@
                           CanUserAddRows="False"
                           CanUserDeleteRows="False"
                           CanUserResizeColumns="True"
+                          IsReadOnly="{Binding IsGridLocked}"
                           SelectionMode="Single"
                           HeadersVisibility="Column"
                           ColumnHeaderStyle="{StaticResource GridHeaderStyle}"
@@ -680,6 +743,7 @@
                           CanUserAddRows="False"
                           CanUserDeleteRows="False"
                           CanUserResizeColumns="True"
+                          IsReadOnly="{Binding IsGridLocked}"
                           SelectionMode="Single"
                           HeadersVisibility="Column"
                           ColumnHeaderStyle="{StaticResource GridHeaderStyle}"
@@ -785,6 +849,7 @@
                           CanUserAddRows="False"
                           CanUserDeleteRows="False"
                           CanUserResizeColumns="True"
+                          IsReadOnly="{Binding IsGridLocked}"
                           SelectionMode="Single"
                           HeadersVisibility="Column"
                           ColumnHeaderStyle="{StaticResource GridHeaderStyle}"

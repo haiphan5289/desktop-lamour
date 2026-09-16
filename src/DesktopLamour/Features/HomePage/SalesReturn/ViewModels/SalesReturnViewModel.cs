@@ -127,6 +127,7 @@ public partial class SalesReturnViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasExistingReturn));
         OnPropertyChanged(nameof(CanDeleteReturn));
         OnPropertyChanged(nameof(IsEditable));
+        OnPropertyChanged(nameof(IsGridLocked));
         OnPropertyChanged(nameof(IsConfirmed));
         OnPropertyChanged(nameof(IsHeld));
         OnPropertyChanged(nameof(UnpostButtonLabel));
@@ -136,6 +137,7 @@ public partial class SalesReturnViewModel : ViewModelBase
         SaveCommand.NotifyCanExecuteChanged();
         ToggleConfirmCommand.NotifyCanExecuteChanged();
         EditCommand.NotifyCanExecuteChanged();
+        RemoveLineCommand.NotifyCanExecuteChanged();
     }
 
     public bool HasExistingReturn => CurrentReturn is not null;
@@ -158,16 +160,25 @@ public partial class SalesReturnViewModel : ViewModelBase
     partial void OnIsReadOnlyChanged(bool value)
     {
         OnPropertyChanged(nameof(IsEditable));
+        OnPropertyChanged(nameof(IsGridLocked));
         OnPropertyChanged(nameof(CanDeleteReturn));
         SaveCommand.NotifyCanExecuteChanged();
         EditCommand.NotifyCanExecuteChanged();
         DeleteCommand.NotifyCanExecuteChanged();
         ToggleConfirmCommand.NotifyCanExecuteChanged();
+        RemoveLineCommand.NotifyCanExecuteChanged();
     }
 
     // Nút "In" không đổi, vẫn bật qua HasExistingReturn/PrintCommand bất kể Held/Draft hay Confirmed
     // (Phiếu Nhập Kho liên kết vẫn in được dù chứng từ gốc đang bị bỏ ghi).
     public bool IsEditable  => CurrentReturn is null || (!IsConfirmed && !IsReadOnly);
+
+    // 2026-09-14: DataGrid dòng hàng trước đây khóa lây qua Grid cha IsEnabled={Binding IsEditable}
+    // — theme mặc định WPF làm mờ toàn bộ nội dung khi Disabled (đã vá riêng DataGridCell/Row nhưng
+    // vẫn còn mờ, cùng nguyên nhân/cách xử lý đã gặp ở SalesOrderWindow). Chuyển hẳn sang
+    // DataGrid.IsReadOnly (chặn sửa ô, KHÔNG đụng IsEnabled) — tránh cơ chế mờ, chữ luôn đen bình
+    // thường dù chứng từ đang khóa.
+    public bool IsGridLocked => !IsEditable;
     public bool IsConfirmed => CurrentReturn?.Status == "Confirmed";
     // 2026-09-11: gộp "Nháp" và "Treo" thành 1 — coi cả 2 raw status là "Treo" (mirror
     // SalesReturnListItem.IsHeld cùng ngày). "Ghi sổ"/"Bỏ ghi" dùng chung 1 nút toggle (xem
@@ -758,7 +769,11 @@ public partial class SalesReturnViewModel : ViewModelBase
         };
     }
 
-    [RelayCommand]
+    // 2026-09-14: thêm CanExecute=IsEditable — trước đây nút "✕" chỉ bị khóa GIÁN TIẾP qua Grid cha
+    // IsEnabled cascade xuống Button. Tách IsEnabled ra khỏi Grid cha (fix "chữ mờ") làm mất luôn
+    // khóa gián tiếp này — command tự nó chưa từng gate theo IsEditable, nếu không thêm ở đây người
+    // dùng xoá được dòng hàng của chứng từ ĐÃ khóa/đã ghi sổ.
+    [RelayCommand(CanExecute = nameof(IsEditable))]
     private void RemoveLine(SalesReturnLineItem line)
     {
         Lines.Remove(line);

@@ -37,4 +37,7 @@ public class SalesReturnRepository : ISalesReturnRepository
 
     public Task<CreateWarehouseReceiptResultDto> CreateWarehouseReceiptAsync(int id, CancellationToken ct = default)
         => _service.CreateWarehouseReceiptAsync(id, ct);
+
+    public Task<SalesReturnResponseDto> DuplicateAsync(int id, CancellationToken ct = default)
+        => _service.DuplicateAsync(id, ct);
 }

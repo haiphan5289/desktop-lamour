@@ -15,4 +15,5 @@ public interface ISalesReturnRepository
     Task<SalesReturnResponseDto> UnconfirmAsync(int id, CancellationToken ct = default);
     Task<string> GetNextCodeAsync(CancellationToken ct = default);
     Task<CreateWarehouseReceiptResultDto> CreateWarehouseReceiptAsync(int id, CancellationToken ct = default);
+    Task<SalesReturnResponseDto> DuplicateAsync(int id, CancellationToken ct = default);
 }

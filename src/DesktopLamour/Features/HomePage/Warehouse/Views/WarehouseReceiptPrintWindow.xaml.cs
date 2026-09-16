@@ -106,9 +106,12 @@ public partial class WarehouseReceiptPrintWindow : Window
             VerticalAlignment = VerticalAlignment.Top,
         };
         var logoContainer = new Border { Child = logoImage, MinHeight = HeaderTextLineCount * HeaderLineHeight };
+        // 2026-09-14: Width giảm 135→124 (logoImage.Width=120 + đệm 4px, trước đây dư 15px không
+        // cần thiết) — nhường thêm chỗ ngang cho các dòng info công ty bên phải (đặc biệt dòng địa
+        // chỉ, xem comment ở Run "Số 110/20/38..." bên dưới) không bị Floater này ép hẹp lại.
         var logoFloater = new Floater
         {
-            Width               = 135,
+            Width               = 124,
             HorizontalAlignment = HorizontalAlignment.Left,
             Margin              = new Thickness(0, 0, 10, 6),
         };
@@ -118,7 +121,11 @@ public partial class WarehouseReceiptPrintWindow : Window
         headerPara.Inlines.Add(logoFloater);
         headerPara.Inlines.Add(new Bold(new Run("CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ LAMOUR")) { FontSize = 14 });
         headerPara.Inlines.Add(new LineBreak());
-        headerPara.Inlines.Add(new Run("Số 110/20/38 Đường số 30, Phường An Nhơn, TP Hồ Chí Minh.") { FontSize = 13 });
+        // 2026-09-14 (theo yêu cầu "địa chỉ 1 dòng, đừng xuống dòng"): địa chỉ dài, ở FontSize=13
+        // cộng bề rộng bị Floater logo bên trái chiếm mất (~145px trong 4 dòng đầu) không đủ chỗ
+        // trên khổ A5 hẹp (148mm) → tự wrap. Giảm riêng FontSize dòng này xuống 11 để vừa 1 dòng,
+        // không đụng tới các dòng khác (tên công ty/MST/Tel vẫn giữ nguyên cỡ chữ gốc).
+        headerPara.Inlines.Add(new Run("Số 110/20/38 Đường số 30, Phường An Nhơn, TP Hồ Chí Minh.") { FontSize = 11 });
         headerPara.Inlines.Add(new LineBreak());
         headerPara.Inlines.Add(new Run("Mã số thuế: 0319088143") { FontSize = 13 });
         headerPara.Inlines.Add(new LineBreak());

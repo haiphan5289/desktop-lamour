@@ -22,9 +22,9 @@ public partial class DepositDeductionReportViewModel : ViewModelBase
     [ObservableProperty] private string   _errorMessage = string.Empty;
     [ObservableProperty] private bool     _hasItems;
     [ObservableProperty] private decimal  _totalDeducted;
-    // Mặc định "Đầu tháng đến hiện tại" (áp dụng đồng bộ toàn app — 2026-08-31), thay cho không lọc
-    // (hiện toàn bộ lịch sử) trước đây.
-    [ObservableProperty] private DateTime? _fromDate = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    // 2026-09-16: đổi lại mặc định "Hôm nay" (đảo ngược quyết định 2026-08-31 "Đầu tháng đến hiện
+    // tại", vốn thay cho không lọc/hiện toàn bộ lịch sử trước đó nữa).
+    [ObservableProperty] private DateTime? _fromDate = DateTime.Today;
     [ObservableProperty] private DateTime? _toDate   = DateTime.Today;
     [ObservableProperty] private string   _filterKeyword = string.Empty;
     [ObservableProperty] private DepositDeductionResponseDto? _selectedDeduction;

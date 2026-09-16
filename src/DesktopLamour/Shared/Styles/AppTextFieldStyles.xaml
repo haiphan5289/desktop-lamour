@@ -32,11 +32,6 @@
                                           HorizontalScrollBarVisibility="Hidden"
                                           VerticalScrollBarVisibility="Hidden"
                                           VerticalAlignment="Center"/>
-                            <!-- 2026-09-13: TextDisabled (#B0B0B0) quá nhạt — đổi sang TextSecondary
-                                 (#6B6B6B), vẫn đủ tối để phân biệt rõ với chữ thật (TextPrimary
-                                 #1A1A1A) nhưng dễ đọc hơn hẳn. Debug bằng màu đỏ đã xác nhận build/sync
-                                 hoạt động đúng — xem thêm fix TextFormattingMode ở App.xaml cho vấn đề
-                                 "chữ mờ" tổng thể. -->
                             <TextBlock x:Name="PlaceholderText"
                                        Text="{TemplateBinding Placeholder}"
                                        Foreground="{StaticResource AppColor.TextSecondary}"
@@ -49,8 +44,14 @@
                         <Trigger Property="IsFocused" Value="True">
                             <Setter Property="BorderBrush" Value="{StaticResource AppColor.BorderActive}"/>
                         </Trigger>
+                        <!-- 2026-09-14: chứng từ đã "cất" (IsEditable=False) khoá cả form qua
+                             Grid.IsEnabled — trước đây field disabled đổi Foreground sang
+                             TextDisabled/TextSecondary (xám) để báo hiệu khoá, nhưng người dùng phản
+                             ánh vẫn quá mờ, khó đọc số liệu đã lưu. Giữ nguyên TextPrimary (đen bình
+                             thường) khi disabled — chỉ còn BorderThin (viền nhạt hơn) báo hiệu field
+                             đang khoá, không đánh đổi độ rõ của chữ. -->
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Foreground"  Value="{StaticResource AppColor.TextDisabled}"/>
+                            <Setter Property="Foreground"  Value="{StaticResource AppColor.TextPrimary}"/>
                             <Setter Property="BorderBrush" Value="{StaticResource AppColor.BorderThin}"/>
                         </Trigger>
                         <MultiTrigger>

@@ -80,7 +80,12 @@ public partial class SalesOrderPrintWindow : Window
     // row, xem TaxRateColumnIndex) — mục đích DUY NHẤT là cho hàng "Tổng tiền thanh toán" 1 điểm
     // chia mới ở GIỮA cột Thuế suất, để ô số tiền lấy thêm nửa cột đó (= 1,5 cột: nửa Thuế suất +
     // trọn Tổng cộng) thay vì đúng 1 cột Tổng cộng như trước — theo yêu cầu fix lệch viền phải.
-    private static readonly int[] ProductTableColumnWidths = { 26, 84, 26, 62, 42, 82, 42, 42, 84 };
+    // 2026-09-16 (theo yêu cầu, tên sản phẩm dài hay vỡ dòng): lấy 12 từ THUẾ SUẤT (84 → 72, mỗi
+    // nửa cột vật lý 42 → 36 — dữ liệu thật chỉ "8%"/"10%" nên còn rất dư chỗ; header "THUẾ SUẤT"
+    // ở 60 từng vỡ dòng theo ghi chú 2026-08-28 (lần 2), 72 vẫn còn cách xa mốc đó) sang TÊN SẢN
+    // PHẨM (84 → 96). KHÔNG đụng STT/SL/ĐƠN GIÁ/CK (%)/THÀNH TIỀN/TỔNG CỘNG — đã canh chỉnh xong ở
+    // các lần trước. Tổng vẫn giữ nguyên 490.
+    private static readonly int[] ProductTableColumnWidths = { 26, 96, 26, 62, 42, 82, 36, 36, 84 };
 
     // Cột "THUẾ SUẤT" giờ trải trên 2 cột vật lý liền nhau (index 6 và 7) — Header/Data/Deposit row
     // phải tự ColumnSpan=2 tại đây để hiển thị y hệt 1 cột 84 như trước (không đổi giao diện các
@@ -92,7 +97,7 @@ public partial class SalesOrderPrintWindow : Window
     // Số dòng text trong header (tên công ty + 4 dòng thông tin) và LineHeight tương ứng — dùng để
     // tính chiều cao vùng float của logo (xem BuildInvoiceDocument), phải khớp với số Run/LineBreak
     // thực tế thêm vào headerPara bên dưới nếu sau này đổi nội dung header.
-    private const int HeaderTextLineCount = 5;
+    private const int HeaderTextLineCount = 4;
     private const double HeaderLineHeight = 15;
 
     private static FlowDocument BuildInvoiceDocument(
@@ -171,8 +176,8 @@ public partial class SalesOrderPrintWindow : Window
         headerPara.Inlines.Add(new Run("Mã số thuế: 0319088143") { FontSize = 12 });
         headerPara.Inlines.Add(new LineBreak());
         headerPara.Inlines.Add(new Run("Tel: 0868858975 - Website: www.skincoachlamour.com") { FontSize = 12 });
-        headerPara.Inlines.Add(new LineBreak());
-        headerPara.Inlines.Add(new Run("Số tài khoản: 0071.0007.93865 - VCB - CN Tân Sơn Nhất") { FontSize = 12 });
+        // 2026-09-16: bỏ hẳn dòng "Số tài khoản..." theo yêu cầu (không hiển thị số tài khoản ngân
+        // hàng trên hóa đơn) — HeaderTextLineCount bên dưới đã hạ 5→4 cho khớp số dòng thật còn lại.
         content.Blocks.Add(headerPara);
 
         // Title + invoice number từng nằm chung 1 hàng trong bảng 3 cột (đệm | tiêu đề | Số HĐ) —
@@ -465,7 +470,9 @@ public partial class SalesOrderPrintWindow : Window
     // đủ gần để hóa đơn ngắn không còn nhìn như hình chữ nhật nằm ngang.
     private static double EstimateContentHeight(int lineCount)
     {
-        const double header          = 112; // logo + 5 dòng thông tin công ty (font lớn hơn 2026-08-20)
+        // 2026-09-16: 112 → 97 (bớt 1 × HeaderLineHeight) — đã bỏ dòng "Số tài khoản...", header giờ
+        // còn 4 dòng thông tin công ty thay vì 5 (xem HeaderTextLineCount).
+        const double header          = 97; // logo + 4 dòng thông tin công ty
         const double title           = 42;  // "HÓA ĐƠN BÁN HÀNG" + Số HĐ
         const double customerInfo    = 98;  // Tên KH/Điện thoại/Địa chỉ + PT giao hàng-thanh toán
         const double tableHeaderRow  = 36;
