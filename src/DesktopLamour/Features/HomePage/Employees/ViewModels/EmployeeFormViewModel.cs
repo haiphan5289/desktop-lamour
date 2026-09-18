@@ -25,7 +25,9 @@ public partial class EmployeeFormViewModel : ViewModelBase
     [ObservableProperty] private string  _name              = string.Empty;
     [ObservableProperty] private string  _gender            = "Nam";
     [ObservableProperty] private string  _phone             = string.Empty;
-    [ObservableProperty] private string  _role              = "Cashier";
+    // 2026-09-18: "Cashier" -> "Staff" — ComboBox "Chức vụ" đã ẩn khỏi form (xem EmployeeFormWindow),
+    // nhân viên tạo mới qua popup này giờ luôn mặc định role "Staff", không cho chọn tay nữa.
+    [ObservableProperty] private string  _role              = "Staff";
     [ObservableProperty] private string  _unit              = "Tiệm spa";
     [ObservableProperty] private string  _jobTitle          = "Khac";
     [ObservableProperty] private string  _bankAccountNumber = string.Empty;
@@ -35,14 +37,12 @@ public partial class EmployeeFormViewModel : ViewModelBase
 
     public bool IsAddMode => !_isEditMode;
 
-    public IReadOnlyList<string> Roles     { get; } = new[] { "Admin", "Cashier", "Warehouse" };
     public IReadOnlyList<string> Genders   { get; } = new[] { "Nam", "Nữ" };
     public IReadOnlyList<string> Units     { get; } = new[]
     {
         "Kho và Quỹ", "Marketting", "Phòng Đào Tạo", "Phòng Giám Đốc",
         "Phòng Kinh Doanh", "Phòng Nhân Sự", "Tiệm spa",
     };
-    public IReadOnlyList<string> JobTitles { get; } = new[] { "Admin", "TruongPhong", "NhanVienBanHang", "NhanVienKho", "ThuNgan", "Khac" };
 
     public event Action<bool>? RequestClose;
 
@@ -66,7 +66,7 @@ public partial class EmployeeFormViewModel : ViewModelBase
             WindowTitle       = "Thêm nhân viên";
             Name = Phone      = string.Empty;
             Gender            = "Nam";
-            Role              = "Cashier";
+            Role              = "Staff";
             Unit              = "Tiệm spa";
             JobTitle          = "Khac";
             BankAccountNumber = string.Empty;

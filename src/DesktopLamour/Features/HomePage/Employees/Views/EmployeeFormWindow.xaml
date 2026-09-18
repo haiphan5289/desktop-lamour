@@ -86,32 +86,21 @@
                 </StackPanel>
             </Grid>
 
-            <!-- Số điện thoại (optional) | Chức vụ (required) -->
+            <!-- 2026-09-18: ẩn hẳn ô "Chức vụ" (Role) theo yêu cầu — nhân viên tạo mới qua popup này
+                 giờ luôn mặc định Role = "Staff" (xem EmployeeFormViewModel), không cho chọn tay
+                 nữa. "Số điện thoại" span hết 3 cột (thay vì chỉ cột 0) để không để trống nửa hàng. -->
             <Grid Margin="0,0,0,16">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="24"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0">
+                <StackPanel Grid.Column="0" Grid.ColumnSpan="3">
                     <controls:AppLabel Text="Số điện thoại"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Margin="0,0,0,6"/>
                     <controls:AppTextField Text="{Binding Phone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                            Placeholder="VD: 0912345678"/>
-                </StackPanel>
-                <StackPanel Grid.Column="2">
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <controls:AppLabel Text="Chức vụ"
-                                           Style="{StaticResource AppTypography.LabelSection}"/>
-                        <controls:AppLabel Text=" *"
-                                           Style="{StaticResource AppTypography.LabelSection}"
-                                           Foreground="{StaticResource AppColor.TextBrand}"/>
-                    </StackPanel>
-                    <ComboBox ItemsSource="{Binding Roles}"
-                              SelectedItem="{Binding Role, Mode=TwoWay}"
-                              Padding="10,8"
-                              FontSize="14"/>
                 </StackPanel>
             </Grid>
 
@@ -143,10 +132,8 @@
                                            Style="{StaticResource AppTypography.LabelSection}"
                                            Foreground="{StaticResource AppColor.TextBrand}"/>
                     </StackPanel>
-                    <ComboBox ItemsSource="{Binding JobTitles}"
-                              SelectedItem="{Binding JobTitle, Mode=TwoWay}"
-                              Padding="10,8"
-                              FontSize="14"/>
+                    <controls:AppTextField Text="{Binding JobTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                           Placeholder="VD: Trưởng phòng kinh doanh"/>
                 </StackPanel>
             </Grid>
 

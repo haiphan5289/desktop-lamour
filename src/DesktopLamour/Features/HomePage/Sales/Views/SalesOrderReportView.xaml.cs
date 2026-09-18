@@ -27,7 +27,10 @@ public partial class SalesOrderReportView : UserControl
     {
         if (e.PropertyName is nameof(SalesOrderReportViewModel.IsUnitColumnVisible)
                            or nameof(SalesOrderReportViewModel.IsCustomerGroupColumnVisible)
-                           or nameof(SalesOrderReportViewModel.IsOuterColumnVisible))
+                           or nameof(SalesOrderReportViewModel.IsOuterColumnVisible)
+                           or nameof(SalesOrderReportViewModel.IsProfitColumnsVisible)
+                           or nameof(SalesOrderReportViewModel.IsMiddleColumnVisible)
+                           or nameof(SalesOrderReportViewModel.IsCustomerAddressColumnsVisible))
             UpdateColumnVisibility();
         if (e.PropertyName is nameof(SalesOrderReportViewModel.InnerCodeLabel)
                            or nameof(SalesOrderReportViewModel.InnerNameLabel)
@@ -47,9 +50,28 @@ public partial class SalesOrderReportView : UserControl
         ReturnQuantityColumn.Visibility = productMetricsVisibility;
         CustomerGroupNameColumn.Visibility =
             _viewModel.IsCustomerGroupColumnVisible ? Visibility.Visible : Visibility.Collapsed;
+        // 2026-09-18: OuterCode/OuterName (Mã/Tên của dimension NGOÀI) chỉ ẩn khi report đang gom
+        // nhóm dạng cây (IsOuterColumnVisible=false lúc đó — xem RebuildDisplayRows, danh tính NGOÀI
+        // đã hiện sẵn trong header nhóm Expander nên hiện lại thành cột phẳng sẽ dư thừa). Các report
+        // 2 chiều KHÁC (bảng phẳng, không gom nhóm) vẫn hiện 2 cột này bình thường.
         var outerVisibility = _viewModel.IsOuterColumnVisible ? Visibility.Visible : Visibility.Collapsed;
         OuterCodeColumn.Visibility = outerVisibility;
         OuterNameColumn.Visibility = outerVisibility;
+
+        // 2026-09-18: Tiền vốn/Lãi gộp/Tỷ lệ lãi gộp (%) — ẩn CHỈ ở report "Mặt hàng" đơn thuần.
+        var profitVisibility = _viewModel.IsProfitColumnsVisible ? Visibility.Visible : Visibility.Collapsed;
+        CostAmountColumn.Visibility      = profitVisibility;
+        GrossProfitColumn.Visibility     = profitVisibility;
+        GrossProfitRateColumn.Visibility = profitVisibility;
+
+        // 2026-09-18: "Tên khách hàng" (dimension GIỮA) — chỉ hiện ở report 3 chiều cố định.
+        MiddleNameColumn.Visibility = _viewModel.IsMiddleColumnVisible ? Visibility.Visible : Visibility.Collapsed;
+
+        // 2026-09-18: Tỉnh/Thành phố · Quận/Huyện · Xã/Phường — chỉ hiện ở report "Khách hàng" đơn thuần.
+        var addressVisibility = _viewModel.IsCustomerAddressColumnsVisible ? Visibility.Visible : Visibility.Collapsed;
+        CustomerProvinceColumn.Visibility = addressVisibility;
+        CustomerDistrictColumn.Visibility = addressVisibility;
+        CustomerWardColumn.Visibility     = addressVisibility;
     }
 
     // "Mã hàng"/"Tên hàng" là header cứng trong XAML nhưng dữ liệu là danh tính của dimension

@@ -54,15 +54,12 @@
         <!--  Title                                         -->
         <!-- ══════════════════════════════════════════════ -->
         <StackPanel Grid.Row="1" Margin="24,20,24,0" HorizontalAlignment="Center">
-            <controls:AppLabel Text="SỔ CHI TIẾT BÁN HÀNG"
+            <controls:AppLabel Text="{Binding ReportTitle}"
                                Style="{StaticResource AppTypography.DisplaySection}"
                                HorizontalAlignment="Center"/>
-            <controls:AppLabel Text="{Binding Title}"
-                               Style="{StaticResource AppTypography.BodySection}"
-                               Foreground="{StaticResource AppColor.TextBrand}"
-                               HorizontalAlignment="Center"
-                               Margin="0,4,0,0"/>
-            <controls:AppLabel Text="{Binding FilterSummary}"
+            <!-- 2026-09-18: gộp Title + FilterSummary thành 1 dòng "Mặt hàng: X; Từ ngày...đến
+                 ngày..." khớp mẫu MISA, thay vì 2 label riêng như trước. -->
+            <controls:AppLabel Text="{Binding Subtitle}"
                                Style="{StaticResource AppTypography.BodyCaption}"
                                Foreground="{StaticResource AppColor.TextSecondary}"
                                HorizontalAlignment="Center"
@@ -164,10 +161,55 @@
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
-                    <!-- Số chứng từ — text column: plain Contains filter, inline -->
+                    <!-- Ngày chứng từ (2026-09-18, mới) — date column: operator combo + DatePicker,
+                         cùng pattern với Ngày hạch toán ở trên. -->
+                    <DataGridTextColumn Header="Ngày chứng từ"
+                                        Binding="{Binding DocumentDate, StringFormat=\{0:dd/MM/yyyy\}}"
+                                        Width="135">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Ngày chứng từ" FontWeight="SemiBold"/>
+                                    <Grid Margin="0,4,4,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0"
+                                                  ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
+                                                  SelectedItem="{Binding DataContext.DocumentDateFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                  Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
+                                                               ToolTip="{Binding Converter={StaticResource FilterOperatorLabelConverter}}"
+                                                               HorizontalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <DatePicker Grid.Column="1" HorizontalAlignment="Stretch"
+                                                    SelectedDate="{Binding DataContext.DocumentDateFilter.Value, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                    FontSize="10" Height="22"/>
+                                    </Grid>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- Số chứng từ — text column: plain Contains filter, inline. 2026-09-18: style
+                         như link (màu brand + gạch chân + con trỏ tay) — click mở lại chứng từ vẫn
+                         qua double-click cả dòng (xem DetailGrid_MouseDoubleClick), chỉ đổi phần
+                         nhìn để gợi ý có thể bấm vào, khớp mẫu MISA. -->
                     <DataGridTextColumn Header="Số chứng từ"
                                         Binding="{Binding DocumentNumber}"
                                         Width="100">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/>
+                                <Setter Property="TextDecorations" Value="Underline"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel>
@@ -180,32 +222,63 @@
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
-                    <!-- Khách hàng — text column: plain Contains filter, inline -->
-                    <DataGridTextColumn Header="Khách hàng"
-                                        Binding="{Binding CustomerName}"
-                                        Width="150">
+                    <!-- Diễn giải chung (2026-09-18, mới) — Diễn giải cấp chứng từ (SalesOrder.Description). -->
+                    <DataGridTextColumn Header="Diễn giải chung"
+                                        Binding="{Binding Description}"
+                                        Width="180">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel>
-                                    <TextBlock Text="Khách hàng" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Diễn giải chung" FontWeight="SemiBold"/>
                                     <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
-                                                            Text="{Binding DataContext.FilterCustomerName, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                            Text="{Binding DataContext.FilterDescription, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
                                                             FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
-                    <!-- Nhân viên — text column: plain Contains filter, inline -->
-                    <DataGridTextColumn Header="Nhân viên"
-                                        Binding="{Binding EmployeeName}"
-                                        Width="130">
+                    <!-- Diễn giải (2026-09-18, mới) — cấp dòng hàng: hệ thống chưa có field diễn giải
+                         riêng cho từng dòng, dùng lại Tên hàng (khớp đúng hành vi quan sát được ở ảnh
+                         mẫu MISA). Không có ô lọc riêng — lọc trùng với "Tên hàng" phía sau. -->
+                    <DataGridTextColumn Header="Diễn giải"
+                                        Binding="{Binding ProductName}"
+                                        Width="180"
+                                        IsReadOnly="True">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="Diễn giải" FontWeight="SemiBold" Margin="0,0,0,26"/>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- Mã khách hàng (2026-09-18, mới) -->
+                    <DataGridTextColumn Header="Mã khách hàng"
+                                        Binding="{Binding CustomerCode}"
+                                        Width="110">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel>
-                                    <TextBlock Text="Nhân viên" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Mã khách hàng" FontWeight="SemiBold"/>
                                     <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
-                                                            Text="{Binding DataContext.FilterEmployeeName, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                            Text="{Binding DataContext.FilterCustomerCode, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- Tên khách hàng (2026-09-18: đổi tên từ "Khách hàng" cho khớp mẫu MISA, cùng
+                         binding CustomerName/FilterCustomerName như trước) -->
+                    <DataGridTextColumn Header="Tên khách hàng"
+                                        Binding="{Binding CustomerName}"
+                                        Width="150">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Tên khách hàng" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                                            Text="{Binding DataContext.FilterCustomerName, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
                                                             FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
                                 </StackPanel>
                             </DataTemplate>
@@ -262,10 +335,10 @@
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
-                    <!-- Số lượng — numeric column: operator combo (=, ≤, ≥...) + value box, inline -->
-                    <DataGridTextColumn Header="Số lượng"
+                    <!-- Tổng số lượng bán — numeric column: operator combo (=, ≤, ≥...) + value box, inline -->
+                    <DataGridTextColumn Header="Tổng số lượng bán"
                                         Binding="{Binding Quantity}"
-                                        Width="95">
+                                        Width="120">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="HorizontalAlignment" Value="Right"/>
@@ -275,7 +348,7 @@
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel>
-                                    <TextBlock Text="Số lượng" FontWeight="SemiBold" TextAlignment="Right"/>
+                                    <TextBlock Text="Tổng số lượng bán" FontWeight="SemiBold" TextAlignment="Right"/>
                                     <Grid Margin="0,4,4,2">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
@@ -562,63 +635,72 @@
         </Grid>
 
         <!-- ══════════════════════════════════════════════ -->
-        <!--  Footer                                        -->
+        <!--  Footer — tổng từng cột canh THẲNG dưới đúng cột số tương ứng ở DataGrid phía trên       -->
+        <!--  (khớp mẫu MISA). ColumnDefinitions ở đây PHẢI khớp thứ tự/độ rộng 17 cột thật của       -->
+        <!--  DataGrid — sửa 1 bên thì phải sửa bên kia.                                              -->
         <!-- ══════════════════════════════════════════════ -->
         <Border Grid.Row="3"
                 Margin="24,12,24,24"
-                Padding="16,12"
                 Background="{StaticResource AppColor.BackgroundPrimary}"
                 BorderBrush="{StaticResource AppColor.BorderThin}"
                 BorderThickness="1"
                 CornerRadius="8">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="135"/>  <!-- Ngày hạch toán -->
+                    <ColumnDefinition Width="135"/>  <!-- Ngày chứng từ -->
+                    <ColumnDefinition Width="100"/>  <!-- Số chứng từ -->
+                    <ColumnDefinition Width="180"/>  <!-- Diễn giải chung -->
+                    <ColumnDefinition Width="180"/>  <!-- Diễn giải -->
+                    <ColumnDefinition Width="110"/>  <!-- Mã khách hàng -->
+                    <ColumnDefinition Width="150"/>  <!-- Tên khách hàng -->
+                    <ColumnDefinition Width="90"/>   <!-- Mã hàng -->
+                    <ColumnDefinition Width="220"/>  <!-- Tên hàng -->
+                    <ColumnDefinition Width="70"/>   <!-- ĐVT -->
+                    <ColumnDefinition Width="120"/>  <!-- Tổng số lượng bán -->
+                    <ColumnDefinition Width="120"/>  <!-- Đơn giá -->
+                    <ColumnDefinition Width="110"/>  <!-- Tỷ lệ CK(%) -->
+                    <ColumnDefinition Width="130"/>  <!-- Thành tiền -->
+                    <ColumnDefinition Width="100"/>  <!-- Thuế suất -->
+                    <ColumnDefinition Width="120"/>  <!-- Tiền thuế -->
+                    <ColumnDefinition Width="140"/>  <!-- Tổng cộng -->
                 </Grid.ColumnDefinitions>
 
-                <controls:AppLabel Grid.Column="0"
+                <controls:AppLabel Grid.Column="0" Grid.ColumnSpan="10"
                                    Text="{Binding RowCount, StringFormat='Số dòng = {0}'}"
                                    Style="{StaticResource AppTypography.BodyCaption}"
                                    Foreground="{StaticResource AppColor.TextSecondary}"
-                                   VerticalAlignment="Center"/>
+                                   VerticalAlignment="Center"
+                                   Padding="6,10"/>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <controls:AppLabel Text="Tổng SL:"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Margin="0,0,8,0"/>
-                    <controls:AppLabel Text="{Binding TotalQuantity}"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       FontWeight="Bold"
-                                       MinWidth="60"/>
+                <TextBlock Grid.Column="10"
+                           Text="{Binding TotalQuantity}"
+                           FontWeight="Bold"
+                           TextAlignment="Right"
+                           VerticalAlignment="Center"
+                           Padding="6,10"/>
 
-                    <controls:AppLabel Text="|"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Foreground="{StaticResource AppColor.BorderThin}"
-                                       Margin="16,0"/>
+                <TextBlock Grid.Column="13"
+                           Text="{Binding TotalAmount, StringFormat=\{0:N0\}}"
+                           FontWeight="Bold"
+                           TextAlignment="Right"
+                           VerticalAlignment="Center"
+                           Padding="6,10"/>
 
-                    <controls:AppLabel Text="Tiền thuế:"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Margin="0,0,8,0"/>
-                    <controls:AppLabel Text="{Binding TotalTaxAmount, StringFormat=\{0:N0\}}"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       FontWeight="Bold"
-                                       MinWidth="90"/>
+                <TextBlock Grid.Column="15"
+                           Text="{Binding TotalTaxAmount, StringFormat=\{0:N0\}}"
+                           FontWeight="Bold"
+                           TextAlignment="Right"
+                           VerticalAlignment="Center"
+                           Padding="6,10"/>
 
-                    <controls:AppLabel Text="|"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Foreground="{StaticResource AppColor.BorderThin}"
-                                       Margin="16,0"/>
-
-                    <controls:AppLabel Text="Tổng cộng:"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Margin="0,0,8,0"/>
-                    <controls:AppLabel Text="{Binding TotalGrandTotal, StringFormat=\{0:N0\}}"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       FontWeight="Bold"
-                                       MinWidth="110"
-                                       Foreground="{StaticResource AppColor.TextBrand}"/>
-                </StackPanel>
+                <TextBlock Grid.Column="16"
+                           Text="{Binding TotalGrandTotal, StringFormat=\{0:N0\}}"
+                           FontWeight="Bold"
+                           TextAlignment="Right"
+                           VerticalAlignment="Center"
+                           Padding="6,10"
+                           Foreground="{StaticResource AppColor.TextBrand}"/>
             </Grid>
         </Border>
 

@@ -12,9 +12,13 @@ public class SalesOrderSummaryLineItem
     public int     CustomerId     { get; init; }
     public string  CustomerCode   { get; init; } = "";
     public string  CustomerName   { get; init; } = "";
+    public string  CustomerProvince { get; init; } = "";
+    public string  CustomerDistrict { get; init; } = "";
+    public string  CustomerWard     { get; init; } = "";
     public int?    EmployeeId     { get; init; }
     public string  EmployeeCode   { get; init; } = "";
     public string  EmployeeName   { get; init; } = "";
+    public string? EmployeeUnit   { get; init; }
     public int     QuantitySold   { get; init; }
     public decimal SalesAmount    { get; init; }
     public decimal DiscountAmount { get; init; }
@@ -35,9 +39,13 @@ public class SalesOrderSummaryLineItem
         CustomerId     = dto.CustomerId,
         CustomerCode   = dto.CustomerCode,
         CustomerName   = dto.CustomerName,
+        CustomerProvince = dto.CustomerProvince,
+        CustomerDistrict = dto.CustomerDistrict,
+        CustomerWard     = dto.CustomerWard,
         EmployeeId     = dto.EmployeeId,
         EmployeeCode   = dto.EmployeeCode ?? "",
         EmployeeName   = dto.EmployeeName ?? "—",
+        EmployeeUnit   = dto.EmployeeUnit,
         QuantitySold   = dto.QuantitySold,
         SalesAmount    = dto.SalesAmount,
         DiscountAmount = dto.DiscountAmount,

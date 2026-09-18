@@ -41,4 +41,13 @@ public class SalesOrderReportFilter
             return $"Đang lọc: {string.Join(" · ", parts)}";
         }
     }
+
+    // 2026-09-18: subtitle gọn trên màn hình báo cáo (khớp mẫu MISA "Từ ngày 01/9/2026 đến ngày
+    // 14/9/2026") — khác Summary (dùng cho bản in, liệt kê đủ mọi filter đang áp dụng), property
+    // này CHỈ hiện khoảng ngày. "dd/M/yyyy" (ngày 2 số, tháng không đệm 0) khớp đúng định dạng ảnh
+    // mẫu.
+    public string DateRangeSummary =>
+        FromDate.HasValue && ToDate.HasValue
+            ? $"Từ ngày {FromDate.Value:dd/M/yyyy} đến ngày {ToDate.Value:dd/M/yyyy}"
+            : "Tất cả chứng từ";
 }

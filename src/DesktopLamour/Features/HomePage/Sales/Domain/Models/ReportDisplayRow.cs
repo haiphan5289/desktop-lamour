@@ -1,7 +1,9 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 namespace DesktopLamour.Features.HomePage.Sales.Domain.Models;
 
-public enum SummaryDimension { Product, Customer, Employee }
+// 2026-09-18: thêm EmployeeUnit cho report "Đơn vị kinh doanh" (group theo Employee.Unit — không
+// có ID số riêng, chỉ có tên).
+public enum SummaryDimension { Product, Customer, Employee, EmployeeUnit }
 
 public class ReportDisplayRow
 {
@@ -22,12 +24,22 @@ public class ReportDisplayRow
     public decimal   GrossProfit    { get; init; }
     public decimal   GrossProfitRate { get; init; }
     public string    CustomerGroupName { get; init; } = "";
+    // 2026-09-18: cho report "Khách hàng" (3 cột địa chỉ, xem IsCustomerAddressColumnsVisible).
+    public string    CustomerProvince { get; init; } = "";
+    public string    CustomerDistrict { get; init; } = "";
+    public string    CustomerWard     { get; init; } = "";
 
     // Mã/Tên của dimension NGOÀI cho report 2 chiều — khớp bảng phẳng kiểu MISA: mọi dòng hiện
     // đủ cả 2 dimension làm cột thật (vd. Mã NV/Tên NV NGOÀI cột Mã hàng/Tên hàng vốn mang danh
     // tính dimension TRONG), không co gọn theo Expander như trước. Rỗng khi report chỉ 1 chiều.
     public string    OuterCode      { get; set; } = "";
     public string    OuterName      { get; set; } = "";
+
+    // 2026-09-18: dimension GIỮA cho report 3 chiều cố định (Nhân viên > Khách hàng > Mặt hàng) —
+    // Khách hàng hiện dạng cột phẳng "Tên khách hàng" (ảnh mẫu MISA không có cột Mã KH riêng ở đây).
+    // Rỗng ở mọi report khác.
+    public string    MiddleCode     { get; set; } = "";
+    public string    MiddleName     { get; set; } = "";
 
     // Identity of the row's own dimension (drill-down target) + the outer dimension for
     // 2-dimension report types (set alongside GroupKey/GroupLabel) — null when not applicable.
@@ -40,7 +52,7 @@ public class ReportDisplayRow
         SummaryDimension.Product  => item.ProductId,
         SummaryDimension.Customer => item.CustomerId,
         SummaryDimension.Employee => item.EmployeeId,
-        _ => null,
+        _ => null, // EmployeeUnit không có ID số riêng
     };
 
     private static (string Code, string Name) CodeNameFor(SummaryDimension field, SalesOrderSummaryLineItem item) => field switch
@@ -48,6 +60,8 @@ public class ReportDisplayRow
         SummaryDimension.Product  => (item.ProductCode, item.ProductName),
         SummaryDimension.Customer => (item.CustomerCode, item.CustomerName),
         SummaryDimension.Employee => (item.EmployeeCode, item.EmployeeName),
+        // EmployeeUnit: MISA không có mã đơn vị riêng — Mã và Tên đều dùng chính tên Unit.
+        SummaryDimension.EmployeeUnit => (item.EmployeeUnit ?? "", item.EmployeeUnit ?? ""),
         _ => ("", ""),
     };
 
@@ -97,6 +111,9 @@ public class ReportDisplayRow
             // Chỉ có ý nghĩa khi report có dimension Khách hàng — vẫn gán an toàn ở đây (lấy theo
             // dòng đầu tiên trong nhóm), cột chỉ thật sự hiển thị khi IsCustomerGroupColumnVisible.
             CustomerGroupName = first.CustomerGroupName,
+            CustomerProvince  = first.CustomerProvince,
+            CustomerDistrict  = first.CustomerDistrict,
+            CustomerWard      = first.CustomerWard,
         };
         row.SetId(identityField, IdFor(identityField, first));
         return row;
@@ -108,5 +125,14 @@ public class ReportDisplayRow
     {
         SetId(field, IdFor(field, sample));
         (OuterCode, OuterName) = CodeNameFor(field, sample);
+    }
+
+    // 2026-09-18: dimension GIỮA cho report 3 chiều cố định — cùng cơ chế SetOuterId nhưng ghi vào
+    // MiddleCode/MiddleName thay vì OuterCode/OuterName. SetId vẫn dùng chung (dispatch theo field
+    // nên không đụng ID của dimension khác).
+    public void SetMiddleId(SummaryDimension field, SalesOrderSummaryLineItem sample)
+    {
+        SetId(field, IdFor(field, sample));
+        (MiddleCode, MiddleName) = CodeNameFor(field, sample);
     }
 }

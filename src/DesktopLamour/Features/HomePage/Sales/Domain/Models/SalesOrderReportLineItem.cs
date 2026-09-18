@@ -8,8 +8,10 @@ public class SalesOrderReportLineItem
     public int      OrderId        { get; init; }
     public string   DocumentNumber { get; init; } = "";
     public DateTime AccountingDate { get; init; }
+    public DateTime DocumentDate   { get; init; }
+    public string?  Description    { get; init; }
+    public string   CustomerCode   { get; init; } = "";
     public string   CustomerName   { get; init; } = "";
-    public string   EmployeeName   { get; init; } = "";
     public string   ProductCode    { get; init; } = "";
     public string   ProductName    { get; init; } = "";
     public string   Unit           { get; init; } = "";
@@ -28,8 +30,10 @@ public class SalesOrderReportLineItem
         OrderId        = dto.OrderId,
         DocumentNumber = dto.DocumentNumber,
         AccountingDate = dto.AccountingDate.ToLocalTime(),
+        DocumentDate   = dto.DocumentDate.ToLocalTime(),
+        Description    = dto.Description,
+        CustomerCode   = dto.CustomerCode,
         CustomerName   = dto.CustomerName,
-        EmployeeName   = dto.EmployeeName ?? "—",
         ProductCode    = dto.ProductCode,
         ProductName    = dto.ProductName,
         Unit           = dto.Unit,

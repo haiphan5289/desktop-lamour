@@ -13,4 +13,10 @@ public class SalesOrderDetailFilter
     public string?  Category   { get; init; }
     public DateTime? FromDate  { get; init; }
     public DateTime? ToDate    { get; init; }
+
+    // 2026-09-18: report type gốc đã drill-down từ đó (vd "Nhân viên") — SalesOrderReportDetailView
+    // dùng để đổi tiêu đề/bộ cột cho khớp biến thể riêng của MISA (vd "SỔ CHI TIẾT BÁN HÀNG THEO
+    // NHÂN VIÊN" khi drill từ report 1 chiều "Nhân viên"). Rỗng = màn "Sổ chi tiết bán hàng" chung
+    // như cũ.
+    public string?  SourceReportType { get; init; }
 }

@@ -109,6 +109,32 @@
                 </StackPanel>
             </Grid>
 
+            <!-- Two-column: Quận/Huyện + Xã/Phường (2026-09-18, mới — khớp báo cáo MISA "Tổng hợp
+                 bán hàng theo Khách hàng" có đủ 3 cột địa chỉ Tỉnh/Quận/Xã) -->
+            <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <controls:AppLabel Text="Quận/Huyện"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Margin="0,0,0,6"/>
+                    <controls:AppTextField Text="{Binding District, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                           Placeholder="VD: Quận 3"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2">
+                    <controls:AppLabel Text="Xã/Phường"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Margin="0,0,0,6"/>
+                    <controls:AppTextField Text="{Binding Ward, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                           Placeholder="VD: Phường 6"/>
+                </StackPanel>
+            </Grid>
+
             <!-- Mã số thuế (optional) -->
             <StackPanel Margin="0,0,0,16">
                 <controls:AppLabel Text="Mã số thuế"

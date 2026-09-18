@@ -85,7 +85,11 @@ public partial class SalesOrderPrintWindow : Window
     // ở 60 từng vỡ dòng theo ghi chú 2026-08-28 (lần 2), 72 vẫn còn cách xa mốc đó) sang TÊN SẢN
     // PHẨM (84 → 96). KHÔNG đụng STT/SL/ĐƠN GIÁ/CK (%)/THÀNH TIỀN/TỔNG CỘNG — đã canh chỉnh xong ở
     // các lần trước. Tổng vẫn giữ nguyên 490.
-    private static readonly int[] ProductTableColumnWidths = { 26, 96, 26, 62, 42, 82, 36, 36, 84 };
+    // 2026-09-18 (theo yêu cầu, THUẾ SUẤT vẫn còn dư chỗ / tên sản phẩm cần dài hơn nữa): lấy thêm
+    // 8 từ THUẾ SUẤT (72 → 64, mỗi nửa cột vật lý 36 → 32 — vẫn cách xa mốc 60 đã biết là vỡ dòng
+    // ở ghi chú 2026-08-28, còn margin 4 để an toàn) sang TÊN SẢN PHẨM (96 → 104). KHÔNG đụng các
+    // cột còn lại. Tổng vẫn giữ nguyên 490.
+    private static readonly int[] ProductTableColumnWidths = { 26, 104, 26, 62, 42, 82, 32, 32, 84 };
 
     // Cột "THUẾ SUẤT" giờ trải trên 2 cột vật lý liền nhau (index 6 và 7) — Header/Data/Deposit row
     // phải tự ColumnSpan=2 tại đây để hiển thị y hệt 1 cột 84 như trước (không đổi giao diện các

@@ -35,6 +35,8 @@ public partial class CustomerFormViewModel : ViewModelBase
     [ObservableProperty] private string           _phone         = string.Empty;
     [ObservableProperty] private string           _address       = string.Empty;
     [ObservableProperty] private string           _province      = string.Empty;
+    [ObservableProperty] private string           _district      = string.Empty;
+    [ObservableProperty] private string           _ward          = string.Empty;
     [ObservableProperty] private string           _customerGroup = string.Empty;
     [ObservableProperty] private string           _taxCode       = string.Empty;
     [ObservableProperty] private ISearchableItem? _selectedEmployee;
@@ -70,7 +72,7 @@ public partial class CustomerFormViewModel : ViewModelBase
             _editingId                 = 0;
             _initialSaleCareEmployeeId = null;
             WindowTitle                = "Thêm khách hàng";
-            Code = Name = Phone = Address = Province = CustomerGroup = TaxCode = string.Empty;
+            Code = Name = Phone = Address = Province = District = Ward = CustomerGroup = TaxCode = string.Empty;
         }
         else
         {
@@ -83,6 +85,8 @@ public partial class CustomerFormViewModel : ViewModelBase
             Phone         = customer.Phone;
             Address       = customer.Address;
             Province      = customer.Province;
+            District      = customer.District;
+            Ward          = customer.Ward;
             CustomerGroup = customer.CustomerGroup;
             TaxCode       = customer.TaxCode;
         }
@@ -133,14 +137,16 @@ public partial class CustomerFormViewModel : ViewModelBase
             {
                 var input = new CreateCustomerInput(
                     Name.Trim(), Phone.Trim(), Address.Trim(),
-                    Province.Trim(), CustomerGroup.Trim(), TaxCode.Trim(), saleCareEmployeeId);
+                    Province.Trim(), District.Trim(), Ward.Trim(),
+                    CustomerGroup.Trim(), TaxCode.Trim(), saleCareEmployeeId);
                 await _createUseCase.ExecuteAsync(input, ct);
             }
             else
             {
                 var input = new UpdateCustomerInput(
                     _editingId, Name.Trim(), Phone.Trim(), Address.Trim(),
-                    Province.Trim(), CustomerGroup.Trim(), TaxCode.Trim(), saleCareEmployeeId);
+                    Province.Trim(), District.Trim(), Ward.Trim(),
+                    CustomerGroup.Trim(), TaxCode.Trim(), saleCareEmployeeId);
                 await _updateUseCase.ExecuteAsync(input, ct);
             }
             StopDirtyTracking();

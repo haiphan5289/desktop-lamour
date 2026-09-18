@@ -38,6 +38,7 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
     [ObservableProperty] private decimal _totalDiscountAmount;
     [ObservableProperty] private int     _totalReturnQuantity;
     [ObservableProperty] private decimal _totalReturnValue;
+    [ObservableProperty] private decimal _totalDiscountValue;
     [ObservableProperty] private decimal _totalNetRevenue;
     [ObservableProperty] private decimal _totalCostAmount;
     [ObservableProperty] private decimal _totalGrossProfit;
@@ -47,6 +48,15 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
     // "Tên nhóm KH" chỉ có ý nghĩa khi report gồm dimension Khách hàng — ẩn hẳn ở các report
     // không liên quan tới khách hàng (vd. "Mặt hàng" đơn thuần) thay vì hiện cột luôn rỗng.
     [ObservableProperty] private bool _isCustomerGroupColumnVisible;
+
+    // 2026-09-18: sau khi xem đủ ảnh mẫu cho 4/10 report type, xác nhận: KHÔNG có rule chung nào
+    // suy ra được hiện/ẩn cột từ dimension tham gia — mỗi report type của MISA có bộ cột RIÊNG.
+    // Thay ForEach-derive-từ-cờ bằng 1 bảng cấu hình tường minh theo từng report type (ColumnConfigs
+    // bên dưới) — nơi DUY NHẤT cần sửa khi có thêm ảnh mẫu mới xác nhận sai/thiếu.
+    [ObservableProperty] private bool _isProfitColumnsVisible;
+
+    // "Tỉnh/Thành phố · Quận/Huyện · Xã/Phường" — chỉ xác nhận có ở report "Khách hàng" đơn thuần.
+    [ObservableProperty] private bool _isCustomerAddressColumnsVisible;
 
     // Cột "Mã hàng"/"Tên hàng" trong XAML là header tĩnh nhưng dữ liệu thực chất là danh tính của
     // dimension TRONG (inner) của report type đang chọn — trước đây luôn hard-code "Mã hàng"/"Tên
@@ -62,6 +72,10 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
     [ObservableProperty] private string _outerNameLabel = "";
     [ObservableProperty] private bool   _isOuterColumnVisible;
 
+    // 2026-09-18: dimension GIỮA cho report 3 chiều cố định "Nhân viên, khách hàng và mặt hàng" —
+    // chỉ true cho đúng report này (xem ReportDisplayRow.MiddleName/SetMiddleId).
+    [ObservableProperty] private bool   _isMiddleColumnVisible;
+
     // ── Filter theo từng cột — nhúng ngay trong header lưới (khớp UI MISA), cùng pattern đã dùng
     // ở SalesOrderReportDetailView/WarehouseTransactionListView: cột text dùng Contains-match string,
     // cột số dùng NumericColumnFilter (operator =, ≤, ≥... + giá trị). AND tất cả với nhau.
@@ -71,6 +85,10 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
     [ObservableProperty] private string _filterInnerName         = string.Empty;
     [ObservableProperty] private string _filterUnit              = string.Empty;
     [ObservableProperty] private string _filterCustomerGroupName = string.Empty;
+    [ObservableProperty] private string _filterMiddleName          = string.Empty;
+    [ObservableProperty] private string _filterCustomerProvince    = string.Empty;
+    [ObservableProperty] private string _filterCustomerDistrict    = string.Empty;
+    [ObservableProperty] private string _filterCustomerWard        = string.Empty;
 
     partial void OnFilterOuterCodeChanged(string value)         => RowsView.Refresh();
     partial void OnFilterOuterNameChanged(string value)         => RowsView.Refresh();
@@ -78,6 +96,10 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
     partial void OnFilterInnerNameChanged(string value)         => RowsView.Refresh();
     partial void OnFilterUnitChanged(string value)              => RowsView.Refresh();
     partial void OnFilterCustomerGroupNameChanged(string value) => RowsView.Refresh();
+    partial void OnFilterMiddleNameChanged(string value)          => RowsView.Refresh();
+    partial void OnFilterCustomerProvinceChanged(string value)    => RowsView.Refresh();
+    partial void OnFilterCustomerDistrictChanged(string value)    => RowsView.Refresh();
+    partial void OnFilterCustomerWardChanged(string value)        => RowsView.Refresh();
 
     public NumericColumnFilter QuantitySoldFilter    { get; } = new();
     public NumericColumnFilter SalesAmountFilter     { get; } = new();
@@ -109,7 +131,11 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
             && CostAmountFilter.Matches(row.CostAmount)
             && GrossProfitFilter.Matches(row.GrossProfit)
             && GrossProfitRateFilter.Matches(row.GrossProfitRate)
-            && Matches(FilterCustomerGroupName, row.CustomerGroupName);
+            && Matches(FilterCustomerGroupName, row.CustomerGroupName)
+            && Matches(FilterMiddleName, row.MiddleName)
+            && Matches(FilterCustomerProvince, row.CustomerProvince)
+            && Matches(FilterCustomerDistrict, row.CustomerDistrict)
+            && Matches(FilterCustomerWard, row.CustomerWard);
     }
 
     private static bool Matches(string filter, string cellText)
@@ -123,8 +149,11 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
     [ObservableProperty]
     private ICollectionView _rowsView = CollectionViewSource.GetDefaultView(new List<ReportDisplayRow>());
 
+    // 2026-09-18: "&" → "và" chỉ trong tiêu đề hiển thị (khớp ảnh mẫu MISA "... THEO NHÂN VIÊN VÀ
+    // KHÁCH HÀNG") — KHÔNG đổi hằng số SalesOrderReportTypes (vẫn dùng "&" làm key/label dropdown ở
+    // nơi khác, tránh phá vỡ GroupingsByType/SalesOrderReportFilterWindow).
     public string ReportTitle =>
-        $"TỔNG HỢP BÁN HÀNG THEO {(CurrentFilter?.ReportType ?? SalesOrderReportTypes.ByProduct).ToUpperInvariant()}";
+        $"TỔNG HỢP BÁN HÀNG THEO {(CurrentFilter?.ReportType ?? SalesOrderReportTypes.ByProduct).Replace("&", "và").ToUpperInvariant()}";
 
     partial void OnCurrentFilterChanged(SalesOrderReportFilter? value) => OnPropertyChanged(nameof(ReportTitle));
 
@@ -166,6 +195,42 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
                 (Field: SummaryDimension.Employee, Key: (Func<SalesOrderSummaryLineItem, string>)(i => i.EmployeeName), Label: "Nhân viên"),
                 (Field: SummaryDimension.Customer, Key: (Func<SalesOrderSummaryLineItem, string>)(i => i.CustomerName), Label: "Khách hàng"),
             },
+        [SalesOrderReportTypes.ByEmployeeUnit] =
+            new[] { (Field: SummaryDimension.EmployeeUnit, Key: (Func<SalesOrderSummaryLineItem, string>)(i => i.EmployeeUnit ?? ""), Label: "Đơn vị") },
+        // 3 CHIỀU cố định: Nhân viên (ngoài, gom nhóm) > Khách hàng (giữa, cột phẳng) > Mặt hàng
+        // (trong, dùng chung cột Mã hàng/Tên hàng sẵn có — xem innerField trong RebuildDisplayRows).
+        [SalesOrderReportTypes.ByEmployeeCustomerProduct] =
+            new[]
+            {
+                (Field: SummaryDimension.Employee, Key: (Func<SalesOrderSummaryLineItem, string>)(i => i.EmployeeName), Label: "Nhân viên"),
+                (Field: SummaryDimension.Customer, Key: (Func<SalesOrderSummaryLineItem, string>)(i => i.CustomerName), Label: "Khách hàng"),
+                (Field: SummaryDimension.Product,  Key: (Func<SalesOrderSummaryLineItem, string>)(i => i.ProductName),  Label: "Mặt hàng"),
+            },
+    };
+
+    // 2026-09-18: bảng cấu hình cột riêng cho TỪNG report type — thay cho việc suy hiện/ẩn cột từ
+    // dimension tham gia (đã chứng minh SAI qua nhiều ảnh mẫu MISA thật). Dòng có "confirmed" là đã
+    // xác nhận qua ảnh chụp thật; dòng "default" là suy đoán bảo thủ (ẩn hết những gì chưa chắc) vì
+    // MISA chưa từng cho xem ảnh của report đó — SỬA LẠI NGAY khi có ảnh mẫu xác nhận sai.
+    private readonly record struct ReportColumnConfig(
+        bool ShowUnitColumns,       // ĐVT / Số lượng bán / Số lượng trả lại
+        bool ShowProfitColumns,     // Tiền vốn / Lãi gộp / Tỷ lệ lãi gộp (%)
+        bool ShowCustomerGroup,     // Mã/Tên nhóm khách hàng
+        bool ShowCustomerAddress,   // Tỉnh/Thành phố · Quận/Huyện · Xã/Phường
+        bool IsGrouped);            // DataGrid.GroupStyle (Expander thu gọn)
+
+    private static readonly Dictionary<string, ReportColumnConfig> ColumnConfigs = new()
+    {
+        [SalesOrderReportTypes.ByProduct]                 = new(true,  false, false, false, false), // confirmed
+        [SalesOrderReportTypes.ByProductThenCustomer]      = new(true,  false, false, false, true),  // grouped confirmed; profit=false suy theo ByProductThenEmployee (chưa có ảnh riêng)
+        [SalesOrderReportTypes.ByProductThenEmployee]      = new(true,  false, false, false, true),  // confirmed
+        [SalesOrderReportTypes.ByCustomer]                 = new(false, false, false, true,  false), // confirmed
+        [SalesOrderReportTypes.ByEmployee]                 = new(false, false, false, false, false), // confirmed
+        [SalesOrderReportTypes.ByCustomerThenEmployee]     = new(false, false, false, false, false), // default — chưa có ảnh
+        [SalesOrderReportTypes.ByCustomerThenProduct]      = new(true,  false, false, false, false), // default — chưa có ảnh (có dimension Mặt hàng nên bật Unit)
+        [SalesOrderReportTypes.ByEmployeeThenCustomer]     = new(false, true,  true,  false, false), // confirmed
+        [SalesOrderReportTypes.ByEmployeeUnit]             = new(false, false, false, false, false), // confirmed
+        [SalesOrderReportTypes.ByEmployeeCustomerProduct]  = new(true,  false, false, false, true),  // confirmed
     };
 
     public SalesOrderReportViewModel(
@@ -235,17 +300,21 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
 
     private static string ColumnLabelFor(SummaryDimension d) => d switch
     {
-        SummaryDimension.Product  => "Tên hàng",
-        SummaryDimension.Customer => "Khách hàng",
-        SummaryDimension.Employee => "Nhân viên",
+        SummaryDimension.Product      => "Tên hàng",
+        SummaryDimension.Customer     => "Khách hàng",
+        SummaryDimension.Employee     => "Nhân viên",
+        SummaryDimension.EmployeeUnit => "Đơn vị",
         _ => "",
     };
 
     private static (string Code, string Name) CodeNameLabelFor(SummaryDimension d) => d switch
     {
-        SummaryDimension.Product  => ("Mã hàng", "Tên hàng"),
-        SummaryDimension.Customer => ("Mã khách hàng", "Tên khách hàng"),
-        SummaryDimension.Employee => ("Mã nhân viên", "Tên nhân viên"),
+        SummaryDimension.Product      => ("Mã hàng", "Tên hàng"),
+        SummaryDimension.Customer     => ("Mã khách hàng", "Tên khách hàng"),
+        SummaryDimension.Employee     => ("Mã nhân viên", "Tên nhân viên"),
+        // EmployeeUnit: MISA không có mã đơn vị riêng — cột "Mã đơn vị" vẫn hiện chính tên Unit
+        // (xem ReportDisplayRow.CodeNameFor).
+        SummaryDimension.EmployeeUnit => ("Mã đơn vị", "Tên đơn vị"),
         _ => ("Mã", "Tên"),
     };
 
@@ -255,55 +324,80 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
         if (!GroupingsByType.TryGetValue(reportType, out var dimensions))
             dimensions = GroupingsByType[SalesOrderReportTypes.ByProduct];
 
-        // Leaf rows are grouped by ALL active dimensions combined (2 dims → one row per pair,
-        // 1 dim → one row per value) — every row shown is a full aggregate, never a raw line.
-        var leafGroups = dimensions.Length == 1
-            ? Items.GroupBy(dimensions[0].Key)
-            : Items.GroupBy(i => dimensions[0].Key(i) + "␟" + dimensions[1].Key(i));
+        var config = ColumnConfigs.TryGetValue(reportType, out var cfg)
+            ? cfg
+            : new ReportColumnConfig(false, false, false, false, false); // report lạ chưa khai báo — ẩn hết cho an toàn
 
-        var isNested   = dimensions.Length == 2;
-        var innerField = dimensions[^1].Field;
-        var allFields  = dimensions.Select(d => d.Field).ToHashSet();
-        var showUnit   = allFields.Contains(SummaryDimension.Product);
+        // Leaf rows are grouped by ALL active dimensions combined (3 dims → one row per triple,
+        // 2 dims → one row per pair, 1 dim → one row per value) — every row shown is a full
+        // aggregate, never a raw line.
+        var leafGroups = dimensions.Length switch
+        {
+            1 => Items.GroupBy(dimensions[0].Key),
+            2 => Items.GroupBy(i => dimensions[0].Key(i) + "␟" + dimensions[1].Key(i)),
+            _ => Items.GroupBy(i => dimensions[0].Key(i) + "␟" + dimensions[1].Key(i) + "␟" + dimensions[2].Key(i)),
+        };
 
-        IsUnitColumnVisible          = showUnit;
-        IsCustomerGroupColumnVisible = allFields.Contains(SummaryDimension.Customer);
+        var hasOuter    = dimensions.Length >= 2; // có dimension NGOÀI (group/flat) từ 2 chiều trở lên
+        var is3D        = dimensions.Length == 3;
+        var innerField  = dimensions[^1].Field;
+
+        IsUnitColumnVisible          = config.ShowUnitColumns;
+        IsCustomerGroupColumnVisible = config.ShowCustomerGroup;
+        IsCustomerAddressColumnsVisible = config.ShowCustomerAddress;
+        IsProfitColumnsVisible       = config.ShowProfitColumns;
+        IsMiddleColumnVisible        = is3D;
         (InnerCodeLabel, InnerNameLabel) = CodeNameLabelFor(innerField);
 
-        IsOuterColumnVisible = isNested;
-        (OuterCodeLabel, OuterNameLabel) = isNested ? CodeNameLabelFor(dimensions[0].Field) : ("", "");
+        // Dimension NGOÀI hiện dạng cột phẳng (Mã/Tên) CHỈ khi có outer VÀ report đó không gom
+        // nhóm (report gom nhóm đã hiện danh tính ngoài trong header Expander rồi — xem
+        // GroupDescriptions bên dưới, cùng dùng config.IsGrouped để tránh 2 nguồn sự thật).
+        IsOuterColumnVisible = hasOuter && !config.IsGrouped;
+        (OuterCodeLabel, OuterNameLabel) = hasOuter ? CodeNameLabelFor(dimensions[0].Field) : ("", "");
 
         var rows = new List<ReportDisplayRow>();
         foreach (var group in leafGroups)
         {
             var groupItems = group.ToList();
-            var row = ReportDisplayRow.Aggregate(groupItems, innerField, showUnit);
-            if (isNested)
+            var row = ReportDisplayRow.Aggregate(groupItems, innerField, config.ShowUnitColumns);
+            if (hasOuter)
             {
                 row.GroupKey   = dimensions[0].Key(groupItems[0]);
                 row.GroupLabel = ColumnLabelFor(dimensions[0].Field);
                 row.SetOuterId(dimensions[0].Field, groupItems[0]);
             }
+            if (is3D)
+                row.SetMiddleId(dimensions[1].Field, groupItems[0]);
             rows.Add(row);
         }
 
         // Aggregate() always writes the row's own identity into ProductName, regardless of which
         // dimension it actually represents — so sorting by ProductName works uniformly here.
-        var orderedRows = dimensions.Length == 2
+        IOrderedEnumerable<ReportDisplayRow> ordered = hasOuter
             ? rows.OrderBy(r => r.GroupKey, StringComparer.CurrentCultureIgnoreCase)
-                  .ThenBy(r => r.ProductName, StringComparer.CurrentCultureIgnoreCase)
-                  .ToList()
-            : rows.OrderBy(r => r.ProductName, StringComparer.CurrentCultureIgnoreCase)
-                  .ToList();
+            : rows.OrderBy(r => r.ProductName, StringComparer.CurrentCultureIgnoreCase);
+        if (hasOuter && is3D)
+            ordered = ordered.ThenBy(r => r.MiddleName, StringComparer.CurrentCultureIgnoreCase);
+        if (hasOuter)
+            ordered = ordered.ThenBy(r => r.ProductName, StringComparer.CurrentCultureIgnoreCase);
 
-        _displayRows = orderedRows;
+        _displayRows = ordered.ToList();
 
-        // Bảng phẳng kiểu MISA — không group/collapse theo Expander nữa (row đã tự mang đủ cả 2
-        // dimension làm cột thật khi isNested), chỉ cần sort đúng thứ tự Outer rồi Inner.
+        // 2026-09-18 (theo yêu cầu, khớp ảnh mẫu MISA cây gom nhóm có thể thu gọn): GroupDescriptions
+        // CHỈ thêm cho report có config.IsGrouped=true ("Mặt hàng & khách hàng", "Mặt hàng & nhân
+        // viên", report 3 chiều) — DataGrid.GroupStyle (xem SalesOrderReportView.xaml) tự render mỗi
+        // group thành 1 Expander thu gọn được. Các report 2 chiều KHÁC vẫn giữ bảng phẳng như thiết
+        // kế gốc (ảnh mẫu MISA "Nhân viên & khách hàng" xác nhận KHÔNG gom nhóm mặc định — gom nhóm ở
+        // MISA thực chất là tính năng kéo-thả cột tương tác, không cố định theo report type; các
+        // report có IsGrouped=true ở đây là trường hợp riêng được xác nhận qua ảnh/yêu cầu làm cứng).
         var view = new ListCollectionView(_displayRows);
-        if (dimensions.Length == 2)
+        if (hasOuter)
         {
+            if (config.IsGrouped)
+                view.GroupDescriptions.Add(new PropertyGroupDescription(nameof(ReportDisplayRow.GroupKey)));
             view.SortDescriptions.Add(new SortDescription(nameof(ReportDisplayRow.GroupKey), ListSortDirection.Ascending));
+            if (is3D)
+                view.SortDescriptions.Add(new SortDescription(nameof(ReportDisplayRow.MiddleName), ListSortDirection.Ascending));
             view.SortDescriptions.Add(new SortDescription(nameof(ReportDisplayRow.ProductName), ListSortDirection.Ascending));
         }
         else
@@ -333,9 +427,10 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
         TotalDiscountAmount = rows.Sum(r => r.DiscountAmount);
         TotalReturnQuantity = rows.Sum(r => r.ReturnQuantity);
         TotalReturnValue    = rows.Sum(r => r.ReturnValue);
+        TotalDiscountValue  = rows.Sum(r => r.DiscountValue);
         TotalNetRevenue     = rows.Sum(r => r.NetRevenue);
         TotalCostAmount     = rows.Sum(r => r.CostAmount);
-        TotalGrossProfit    = TotalNetRevenue - TotalCostAmount;
+        TotalGrossProfit    = rows.Sum(r => r.GrossProfit);
     }
 
     private List<ReportDisplayRow> BuildExportRows()
@@ -393,22 +488,34 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
         if (!GroupingsByType.TryGetValue(reportType, out var dimensions))
             dimensions = GroupingsByType[SalesOrderReportTypes.ByProduct];
 
+        // 2026-09-18: "—" → "; " khớp mẫu MISA ("Mặt hàng: X; Khách hàng: Y; Từ ngày...") — Subtitle
+        // ở SalesOrderReportDetailViewModel nối tiếp Title này với FilterSummary bằng "; " nên cả
+        // 2 dấu ngăn cách giờ đồng nhất.
         var innerLabel = ColumnLabelFor(dimensions[^1].Field);
         var title = row.GroupLabel is not null
-            ? $"{row.GroupLabel}: {row.GroupKey}  —  {innerLabel}: {row.ProductName}"
+            ? $"{row.GroupLabel}: {row.GroupKey}; {innerLabel}: {row.ProductName}"
             : $"{innerLabel}: {row.ProductName}";
+        // 2026-09-18: report 3 chiều cố định — nối thêm dimension GIỮA (Khách hàng) vào cuối, khớp
+        // đúng thứ tự quan sát được trong ảnh mẫu MISA ("Nhân viên: X; Mặt hàng: Y; Khách hàng: Z" —
+        // outer;inner;middle, không phải outer;middle;inner).
+        if (dimensions.Length == 3)
+        {
+            var middleLabel = ColumnLabelFor(dimensions[1].Field);
+            title += $"; {middleLabel}: {row.MiddleName}";
+        }
 
         var filter = CurrentFilter;
         var detailFilter = new SalesOrderDetailFilter
         {
-            Title      = title,
-            ProductId  = row.ProductId,
-            CustomerId = row.CustomerId,
-            EmployeeId = row.EmployeeId,
-            Unit       = filter?.Unit,
-            Category   = filter?.Category,
-            FromDate   = filter?.FromDate,
-            ToDate     = filter?.ToDate,
+            Title            = title,
+            ProductId        = row.ProductId,
+            CustomerId       = row.CustomerId,
+            EmployeeId       = row.EmployeeId,
+            Unit             = filter?.Unit,
+            Category         = filter?.Category,
+            FromDate         = filter?.FromDate,
+            ToDate           = filter?.ToDate,
+            SourceReportType = reportType,
         };
 
         _navigationService.NavigateTo(NavigationRoutes.SalesOrders.ReportDetail, detailFilter);

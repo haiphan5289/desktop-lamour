@@ -139,20 +139,14 @@
                                    Style="{StaticResource AppTypography.LabelSection}"
                                    VerticalAlignment="Center"
                                    Margin="0,0,8,0"/>
+                <!-- 2026-09-18: bỏ ô "Tìm kiếm chứng từ..." + nút "Lọc" theo yêu cầu, mirror
+                     SalesReturnListView (đã bỏ từ 2026-09-14) — các bộ lọc khác (Kỳ/Từ-Đến
+                     ngày/Trạng thái) và từng cột "Lọc..." riêng ở header DataGrid bên dưới đã tự áp
+                     dụng ngay khi đổi (live filter), không phụ thuộc vào nút "Lọc" hay ô tìm kiếm
+                     tổng quát này. -->
                 <ComboBox ItemsSource="{x:Static local:SalesOrderListViewModel.StatusOptions}"
                           SelectedItem="{Binding FilterStatus, Mode=TwoWay}"
-                          Width="120" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
-                          Margin="0,0,16,0"/>
-
-                <controls:AppTextField Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                       Placeholder="🔍 Tìm kiếm chứng từ..."
-                                       Width="260" Height="36" VerticalAlignment="Center"/>
-
-                <controls:AppButton Content="🔍 Lọc"
-                                    Style="{StaticResource AppButton.Primary.Medium}"
-                                    Command="{Binding FilterCommand}"
-                                    Height="36" VerticalAlignment="Center"
-                                    Margin="12,0,0,0"/>
+                          Width="120" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"/>
             </StackPanel>
         </Border>
 
@@ -256,13 +250,46 @@
                 <DataGrid.RowStyle>
                     <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding StatusLabel}" Value="⏸ Treo">
+                            <DataTrigger Binding="{Binding IsHeld}" Value="True">
                                 <Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/>
                                 <Setter Property="FontWeight" Value="SemiBold"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </DataGrid.RowStyle>
+                <!-- 2026-09-18 (bug user report): dòng Treo lúc SELECTED trùng màu xanh mặc định với
+                     dòng bình thường — Foreground/FontWeight ở RowStyle trên KHÔNG áp dụng lúc Selected
+                     vì DataGridCell mặc định tự đặt Background/Foreground riêng ngay trong
+                     ControlTemplate.Triggers của chính nó khi IsSelected=True (ưu tiên cao hơn mọi
+                     Style/Trigger đặt từ ngoài lên cùng property — cùng nguyên nhân và cùng fix đã dùng
+                     ở SalesReturnListView.xaml). Fix: thay hẳn Template của cell khi Held+Selected. -->
+                <DataGrid.CellStyle>
+                    <Style TargetType="DataGridCell">
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsHeld}" Value="True"/>
+                                    <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type DataGridCell}">
+                                            <Border Padding="{TemplateBinding Padding}"
+                                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                                    Background="{StaticResource AppColor.ButtonPrimaryHover}"
+                                                    SnapsToDevicePixels="True">
+                                                <ContentPresenter VerticalAlignment="Center"
+                                                                  TextElement.Foreground="{StaticResource AppColor.TextInverted}"
+                                                                  TextElement.FontWeight="SemiBold"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.CellStyle>
                 <DataGrid.Columns>
 
                     <!-- 2026-09-14 (theo ảnh mẫu MISA): "Ngày hạch toán" mới — hiển thị thêm cạnh

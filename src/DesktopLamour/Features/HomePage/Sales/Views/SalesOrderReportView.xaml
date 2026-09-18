@@ -57,7 +57,7 @@
             <controls:AppLabel Text="{Binding ReportTitle}"
                                Style="{StaticResource AppTypography.DisplaySection}"
                                HorizontalAlignment="Center"/>
-            <controls:AppLabel Text="{Binding CurrentFilter.Summary}"
+            <controls:AppLabel Text="{Binding CurrentFilter.DateRangeSummary}"
                                Style="{StaticResource AppTypography.BodyCaption}"
                                Foreground="{StaticResource AppColor.TextSecondary}"
                                HorizontalAlignment="Center"
@@ -126,6 +126,141 @@
                         <Setter Property="BorderThickness" Value="0,0,1,1"/>
                     </Style>
                 </DataGrid.ColumnHeaderStyle>
+
+                <!-- 2026-09-18 (theo yêu cầu, khớp ảnh mẫu MISA cây gom nhóm có thể thu gọn): khôi
+                     phục lại GroupStyle/Expander glyph "−"/"+" đã từng có (2026-07-18) rồi bị bỏ
+                     06/2026-08-31 khi đổi sang "bảng phẳng" (xem comment cũ ở OuterCode/OuterName
+                     trong ReportDisplayRow.cs, và ghi chú known-limitation trong docs/sales.md dòng
+                     ~1015/1021/1036 — bản Expander gốc CHẠY ĐƯỢC, known limitation chỉ là (a) căn cột
+                     header nhóm với cột dữ liệu bên dưới là ước lượng cứng theo width, không tự động
+                     100% chính xác, và (b) double-click trúng dòng group-header không kích hoạt
+                     drill-down nếu chưa từng chọn dòng nào trước đó — KHÔNG phải lỗi crash/vỡ dữ
+                     liệu). GroupDescriptions chỉ thêm khi report 2 chiều (xem RebuildDisplayRows) —
+                     report 1 chiều (vd "Mặt hàng" đơn thuần) không có GroupKey nên WPF không tạo
+                     group nào, DataGrid hiển thị y hệt bảng phẳng như hiện tại, không ảnh hưởng.
+                     OuterCode/OuterName (Mã hàng/Tên hàng khi 2 chiều) giờ ẩn hẳn (xem
+                     UpdateColumnVisibility trong code-behind) vì đã hiện trong header nhóm rồi, hiện
+                     lại ở cả 2 chỗ sẽ dư thừa — khớp đúng ảnh mẫu (dòng con không lặp lại Mã/Tên hàng). -->
+                <DataGrid.GroupStyle>
+                    <GroupStyle>
+                        <GroupStyle.ContainerStyle>
+                            <Style TargetType="{x:Type GroupItem}">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type GroupItem}">
+                                            <Expander IsExpanded="True"
+                                                      Background="{StaticResource AppColor.BackgroundBrand}"
+                                                      BorderBrush="{StaticResource AppColor.BorderThin}"
+                                                      BorderThickness="0,0,0,1"
+                                                      Padding="0">
+                                                <Expander.Template>
+                                                    <ControlTemplate TargetType="{x:Type Expander}">
+                                                        <Border Background="{TemplateBinding Background}"
+                                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                                BorderThickness="{TemplateBinding BorderThickness}">
+                                                            <DockPanel>
+                                                                <ToggleButton DockPanel.Dock="Top"
+                                                                              IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                                                              OverridesDefaultStyle="True"
+                                                                              Focusable="False"
+                                                                              Cursor="Hand">
+                                                                    <ToggleButton.Template>
+                                                                        <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                                                            <DockPanel Background="Transparent">
+                                                                                <Border DockPanel.Dock="Left"
+                                                                                        Width="20" Height="20"
+                                                                                        Margin="6,4,6,4"
+                                                                                        BorderBrush="{StaticResource AppColor.TextBrand}"
+                                                                                        BorderThickness="1.5"
+                                                                                        CornerRadius="3"
+                                                                                        Background="{StaticResource AppColor.BackgroundPrimary}">
+                                                                                    <TextBlock x:Name="ToggleGlyph"
+                                                                                               Text="−"
+                                                                                               FontWeight="Bold"
+                                                                                               FontSize="13"
+                                                                                               Foreground="{StaticResource AppColor.TextBrand}"
+                                                                                               HorizontalAlignment="Center"
+                                                                                               VerticalAlignment="Center"/>
+                                                                                </Border>
+                                                                                <ContentPresenter VerticalAlignment="Center"/>
+                                                                            </DockPanel>
+                                                                            <ControlTemplate.Triggers>
+                                                                                <Trigger Property="IsChecked" Value="False">
+                                                                                    <Setter TargetName="ToggleGlyph" Property="Text" Value="+"/>
+                                                                                </Trigger>
+                                                                            </ControlTemplate.Triggers>
+                                                                        </ControlTemplate>
+                                                                    </ToggleButton.Template>
+                                                                    <ContentPresenter ContentSource="Header"/>
+                                                                </ToggleButton>
+                                                                <ContentPresenter x:Name="ExpanderContent" Visibility="Collapsed"/>
+                                                            </DockPanel>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsExpanded" Value="True">
+                                                                <Setter TargetName="ExpanderContent" Property="Visibility" Value="Visible"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Expander.Template>
+                                                <!-- Widths khớp đúng 10 cột số liệu hiện tại của bảng (Số lượng bán/Doanh số bán/Chiết
+                                                     khấu/Số lượng trả lại/Giá trị trả lại/Giá trị giảm giá/Doanh thu thuần/Tiền vốn/Lãi
+                                                     gộp/Tỷ lệ lãi gộp) — report "Mặt hàng & khách hàng" (report DUY NHẤT dùng GroupStyle
+                                                     này) có IsProfitColumnsVisible=true nên vẫn hiện đủ 3 cột lãi gộp trên từng dòng con,
+                                                     header nhóm cũng cần tổng tương ứng cho nhất quán. Sửa cột nào trong DataGrid.Columns
+                                                     bên dưới thì PHẢI sửa lại width tương ứng ở đây (known limitation kế thừa từ bản gốc
+                                                     2026-07-18: không tự động đồng bộ 100%). -->
+                                                <Expander.Header>
+                                                    <Grid Margin="0,4">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="115"/>
+                                                            <ColumnDefinition Width="125"/>
+                                                            <ColumnDefinition Width="115"/>
+                                                            <ColumnDefinition Width="140"/>
+                                                            <ColumnDefinition Width="125"/>
+                                                            <ColumnDefinition Width="140"/>
+                                                            <ColumnDefinition Width="150"/>
+                                                            <ColumnDefinition Width="130"/>
+                                                            <ColumnDefinition Width="130"/>
+                                                            <ColumnDefinition Width="120"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Grid.Column="0" FontWeight="Bold" Margin="8,0,0,0"
+                                                                   Text="{Binding Items, Converter={StaticResource GroupHeaderTextConverter}}"/>
+                                                        <TextBlock Grid.Column="1" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
+                                                                   Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=Quantity}"/>
+                                                        <TextBlock Grid.Column="2" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
+                                                                   Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=SalesAmount}"/>
+                                                        <TextBlock Grid.Column="3" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
+                                                                   Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=DiscountAmount}"/>
+                                                        <TextBlock Grid.Column="4" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
+                                                                   Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=ReturnQuantity}"/>
+                                                        <TextBlock Grid.Column="5" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
+                                                                   Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=ReturnValue}"/>
+                                                        <TextBlock Grid.Column="6" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
+                                                                   Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=DiscountValue}"/>
+                                                        <TextBlock Grid.Column="7" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
+                                                                   Foreground="{StaticResource AppColor.TextBrand}"
+                                                                   Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=NetRevenue}"/>
+                                                        <TextBlock Grid.Column="8" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
+                                                                   Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=CostAmount}"/>
+                                                        <TextBlock Grid.Column="9" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
+                                                                   Foreground="{StaticResource AppColor.TextBrand}"
+                                                                   Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=GrossProfit}"/>
+                                                        <TextBlock Grid.Column="10" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
+                                                                   Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=GrossProfitRate}"/>
+                                                    </Grid>
+                                                </Expander.Header>
+                                                <ItemsPresenter/>
+                                            </Expander>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </GroupStyle.ContainerStyle>
+                    </GroupStyle>
+                </DataGrid.GroupStyle>
+
                 <DataGrid.Columns>
 
                     <!-- Cột dimension NGOÀI — chỉ hiện ở report 2 chiều (vd. "Nhân viên & khách
@@ -159,6 +294,25 @@
                                     <TextBlock Text="{Binding}" FontWeight="SemiBold"/>
                                     <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
                                                             Text="{Binding DataContext.FilterOuterName, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- 2026-09-18: "Tên khách hàng" — dimension GIỮA của report 3 chiều cố định
+                         "Nhân viên, khách hàng và mặt hàng" (ảnh mẫu MISA không có cột Mã KH riêng
+                         ở đây, chỉ Tên). Ẩn ở mọi report khác qua IsMiddleColumnVisible. -->
+                    <DataGridTextColumn x:Name="MiddleNameColumn"
+                                        Header="Tên khách hàng"
+                                        Binding="{Binding MiddleName}"
+                                        Width="180">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Tên khách hàng" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                                            Text="{Binding DataContext.FilterMiddleName, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
                                                             FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
                                 </StackPanel>
                             </DataTemplate>
@@ -335,9 +489,9 @@
                     </DataGridTextColumn>
 
                     <DataGridTextColumn x:Name="ReturnQuantityColumn"
-                                        Header="SL trả lại"
+                                        Header="Số lượng trả lại"
                                         Binding="{Binding ReturnQuantity}"
-                                        Width="100">
+                                        Width="140">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="HorizontalAlignment" Value="Right"/>
@@ -348,7 +502,7 @@
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel>
-                                    <TextBlock Text="SL trả lại" FontWeight="SemiBold" TextAlignment="Right"/>
+                                    <TextBlock Text="Số lượng trả lại" FontWeight="SemiBold" TextAlignment="Right"/>
                                     <Grid Margin="0,4,4,2">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
@@ -455,9 +609,17 @@
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
+                    <!-- 2026-09-18: "Doanh thu thuần" đứng TRƯỚC Tiền vốn/Lãi gộp/Tỷ lệ lãi gộp/Tên
+                         nhóm KH — khớp đúng thứ tự ảnh mẫu MISA "Nhân viên & khách hàng". Width="*"
+                         vẫn hoạt động đúng: ở report "Mặt hàng" (3 cột lãi gộp + Tên nhóm KH đều
+                         Collapsed) cột này tự nhiên trở thành cột cuối cùng hiển thị và lấp đầy phần
+                         còn lại; ở các report khác thì không, chỉ là 1 cột rộng vừa phải như các cột
+                         khác — WPF DataGrid Star-column vẫn nhận hết khoảng trống còn lại bất kể vị
+                         trí khai báo, miễn các cột sau nó không chiếm chỗ (Collapsed = width 0). -->
                     <DataGridTextColumn Header="Doanh thu thuần"
                                         Binding="{Binding NetRevenue, StringFormat=\{0:N0\}}"
-                                        Width="150">
+                                        Width="*"
+                                        MinWidth="150">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="HorizontalAlignment" Value="Right"/>
@@ -497,7 +659,66 @@
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
-                    <DataGridTextColumn Header="Tiền vốn"
+                    <!-- 2026-09-18: 3 cột địa chỉ — chỉ xác nhận có ở report "Khách hàng" đơn thuần
+                         (IsCustomerAddressColumnsVisible). Không có ô lọc operator số, chỉ Contains
+                         text như các cột địa danh khác. -->
+                    <DataGridTextColumn x:Name="CustomerProvinceColumn"
+                                        Header="Tỉnh/Thành phố"
+                                        Binding="{Binding CustomerProvince}"
+                                        Width="150">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Tỉnh/Thành phố" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                                            Text="{Binding DataContext.FilterCustomerProvince, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn x:Name="CustomerDistrictColumn"
+                                        Header="Quận/Huyện"
+                                        Binding="{Binding CustomerDistrict}"
+                                        Width="130">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Quận/Huyện" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                                            Text="{Binding DataContext.FilterCustomerDistrict, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn x:Name="CustomerWardColumn"
+                                        Header="Xã/Phường"
+                                        Binding="{Binding CustomerWard}"
+                                        Width="130">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Xã/Phường" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                                            Text="{Binding DataContext.FilterCustomerWard, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- 2026-09-18: khôi phục lại Tiền vốn/Lãi gộp/Tỷ lệ lãi gộp (%) — lượt sửa report
+                         "Mặt hàng" trước đây đã xoá HẲN 3 cột này (tưởng thừa vì Export/In không dùng
+                         và ảnh mẫu "Mặt hàng" không có), nhưng ảnh mẫu "Nhân viên & khách hàng" xác
+                         nhận 3 cột này CÓ hiện cho report khác — nên chỉ ẩn theo điều kiện
+                         (IsProfitColumnsVisible, xem code-behind UpdateColumnVisibility) thay vì xoá
+                         cứng. Export/Excel/In vẫn giữ nguyên KHÔNG có 3 cột này (hành vi gốc, ngoài
+                         phạm vi lần sửa này). -->
+                    <DataGridTextColumn x:Name="CostAmountColumn"
+                                        Header="Tiền vốn"
                                         Binding="{Binding CostAmount, StringFormat=\{0:N0\}}"
                                         Width="130">
                         <DataGridTextColumn.ElementStyle>
@@ -537,7 +758,8 @@
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
-                    <DataGridTextColumn Header="Lãi gộp"
+                    <DataGridTextColumn x:Name="GrossProfitColumn"
+                                        Header="Lãi gộp"
                                         Binding="{Binding GrossProfit, StringFormat=\{0:N0\}}"
                                         Width="130">
                         <DataGridTextColumn.ElementStyle>
@@ -579,7 +801,8 @@
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
-                    <DataGridTextColumn Header="Tỷ lệ lãi gộp (%)"
+                    <DataGridTextColumn x:Name="GrossProfitRateColumn"
+                                        Header="Tỷ lệ lãi gộp (%)"
                                         Binding="{Binding GrossProfitRate, StringFormat=\{0:N2\}}"
                                         Width="120">
                         <DataGridTextColumn.ElementStyle>
@@ -653,103 +876,259 @@
         </Grid>
 
         <!-- ══════════════════════════════════════════════ -->
-        <!--  Footer                                        -->
+        <!--  Footer — tổng từng cột canh THẲNG dưới đúng cột số tương ứng ở DataGrid phía trên       -->
+        <!--  (khớp mẫu MISA), theo đúng pattern đã dùng ở SalesOrderListView. ColumnDefinitions ở    -->
+        <!--  đây PHẢI khớp thứ tự/độ rộng 16 cột thật của DataGrid — sửa 1 bên thì phải sửa bên kia. -->
+        <!--  4 cột điều kiện (Outer x2 / Unit+SL bán+SL trả lại / Tiền vốn+Lãi gộp+Tỷ lệ lãi gộp /   -->
+        <!--  Tên nhóm KH) tự co Width về 0 qua DataTrigger bind cùng property                        -->
+        <!--  (IsOuterColumnVisible/IsUnitColumnVisible/IsProfitColumnsVisible/                       -->
+        <!--  IsCustomerGroupColumnVisible) mà code-behind dùng để ẩn cột thật ở DataGrid — nhờ vậy    -->
+        <!--  canh đúng cột ở MỌI loại report (Mặt hàng/Khách hàng/Nhân viên/2 chiều). -->
         <!-- ══════════════════════════════════════════════ -->
         <Border Grid.Row="3"
                 Margin="24,12,24,24"
-                Padding="16,12"
                 Background="{StaticResource AppColor.BackgroundPrimary}"
                 BorderBrush="{StaticResource AppColor.BorderThin}"
                 BorderThickness="1"
                 CornerRadius="8">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition>
+                        <ColumnDefinition.Style>
+                            <Style TargetType="ColumnDefinition">
+                                <Setter Property="Width" Value="95"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsOuterColumnVisible}" Value="False">
+                                        <Setter Property="Width" Value="0"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ColumnDefinition.Style>
+                    </ColumnDefinition>
+                    <ColumnDefinition>
+                        <ColumnDefinition.Style>
+                            <Style TargetType="ColumnDefinition">
+                                <Setter Property="Width" Value="180"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsOuterColumnVisible}" Value="False">
+                                        <Setter Property="Width" Value="0"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ColumnDefinition.Style>
+                    </ColumnDefinition>
+                    <ColumnDefinition>
+                        <ColumnDefinition.Style>
+                            <Style TargetType="ColumnDefinition">
+                                <Setter Property="Width" Value="180"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsMiddleColumnVisible}" Value="False">
+                                        <Setter Property="Width" Value="0"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ColumnDefinition.Style>
+                    </ColumnDefinition>
+                    <ColumnDefinition Width="95"/>   <!-- Mã hàng -->
+                    <ColumnDefinition Width="220"/>  <!-- Tên hàng -->
+                    <ColumnDefinition>
+                        <ColumnDefinition.Style>
+                            <Style TargetType="ColumnDefinition">
+                                <Setter Property="Width" Value="65"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsUnitColumnVisible}" Value="False">
+                                        <Setter Property="Width" Value="0"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ColumnDefinition.Style>
+                    </ColumnDefinition>
+                    <ColumnDefinition>
+                        <ColumnDefinition.Style>
+                            <Style TargetType="ColumnDefinition">
+                                <Setter Property="Width" Value="115"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsUnitColumnVisible}" Value="False">
+                                        <Setter Property="Width" Value="0"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ColumnDefinition.Style>
+                    </ColumnDefinition>
+                    <ColumnDefinition Width="125"/>  <!-- Doanh số bán -->
+                    <ColumnDefinition Width="115"/>  <!-- Chiết khấu -->
+                    <ColumnDefinition>
+                        <ColumnDefinition.Style>
+                            <Style TargetType="ColumnDefinition">
+                                <Setter Property="Width" Value="140"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsUnitColumnVisible}" Value="False">
+                                        <Setter Property="Width" Value="0"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ColumnDefinition.Style>
+                    </ColumnDefinition>
+                    <ColumnDefinition Width="125"/>  <!-- Giá trị trả lại -->
+                    <ColumnDefinition Width="140"/>  <!-- Giá trị giảm giá -->
+                    <ColumnDefinition Width="*" MinWidth="150"/>  <!-- Doanh thu thuần -->
+                    <ColumnDefinition>
+                        <ColumnDefinition.Style>
+                            <Style TargetType="ColumnDefinition">
+                                <Setter Property="Width" Value="150"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCustomerAddressColumnsVisible}" Value="False">
+                                        <Setter Property="Width" Value="0"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ColumnDefinition.Style>
+                    </ColumnDefinition>
+                    <ColumnDefinition>
+                        <ColumnDefinition.Style>
+                            <Style TargetType="ColumnDefinition">
+                                <Setter Property="Width" Value="130"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCustomerAddressColumnsVisible}" Value="False">
+                                        <Setter Property="Width" Value="0"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ColumnDefinition.Style>
+                    </ColumnDefinition>
+                    <ColumnDefinition>
+                        <ColumnDefinition.Style>
+                            <Style TargetType="ColumnDefinition">
+                                <Setter Property="Width" Value="130"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCustomerAddressColumnsVisible}" Value="False">
+                                        <Setter Property="Width" Value="0"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ColumnDefinition.Style>
+                    </ColumnDefinition>
+                    <ColumnDefinition>
+                        <ColumnDefinition.Style>
+                            <Style TargetType="ColumnDefinition">
+                                <Setter Property="Width" Value="130"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsProfitColumnsVisible}" Value="False">
+                                        <Setter Property="Width" Value="0"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ColumnDefinition.Style>
+                    </ColumnDefinition>
+                    <ColumnDefinition>
+                        <ColumnDefinition.Style>
+                            <Style TargetType="ColumnDefinition">
+                                <Setter Property="Width" Value="130"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsProfitColumnsVisible}" Value="False">
+                                        <Setter Property="Width" Value="0"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ColumnDefinition.Style>
+                    </ColumnDefinition>
+                    <ColumnDefinition>
+                        <ColumnDefinition.Style>
+                            <Style TargetType="ColumnDefinition">
+                                <Setter Property="Width" Value="120"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsProfitColumnsVisible}" Value="False">
+                                        <Setter Property="Width" Value="0"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ColumnDefinition.Style>
+                    </ColumnDefinition>
+                    <ColumnDefinition>
+                        <ColumnDefinition.Style>
+                            <Style TargetType="ColumnDefinition">
+                                <Setter Property="Width" Value="130"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCustomerGroupColumnVisible}" Value="False">
+                                        <Setter Property="Width" Value="0"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ColumnDefinition.Style>
+                    </ColumnDefinition>
                 </Grid.ColumnDefinitions>
 
-                <controls:AppLabel Grid.Column="0"
+                <controls:AppLabel Grid.Column="0" Grid.ColumnSpan="6"
                                    Text="{Binding RowCount, StringFormat='Số dòng = {0}'}"
                                    Style="{StaticResource AppTypography.BodyCaption}"
                                    Foreground="{StaticResource AppColor.TextSecondary}"
-                                   VerticalAlignment="Center"/>
+                                   VerticalAlignment="Center"
+                                   Padding="6,10"/>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <controls:AppLabel Text="Tổng SL bán:"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Margin="0,0,8,0"/>
-                    <controls:AppLabel Text="{Binding TotalQuantitySold}"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       FontWeight="Bold"
-                                       MinWidth="60"/>
+                <TextBlock Grid.Column="6"
+                           Text="{Binding TotalQuantitySold}"
+                           FontWeight="Bold"
+                           TextAlignment="Right"
+                           VerticalAlignment="Center"
+                           Padding="6,10"/>
 
-                    <controls:AppLabel Text="|"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Foreground="{StaticResource AppColor.BorderThin}"
-                                       Margin="16,0"/>
+                <TextBlock Grid.Column="7"
+                           Text="{Binding TotalSalesAmount, StringFormat=\{0:N0\}}"
+                           FontWeight="Bold"
+                           TextAlignment="Right"
+                           VerticalAlignment="Center"
+                           Padding="6,10"/>
 
-                    <controls:AppLabel Text="Doanh số bán:"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Margin="0,0,8,0"/>
-                    <controls:AppLabel Text="{Binding TotalSalesAmount, StringFormat=\{0:N0\}}"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       FontWeight="Bold"
-                                       MinWidth="100"/>
+                <TextBlock Grid.Column="8"
+                           Text="{Binding TotalDiscountAmount, StringFormat=\{0:N0\}}"
+                           FontWeight="Bold"
+                           TextAlignment="Right"
+                           VerticalAlignment="Center"
+                           Padding="6,10"/>
 
-                    <controls:AppLabel Text="|"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Foreground="{StaticResource AppColor.BorderThin}"
-                                       Margin="16,0"/>
+                <TextBlock Grid.Column="9"
+                           Text="{Binding TotalReturnQuantity}"
+                           FontWeight="Bold"
+                           TextAlignment="Right"
+                           VerticalAlignment="Center"
+                           Padding="6,10"/>
 
-                    <controls:AppLabel Text="Chiết khấu:"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Margin="0,0,8,0"/>
-                    <controls:AppLabel Text="{Binding TotalDiscountAmount, StringFormat=\{0:N0\}}"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       FontWeight="Bold"
-                                       MinWidth="100"/>
+                <TextBlock Grid.Column="10"
+                           Text="{Binding TotalReturnValue, StringFormat=\{0:N0\}}"
+                           FontWeight="Bold"
+                           TextAlignment="Right"
+                           VerticalAlignment="Center"
+                           Padding="6,10"/>
 
-                    <controls:AppLabel Text="|"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Foreground="{StaticResource AppColor.BorderThin}"
-                                       Margin="16,0"/>
+                <TextBlock Grid.Column="11"
+                           Text="{Binding TotalDiscountValue, StringFormat=\{0:N0\}}"
+                           FontWeight="Bold"
+                           TextAlignment="Right"
+                           VerticalAlignment="Center"
+                           Padding="6,10"/>
 
-                    <controls:AppLabel Text="Doanh thu thuần:"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Margin="0,0,8,0"/>
-                    <controls:AppLabel Text="{Binding TotalNetRevenue, StringFormat=\{0:N0\}}"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       FontWeight="Bold"
-                                       MinWidth="110"
-                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                <TextBlock Grid.Column="12"
+                           Text="{Binding TotalNetRevenue, StringFormat=\{0:N0\}}"
+                           FontWeight="Bold"
+                           TextAlignment="Right"
+                           VerticalAlignment="Center"
+                           Padding="6,10"
+                           Foreground="{StaticResource AppColor.TextBrand}"/>
 
-                    <controls:AppLabel Text="|"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Foreground="{StaticResource AppColor.BorderThin}"
-                                       Margin="16,0"/>
+                <TextBlock Grid.Column="16"
+                           Text="{Binding TotalCostAmount, StringFormat=\{0:N0\}}"
+                           FontWeight="Bold"
+                           TextAlignment="Right"
+                           VerticalAlignment="Center"
+                           Padding="6,10"/>
 
-                    <controls:AppLabel Text="Tiền vốn:"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Margin="0,0,8,0"/>
-                    <controls:AppLabel Text="{Binding TotalCostAmount, StringFormat=\{0:N0\}}"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       FontWeight="Bold"
-                                       MinWidth="100"/>
-
-                    <controls:AppLabel Text="|"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Foreground="{StaticResource AppColor.BorderThin}"
-                                       Margin="16,0"/>
-
-                    <controls:AppLabel Text="Lãi gộp:"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Margin="0,0,8,0"/>
-                    <controls:AppLabel Text="{Binding TotalGrossProfit, StringFormat=\{0:N0\}}"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       FontWeight="Bold"
-                                       MinWidth="110"
-                                       Foreground="{StaticResource AppColor.TextBrand}"/>
-                </StackPanel>
+                <TextBlock Grid.Column="17"
+                           Text="{Binding TotalGrossProfit, StringFormat=\{0:N0\}}"
+                           FontWeight="Bold"
+                           TextAlignment="Right"
+                           VerticalAlignment="Center"
+                           Padding="6,10"
+                           Foreground="{StaticResource AppColor.TextBrand}"/>
             </Grid>
         </Border>
 

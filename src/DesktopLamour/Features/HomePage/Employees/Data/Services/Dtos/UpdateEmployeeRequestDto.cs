@@ -7,7 +7,7 @@ public class UpdateEmployeeRequestDto
     [JsonPropertyName("name")]                public string  Name              { get; set; } = string.Empty;
     [JsonPropertyName("gender")]              public string  Gender            { get; set; } = "Nam";
     [JsonPropertyName("phone")]               public string  Phone             { get; set; } = string.Empty;
-    [JsonPropertyName("role")]                public string  Role              { get; set; } = "Cashier";
+    [JsonPropertyName("role")]                public string  Role              { get; set; } = "Staff";
     [JsonPropertyName("unit")]                public string  Unit              { get; set; } = "Tiệm spa";
     [JsonPropertyName("job_title")]           public string  JobTitle          { get; set; } = "Khac";
     [JsonPropertyName("bank_account_number")] public string? BankAccountNumber { get; set; }

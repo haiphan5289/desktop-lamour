@@ -10,7 +10,7 @@ public class Employee : ISearchableItem
     public string  Name              { get; set; } = string.Empty;
     public string  Gender            { get; set; } = "Nam";
     public string  Phone             { get; set; } = string.Empty;
-    public string  Role              { get; set; } = "Cashier";
+    public string  Role              { get; set; } = "Staff";
     public string  Unit              { get; set; } = "Tiệm spa";
     public string  JobTitle          { get; set; } = "Khac";
     public string? BankAccountNumber { get; set; }

@@ -12,9 +12,15 @@ public class SalesOrderSummaryLineDto
     [JsonPropertyName("customer_id")]      public int      CustomerId     { get; set; }
     [JsonPropertyName("customer_code")]    public string   CustomerCode   { get; set; } = "";
     [JsonPropertyName("customer_name")]    public string   CustomerName   { get; set; } = "";
+    // 2026-09-18: thêm cho báo cáo "Khách hàng" (3 cột địa chỉ) và "Đơn vị kinh doanh" (group theo
+    // Employee.Unit đã có sẵn).
+    [JsonPropertyName("customer_province")] public string  CustomerProvince { get; set; } = "";
+    [JsonPropertyName("customer_district")] public string  CustomerDistrict { get; set; } = "";
+    [JsonPropertyName("customer_ward")]     public string  CustomerWard     { get; set; } = "";
     [JsonPropertyName("employee_id")]      public int?     EmployeeId     { get; set; }
     [JsonPropertyName("employee_code")]    public string?  EmployeeCode   { get; set; }
     [JsonPropertyName("employee_name")]    public string?  EmployeeName   { get; set; }
+    [JsonPropertyName("employee_unit")]    public string?  EmployeeUnit   { get; set; }
     [JsonPropertyName("quantity_sold")]    public int      QuantitySold   { get; set; }
     [JsonPropertyName("sales_amount")]     public decimal  SalesAmount    { get; set; }
     [JsonPropertyName("discount_amount")]  public decimal  DiscountAmount { get; set; }

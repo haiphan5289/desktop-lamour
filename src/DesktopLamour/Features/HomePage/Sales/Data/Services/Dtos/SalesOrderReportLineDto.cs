@@ -8,7 +8,10 @@ public class SalesOrderReportLineDto
     [JsonPropertyName("order_id")]          public int      OrderId          { get; set; }
     [JsonPropertyName("document_number")]   public string   DocumentNumber   { get; set; } = "";
     [JsonPropertyName("accounting_date")]   public DateTime AccountingDate   { get; set; }
+    [JsonPropertyName("document_date")]     public DateTime DocumentDate     { get; set; }
+    [JsonPropertyName("description")]       public string?  Description      { get; set; }
     [JsonPropertyName("customer_id")]       public int      CustomerId       { get; set; }
+    [JsonPropertyName("customer_code")]     public string   CustomerCode     { get; set; } = "";
     [JsonPropertyName("customer_name")]     public string   CustomerName     { get; set; } = "";
     [JsonPropertyName("employee_id")]       public int?     EmployeeId       { get; set; }
     [JsonPropertyName("employee_name")]     public string?  EmployeeName     { get; set; }

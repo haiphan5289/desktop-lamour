@@ -3,4 +3,5 @@ namespace DesktopLamour.Features.HomePage.Customers.Domain.UseCases;
 
 public record UpdateCustomerInput(
     int Id, string Name, string Phone, string Address,
-    string Province, string CustomerGroup, string TaxCode, int? SaleCareEmployeeId);
+    string Province, string District, string Ward,
+    string CustomerGroup, string TaxCode, int? SaleCareEmployeeId);
