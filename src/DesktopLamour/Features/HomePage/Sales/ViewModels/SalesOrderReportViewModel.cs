@@ -177,18 +177,6 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
             new[] { (Field: SummaryDimension.Customer, Key: (Func<SalesOrderSummaryLineItem, string>)(i => i.CustomerName), Label: "Khách hàng") },
         [SalesOrderReportTypes.ByEmployee] =
             new[] { (Field: SummaryDimension.Employee, Key: (Func<SalesOrderSummaryLineItem, string>)(i => i.EmployeeName), Label: "Nhân viên") },
-        [SalesOrderReportTypes.ByCustomerThenEmployee] =
-            new[]
-            {
-                (Field: SummaryDimension.Customer, Key: (Func<SalesOrderSummaryLineItem, string>)(i => i.CustomerName), Label: "Khách hàng"),
-                (Field: SummaryDimension.Employee, Key: (Func<SalesOrderSummaryLineItem, string>)(i => i.EmployeeName), Label: "Nhân viên"),
-            },
-        [SalesOrderReportTypes.ByCustomerThenProduct] =
-            new[]
-            {
-                (Field: SummaryDimension.Customer, Key: (Func<SalesOrderSummaryLineItem, string>)(i => i.CustomerName), Label: "Khách hàng"),
-                (Field: SummaryDimension.Product,  Key: (Func<SalesOrderSummaryLineItem, string>)(i => i.ProductName),  Label: "Mặt hàng"),
-            },
         [SalesOrderReportTypes.ByEmployeeThenCustomer] =
             new[]
             {
@@ -226,8 +214,6 @@ public partial class SalesOrderReportViewModel : ViewModelBase, INavigationParam
         [SalesOrderReportTypes.ByProductThenEmployee]      = new(true,  false, false, false, true),  // confirmed
         [SalesOrderReportTypes.ByCustomer]                 = new(false, false, false, true,  false), // confirmed
         [SalesOrderReportTypes.ByEmployee]                 = new(false, false, false, false, false), // confirmed
-        [SalesOrderReportTypes.ByCustomerThenEmployee]     = new(false, false, false, false, false), // default — chưa có ảnh
-        [SalesOrderReportTypes.ByCustomerThenProduct]      = new(true,  false, false, false, false), // default — chưa có ảnh (có dimension Mặt hàng nên bật Unit)
         [SalesOrderReportTypes.ByEmployeeThenCustomer]     = new(false, true,  true,  false, false), // confirmed
         [SalesOrderReportTypes.ByEmployeeUnit]             = new(false, false, false, false, false), // confirmed
         [SalesOrderReportTypes.ByEmployeeCustomerProduct]  = new(true,  false, false, false, true),  // confirmed

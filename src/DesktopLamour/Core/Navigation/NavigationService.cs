@@ -12,7 +12,12 @@ public class NavigationService : INavigationService
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<NavigationService> _logger;
     private MainWindowViewModel? _mainWindowViewModel;
-    private readonly Stack<string> _backStack = new();
+    // Màn hình có trạng thái người dùng khó dựng lại (bộ lọc/dữ liệu đã tải của báo cáo) — khi đi tiếp
+    // sang màn khác rồi GoBack thì phải giữ nguyên instance cũ, không được tạo view Transient mới (sẽ
+    // trống vì không có tham số bộ lọc).
+    private static readonly HashSet<string> KeepAliveViews = new() { NavigationRoutes.SalesOrders.Report };
+
+    private readonly Stack<(string View, object? Content)> _backStack = new();
     private string? _currentView;
 
     public NavigationService(IServiceProvider serviceProvider, ILogger<NavigationService> logger)
@@ -35,7 +40,10 @@ public class NavigationService : INavigationService
         }
 
         if (_currentView is not null)
-            _backStack.Push(_currentView);
+        {
+            var keptContent = KeepAliveViews.Contains(_currentView) ? _mainWindowViewModel.CurrentContent : null;
+            _backStack.Push((_currentView, keptContent));
+        }
 
         _currentView = viewName;
         _logger.LogInformation("Navigating to {ViewName}", viewName);
@@ -55,9 +63,9 @@ public class NavigationService : INavigationService
     public void GoBack()
     {
         if (!CanGoBack) return;
-        var previous = _backStack.Pop();
+        var (previous, keptContent) = _backStack.Pop();
         _currentView = previous;
-        var content = ResolveView(previous);
+        var content = keptContent ?? ResolveView(previous);
         if (_mainWindowViewModel is not null)
             _mainWindowViewModel.CurrentContent = content;
     }

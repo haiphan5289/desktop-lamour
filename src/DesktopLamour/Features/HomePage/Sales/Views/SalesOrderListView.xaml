@@ -529,7 +529,7 @@
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding TotalPayment, StringFormat=\{0:N0\}}" Padding="6,0" VerticalAlignment="Center" TextAlignment="Right"
-                                           Foreground="{StaticResource AppColor.TextBrand}" FontWeight="SemiBold"/>
+                                           FontWeight="SemiBold"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -634,8 +634,7 @@
                                FontWeight="Bold"
                                TextAlignment="Right"
                                VerticalAlignment="Center"
-                               Padding="6,10"
-                               Foreground="{StaticResource AppColor.TextBrand}"/>
+                               Padding="6,10"/>
                 </Grid>
             </Border>
 

@@ -20,12 +20,10 @@ public partial class SalesOrderPrintWindow : Window
         InitializeComponent();
     }
 
-    public void Initialize(
-        SalesOrderResponseDto order, string? customerPhone, string? customerAddress,
-        decimal depositDeductionAmount = 0m)
+    public void Initialize(SalesOrderResponseDto order, string? customerPhone, string? customerAddress)
     {
         _order = order;
-        InvoiceViewer.Document = BuildInvoiceDocument(order, customerPhone, customerAddress, depositDeductionAmount);
+        InvoiceViewer.Document = BuildInvoiceDocument(order, customerPhone, customerAddress);
     }
 
     private void PrintButton_Click(object sender, RoutedEventArgs e)
@@ -105,8 +103,7 @@ public partial class SalesOrderPrintWindow : Window
     private const double HeaderLineHeight = 15;
 
     private static FlowDocument BuildInvoiceDocument(
-        SalesOrderResponseDto order, string? customerPhone, string? customerAddress,
-        decimal depositDeductionAmount = 0m)
+        SalesOrderResponseDto order, string? customerPhone, string? customerAddress)
     {
         var doc = new FlowDocument
         {
@@ -257,6 +254,26 @@ public partial class SalesOrderPrintWindow : Window
                 continue;
             }
 
+            // Dòng Trừ cọc (sản phẩm cọc, Thành tiền âm): in dạng "(300.000)" đỏ, các cột khác trống.
+            if (line.IsDepositProduct && line.Amount < 0m)
+            {
+                rowGroup.Rows.Add(DepositDeductionRow(stt++, line.ProductName, line.Amount));
+                continue;
+            }
+
+            // Đơn giá đã xoá (= 0) và Thành tiền = 0: để trống Đơn giá/CK/Thành tiền/Thuế suất/Tổng
+            // cộng thay vì in hàng loạt số 0 gây rối — giữ lại tên + SL. Dòng Đặt cọc (Thành tiền
+            // nhập tay ≠ 0) không rơi vào nhánh này.
+            if (line.UnitPrice == 0m && line.Amount == 0m)
+            {
+                rowGroup.Rows.Add(DataRow(
+                    stt++.ToString(),
+                    line.ProductName,
+                    line.Quantity.ToString(),
+                    "", "", "", "", ""));
+                continue;
+            }
+
             var lineTotal = line.Amount + line.TaxAmount;
 
             // Dòng "Đặt cọc" (sản phẩm IsDepositProduct): Đơn giá/CK/Thuế suất vô nghĩa (số tiền
@@ -271,28 +288,18 @@ public partial class SalesOrderPrintWindow : Window
                 // DataRow, cột này (index 4) giờ tự giảm FontSize riêng để "35,00%" nằm gọn 1 dòng).
                 line.IsDepositProduct ? "" : $"{line.DiscountRate.ToString("N2", CultureInfo.GetCultureInfo("vi-VN"))}%",
                 FormatMoney(line.Amount),
-                line.IsDepositProduct ? "" : $"{line.TaxRate:0}%",
+                // Không có thuế (0%) → để trống ô, không in "0%".
+                line.IsDepositProduct || line.TaxRate == 0m ? "" : $"{line.TaxRate:0}%",
                 FormatMoney(lineTotal)));
         }
-
-        // Trừ Cọc — không phải 1 SalesOrderLine thật (DepositDeduction là bản ghi riêng), nên
-        // amount được truyền từ ngoài vào (dòng "Trừ cọc" đang có trên form lúc in) thay vì đọc
-        // từ order.Lines. Chỉ hiển thị Thành tiền/Tổng cộng (âm, đỏ, trong ngoặc) — các cột khác
-        // để trống vì không phải hàng hóa.
-        if (depositDeductionAmount != 0m)
-            rowGroup.Rows.Add(DepositDeductionRow(stt++, depositDeductionAmount));
 
         // Tổng tiền thanh toán + Ghi chú đơn hàng — thêm làm 2 hàng cuối của CÙNG bảng sản phẩm
         // (ColumnSpan hết các cột) thay vì 3 Table riêng biệt, để mép các hàng liền nhau, không
         // có khoảng cách/border đôi giữa bảng sản phẩm và 2 hàng này.
         //
-        // KHÔNG dùng order.GrandTotal thẳng — nó KHÔNG trừ Trừ Cọc (Deposit/DepositDeduction là
-        // record riêng, không phải SalesOrderLine, nên BE tính GrandTotal chỉ từ dòng hàng thật;
-        // xem CreateSalesOrderUseCase.GrandTotal = lines.Sum(Amount + TaxAmount)). Tự tính lại từ
-        // TotalAmount + TotalTaxAmount (2 field này luôn = tổng dòng hàng thật, khớp cả 2 nguồn gọi
-        // hàm này: response thật từ BE lúc vừa Ghi sổ, và preview dựng tại chỗ từ form chưa lưu) rồi
-        // trừ depositDeductionAmount — để tổng tiền in ra luôn khớp với dòng "Trừ Cọc" ngay phía trên.
-        var netGrandTotal = order.TotalAmount + order.TotalTaxAmount - depositDeductionAmount;
+        // Dòng Trừ cọc là 1 SalesOrderLine bình thường (Thành tiền âm) nên order.TotalAmount +
+        // order.TotalTaxAmount đã bao gồm khoản trừ — không cần trừ thêm gì ở đây.
+        var netGrandTotal = order.TotalAmount + order.TotalTaxAmount;
         // 2 ô riêng (nhãn span hết trừ cột cuối + số tiền span đúng 1 cột cuối, thẳng hàng dưới
         // "TỔNG CỘNG") thay vì 1 ô gộp span hết bảng — khớp mẫu hoá đơn tham chiếu (đường kẻ dọc
         // ngăn nhãn và số tiền, số tiền canh dưới cột Tổng cộng).
@@ -379,7 +386,7 @@ public partial class SalesOrderPrintWindow : Window
         // hình ở cuối, cao bằng phần còn thiếu để bù đủ 1 trang — chỉ là ước lượng gần đúng
         // (Block/TableCell không expose được chiều cao đã render thật), không ảnh hưởng gì tới
         // hóa đơn đã dài hơn 1 trang (kẹp về 0, không âm).
-        var estimatedContentHeight = EstimateContentHeight(order.Lines.Count + (depositDeductionAmount != 0m ? 1 : 0));
+        var estimatedContentHeight = EstimateContentHeight(order.Lines.Count);
         var spacerHeight = Math.Max(0, A5PageHeight - estimatedContentHeight);
         content.Blocks.Add(new BlockUIContainer(new Border { MinHeight = spacerHeight }));
 
@@ -445,11 +452,11 @@ public partial class SalesOrderPrintWindow : Window
         return row;
     }
 
-    private static TableRow DepositDeductionRow(int stt, decimal amount)
+    private static TableRow DepositDeductionRow(int stt, string productName, decimal amount)
     {
         var negativeText = $"({Math.Abs(amount).ToString("N0", CultureInfo.GetCultureInfo("vi-VN"))})";
         var row = new TableRow();
-        var values = new[] { stt.ToString(), "Trừ Cọc", "", "", "", negativeText, "", negativeText };
+        var values = new[] { stt.ToString(), productName, "", "", "", negativeText, "", negativeText };
         for (var i = 0; i < values.Length; i++)
         {
             var isMoneyColumn = i == 5 || i == 7; // Thành tiền / Tổng cộng

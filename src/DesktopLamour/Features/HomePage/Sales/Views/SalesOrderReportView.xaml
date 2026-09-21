@@ -20,7 +20,7 @@
         <!--  Toolbar                                       -->
         <!-- ══════════════════════════════════════════════ -->
         <Border Grid.Row="0"
-                Background="{StaticResource AppColor.BackgroundBrand}"
+                Background="{StaticResource AppColor.BackgroundPrimary}"
                 Padding="16,10">
             <StackPanel Orientation="Horizontal">
                 <controls:AppButton Content="⚙️ Chọn tham số..."
@@ -109,7 +109,7 @@
                       BorderBrush="{StaticResource AppColor.BorderThin}"
                       BorderThickness="1"
                       RowBackground="{StaticResource AppColor.BackgroundPrimary}"
-                      AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                      AlternatingRowBackground="{StaticResource AppColor.BackgroundPrimary}"
                       ScrollViewer.HorizontalScrollBarVisibility="Auto"
                       ScrollViewer.VerticalScrollBarVisibility="Auto"
                       ScrollViewer.CanContentScroll="True"
@@ -126,6 +126,19 @@
                         <Setter Property="BorderThickness" Value="0,0,1,1"/>
                     </Style>
                 </DataGrid.ColumnHeaderStyle>
+
+                <!-- Tắt hover-gray mặc định của DataGridRow — báo cáo chỉ đọc (IsReadOnly), không cần
+                     tô xám dòng dưới con trỏ chuột; nếu không tắt, cuộn chuột đứng yên vẫn liên tục đổi
+                     dòng nào bị tô xám do IsMouseOver đổi theo dòng nằm dưới con trỏ. -->
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource AppColor.BackgroundPrimary}"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
 
                 <!-- 2026-09-18 (theo yêu cầu, khớp ảnh mẫu MISA cây gom nhóm có thể thu gọn): khôi
                      phục lại GroupStyle/Expander glyph "−"/"+" đã từng có (2026-07-18) rồi bị bỏ
@@ -149,8 +162,8 @@
                                     <Setter.Value>
                                         <ControlTemplate TargetType="{x:Type GroupItem}">
                                             <Expander IsExpanded="True"
-                                                      Background="{StaticResource AppColor.BackgroundBrand}"
-                                                      BorderBrush="{StaticResource AppColor.BorderThin}"
+                                                      Background="{StaticResource AppColor.BackgroundSecondary}"
+                                                      BorderBrush="#9CB8D4"
                                                       BorderThickness="0,0,0,1"
                                                       Padding="0">
                                                 <Expander.Template>
@@ -170,7 +183,7 @@
                                                                                 <Border DockPanel.Dock="Left"
                                                                                         Width="20" Height="20"
                                                                                         Margin="6,4,6,4"
-                                                                                        BorderBrush="{StaticResource AppColor.TextBrand}"
+                                                                                        BorderBrush="{StaticResource AppColor.TextPrimary}"
                                                                                         BorderThickness="1.5"
                                                                                         CornerRadius="3"
                                                                                         Background="{StaticResource AppColor.BackgroundPrimary}">
@@ -178,7 +191,7 @@
                                                                                                Text="−"
                                                                                                FontWeight="Bold"
                                                                                                FontSize="13"
-                                                                                               Foreground="{StaticResource AppColor.TextBrand}"
+                                                                                               Foreground="{StaticResource AppColor.TextPrimary}"
                                                                                                HorizontalAlignment="Center"
                                                                                                VerticalAlignment="Center"/>
                                                                                 </Border>
@@ -203,11 +216,12 @@
                                                         </ControlTemplate.Triggers>
                                                     </ControlTemplate>
                                                 </Expander.Template>
-                                                <!-- Widths khớp đúng 10 cột số liệu hiện tại của bảng (Số lượng bán/Doanh số bán/Chiết
-                                                     khấu/Số lượng trả lại/Giá trị trả lại/Giá trị giảm giá/Doanh thu thuần/Tiền vốn/Lãi
-                                                     gộp/Tỷ lệ lãi gộp) — report "Mặt hàng & khách hàng" (report DUY NHẤT dùng GroupStyle
-                                                     này) có IsProfitColumnsVisible=true nên vẫn hiện đủ 3 cột lãi gộp trên từng dòng con,
-                                                     header nhóm cũng cần tổng tương ứng cho nhất quán. Sửa cột nào trong DataGrid.Columns
+                                                <!-- Widths khớp đúng 7 cột số liệu ĐANG HIỂN THỊ của bảng (Số lượng bán/Doanh số bán/
+                                                     Chiết khấu/Số lượng trả lại/Giá trị trả lại/Giá trị giảm giá/Doanh thu thuần) —
+                                                     tất cả report dùng GroupStyle này (ByProductThenCustomer/ByProductThenEmployee/
+                                                     ByEmployeeCustomerProduct) đều có ShowProfitColumns=false nên Tiền vốn/Lãi gộp/Tỷ lệ
+                                                     lãi gộp bị ẩn trong DataGrid.Columns — KHÔNG render 3 cột đó ở đây nữa, tránh dư giá
+                                                     trị tràn ra ngoài bảng (bug đã gặp: 2026-09-21). Sửa cột nào trong DataGrid.Columns
                                                      bên dưới thì PHẢI sửa lại width tương ứng ở đây (known limitation kế thừa từ bản gốc
                                                      2026-07-18: không tự động đồng bộ 100%). -->
                                                 <Expander.Header>
@@ -221,10 +235,16 @@
                                                             <ColumnDefinition Width="125"/>
                                                             <ColumnDefinition Width="140"/>
                                                             <ColumnDefinition Width="150"/>
-                                                            <ColumnDefinition Width="130"/>
-                                                            <ColumnDefinition Width="130"/>
-                                                            <ColumnDefinition Width="120"/>
                                                         </Grid.ColumnDefinitions>
+                                                        <!-- Đường kẻ dọc phân cách cột — khớp VerticalGridLinesBrush của DataGrid (#9CB8D4)
+                                                             để dòng tổng nhóm có border giống hệt các dòng dữ liệu bên dưới (ảnh mẫu MISA). -->
+                                                        <Border Grid.Column="0" BorderBrush="#9CB8D4" BorderThickness="0,0,1,0"/>
+                                                        <Border Grid.Column="1" BorderBrush="#9CB8D4" BorderThickness="0,0,1,0"/>
+                                                        <Border Grid.Column="2" BorderBrush="#9CB8D4" BorderThickness="0,0,1,0"/>
+                                                        <Border Grid.Column="3" BorderBrush="#9CB8D4" BorderThickness="0,0,1,0"/>
+                                                        <Border Grid.Column="4" BorderBrush="#9CB8D4" BorderThickness="0,0,1,0"/>
+                                                        <Border Grid.Column="5" BorderBrush="#9CB8D4" BorderThickness="0,0,1,0"/>
+                                                        <Border Grid.Column="6" BorderBrush="#9CB8D4" BorderThickness="0,0,1,0"/>
                                                         <TextBlock Grid.Column="0" FontWeight="Bold" Margin="8,0,0,0"
                                                                    Text="{Binding Items, Converter={StaticResource GroupHeaderTextConverter}}"/>
                                                         <TextBlock Grid.Column="1" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
@@ -240,15 +260,7 @@
                                                         <TextBlock Grid.Column="6" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
                                                                    Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=DiscountValue}"/>
                                                         <TextBlock Grid.Column="7" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
-                                                                   Foreground="{StaticResource AppColor.TextBrand}"
                                                                    Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=NetRevenue}"/>
-                                                        <TextBlock Grid.Column="8" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
-                                                                   Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=CostAmount}"/>
-                                                        <TextBlock Grid.Column="9" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
-                                                                   Foreground="{StaticResource AppColor.TextBrand}"
-                                                                   Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=GrossProfit}"/>
-                                                        <TextBlock Grid.Column="10" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
-                                                                   Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=GrossProfitRate}"/>
                                                     </Grid>
                                                 </Expander.Header>
                                                 <ItemsPresenter/>
@@ -625,8 +637,7 @@
                                 <Setter Property="HorizontalAlignment" Value="Right"/>
                                 <Setter Property="VerticalAlignment"   Value="Center"/>
                                 <Setter Property="Padding"             Value="0,0,6,0"/>
-                                <Setter Property="Foreground"          Value="{StaticResource AppColor.TextBrand}"/>
-                                <Setter Property="FontWeight"          Value="SemiBold"/>
+                                <Setter Property="FontWeight"          Value="Bold"/>
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                         <DataGridTextColumn.HeaderTemplate>
@@ -767,8 +778,7 @@
                                 <Setter Property="HorizontalAlignment" Value="Right"/>
                                 <Setter Property="VerticalAlignment"   Value="Center"/>
                                 <Setter Property="Padding"             Value="0,0,6,0"/>
-                                <Setter Property="Foreground"          Value="{StaticResource AppColor.TextBrand}"/>
-                                <Setter Property="FontWeight"          Value="SemiBold"/>
+                                <Setter Property="FontWeight"          Value="Bold"/>
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                         <DataGridTextColumn.HeaderTemplate>
@@ -1112,8 +1122,7 @@
                            FontWeight="Bold"
                            TextAlignment="Right"
                            VerticalAlignment="Center"
-                           Padding="6,10"
-                           Foreground="{StaticResource AppColor.TextBrand}"/>
+                           Padding="6,10"/>
 
                 <TextBlock Grid.Column="16"
                            Text="{Binding TotalCostAmount, StringFormat=\{0:N0\}}"
@@ -1127,8 +1136,7 @@
                            FontWeight="Bold"
                            TextAlignment="Right"
                            VerticalAlignment="Center"
-                           Padding="6,10"
-                           Foreground="{StaticResource AppColor.TextBrand}"/>
+                           Padding="6,10"/>
             </Grid>
         </Border>
 

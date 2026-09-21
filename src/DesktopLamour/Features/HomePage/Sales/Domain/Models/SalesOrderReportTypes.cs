@@ -8,10 +8,10 @@ public static class SalesOrderReportTypes
     public const string ByProductThenEmployee   = "Mặt hàng & nhân viên";
     public const string ByCustomer              = "Khách hàng";
     public const string ByEmployee              = "Nhân viên";
-    public const string ByCustomerThenEmployee  = "Khách hàng & nhân viên";
-    public const string ByCustomerThenProduct   = "Khách hàng & mặt hàng";
-    // Nhân viên trước, Khách hàng lồng bên trong — khớp báo cáo MISA "Tổng hợp bán hàng theo
-    // nhân viên và khách hàng" (khác ByCustomerThenEmployee vốn nhóm theo Khách hàng trước).
+    // 2026-09-21: bỏ ByCustomerThenEmployee ("Khách hàng & nhân viên") và ByCustomerThenProduct
+    // ("Khách hàng & mặt hàng") — trùng ý nghĩa với ByProductThenCustomer/ByEmployeeThenCustomer
+    // (chỉ đảo thứ tự nhóm ngoài/trong), và 2 report bị bỏ chưa có ảnh mẫu MISA xác nhận trong khi
+    // 2 report giữ lại đã confirmed. Xem ColumnConfigs/GroupingsByType trong SalesOrderReportViewModel.
     public const string ByEmployeeThenCustomer  = "Nhân viên & khách hàng";
 
     // 2026-09-18: "Đơn vị kinh doanh" — group theo Employee.Unit đã có sẵn (không phải entity mới).
@@ -26,7 +26,7 @@ public static class SalesOrderReportTypes
     public static readonly IReadOnlyList<string> All = new[]
     {
         ByProduct, ByProductThenCustomer, ByProductThenEmployee,
-        ByCustomer, ByEmployee, ByCustomerThenEmployee, ByCustomerThenProduct,
+        ByCustomer, ByEmployee,
         ByEmployeeThenCustomer, ByEmployeeUnit, ByEmployeeCustomerProduct,
     };
 }

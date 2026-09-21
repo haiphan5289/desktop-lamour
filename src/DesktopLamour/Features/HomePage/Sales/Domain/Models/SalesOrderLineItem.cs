@@ -34,34 +34,23 @@ public class SalesOrderLineItem : INotifyPropertyChanged
     private string           _revenueAccount    = "";
     private ISearchableItem? _selectedProduct;
     private bool              _isDepositDeductionRow;
-    private decimal           _availableDepositBalance;
 
-    // Dòng ảo "Trừ cọc" — không phải sản phẩm thật, không gửi lên BE như 1 SalesOrderLine.
+    // Dòng "Trừ cọc" (sản phẩm mã TruCocProductCode) — là 1 SalesOrderLine bình thường, gửi lên BE và
+    // lưu cùng đơn như mọi sản phẩm (không còn liên quan số dư cọc/DepositDeduction). Khác dòng thường
+    // ở chỗ: user gõ số dương, Amount tự lưu thành số ÂM để trừ vào tổng đơn.
     public bool IsDepositDeductionRow
     {
         get => _isDepositDeductionRow;
         set { _isDepositDeductionRow = value; OnPropertyChanged(); }
     }
 
-    // Dòng "Trừ cọc" nạp lại từ 1 DepositDeduction đã ghi sổ ở BE (xem
-    // SalesOrderViewModel.PopulateFormFromCurrentAsync) — chỉ hiển thị cho đúng tổng thanh toán,
-    // không cho sửa/xóa để tránh gọi lại CreateDepositDeductionUseCase và tạo bản ghi trùng lặp.
-    // Đổi khoản trừ cọc phải làm qua màn Đặt Cọc/Trừ Cọc riêng.
+    // Luôn false — còn giữ để khớp DataTrigger "DisabledWhenLocked" trong SalesOrderWindow.xaml.
     public bool IsLocked
     {
         get => _isLocked;
         set { _isLocked = value; OnPropertyChanged(); }
     }
     private bool _isLocked;
-
-    // Tổng số dư cọc khả dụng của khách hàng tại thời điểm chọn "Trừ cọc" — chỉ có ý nghĩa khi
-    // IsDepositDeductionRow = true. Dùng để gợi ý/validate số tiền trừ ở client; BE mới là nơi
-    // quyết định thật (tự phân bổ FIFO qua nhiều Deposit khi Ghi sổ — xem CreateDepositDeductionUseCase).
-    public decimal AvailableDepositBalance
-    {
-        get => _availableDepositBalance;
-        set { _availableDepositBalance = value; OnPropertyChanged(); }
-    }
 
     public int ProductId
     {
@@ -190,6 +179,8 @@ public class SalesOrderLineItem : INotifyPropertyChanged
                 // (hoãn RecalculateTotals cho dòng Trừ cọc tới lúc CellEditEnding).
                 OnPropertyChanged(nameof(DisplayAmount));
                 OnPropertyChanged(nameof(IsNegativeAmount));
+                // Thành tiền nhập tay → BE dùng thẳng số này (Quantity × Đơn giá của dòng này luôn = 0).
+                SetIsAmountManual(true);
                 RecalculateTax();
                 return;
             }
@@ -283,11 +274,10 @@ public class SalesOrderLineItem : INotifyPropertyChanged
 
             if (value is Product p && p.Code == TruCocProductCode)
             {
-                // Chọn product "Trừ cọc" thật (mã TruCocProductCode) → biến dòng này thành dòng Trừ
-                // cọc, y hệt hành vi entry ảo trước đây. Không gắn với 1 Deposit cụ thể — BE tự phân
-                // bổ FIFO qua nhiều Deposit khi Ghi sổ (xem CreateDepositDeductionUseCase).
+                // Chọn product "Trừ cọc" (mã TruCocProductCode) → dòng chỉ có Thành tiền (số âm), không
+                // kho/đơn giá/thuế — như sản phẩm cọc (IsDepositProduct), lưu như 1 dòng hàng thường.
                 IsDepositDeductionRow = true;
-                IsDepositProduct      = false;
+                IsDepositProduct      = true;
                 ProductId             = p.Id;
                 ProductCode           = p.Code;
                 ProductName           = p.Name;
@@ -298,16 +288,12 @@ public class SalesOrderLineItem : INotifyPropertyChanged
                 TaxRate               = 0;
                 ReceivableAccount     = "";
                 RevenueAccount        = "";
-                // AvailableDepositBalance được SalesOrderViewModel.AttachLineHandlers gán ngay sau
-                // khi bắt PropertyChanged(ProductId) ở trên (ViewModel mới có tổng số dư cọc khách
-                // hàng) — bắt AvailableDepositBalance đổi để gợi ý sẵn Thành tiền, giống cách cũ.
             }
             else if (value is Product p2)
             {
                 // Chọn lại 1 sản phẩm thật bình thường → khôi phục dòng về trạng thái bình thường.
                 IsDepositDeductionRow   = false;
                 IsDepositProduct        = p2.IsDepositProduct;
-                AvailableDepositBalance = 0;
                 ProductId   = p2.Id;
                 ProductCode = p2.Code;
                 ProductName = p2.Name;

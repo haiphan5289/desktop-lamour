@@ -4,8 +4,6 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.ViewModels;
-using DesktopLamour.Features.HomePage.Deposits.Data.Services.Dtos;
-using DesktopLamour.Features.HomePage.Deposits.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Sales.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Sales.Domain.Models;
 using DesktopLamour.Features.HomePage.Sales.Domain.UseCases;
@@ -162,7 +160,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         IsReadOnly = false;
         BeginDirtyTracking();
 
-        // PopulateFormFromCurrentAsync chỉ nạp đúng số dòng THẬT — không có dòng trống dư như
+        // PopulateFormFromCurrent chỉ nạp đúng số dòng THẬT — không có dòng trống dư như
         // ClearForm() cho đơn mới. Bấm "Sửa" xong thêm luôn InitialEmptyLineCount dòng trống để gõ
         // thêm sản phẩm ngay, không phải tự bấm "Thêm dòng" nhiều lần (mirror SalesReturn).
         for (var i = 0; i < InitialEmptyLineCount; i++) AddLine();
@@ -194,9 +192,6 @@ public partial class SalesOrderViewModel : ViewModelBase
     private readonly IGetEmployeesUseCase           _getEmployees;
     private readonly IGetProductsUseCase            _getProducts;
     private readonly IGetWarehouseSettingsUseCase   _getWarehouses;
-    private readonly IGetDepositsByCustomerUseCase  _getDepositsByCustomer;
-    private readonly ICreateDepositDeductionUseCase _createDepositDeduction;
-    private readonly IGetDepositDeductionsUseCase   _getDepositDeductions;
     private readonly Func<EmployeeFormWindow>       _employeeFormWindowFactory;
     private readonly Func<CustomerFormWindow>       _customerFormWindowFactory;
     private readonly Func<SalesOrderPrintWindow>    _printWindowFactory;
@@ -240,9 +235,6 @@ public partial class SalesOrderViewModel : ViewModelBase
     [ObservableProperty] private string? _notes;
     [ObservableProperty] private string? _deliveryMethod;
     [ObservableProperty] private string? _paymentMethod;
-
-    // ── Trừ cọc — hiển thị dưới dạng 1 dòng đặc biệt ở đầu Lines (Tab 1) ────
-    public IReadOnlyList<DepositResponseDto> AvailableDeposits { get; private set; } = Array.Empty<DepositResponseDto>();
 
     // ── Computed ──────────────────────────────────────────────────────────
     [ObservableProperty] private decimal _totalAmount;    // Tổng tiền hàng (gross)
@@ -301,9 +293,6 @@ public partial class SalesOrderViewModel : ViewModelBase
         IGetEmployeesUseCase           getEmployees,
         IGetProductsUseCase            getProducts,
         IGetWarehouseSettingsUseCase   getWarehouses,
-        IGetDepositsByCustomerUseCase  getDepositsByCustomer,
-        ICreateDepositDeductionUseCase createDepositDeduction,
-        IGetDepositDeductionsUseCase   getDepositDeductions,
         Func<EmployeeFormWindow>       employeeFormWindowFactory,
         Func<CustomerFormWindow>       customerFormWindowFactory,
         Func<SalesOrderPrintWindow>    printWindowFactory,
@@ -319,9 +308,6 @@ public partial class SalesOrderViewModel : ViewModelBase
         _getEmployees               = getEmployees;
         _getProducts                = getProducts;
         _getWarehouses              = getWarehouses;
-        _getDepositsByCustomer      = getDepositsByCustomer;
-        _createDepositDeduction     = createDepositDeduction;
-        _getDepositDeductions       = getDepositDeductions;
         _employeeFormWindowFactory  = employeeFormWindowFactory;
         _customerFormWindowFactory  = customerFormWindowFactory;
         _printWindowFactory         = printWindowFactory;
@@ -373,7 +359,7 @@ public partial class SalesOrderViewModel : ViewModelBase
                 // IsViewOnlyMode (Sổ chi tiết bán hàng) đã tự set IsReadOnly=true từ code-behind
                 // trước khi InitializeAsync chạy — set lại true ở đây không đổi gì, không xung đột.
                 IsReadOnly = true;
-                await PopulateFormFromCurrentAsync(ct);
+                PopulateFormFromCurrent();
             }
         }
         catch (Exception ex)
@@ -449,27 +435,15 @@ public partial class SalesOrderViewModel : ViewModelBase
             return;
         }
 
-        // Chứng từ hợp lệ nếu có ít nhất 1 mặt hàng thật HOẶC 1 dòng Trừ cọc có ý định trừ (chứng
-        // từ "chỉ trừ cọc", không kèm sản phẩm — dùng khi cần số chứng từ dạng XK cho lần trừ đó
-        // thay vì số TC từ màn Đặt Cọc/Trừ Cọc riêng). BE (CreateSalesOrderUseCase) đã bỏ ràng buộc
-        // "ít nhất 1 dòng" tương ứng — validate ở đây là chốt chặn duy nhất.
-        var hasProductLine = Lines.Any(l => !l.IsDepositDeductionRow && l.ProductId > 0);
-        var hasDepositLine = Lines.Any(l => l.IsDepositDeductionRow && l.Amount != 0);
-        if (!hasProductLine && !hasDepositLine)
+        // "Đặt cọc" / "Trừ cọc" giờ chỉ là 2 sản phẩm bình thường — chứng từ hợp lệ khi có ít nhất 1 dòng
+        // đã chọn sản phẩm (kể cả chỉ có dòng Trừ cọc).
+        if (!Lines.Any(l => l.ProductId > 0))
         {
             HasError     = true;
-            ErrorMessage = "Vui lòng nhập ít nhất một mặt hàng hoặc chọn Trừ cọc.";
+            ErrorMessage = "Vui lòng nhập ít nhất một mặt hàng.";
             return;
         }
 
-        // Dòng Trừ cọc chỉ được coi là "có ý định trừ" khi user đã chọn "Trừ cọc" VÀ nhập số tiền
-        // (Amount != 0) — nếu dòng tự động thêm nhưng user bỏ trống thì bỏ qua, không lỗi.
-        var depositLine = Lines.FirstOrDefault(l => l.IsDepositDeductionRow && l.Amount != 0);
-
-        // Bỏ hẳn validate "vượt quá số dư cọc" ở client (theo yêu cầu) — BE
-        // (CreateDepositDeductionUseCase) đã có đúng validate này (tự phân bổ FIFO qua nhiều
-        // Deposit) và trả lỗi 400 nếu vượt, nên không mất đi ràng buộc thật, chỉ bỏ bước chặn sớm
-        // dư thừa ở client.
         IsBusy = true;
         try
         {
@@ -485,29 +459,6 @@ public partial class SalesOrderViewModel : ViewModelBase
                 var request = BuildUpdateRequest();
                 result = await _updateOrder.ExecuteAsync(CurrentOrder.Id, request, ct);
                 _logger.LogInformation("SalesOrder updated: {Id}", result.Id);
-            }
-
-            if (depositLine is not null)
-            {
-                try
-                {
-                    await _createDepositDeduction.ExecuteAsync(new CreateDepositDeductionRequestDto
-                    {
-                        SalesOrderId   = result.Id,
-                        Amount         = Math.Abs(depositLine.Amount),
-                        AccountingDate = DateTime.SpecifyKind(AccountingDate.Date, DateTimeKind.Unspecified),
-                        DocumentDate   = DateTime.SpecifyKind(DocumentDate.Date,   DateTimeKind.Unspecified),
-                        Description    = $"Trừ cọc thanh toán đơn {result.DocumentNumber}",
-                    }, ct);
-                    _logger.LogInformation("DepositDeduction created for SalesOrder {Id}", result.Id);
-                }
-                catch (Exception depositEx)
-                {
-                    _logger.LogError(depositEx, "Failed to create deposit deduction for SalesOrder {Id}", result.Id);
-                    MessageBox.Show(
-                        $"Đơn hàng đã được ghi sổ nhưng trừ cọc thất bại: {depositEx.Message}",
-                        "Lỗi trừ cọc", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
             }
 
             StopDirtyTracking();
@@ -532,7 +483,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         finally { IsBusy = false; }
     }
 
-    private void ShowPrintPreview(SalesOrderResponseDto order, decimal depositDeductionAmount = 0m)
+    private void ShowPrintPreview(SalesOrderResponseDto order)
     {
         var customer = SelectedCustomer as DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer;
         var printWindow = _printWindowFactory();
@@ -540,7 +491,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         // hoá đơn, vì SĐT thật không còn khớp với tên đang hiển thị. Địa chỉ dùng order.CustomerAddress
         // (đã resolve override) thay vì lấy thẳng customer?.Address.
         var phone = string.IsNullOrWhiteSpace(order.CustomerNameOverride) ? customer?.Phone : null;
-        printWindow.Initialize(order, phone, order.CustomerAddress, depositDeductionAmount);
+        printWindow.Initialize(order, phone, order.CustomerAddress);
         printWindow.ShowDialog();
     }
 
@@ -575,13 +526,13 @@ public partial class SalesOrderViewModel : ViewModelBase
     }
 
     [RelayCommand(CanExecute = nameof(IsEditable))]
-    private async Task CancelAsync(CancellationToken ct = default)
+    private void Cancel()
     {
         HasError = false;
         if (CurrentOrder is null)
             ClearForm();
         else
-            await PopulateFormFromCurrentAsync(ct);
+            PopulateFormFromCurrent();
     }
 
     [RelayCommand]
@@ -633,7 +584,7 @@ public partial class SalesOrderViewModel : ViewModelBase
     // Kho không có logic tự điền trong model đó (model không biết danh sách Warehouses), nên set
     // mặc định ở đây ngay khi ProductId chuyển từ 0 → có giá trị, để tránh warehouse_id rỗng khi
     // Ghi sổ (dòng Đặt cọc thì ProductId luôn = 0 nên không bị set nhầm). Dùng chung cho dòng mới
-    // (AddLine) và dòng nạp lại từ chứng từ đã lưu (PopulateFormFromCurrentAsync) — cả 2 nơi đều
+    // (AddLine) và dòng nạp lại từ chứng từ đã lưu (PopulateFormFromCurrent) — cả 2 nơi đều
     // cần gợi ý Thành tiền khi user đổi 1 dòng sang chọn "Trừ cọc".
     private void AttachLineHandlers(SalesOrderLineItem line)
     {
@@ -651,32 +602,10 @@ public partial class SalesOrderViewModel : ViewModelBase
             if (!deferDepositTotals)
                 OnLinesOrTotalsChanged();
 
-            if (e.PropertyName == nameof(SalesOrderLineItem.ProductId) && line.ProductId > 0)
-            {
-                if (line.IsDepositDeductionRow)
-                    // Vừa chọn product "Trừ cọc" (mã SalesOrderLineItem.TruCocProductCode) cho dòng
-                    // này — không auto-fill Kho (dòng này bị loại khỏi payload gửi BE), thay vào đó
-                    // lấy tổng số dư cọc khả dụng của khách hàng đang chọn để gợi ý Thành tiền (bắt ở
-                    // block AvailableDepositBalance bên dưới, giống cách TruCocPickerItem cũ làm qua
-                    // constructor).
-                    line.AvailableDepositBalance = AvailableDeposits.Sum(d => d.RemainingBalance);
-                else if (line.WarehouseId == 0)
-                    line.SetSelectedWarehouseSilent(
-                        Warehouses.FirstOrDefault(w => w.Code == DefaultWarehouseCode) ?? Warehouses.FirstOrDefault());
-            }
-
-            // Vừa chọn "Trừ cọc" cho dòng này (Thành tiền còn 0, chưa gõ tay) — gợi ý sẵn số tiền
-            // trừ = min(tổng số dư cọc khả dụng, tổng tiền chứng từ đang cần thanh toán). User vẫn
-            // sửa lại được nếu muốn trừ ít hơn số gợi ý.
-            if (e.PropertyName == nameof(SalesOrderLineItem.AvailableDepositBalance)
-                && line.IsDepositDeductionRow && line.AvailableDepositBalance > 0 && line.Amount == 0)
-            {
-                var amountDue = TotalPayment + TotalTaxAmount;
-                line.Amount = Math.Max(0, Math.Min(line.AvailableDepositBalance, amountDue));
-                // Gợi ý số trừ này set bằng code (không phải user gõ) → tính lại tổng ngay, không
-                // đợi CellEditEnding (nhánh deferDepositTotals ở trên đã bỏ qua Amount vừa đổi).
-                OnLinesOrTotalsChanged();
-            }
+            if (e.PropertyName == nameof(SalesOrderLineItem.ProductId) && line.ProductId > 0
+                && !line.IsDepositDeductionRow && line.WarehouseId == 0)
+                line.SetSelectedWarehouseSilent(
+                    Warehouses.FirstOrDefault(w => w.Code == DefaultWarehouseCode) ?? Warehouses.FirstOrDefault());
         };
     }
 
@@ -687,14 +616,6 @@ public partial class SalesOrderViewModel : ViewModelBase
     [RelayCommand(CanExecute = nameof(IsEditable))]
     private void RemoveLine(SalesOrderLineItem line)
     {
-        if (line.IsLocked)
-        {
-            MessageBox.Show(
-                "Dòng \"Trừ cọc\" này đã được ghi sổ, không thể xoá ở đây. Muốn hoàn lại khoản trừ cọc, hãy thực hiện qua màn Đặt Cọc/Trừ Cọc.",
-                "Không thể xoá", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-
         Lines.Remove(line);
         RecalculateTotals();
     }
@@ -715,14 +636,6 @@ public partial class SalesOrderViewModel : ViewModelBase
                     SelectedEmployee = matched;
             }
         }
-
-        if (value is not null)
-            _ = LoadAvailableDepositsAsync(value.Id);
-        else
-        {
-            AvailableDeposits = Array.Empty<DepositResponseDto>();
-            OnPropertyChanged(nameof(AvailableDeposits));
-        }
     }
 
     // "Tên Khách hàng" đổi (do chọn "Mã số khách hàng" HOẶC do user gõ đè tự do) → luôn đè lại
@@ -740,22 +653,6 @@ public partial class SalesOrderViewModel : ViewModelBase
     {
         if (SelectedCustomer?.Id != item.Id)
             SelectedCustomer = item;
-    }
-
-    private async Task LoadAvailableDepositsAsync(int customerId)
-    {
-        try
-        {
-            // 2026-09-08: Đặt cọc / Trừ cọc đã tách hẳn khỏi Chứng từ bán hàng — không còn khái
-            // niệm "cọc do đơn này tạo ra", nên lấy mọi cọc còn số dư của khách, không lọc theo đơn.
-            var deposits = await _getDepositsByCustomer.ExecuteAsync(customerId);
-            AvailableDeposits = deposits.ToList().AsReadOnly();
-            OnPropertyChanged(nameof(AvailableDeposits));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Could not load available deposits for customer {CustomerId}", customerId);
-        }
     }
 
     partial void OnPaymentDueDaysChanged(int? value)
@@ -791,7 +688,7 @@ public partial class SalesOrderViewModel : ViewModelBase
 
     private string GenerateNextDocumentNumber() => _nextDocumentNumber;
 
-    private async Task PopulateFormFromCurrentAsync(CancellationToken ct = default)
+    private void PopulateFormFromCurrent()
     {
         if (CurrentOrder is null) return;
 
@@ -822,6 +719,7 @@ public partial class SalesOrderViewModel : ViewModelBase
                 ProductCode       = l.ProductCode,
                 ProductName       = l.ProductName,
                 IsPromotion       = l.IsPromotion,
+                IsDepositDeductionRow = l.ProductCode == SalesOrderLineItem.TruCocProductCode,
                 IsDepositProduct  = l.IsDepositProduct,
                 Unit              = l.Unit,
                 Quantity          = l.Quantity,
@@ -843,38 +741,6 @@ public partial class SalesOrderViewModel : ViewModelBase
             Lines.Add(item);
         }
 
-        // Nạp lại "Trừ cọc" đã ghi sổ ở BE (DepositDeduction, không phải SalesOrderLine) — nếu
-        // không, GrandTotal tính lại ở dưới sẽ là tổng TRƯỚC khi trừ cọc (khớp cách BE lưu
-        // SalesOrder.GrandTotal — xem CreateSalesOrderUseCase — nhưng sai với số khách thực trả).
-        // Dòng nạp lại này bị khoá (IsLocked) — không cho sửa/xoá để tránh gọi lại
-        // CreateDepositDeductionUseCase lúc Lưu và tạo bản ghi trừ cọc trùng lặp.
-        try
-        {
-            var deductions = await _getDepositDeductions.ExecuteAsync(
-                customerId: null, employeeId: null, salesOrderId: CurrentOrder.Id,
-                fromDate: null, toDate: null, ct);
-
-            // 1 lần trừ cọc trên đơn này có thể đã được BE phân bổ FIFO qua nhiều Deposit → nhiều
-            // DepositDeduction record. Gộp lại thành đúng 1 dòng hiển thị (khớp UI "1 chỗ trừ cọc").
-            var deductionList = deductions.ToList();
-            if (deductionList.Count > 0)
-            {
-                var lockedLine = new SalesOrderLineItem
-                {
-                    IsDepositDeductionRow = true,
-                    IsLocked              = true,
-                    ProductCode           = "",
-                    ProductName           = "Trừ cọc",
-                };
-                lockedLine.LoadAmount(-deductionList.Sum(d => d.Amount), isAmountManual: false);
-                Lines.Add(lockedLine);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Could not reload deposit deductions for SalesOrder {Id}", CurrentOrder.Id);
-        }
-
         RecalculateTotals();
     }
 
@@ -891,18 +757,18 @@ public partial class SalesOrderViewModel : ViewModelBase
 
     private void RecalculateTotals()
     {
-        var productLines = Lines.Where(l => !l.IsDepositDeductionRow);
-        var gross      = productLines.Sum(l => (decimal)l.Quantity * l.UnitPrice);
-        TotalAmount    = gross;
-        TotalDiscount  = productLines.Sum(l => (decimal)l.Quantity * l.UnitPrice * Math.Max(0, Math.Min(100, l.DiscountRate)) / 100m);
-        TotalPayment   = gross - TotalDiscount;
-        TotalTaxAmount = productLines.Sum(l => l.TaxAmount);
-        // Số tiền trừ cọc (đã lưu dạng âm) cộng thẳng vào Tổng thanh toán để phản ánh đúng
-        // số tiền khách còn phải trả — không ảnh hưởng TotalAmount/TotalPayment/TotalTaxAmount
-        // vốn phải khớp với cách BE tính GrandTotal của SalesOrder (chỉ từ dòng sản phẩm thật).
-        var depositDeduction = Lines.Where(l => l.IsDepositDeductionRow).Sum(l => l.Amount);
-        GrandTotal     = TotalPayment + TotalTaxAmount + depositDeduction;
-        LineSummary    = $"Số dòng = {Lines.Count(l => !l.IsDepositDeductionRow && l.ProductId > 0)}";
+        // TotalPayment = Σ Thành tiền (Amount) mọi dòng — khớp BE (TotalAmount = lines.Sum(Amount)).
+        // Dòng Trừ cọc là 1 dòng bình thường có Amount ÂM nên tự trừ vào tổng. KHÔNG tính từ
+        // Quantity × UnitPrice: dòng Đặt cọc/Trừ cọc có SL = 0 và Thành tiền nhập tay. Chiết khấu chỉ
+        // áp cho dòng không nhập tay Thành tiền (dòng nhập tay Amount đã là số cuối).
+        TotalPayment   = Lines.Sum(l => l.Amount);
+        TotalDiscount  = Lines
+            .Where(l => !l.IsAmountManual)
+            .Sum(l => (decimal)l.Quantity * l.UnitPrice * Math.Max(0, Math.Min(100, l.DiscountRate)) / 100m);
+        TotalAmount    = TotalPayment + TotalDiscount;
+        TotalTaxAmount = Lines.Sum(l => l.TaxAmount);
+        GrandTotal     = TotalPayment + TotalTaxAmount;
+        LineSummary    = $"Số dòng = {Lines.Count(l => l.ProductId > 0)}";
     }
 
     // null = không override, hiển thị/in luôn theo Customer.Name thật (tự đổi theo nếu khách hàng
@@ -947,7 +813,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         Notes          = string.IsNullOrWhiteSpace(Notes)          ? null : Notes.Trim(),
         DeliveryMethod = string.IsNullOrWhiteSpace(DeliveryMethod) ? null : DeliveryMethod.Trim(),
         PaymentMethod  = string.IsNullOrWhiteSpace(PaymentMethod)  ? null : PaymentMethod.Trim(),
-        Lines          = Lines.Where(l => !l.IsDepositDeductionRow && l.ProductId > 0).Select(ToLineDto).ToList(),
+        Lines          = Lines.Where(l => l.ProductId > 0).Select(ToLineDto).ToList(),
     };
 
     private UpdateSalesOrderRequestDto BuildUpdateRequest() => new()
@@ -969,7 +835,7 @@ public partial class SalesOrderViewModel : ViewModelBase
         Notes          = string.IsNullOrWhiteSpace(Notes)          ? null : Notes.Trim(),
         DeliveryMethod = string.IsNullOrWhiteSpace(DeliveryMethod) ? null : DeliveryMethod.Trim(),
         PaymentMethod  = string.IsNullOrWhiteSpace(PaymentMethod)  ? null : PaymentMethod.Trim(),
-        Lines          = Lines.Where(l => !l.IsDepositDeductionRow && l.ProductId > 0).Select(ToLineDto).ToList(),
+        Lines          = Lines.Where(l => l.ProductId > 0).Select(ToLineDto).ToList(),
     };
 
     private static SalesOrderLineDto ToLineDto(SalesOrderLineItem item) => new()
@@ -1037,14 +903,13 @@ public partial class SalesOrderViewModel : ViewModelBase
     // ── Print ─────────────────────────────────────────────────────────────────
     // In được ngay khi đã có ít nhất 1 dòng đã chọn sản phẩm — không bắt buộc phải Ghi sổ trước
     // (khác với Treo, vốn chỉ áp dụng cho chứng từ đã tồn tại trên BE).
-    private bool CanPrint => Lines.Any(l => l.ProductId > 0) || Lines.Any(l => l.IsDepositDeductionRow && l.Amount != 0);
+    private bool CanPrint => Lines.Any(l => l.ProductId > 0);
 
     [RelayCommand(CanExecute = nameof(CanPrint))]
     private void Print()
     {
         if (!CanPrint) return;
-        var depositLine = Lines.FirstOrDefault(l => l.IsDepositDeductionRow && l.Amount != 0);
-        ShowPrintPreview(BuildPreviewOrderDto(), depositLine is null ? 0m : Math.Abs(depositLine.Amount));
+        ShowPrintPreview(BuildPreviewOrderDto());
     }
 
     // Dựng SalesOrderResponseDto để in preview từ đúng dữ liệu đang hiển thị trên form (kể cả
@@ -1084,7 +949,7 @@ public partial class SalesOrderViewModel : ViewModelBase
             GrandTotal     = GrandTotal,
             CreatedAt      = CurrentOrder?.CreatedAt ?? DateTime.UtcNow,
             Status         = CurrentOrder?.Status ?? 0,
-            Lines          = Lines.Where(l => !l.IsDepositDeductionRow && l.ProductId > 0).Select(ToLineDto).ToList(),
+            Lines          = Lines.Where(l => l.ProductId > 0).Select(ToLineDto).ToList(),
         };
     }
 }
