@@ -884,9 +884,11 @@ public partial class SalesReturnViewModel : ViewModelBase
         TotalAmount   = Lines.Sum(l => l.Amount);
         TotalDiscount = Lines.Sum(l => l.DiscountAmount);
         TotalTax      = Lines.Sum(l => l.TaxAmount);
-        // KHÔNG cộng TotalTax vào đây — khớp đúng công thức BE (CreateSalesReturnUseCase.TotalPayment
-        // = TotalAmount - TotalDiscount, không có tax). TotalTax chỉ là số hiển thị riêng ở footer.
-        TotalPayment  = TotalAmount - TotalDiscount;
+        // 2026-09-22: TotalPayment (label "Tổng tiền thanh toán") giờ CỘNG thêm TotalTax — khớp
+        // BE (CreateSalesReturnUseCase/UpdateSalesReturnUseCase.GrandTotal = TotalPayment_header +
+        // TotalTaxAmount), theo yêu cầu sau khi xác nhận "Tổng tiền thanh toán" phải gồm VAT (giống
+        // fix đã làm cho SalesOrder — xem sales.md "GrandTotal").
+        TotalPayment  = TotalAmount - TotalDiscount + TotalTax;
         LineSummary   = $"Số dòng = {Lines.Count(l => l.ProductId > 0)}";
     }
 
