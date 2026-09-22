@@ -51,7 +51,10 @@ public class SalesOrderListItem
             TotalGross     = gross,
             TotalDiscount  = discount,
             TotalTax       = dto.TotalTaxAmount,
-            TotalPayment   = dto.TotalAmount,
+            // 2026-09-22: dùng GrandTotal (= TotalAmount + TotalTaxAmount) thay vì TotalAmount —
+            // "Tổng tiền thanh toán" phải gồm thuế GTGT và tự động cấn trừ dòng Trừ cọc (Amount âm),
+            // trước đây dùng TotalAmount khiến đơn có Trừ cọc hiện số âm sai (vd -41.600đ thay vì 0đ).
+            TotalPayment   = dto.GrandTotal,
             Notes          = dto.Notes,
             Status         = dto.Status,
             // 2026-09-11: gộp "Nháp" (Draft=2) và "Treo" (Held=1) thành 1 label duy nhất "⏸ Treo" —
