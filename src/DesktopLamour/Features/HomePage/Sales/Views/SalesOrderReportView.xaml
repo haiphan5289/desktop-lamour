@@ -95,6 +95,8 @@
             </Border>
 
             <!-- DataGrid -->
+            <!-- 2026-09-22: gridline đổi từ #9CB8D4 (xanh đậm) sang AppColor.BorderThin (#E0E0E0) — theo
+                 yêu cầu kẻ ô mờ nhạt hơn, khớp ảnh mẫu MISA thay vì lưới quá nổi bật. -->
             <DataGrid x:Name="ReportGrid"
                       ItemsSource="{Binding RowsView}"
                       AutoGenerateColumns="False"
@@ -104,8 +106,8 @@
                       SelectionMode="Single"
                       HeadersVisibility="Column"
                       GridLinesVisibility="All"
-                      VerticalGridLinesBrush="#9CB8D4"
-                      HorizontalGridLinesBrush="#9CB8D4"
+                      VerticalGridLinesBrush="{StaticResource AppColor.BorderThin}"
+                      HorizontalGridLinesBrush="{StaticResource AppColor.BorderThin}"
                       BorderBrush="{StaticResource AppColor.BorderThin}"
                       BorderThickness="1"
                       RowBackground="{StaticResource AppColor.BackgroundPrimary}"
@@ -163,7 +165,7 @@
                                         <ControlTemplate TargetType="{x:Type GroupItem}">
                                             <Expander IsExpanded="True"
                                                       Background="{StaticResource AppColor.BackgroundSecondary}"
-                                                      BorderBrush="#9CB8D4"
+                                                      BorderBrush="{StaticResource AppColor.BorderThin}"
                                                       BorderThickness="0,0,0,1"
                                                       Padding="0">
                                                 <Expander.Template>
@@ -216,52 +218,91 @@
                                                         </ControlTemplate.Triggers>
                                                     </ControlTemplate>
                                                 </Expander.Template>
-                                                <!-- Widths khớp đúng 7 cột số liệu ĐANG HIỂN THỊ của bảng (Số lượng bán/Doanh số bán/
-                                                     Chiết khấu/Số lượng trả lại/Giá trị trả lại/Giá trị giảm giá/Doanh thu thuần) —
-                                                     tất cả report dùng GroupStyle này (ByProductThenCustomer/ByProductThenEmployee/
-                                                     ByEmployeeCustomerProduct) đều có ShowProfitColumns=false nên Tiền vốn/Lãi gộp/Tỷ lệ
-                                                     lãi gộp bị ẩn trong DataGrid.Columns — KHÔNG render 3 cột đó ở đây nữa, tránh dư giá
-                                                     trị tràn ra ngoài bảng (bug đã gặp: 2026-09-21). Sửa cột nào trong DataGrid.Columns
-                                                     bên dưới thì PHẢI sửa lại width tương ứng ở đây (known limitation kế thừa từ bản gốc
-                                                     2026-07-18: không tự động đồng bộ 100%). -->
+                                                <!-- 2026-09-22 (fix "cột lệch"): đổi từ Grid.ColumnDefinitions cứng (ô nhãn Width="*" chiếm
+                                                     hết khoảng trống còn lại, cột Doanh thu thuần Width="150" cố định) sang DockPanel — ô nhãn
+                                                     giờ tính đúng = tổng bề rộng các cột văn bản ĐANG HIỂN THỊ thật ở đầu DataGrid (qua
+                                                     GroupHeaderLabelWidthConverter, đọc IsOuterColumnVisible/IsMiddleColumnVisible/
+                                                     IsUnitColumnVisible từ ViewModel — RelativeSource AncestorType=DataGrid vì DataContext ở
+                                                     đây là CollectionViewGroup, không phải ViewModel), Số lượng bán/Số lượng trả lại co về 0
+                                                     cùng lúc với ĐVT (IsUnitColumnVisible, khớp UpdateColumnVisibility trong code-behind), và
+                                                     Doanh thu thuần là DockPanel.LastChildFill (không Dock) để chiếm đúng phần còn lại — khớp
+                                                     hệt Width="*" MinWidth="150" của cột NetRevenue thật, thay vì lệch hàng trăm px như trước.
+                                                     Đây là fix triệt để, không còn "known limitation" ước lượng cứng theo width nữa. -->
                                                 <Expander.Header>
-                                                    <Grid Margin="0,4">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="115"/>
-                                                            <ColumnDefinition Width="125"/>
-                                                            <ColumnDefinition Width="115"/>
-                                                            <ColumnDefinition Width="140"/>
-                                                            <ColumnDefinition Width="125"/>
-                                                            <ColumnDefinition Width="140"/>
-                                                            <ColumnDefinition Width="150"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <!-- Đường kẻ dọc phân cách cột — khớp VerticalGridLinesBrush của DataGrid (#9CB8D4)
-                                                             để dòng tổng nhóm có border giống hệt các dòng dữ liệu bên dưới (ảnh mẫu MISA). -->
-                                                        <Border Grid.Column="0" BorderBrush="#9CB8D4" BorderThickness="0,0,1,0"/>
-                                                        <Border Grid.Column="1" BorderBrush="#9CB8D4" BorderThickness="0,0,1,0"/>
-                                                        <Border Grid.Column="2" BorderBrush="#9CB8D4" BorderThickness="0,0,1,0"/>
-                                                        <Border Grid.Column="3" BorderBrush="#9CB8D4" BorderThickness="0,0,1,0"/>
-                                                        <Border Grid.Column="4" BorderBrush="#9CB8D4" BorderThickness="0,0,1,0"/>
-                                                        <Border Grid.Column="5" BorderBrush="#9CB8D4" BorderThickness="0,0,1,0"/>
-                                                        <Border Grid.Column="6" BorderBrush="#9CB8D4" BorderThickness="0,0,1,0"/>
-                                                        <TextBlock Grid.Column="0" FontWeight="Bold" Margin="8,0,0,0"
-                                                                   Text="{Binding Items, Converter={StaticResource GroupHeaderTextConverter}}"/>
-                                                        <TextBlock Grid.Column="1" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
-                                                                   Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=Quantity}"/>
-                                                        <TextBlock Grid.Column="2" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
-                                                                   Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=SalesAmount}"/>
-                                                        <TextBlock Grid.Column="3" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
-                                                                   Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=DiscountAmount}"/>
-                                                        <TextBlock Grid.Column="4" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
-                                                                   Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=ReturnQuantity}"/>
-                                                        <TextBlock Grid.Column="5" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
-                                                                   Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=ReturnValue}"/>
-                                                        <TextBlock Grid.Column="6" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
-                                                                   Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=DiscountValue}"/>
-                                                        <TextBlock Grid.Column="7" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0"
-                                                                   Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=NetRevenue}"/>
-                                                    </Grid>
+                                                    <DockPanel Margin="0,4" LastChildFill="True">
+
+                                                        <Border DockPanel.Dock="Left" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
+                                                            <Border.Width>
+                                                                <MultiBinding Converter="{StaticResource GroupHeaderLabelWidthConverter}">
+                                                                    <Binding Path="DataContext.IsOuterColumnVisible"  RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                    <Binding Path="DataContext.IsMiddleColumnVisible" RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                    <Binding Path="DataContext.IsUnitColumnVisible"   RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                </MultiBinding>
+                                                            </Border.Width>
+                                                            <TextBlock FontWeight="Bold" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                                       Text="{Binding Items, Converter={StaticResource GroupHeaderTextConverter}}"/>
+                                                        </Border>
+
+                                                        <!-- Số lượng bán — co về 0 cùng ĐVT (chỉ có ý nghĩa khi report có dimension Mặt hàng) -->
+                                                        <Border DockPanel.Dock="Left" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
+                                                            <Border.Style>
+                                                                <Style TargetType="Border">
+                                                                    <Setter Property="Width" Value="115"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding DataContext.IsUnitColumnVisible, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="False">
+                                                                            <Setter Property="Width" Value="0"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Border.Style>
+                                                            <TextBlock FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0" VerticalAlignment="Center"
+                                                                       Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=Quantity}"/>
+                                                        </Border>
+
+                                                        <Border DockPanel.Dock="Left" Width="125" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
+                                                            <TextBlock FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0" VerticalAlignment="Center"
+                                                                       Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=SalesAmount}"/>
+                                                        </Border>
+
+                                                        <Border DockPanel.Dock="Left" Width="115" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
+                                                            <TextBlock FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0" VerticalAlignment="Center"
+                                                                       Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=DiscountAmount}"/>
+                                                        </Border>
+
+                                                        <!-- Số lượng trả lại — co về 0 cùng ĐVT, giống Số lượng bán -->
+                                                        <Border DockPanel.Dock="Left" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
+                                                            <Border.Style>
+                                                                <Style TargetType="Border">
+                                                                    <Setter Property="Width" Value="140"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding DataContext.IsUnitColumnVisible, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="False">
+                                                                            <Setter Property="Width" Value="0"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Border.Style>
+                                                            <TextBlock FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0" VerticalAlignment="Center"
+                                                                       Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=ReturnQuantity}"/>
+                                                        </Border>
+
+                                                        <Border DockPanel.Dock="Left" Width="125" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
+                                                            <TextBlock FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0" VerticalAlignment="Center"
+                                                                       Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=ReturnValue}"/>
+                                                        </Border>
+
+                                                        <Border DockPanel.Dock="Left" Width="140" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
+                                                            <TextBlock FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0" VerticalAlignment="Center"
+                                                                       Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=DiscountValue}"/>
+                                                        </Border>
+
+                                                        <!-- Doanh thu thuần — KHÔNG set DockPanel.Dock, LastChildFill chiếm hết phần còn lại,
+                                                             khớp hệt Width="*" MinWidth="150" của cột NetRevenue thật trong DataGrid.Columns. -->
+                                                        <Border MinWidth="150">
+                                                            <TextBlock FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0" VerticalAlignment="Center"
+                                                                       Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=NetRevenue}"/>
+                                                        </Border>
+
+                                                    </DockPanel>
                                                 </Expander.Header>
                                                 <ItemsPresenter/>
                                             </Expander>
