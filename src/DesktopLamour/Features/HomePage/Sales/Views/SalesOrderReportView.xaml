@@ -218,86 +218,109 @@
                                                         </ControlTemplate.Triggers>
                                                     </ControlTemplate>
                                                 </Expander.Template>
-                                                <!-- 2026-09-22 (fix "cột lệch"): đổi từ Grid.ColumnDefinitions cứng (ô nhãn Width="*" chiếm
-                                                     hết khoảng trống còn lại, cột Doanh thu thuần Width="150" cố định) sang DockPanel — ô nhãn
-                                                     giờ tính đúng = tổng bề rộng các cột văn bản ĐANG HIỂN THỊ thật ở đầu DataGrid (qua
-                                                     GroupHeaderLabelWidthConverter, đọc IsOuterColumnVisible/IsMiddleColumnVisible/
-                                                     IsUnitColumnVisible từ ViewModel — RelativeSource AncestorType=DataGrid vì DataContext ở
-                                                     đây là CollectionViewGroup, không phải ViewModel), Số lượng bán/Số lượng trả lại co về 0
-                                                     cùng lúc với ĐVT (IsUnitColumnVisible, khớp UpdateColumnVisibility trong code-behind), và
-                                                     Doanh thu thuần là DockPanel.LastChildFill (không Dock) để chiếm đúng phần còn lại — khớp
-                                                     hệt Width="*" MinWidth="150" của cột NetRevenue thật, thay vì lệch hàng trăm px như trước.
-                                                     Đây là fix triệt để, không còn "known limitation" ước lượng cứng theo width nữa. -->
+                                                <!-- 2026-09-24 (fix "giá trị nhóm không thẳng cột"): mọi ô trong header nhóm bind thẳng vào
+                                                     Columns[i].ActualWidth + Visibility của DataGrid (ColumnSpanWidthConverter) thay vì width cứng.
+                                                     Ô nhãn = tổng các cột văn bản đầu lưới (0..5: Mã/Tên NGOÀI, Tên GIỮA, Mã/Tên hàng, ĐVT) TRỪ 32px
+                                                     của nút −/+ (Width 20 + Margin 6+6 trong ToggleButton.Template) — trước đây quên trừ nên mọi cột
+                                                     số bị lệch phải ~32px. Cột ẩn (Collapsed) tự ra 0. Index cột phải khớp thứ tự DataGrid.Columns:
+                                                     6 SL bán, 7 Doanh số, 8 Chiết khấu, 9 SL trả lại, 10 GT trả lại, 11 GT giảm giá, 12 DT thuần. -->
                                                 <Expander.Header>
-                                                    <DockPanel Margin="0,4" LastChildFill="True">
+                                                    <DockPanel Margin="0,4" LastChildFill="False">
 
                                                         <Border DockPanel.Dock="Left" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
                                                             <Border.Width>
-                                                                <MultiBinding Converter="{StaticResource GroupHeaderLabelWidthConverter}">
-                                                                    <Binding Path="DataContext.IsOuterColumnVisible"  RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
-                                                                    <Binding Path="DataContext.IsMiddleColumnVisible" RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
-                                                                    <Binding Path="DataContext.IsUnitColumnVisible"   RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                <MultiBinding Converter="{StaticResource ColumnSpanWidthConverter}" ConverterParameter="32">
+                                                                    <Binding Path="Columns[0].ActualWidth" RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                    <Binding Path="Columns[0].Visibility"  RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                    <Binding Path="Columns[1].ActualWidth" RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                    <Binding Path="Columns[1].Visibility"  RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                    <Binding Path="Columns[2].ActualWidth" RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                    <Binding Path="Columns[2].Visibility"  RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                    <Binding Path="Columns[3].ActualWidth" RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                    <Binding Path="Columns[3].Visibility"  RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                    <Binding Path="Columns[4].ActualWidth" RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                    <Binding Path="Columns[4].Visibility"  RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                    <Binding Path="Columns[5].ActualWidth" RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                    <Binding Path="Columns[5].Visibility"  RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
                                                                 </MultiBinding>
                                                             </Border.Width>
                                                             <TextBlock FontWeight="Bold" Margin="8,0,0,0" VerticalAlignment="Center"
                                                                        Text="{Binding Items, Converter={StaticResource GroupHeaderTextConverter}}"/>
                                                         </Border>
 
-                                                        <!-- Số lượng bán — co về 0 cùng ĐVT (chỉ có ý nghĩa khi report có dimension Mặt hàng) -->
-                                                        <Border DockPanel.Dock="Left" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
-                                                            <Border.Style>
-                                                                <Style TargetType="Border">
-                                                                    <Setter Property="Width" Value="115"/>
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding DataContext.IsUnitColumnVisible, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="False">
-                                                                            <Setter Property="Width" Value="0"/>
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </Border.Style>
+                                                        <Border DockPanel.Dock="Left" HorizontalAlignment="Left" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
+                                                            <Border.Width>
+                                                                <MultiBinding Converter="{StaticResource ColumnSpanWidthConverter}">
+                                                                    <Binding Path="Columns[6].ActualWidth" RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                    <Binding Path="Columns[6].Visibility"  RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                </MultiBinding>
+                                                            </Border.Width>
                                                             <TextBlock FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0" VerticalAlignment="Center"
                                                                        Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=Quantity}"/>
                                                         </Border>
 
-                                                        <Border DockPanel.Dock="Left" Width="125" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
+                                                        <Border DockPanel.Dock="Left" HorizontalAlignment="Left" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
+                                                            <Border.Width>
+                                                                <MultiBinding Converter="{StaticResource ColumnSpanWidthConverter}">
+                                                                    <Binding Path="Columns[7].ActualWidth" RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                    <Binding Path="Columns[7].Visibility"  RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                </MultiBinding>
+                                                            </Border.Width>
                                                             <TextBlock FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0" VerticalAlignment="Center"
                                                                        Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=SalesAmount}"/>
                                                         </Border>
 
-                                                        <Border DockPanel.Dock="Left" Width="115" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
+                                                        <Border DockPanel.Dock="Left" HorizontalAlignment="Left" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
+                                                            <Border.Width>
+                                                                <MultiBinding Converter="{StaticResource ColumnSpanWidthConverter}">
+                                                                    <Binding Path="Columns[8].ActualWidth" RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                    <Binding Path="Columns[8].Visibility"  RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                </MultiBinding>
+                                                            </Border.Width>
                                                             <TextBlock FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0" VerticalAlignment="Center"
                                                                        Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=DiscountAmount}"/>
                                                         </Border>
 
-                                                        <!-- Số lượng trả lại — co về 0 cùng ĐVT, giống Số lượng bán -->
-                                                        <Border DockPanel.Dock="Left" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
-                                                            <Border.Style>
-                                                                <Style TargetType="Border">
-                                                                    <Setter Property="Width" Value="140"/>
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding DataContext.IsUnitColumnVisible, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="False">
-                                                                            <Setter Property="Width" Value="0"/>
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </Border.Style>
+                                                        <Border DockPanel.Dock="Left" HorizontalAlignment="Left" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
+                                                            <Border.Width>
+                                                                <MultiBinding Converter="{StaticResource ColumnSpanWidthConverter}">
+                                                                    <Binding Path="Columns[9].ActualWidth" RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                    <Binding Path="Columns[9].Visibility"  RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                </MultiBinding>
+                                                            </Border.Width>
                                                             <TextBlock FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0" VerticalAlignment="Center"
                                                                        Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=ReturnQuantity}"/>
                                                         </Border>
 
-                                                        <Border DockPanel.Dock="Left" Width="125" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
+                                                        <Border DockPanel.Dock="Left" HorizontalAlignment="Left" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
+                                                            <Border.Width>
+                                                                <MultiBinding Converter="{StaticResource ColumnSpanWidthConverter}">
+                                                                    <Binding Path="Columns[10].ActualWidth" RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                    <Binding Path="Columns[10].Visibility"  RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                </MultiBinding>
+                                                            </Border.Width>
                                                             <TextBlock FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0" VerticalAlignment="Center"
                                                                        Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=ReturnValue}"/>
                                                         </Border>
 
-                                                        <Border DockPanel.Dock="Left" Width="140" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
+                                                        <Border DockPanel.Dock="Left" HorizontalAlignment="Left" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
+                                                            <Border.Width>
+                                                                <MultiBinding Converter="{StaticResource ColumnSpanWidthConverter}">
+                                                                    <Binding Path="Columns[11].ActualWidth" RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                    <Binding Path="Columns[11].Visibility"  RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                </MultiBinding>
+                                                            </Border.Width>
                                                             <TextBlock FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0" VerticalAlignment="Center"
                                                                        Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=DiscountValue}"/>
                                                         </Border>
 
-                                                        <!-- Doanh thu thuần — KHÔNG set DockPanel.Dock, LastChildFill chiếm hết phần còn lại,
-                                                             khớp hệt Width="*" MinWidth="150" của cột NetRevenue thật trong DataGrid.Columns. -->
-                                                        <Border MinWidth="150">
+                                                        <Border DockPanel.Dock="Left" HorizontalAlignment="Left" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,0,1,0">
+                                                            <Border.Width>
+                                                                <MultiBinding Converter="{StaticResource ColumnSpanWidthConverter}">
+                                                                    <Binding Path="Columns[12].ActualWidth" RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                    <Binding Path="Columns[12].Visibility"  RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                                </MultiBinding>
+                                                            </Border.Width>
                                                             <TextBlock FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,6,0" VerticalAlignment="Center"
                                                                        Text="{Binding Items, Converter={StaticResource GroupSumConverter}, ConverterParameter=NetRevenue}"/>
                                                         </Border>

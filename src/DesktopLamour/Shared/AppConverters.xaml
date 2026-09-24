@@ -12,7 +12,7 @@
     <converters:ProductNatureDisplayConverter x:Key="ProductNatureDisplayConverter"/>
     <converters:GroupHeaderTextConverter x:Key="GroupHeaderTextConverter"/>
     <converters:GroupSumConverter x:Key="GroupSumConverter"/>
-    <converters:GroupHeaderLabelWidthConverter x:Key="GroupHeaderLabelWidthConverter"/>
+    <converters:ColumnSpanWidthConverter x:Key="ColumnSpanWidthConverter"/>
     <converters:BlankToZeroConverter x:Key="BlankToZeroConverter"/>
     <converters:BlankPreserveConverter x:Key="BlankPreserveConverter"/>
     <converters:AccountingAmountConverter x:Key="AccountingAmountConverter"/>

@@ -37,8 +37,13 @@ public class SalesOrderListItem
 
     public static SalesOrderListItem FromDto(SalesOrderResponseDto dto)
     {
-        var gross    = dto.Lines.Sum(l => (decimal)l.Quantity * l.UnitPrice);
-        var discount = dto.Lines.Sum(l => (decimal)l.Quantity * l.UnitPrice * l.DiscountRate / 100m);
+        // 2026-09-24: dòng Thành tiền nhập tay (Cọc/Trừ cọc — SL = 0, Đơn giá = 0) phải lấy thẳng
+        // Amount, nếu không "Tổng tiền hàng" ra 0 dù đơn cọc 10tr. Khớp SalesOrderViewModel.
+        // RecalculateTotals: chiết khấu chỉ tính cho dòng KHÔNG nhập tay (Amount nhập tay đã là số cuối).
+        var gross    = dto.Lines.Sum(l => l.IsAmountManual ? l.Amount : (decimal)l.Quantity * l.UnitPrice);
+        var discount = dto.Lines
+            .Where(l => !l.IsAmountManual)
+            .Sum(l => (decimal)l.Quantity * l.UnitPrice * l.DiscountRate / 100m);
         return new SalesOrderListItem
         {
             Id             = dto.Id,
