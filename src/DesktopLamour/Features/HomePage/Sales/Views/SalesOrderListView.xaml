@@ -1,4 +1,5 @@
 <UserControl x:Class="DesktopLamour.Features.HomePage.Sales.Views.SalesOrderListView"
+             xmlns:helpers="clr-namespace:DesktopLamour.Shared.Helpers"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
@@ -409,9 +410,9 @@
                     </DataGridTextColumn>
 
                     <!-- Tổng tiền hàng — numeric column: operator combo (=, ≤, ≥...) + value box, inline -->
-                    <DataGridTextColumn Header="Tổng tiền hàng" Binding="{Binding TotalGross, StringFormat=\{0:N0\}}" Width="130">
+                    <DataGridTextColumn Header="Tổng tiền hàng" Binding="{Binding TotalGross, Converter={StaticResource MoneyConverter}}" Width="130">
                         <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource AppNumberCell}">
                                 <Setter Property="TextAlignment" Value="Right"/>
                                 <Setter Property="Padding" Value="6,0"/>
                             </Style>
@@ -448,9 +449,9 @@
 
                     <!-- Tiền chiết khấu (2026-09-14: đổi tên từ "Tổng CK" cho khớp ảnh mẫu) — numeric
                          column: operator combo (=, ≤, ≥...) + value box, inline -->
-                    <DataGridTextColumn Header="Tiền chiết khấu" Binding="{Binding TotalDiscount, StringFormat=\{0:N0\}}" Width="120">
+                    <DataGridTextColumn Header="Tiền chiết khấu" Binding="{Binding TotalDiscount, Converter={StaticResource MoneyConverter}}" Width="120">
                         <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource AppNumberCell}">
                                 <Setter Property="TextAlignment" Value="Right"/>
                                 <Setter Property="Padding" Value="6,0"/>
                             </Style>
@@ -486,9 +487,9 @@
                     </DataGridTextColumn>
 
                     <!-- Tiền thuế GTGT — không có ô lọc riêng (giống SalesReturnListView). -->
-                    <DataGridTextColumn Header="Tiền thuế GTGT" Binding="{Binding TotalTax, StringFormat=\{0:N0\}}" Width="120">
+                    <DataGridTextColumn Header="Tiền thuế GTGT" Binding="{Binding TotalTax, Converter={StaticResource MoneyConverter}}" Width="120">
                         <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource AppNumberCell}">
                                 <Setter Property="TextAlignment" Value="Right"/>
                                 <Setter Property="Padding" Value="6,0"/>
                             </Style>
@@ -528,7 +529,7 @@
                         </DataGridTemplateColumn.HeaderTemplate>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding TotalPayment, StringFormat=\{0:N0\}}" Padding="6,0" VerticalAlignment="Center" TextAlignment="Right"
+                                <TextBlock helpers:NegativeAmountHighlight.IsEnabled="True" Text="{Binding TotalPayment, Converter={StaticResource MoneyConverter}}" Padding="6,0" VerticalAlignment="Center" TextAlignment="Right"
                                            FontWeight="SemiBold"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
@@ -608,29 +609,29 @@
                                        VerticalAlignment="Center"
                                        Padding="6,10"/>
 
-                    <TextBlock Grid.Column="5"
-                               Text="{Binding TotalGrossSum, StringFormat=\{0:N0\}}"
+                    <TextBlock helpers:NegativeAmountHighlight.IsEnabled="True" Grid.Column="5"
+                               Text="{Binding TotalGrossSum, Converter={StaticResource MoneyConverter}}"
                                FontWeight="Bold"
                                TextAlignment="Right"
                                VerticalAlignment="Center"
                                Padding="6,10"/>
 
-                    <TextBlock Grid.Column="6"
-                               Text="{Binding TotalDiscountSum, StringFormat=\{0:N0\}}"
+                    <TextBlock helpers:NegativeAmountHighlight.IsEnabled="True" Grid.Column="6"
+                               Text="{Binding TotalDiscountSum, Converter={StaticResource MoneyConverter}}"
                                FontWeight="Bold"
                                TextAlignment="Right"
                                VerticalAlignment="Center"
                                Padding="6,10"/>
 
-                    <TextBlock Grid.Column="7"
-                               Text="{Binding TotalTaxSum, StringFormat=\{0:N0\}}"
+                    <TextBlock helpers:NegativeAmountHighlight.IsEnabled="True" Grid.Column="7"
+                               Text="{Binding TotalTaxSum, Converter={StaticResource MoneyConverter}}"
                                FontWeight="Bold"
                                TextAlignment="Right"
                                VerticalAlignment="Center"
                                Padding="6,10"/>
 
-                    <TextBlock Grid.Column="8"
-                               Text="{Binding TotalPaymentSum, StringFormat=\{0:N0\}}"
+                    <TextBlock helpers:NegativeAmountHighlight.IsEnabled="True" Grid.Column="8"
+                               Text="{Binding TotalPaymentSum, Converter={StaticResource MoneyConverter}}"
                                FontWeight="Bold"
                                TextAlignment="Right"
                                VerticalAlignment="Center"

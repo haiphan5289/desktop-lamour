@@ -140,7 +140,17 @@
             BorderBrush="{StaticResource AppColor.BorderThin}"
             BorderThickness="1"
             CornerRadius="8">
-        <StackPanel Orientation="Horizontal">
+        <!-- 2026-09-26: Grid 2 cột — cột 0 là dải nút chuẩn, cột 1 là TrailingContent (nút riêng
+             của từng màn, vd. "Xuất khẩu" ở Phiếu thu hàng loạt) canh phải NGAY TRONG khung thẻ.
+             Trước đó màn nào cần nút thêm phải đặt cạnh control → nút rơi ra ngoài khung bo tròn
+             (khung + margin 24 nằm bên trong control). TrailingContent null → cột Auto rộng 0,
+             các màn khác không đổi gì. -->
+        <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0" Orientation="Horizontal">
 
             <!-- ── Nhóm 1: Điều hướng ─────────────────────────────────── -->
             <Button Style="{StaticResource DocRibbonButton}" Command="{Binding PrevCommand, ElementName=Self}">
@@ -312,6 +322,9 @@
             </Button>
 
         </StackPanel>
+        <ContentPresenter Grid.Column="1" Content="{Binding TrailingContent, ElementName=Self}"
+                          VerticalAlignment="Center" Margin="12,0,0,0"/>
+        </Grid>
     </Border>
 
 </UserControl>

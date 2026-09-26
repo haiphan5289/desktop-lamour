@@ -310,10 +310,10 @@
 
                     <!-- Tổng tiền — numeric column: operator combo (=, ≤, ≥...) + value box, inline -->
                     <DataGridTextColumn Header="Tổng tiền"
-                                        Binding="{Binding TotalAmount, StringFormat=\{0:N0\}}"
+                                        Binding="{Binding TotalAmount, Converter={StaticResource MoneyConverter}}"
                                         Width="110">
                         <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource AppNumberCell}">
                                 <Setter Property="HorizontalAlignment" Value="Right"/>
                                 <Setter Property="Padding" Value="0,0,6,0"/>
                             </Style>

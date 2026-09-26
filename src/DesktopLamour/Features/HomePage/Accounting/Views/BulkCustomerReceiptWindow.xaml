@@ -1,5 +1,6 @@
 <Window x:Class="DesktopLamour.Features.HomePage.Accounting.Views.BulkCustomerReceiptWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:helpers="clr-namespace:DesktopLamour.Shared.Helpers"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
         Title="Phiếu thu tiền mặt khách hàng hàng loạt - CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ LAMOUR"
@@ -105,31 +106,36 @@
             </StackPanel>
         </Border>
 
-        <!-- Toolbar -->
-        <Border Grid.Row="1"
-                Padding="16,10"
-                Background="{StaticResource AppColor.BackgroundPrimary}"
-                BorderBrush="{StaticResource AppColor.BorderThin}"
-                BorderThickness="0,0,0,1">
-            <StackPanel Orientation="Horizontal">
-                <Border Background="{StaticResource AppColor.BackgroundSecondary}"
-                        BorderBrush="{StaticResource AppColor.BorderThin}"
-                        BorderThickness="1"
-                        CornerRadius="6"
-                        Padding="4"
-                        Margin="0,0,8,0">
-                    <StackPanel Orientation="Horizontal">
-                        <controls:AppButton Content="💾 Cất" Style="{StaticResource AppButton.Primary.Medium}"
-                                            Command="{Binding SaveCommand}" FontWeight="SemiBold" Margin="0"/>
-                        <Rectangle Width="1" Height="24" Fill="{StaticResource AppColor.BorderThin}" Margin="4,0"/>
-                        <controls:AppButton Content="Hủy bỏ" Style="{StaticResource AppButton.Tertiary.Medium}"
-                                            Click="CancelButton_Click" Margin="0"/>
-                    </StackPanel>
-                </Border>
-            </StackPanel>
-        </Border>
+        <!-- Toolbar — dải ribbon dùng chung (DocumentToolbar), khớp ReceiptWindow/PaymentWindow, +
+             1 nút Xuất khẩu riêng (DocumentToolbar không có sẵn slot xuất Excel — CreateExportCommand
+             của nó là "Lập phiếu xuất kho", khác khái niệm). Không có nút In: app chưa có mẫu in
+             phiếu thu nào (kể cả phiếu thu thường cũng chưa có) — xem docs/phieu-thu-hang-loat.md. -->
+        <!-- 2026-09-26: Xuất khẩu nằm TRONG khung thẻ toolbar qua slot TrailingContent (trước đặt ở
+             cột bên cạnh nên lọt ra ngoài khung bo tròn). -->
+        <controls:DocumentToolbar Grid.Row="1"
+                                  PrevCommand="{Binding NavigatePrevCommand}"
+                                  NextCommand="{Binding NavigateNextCommand}"
+                                  AddCommand="{Binding AddNewCommand}"
+                                  EditCommand="{Binding EditCommand}"
+                                  DeleteCommand="{Binding DeleteCommand}"
+                                  SaveCommand="{Binding SaveCommand}"
+                                  SaveLabel="Cất"
+                                  UnpostCommand="{Binding ToggleConfirmCommand}"
+                                  UnpostLabel="{Binding UnpostButtonLabel}"
+                                  CloseRequested="CloseButton_Click">
+            <controls:DocumentToolbar.TrailingContent>
+                <controls:AppButton Content="📤 Xuất khẩu"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding ExportExcelCommand}"/>
+            </controls:DocumentToolbar.TrailingContent>
+        </controls:DocumentToolbar>
 
         <!-- Form — Thông tin chung + Chứng từ -->
+        <!-- 2026-09-26: KHÔNG khóa cả Grid.Row="2" bằng IsEnabled (như ReceiptWindow) — WPF
+             IsEnabled cascade xuống toàn bộ cây con, kể cả phần "Tham chiếu" bên dưới, mà link Tham
+             chiếu PHẢI bấm được ngay cả khi phiếu đang khóa (xem thường xuyên hơn sửa). Khóa RIÊNG
+             từng control nhập liệu (IsEnabled="{Binding IsEditable}" ở mỗi ô), Tham chiếu không có
+             IsEnabled nên luôn bấm được. -->
         <Grid Grid.Row="2" Margin="16,12,16,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -165,6 +171,7 @@
                                            VerticalAlignment="Center"/>
                         <controls:AppTextField Grid.Column="1"
                             Text="{Binding PayerName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            IsEnabled="{Binding IsEditable}"
                             Placeholder="Tên người nộp / nhân viên thu"/>
                     </Grid>
 
@@ -179,6 +186,7 @@
                                            VerticalAlignment="Center"/>
                         <controls:AppTextField Grid.Column="1"
                             Text="{Binding Address, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            IsEnabled="{Binding IsEditable}"
                             Placeholder="Địa chỉ"/>
                     </Grid>
 
@@ -211,6 +219,7 @@
                         <controls:AppSearchableComboBox Grid.Column="1"
                             ItemsSource="{Binding Employees}"
                             SelectedItem="{Binding SelectedCollectorEmployee, Mode=TwoWay}"
+                            IsEnabled="{Binding IsEditable}"
                             Placeholder="Chọn nhân viên" IsNullable="True"/>
 
                         <StackPanel Grid.Column="3">
@@ -219,6 +228,7 @@
                                                Margin="0,0,0,4"/>
                             <controls:AppTextField
                                 Text="{Binding Attachment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                IsEnabled="{Binding IsEditable}"
                                 Placeholder="chứng từ gốc"/>
                         </StackPanel>
 
@@ -226,7 +236,34 @@
                             <controls:AppLabel Text="Tham chiếu"
                                                Style="{StaticResource AppTypography.LabelSection}"
                                                Margin="0,0,0,4"/>
-                            <controls:AppTextField Text="{Binding Reference, Mode=OneWay}" IsReadOnly="True"/>
+                            <!-- 2026-09-26 (khớp ảnh mẫu MISA — Tham chiếu hiện dạng link): mỗi số
+                                 chứng từ bấm được, mở lại đúng hóa đơn gốc (chỉ xem). Bind thẳng
+                                 Lines thay vì Reference (chuỗi phẳng) để mỗi token giữ được
+                                 SalesOrderId riêng làm CommandParameter. -->
+                            <Border BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="1"
+                                    CornerRadius="4" Padding="6,4" MaxHeight="60">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl ItemsSource="{Binding Lines}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel Orientation="Horizontal"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Command="{Binding DataContext.OpenSalesOrderCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding SalesOrderId}"
+                                                        Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                                        Padding="0" Margin="0,0,10,2">
+                                                    <TextBlock Text="{Binding DocumentNumber}"
+                                                               Foreground="{StaticResource AppColor.TextBrand}"
+                                                               TextDecorations="Underline"/>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Border>
                         </StackPanel>
                     </Grid>
                 </Grid>
@@ -244,12 +281,14 @@
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Margin="0,0,0,4"/>
                     <DatePicker SelectedDate="{Binding AccountingDate, Mode=TwoWay}"
+                                IsEnabled="{Binding IsEditable}"
                                 Height="34" VerticalContentAlignment="Center" Margin="0,0,0,10"/>
 
                     <controls:AppLabel Text="Ngày chứng từ"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Margin="0,0,0,4"/>
                     <DatePicker SelectedDate="{Binding DocumentDate, Mode=TwoWay}"
+                                IsEnabled="{Binding IsEditable}"
                                 Height="34" VerticalContentAlignment="Center" Margin="0,0,0,10"/>
 
                     <controls:AppLabel Text="Số chứng từ"
@@ -261,6 +300,10 @@
         </Grid>
 
         <!-- Tabs -->
+        <!-- 2026-09-26: không khóa cả vùng tab bằng IsEnabled nữa — IsEnabled cascade xuống toàn bộ cây
+             con, làm link "Số chứng từ" ở tab "2. Chứng từ" bị mờ/không bấm được đúng lúc hay cần nhất
+             (xem lại phiếu đã lưu). Chỉ khóa NHẬP LIỆU của lưới bằng IsReadOnly="{Binding IsGridLocked}"
+             (tab "1. Hạch toán" vốn đã IsReadOnly="True"). -->
         <Grid Grid.Row="3" Margin="16,8,16,0">
             <Border Panel.ZIndex="10" Background="{StaticResource AppColor.BackgroundErrorLight}"
                     CornerRadius="8" Padding="12,10" Margin="0,0,0,12" VerticalAlignment="Top"
@@ -271,8 +314,12 @@
 
             <TabControl Style="{StaticResource AppTabControl.Modern}">
 
+                <!-- 2026-09-26 (khớp ảnh mẫu MISA): tab này giờ GỘP theo khách hàng (GroupedLines,
+                     read-only) — 1 khách hàng nhiều hóa đơn chỉ hiện 1 dòng, Số tiền = tổng. Sửa số
+                     tiền từng hóa đơn riêng chuyển sang tab "2. Chứng từ" (cột "Số thu", editable). -->
                 <TabItem Header="1. Hạch toán" Style="{StaticResource AppTabItem.Modern}">
-                    <DataGrid ItemsSource="{Binding Lines}"
+                    <DataGrid ItemsSource="{Binding GroupedLines}"
+                              IsReadOnly="True"
                               AutoGenerateColumns="False"
                               CanUserAddRows="False" CanUserDeleteRows="False"
                               HeadersVisibility="Column" GridLinesVisibility="All"
@@ -285,12 +332,12 @@
                               ScrollViewer.HorizontalScrollBarVisibility="Auto"
                               ScrollViewer.VerticalScrollBarVisibility="Auto">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Diễn giải" Binding="{Binding DocumentNumber, StringFormat='Thu tiền khách hàng - {0}'}" Width="220" IsReadOnly="True"/>
-                            <DataGridTextColumn Header="TK Nợ" Binding="{Binding DebitAccountDisplay}" Width="80" IsReadOnly="True"/>
-                            <DataGridTextColumn Header="TK Có" Binding="{Binding CreditAccountDisplay}" Width="80" IsReadOnly="True"/>
-                            <DataGridTextColumn Header="Số tiền" Binding="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=\{0:N0\}}" Width="120">
+                            <DataGridTextColumn Header="Diễn giải" Binding="{Binding Description}" Width="220"/>
+                            <DataGridTextColumn Header="TK Nợ" Binding="{Binding DebitAccountDisplay}" Width="80"/>
+                            <DataGridTextColumn Header="TK Có" Binding="{Binding CreditAccountDisplay}" Width="80"/>
+                            <DataGridTextColumn Header="Số tiền" Binding="{Binding Amount, Converter={StaticResource MoneyConverter}}" Width="120">
                                 <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock">
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource AppNumberCell}">
                                         <Setter Property="HorizontalAlignment" Value="Right"/>
                                         <Setter Property="Padding" Value="0,0,8,0"/>
                                         <Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/>
@@ -298,48 +345,107 @@
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Header="Mã khách hàng" Binding="{Binding CustomerCode}" Width="110" IsReadOnly="True"/>
-                            <DataGridTextColumn Header="Tên khách hàng" Binding="{Binding CustomerName}" Width="220" IsReadOnly="True"/>
+                            <DataGridTextColumn Header="Mã khách hàng" Binding="{Binding CustomerCode}" Width="110"/>
+                            <DataGridTextColumn Header="Tên khách hàng" Binding="{Binding CustomerName}" Width="220"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </TabItem>
 
+                <!-- 2026-09-26: "Số thu" giờ SỬA ĐƯỢC (dời từ tab "Hạch toán" cũ sang đây — hợp lý
+                     hơn vì tab này có sẵn Số phải thu/Số chưa thu để so sánh ngay bên cạnh lúc sửa).
+                     Vẫn chặn >MaxAmount / <=0 lúc Cất (xem SaveAsync). -->
                 <TabItem Header="2. Chứng từ" Style="{StaticResource AppTabItem.Modern}">
-                    <DataGrid ItemsSource="{Binding Lines}"
-                              AutoGenerateColumns="False"
-                              CanUserAddRows="False" CanUserDeleteRows="False"
-                              HeadersVisibility="Column" GridLinesVisibility="All"
-                              HorizontalGridLinesBrush="#9CB8D4"
-                              VerticalGridLinesBrush="#9CB8D4"
-                              MaxHeight="360"
-                              BorderThickness="0"
-                              RowBackground="{StaticResource AppColor.BackgroundPrimary}"
-                              AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Ngày chứng từ" Binding="{Binding AccountingDate, StringFormat=dd/MM/yyyy}" Width="100" IsReadOnly="True"/>
-                            <DataGridTextColumn Header="Số chứng từ" Binding="{Binding DocumentNumber}" Width="100" IsReadOnly="True"/>
-                            <DataGridTextColumn Header="Mã khách hàng" Binding="{Binding CustomerCode}" Width="100" IsReadOnly="True"/>
-                            <DataGridTextColumn Header="Tên khách hàng" Binding="{Binding CustomerName}" Width="200" IsReadOnly="True"/>
-                            <DataGridTextColumn Header="Hạn thanh toán" Binding="{Binding PaymentDueDate, StringFormat=dd/MM/yyyy}" Width="100" IsReadOnly="True"/>
-                            <DataGridTextColumn Header="Số phải thu" Binding="{Binding GrandTotal, StringFormat=\{0:N0\}}" Width="110" IsReadOnly="True">
-                                <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/><Setter Property="Padding" Value="0,0,8,0"/></Style>
-                                </DataGridTextColumn.ElementStyle>
-                            </DataGridTextColumn>
-                            <DataGridTextColumn Header="Số chưa thu" Binding="{Binding MaxAmount, StringFormat=\{0:N0\}}" Width="110" IsReadOnly="True">
-                                <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/><Setter Property="Padding" Value="0,0,8,0"/></Style>
-                                </DataGridTextColumn.ElementStyle>
-                            </DataGridTextColumn>
-                            <DataGridTextColumn Header="Số thu" Binding="{Binding Amount, StringFormat=\{0:N0\}}" Width="110" IsReadOnly="True">
-                                <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/><Setter Property="Padding" Value="0,0,8,0"/><Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
-                                </DataGridTextColumn.ElementStyle>
-                            </DataGridTextColumn>
-                            <DataGridTextColumn Header="TK phải thu" Binding="{Binding CreditAccountDisplay}" Width="90" IsReadOnly="True"/>
-                            <DataGridTextColumn Header="Điều khoản TT" Binding="{Binding PaymentTerms}" Width="140" IsReadOnly="True"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <!-- 2026-09-26 (khớp MISA): FrozenColumnCount=2 — Ngày chứng từ + Số chứng từ đứng
+                             yên khi cuộn ngang, luôn biết đang xem hóa đơn nào. -->
+                        <DataGrid Grid.Row="0" ItemsSource="{Binding Lines}"
+                                  IsReadOnly="{Binding IsGridLocked}"
+                                  FrozenColumnCount="2"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False" CanUserDeleteRows="False"
+                                  HeadersVisibility="Column" GridLinesVisibility="All"
+                                  HorizontalGridLinesBrush="#9CB8D4"
+                                  VerticalGridLinesBrush="#9CB8D4"
+                                  MaxHeight="360"
+                                  BorderThickness="0"
+                                  RowBackground="{StaticResource AppColor.BackgroundPrimary}"
+                                  AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Ngày chứng từ" Binding="{Binding DocumentDate, StringFormat=dd/MM/yyyy}" Width="100" IsReadOnly="True">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/><Setter Property="VerticalAlignment" Value="Center"/><Setter Property="Padding" Value="0,0,8,0"/></Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <!-- 2026-09-26 (khớp ảnh mẫu MISA): Số chứng từ là link — bấm mở lại đúng hóa
+                                     đơn gốc (chỉ xem), cùng OpenSalesOrderCommand với "Tham chiếu". -->
+                                <DataGridTemplateColumn Header="Số chứng từ" Width="100" IsReadOnly="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button Command="{Binding DataContext.OpenSalesOrderCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding SalesOrderId}"
+                                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                                    Padding="4,0" HorizontalAlignment="Left" HorizontalContentAlignment="Left">
+                                                <TextBlock Text="{Binding DocumentNumber}"
+                                                           Foreground="{StaticResource AppColor.TextBrand}"
+                                                           TextDecorations="Underline"/>
+                                            </Button>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="Mã khách hàng" Binding="{Binding CustomerCode}" Width="100" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="Tên khách hàng" Binding="{Binding CustomerName}" Width="200" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="Hạn thanh toán" Binding="{Binding PaymentDueDate, StringFormat=dd/MM/yyyy}" Width="100" IsReadOnly="True">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/><Setter Property="VerticalAlignment" Value="Center"/><Setter Property="Padding" Value="0,0,8,0"/></Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="Số phải thu" Binding="{Binding GrandTotal, Converter={StaticResource MoneyConverter}}" Width="110" IsReadOnly="True">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource AppNumberCell}"><Setter Property="HorizontalAlignment" Value="Right"/><Setter Property="Padding" Value="0,0,8,0"/></Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="Số chưa thu" Binding="{Binding MaxAmount, Converter={StaticResource MoneyConverter}}" Width="110" IsReadOnly="True">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource AppNumberCell}"><Setter Property="HorizontalAlignment" Value="Right"/><Setter Property="Padding" Value="0,0,8,0"/></Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="Số thu" Binding="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=\{0:N0\}, ConverterCulture=vi-VN}" Width="110">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/><Setter Property="Padding" Value="0,0,8,0"/><Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="TK phải thu" Binding="{Binding CreditAccountDisplay}" Width="90" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="Điều khoản TT" Binding="{Binding PaymentTerms}" Width="140" IsReadOnly="True"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <!-- 2026-09-26 (khớp MISA — dòng tổng dưới lưới): tổng Số phải thu / Số chưa thu
+                             / Số thu. Hiện dạng nhãn thay vì thẳng từng cột vì lưới có cuộn ngang (WPF
+                             DataGrid không có footer row cuộn theo cột). -->
+                        <Border Grid.Row="1" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,1,0,0"
+                                Padding="12,8">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <controls:AppLabel Text="Số phải thu:" Style="{StaticResource AppTypography.BodyCaption}"
+                                                   Foreground="{StaticResource AppColor.TextSecondary}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <controls:AppLabel Text="{Binding TotalGrandTotal, Converter={StaticResource MoneyConverter}}"
+                                                   Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,24,0"/>
+                                <controls:AppLabel Text="Số chưa thu:" Style="{StaticResource AppTypography.BodyCaption}"
+                                                   Foreground="{StaticResource AppColor.TextSecondary}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <controls:AppLabel Text="{Binding TotalRemaining, Converter={StaticResource MoneyConverter}}"
+                                                   Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,24,0"/>
+                                <controls:AppLabel Text="Số thu:" Style="{StaticResource AppTypography.BodyCaption}"
+                                                   Foreground="{StaticResource AppColor.TextSecondary}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <controls:AppLabel Text="{Binding TotalAmount, Converter={StaticResource MoneyConverter}}"
+                                                   Style="{StaticResource AppTypography.LabelSection}"
+                                                   Foreground="{StaticResource AppColor.TextBrand}"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
                 </TabItem>
 
             </TabControl>
@@ -360,7 +466,7 @@
                     <controls:AppLabel Text="Tổng tiền:"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Margin="0,0,12,0"/>
-                    <controls:AppLabel Text="{Binding TotalAmount, StringFormat=\{0:N0\}}"
+                    <controls:AppLabel helpers:NegativeAmountHighlight.IsEnabled="True" Text="{Binding TotalAmount, Converter={StaticResource MoneyConverter}}"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Foreground="{StaticResource AppColor.TextBrand}"/>
                 </StackPanel>

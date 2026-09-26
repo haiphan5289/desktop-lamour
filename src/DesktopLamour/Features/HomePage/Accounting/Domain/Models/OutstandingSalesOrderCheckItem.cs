@@ -12,6 +12,7 @@ public partial class OutstandingSalesOrderCheckItem : ObservableObject
     public int      SalesOrderId    => Order.SalesOrderId;
     public string   DocumentNumber  => Order.DocumentNumber;
     public DateTime AccountingDate  => Order.AccountingDate;
+    public DateTime DocumentDate    => Order.DocumentDate;
     public string   CustomerCode    => Order.CustomerCode;
     public string   CustomerName    => Order.CustomerName;
     public string?  Description     => Order.Description;

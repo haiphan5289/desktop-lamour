@@ -1,10 +1,21 @@
 <UserControl x:Class="DesktopLamour.Features.HomePage.Accounting.Views.AccountingView"
+             xmlns:helpers="clr-namespace:DesktopLamour.Shared.Helpers"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
              xmlns:local="clr-namespace:DesktopLamour.Features.HomePage.Accounting.ViewModels"
              xmlns:models="clr-namespace:DesktopLamour.Shared.Models"
              Background="{StaticResource AppColor.BackgroundSecondary}">
+
+    <!-- 2026-09-26: phím tắt giống Chứng từ bán hàng (SalesOrderListView) — cùng CanExecute theo trạng
+         thái phiếu như nút trên thanh công cụ. Không gán Ctrl+N vì "Thêm" ở đây phải chọn loại phiếu
+         (Phiếu thu / Phiếu chi / Thu hàng loạt). -->
+    <UserControl.InputBindings>
+        <KeyBinding Gesture="Ctrl+E" Command="{Binding EditEntryCommand}"/>
+        <KeyBinding Gesture="Ctrl+D" Command="{Binding DeleteEntryCommand}"/>
+        <KeyBinding Gesture="Ctrl+G" Command="{Binding ConfirmEntryCommand}"/>
+        <KeyBinding Gesture="Ctrl+B" Command="{Binding UnconfirmEntryCommand}"/>
+    </UserControl.InputBindings>
 
     <UserControl.Resources>
         <SolidColorBrush x:Key="GroupHeaderBrush" Color="#BDD7EE"/>
@@ -43,22 +54,24 @@
             <Setter Property="Padding"             Value="0,0,8,0"/>
         </Style>
 
-        <Style x:Key="CellCenter" TargetType="TextBlock">
+        <Style x:Key="CellCenter" TargetType="TextBlock" BasedOn="{StaticResource AppNumberCell}">
             <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Padding"             Value="0"/>
             <Setter Property="VerticalAlignment"   Value="Center"/>
         </Style>
     </UserControl.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>   <!-- Header -->
+            <RowDefinition Height="Auto"/>   <!-- Toolbar -->
+            <RowDefinition Height="Auto"/>   <!-- Filter bar -->
+            <RowDefinition Height="Auto"/>   <!-- Tồn đầu/cuối kỳ -->
+            <RowDefinition Height="*"/>      <!-- DataGrid -->
         </Grid.RowDefinitions>
 
         <!-- Loading overlay -->
-        <controls:AppLoadingOverlay Grid.RowSpan="4" IsLoading="{Binding IsLoading}"/>
+        <controls:AppLoadingOverlay Grid.RowSpan="5" IsLoading="{Binding IsLoading}"/>
 
         <!-- ══════════════════════════════════════════════ -->
         <!--  Page header                                   -->
@@ -78,7 +91,9 @@
         </StackPanel>
 
         <!-- ══════════════════════════════════════════════ -->
-        <!--  Filter toolbar                                -->
+        <!--  Toolbar actions — 2026-09-26: cùng bố cục/thứ tự/kiểu nút với Chứng từ bán hàng      -->
+        <!--  (SalesOrderListView). Sửa/Ghi sổ/Bỏ ghi/Xóa bật/tắt theo trạng thái phiếu đang chọn   -->
+        <!--  (xem CanConfirmSelected/... trong AccountingViewModel).                               -->
         <!-- ══════════════════════════════════════════════ -->
         <Border Grid.Row="1"
                 Margin="24,16,24,0"
@@ -87,90 +102,117 @@
                 BorderBrush="{StaticResource AppColor.BorderThin}"
                 BorderThickness="1"
                 CornerRadius="8">
-            <StackPanel>
-                <!-- Hàng thao tác -->
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                    <controls:AppButton Content="📄 Phiếu Thu"
-                                        Style="{StaticResource AppButton.Primary.Medium}"
-                                        Command="{Binding OpenReceiptCommand}"
-                                        Margin="0,0,8,0"/>
-                    <controls:AppButton Content="📄 Phiếu Chi"
-                                        Style="{StaticResource AppButton.Primary.Medium}"
-                                        Command="{Binding OpenPaymentCommand}"
-                                        Margin="0,0,8,0"/>
-                    <controls:AppButton Content="📄 Phiếu Thu Hàng Loạt"
-                                        Style="{StaticResource AppButton.Primary.Medium}"
-                                        Command="{Binding OpenBulkCustomerReceiptCommand}"
-                                        Margin="0,0,8,0"/>
-                    <controls:AppButton Content="📤 Xuất khẩu"
-                                        Style="{StaticResource AppButton.Secondary.Medium}"
-                                        Command="{Binding ExportExcelCommand}"
-                                        Margin="0,0,8,0"/>
-                    <!-- Chọn 1 dòng trong lưới bên dưới rồi bấm — hoặc double-click thẳng dòng đó
-                         (xem MouseDoubleClick trên DataGrid). Mở đúng Phiếu Thu/Phiếu Chi gốc của
-                         dòng, ở chế độ Sửa (Lưu/Xóa dùng luôn UI có sẵn trong 2 form đó). -->
-                    <controls:AppButton Content="👁 Xem"
-                                        Style="{StaticResource AppButton.Secondary.Medium}"
-                                        Command="{Binding ViewEntryCommand}"/>
-                </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <!-- "Thêm" gộp 3 loại phiếu (trước đây là 3 nút riêng) — bấm mở menu chọn loại. -->
+                <controls:AppButton x:Name="AddButton"
+                                    Content="➕ Thêm ▾"
+                                    Style="{StaticResource AppButton.Primary.Medium}"
+                                    Click="AddButton_Click"
+                                    Margin="0,0,8,0">
+                    <controls:AppButton.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="📄 Phiếu thu" Command="{Binding OpenReceiptCommand}"/>
+                            <MenuItem Header="📄 Phiếu chi" Command="{Binding OpenPaymentCommand}"/>
+                            <MenuItem Header="📄 Thu tiền khách hàng hàng loạt" Command="{Binding OpenBulkCustomerReceiptCommand}"/>
+                        </ContextMenu>
+                    </controls:AppButton.ContextMenu>
+                </controls:AppButton>
+                <controls:AppButton Content="✏️ Sửa"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding EditEntryCommand}"
+                                    Margin="0,0,8,0"/>
+                <controls:AppButton Content="📗 Ghi sổ"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding ConfirmEntryCommand}"
+                                    Margin="0,0,8,0"/>
+                <controls:AppButton Content="↩️ Bỏ ghi"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding UnconfirmEntryCommand}"
+                                    Margin="0,0,8,0"/>
+                <controls:AppButton Content="🗑️ Xóa"
+                                    Style="{StaticResource AppButton.Destructive.Medium}"
+                                    Command="{Binding DeleteEntryCommand}"
+                                    Margin="0,0,8,0"/>
+                <controls:AppButton Content="📤 Xuất khẩu"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding ExportExcelCommand}"
+                                    Margin="0,0,8,0"/>
+                <controls:AppButton Content="✉️ Gửi email"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding SendEmailCommand}"
+                                    Margin="0,0,8,0"/>
+                <controls:AppButton Content="💬 Gửi Zalo"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding SendZaloCommand}"/>
+            </StackPanel>
+        </Border>
 
-                <!-- Hàng lọc — mọi ô cùng Height="36" + VerticalAlignment="Center" để nhãn và
-                     ComboBox/DatePicker canh giữa theo cùng 1 baseline (tránh nhãn bị lệch lên
-                     trên do ComboBox/DatePicker cao hơn text nhãn). -->
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <controls:AppLabel Text="Kỳ"
-                                       Style="{StaticResource AppTypography.BodyCaption}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,8,0"/>
-                    <ComboBox ItemsSource="{x:Static local:AccountingViewModel.PeriodOptions}"
-                              SelectedItem="{Binding SelectedPeriod, Mode=TwoWay}"
-                              Width="130" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
-                              Margin="0,0,16,0"/>
+        <!-- ══════════════════════════════════════════════ -->
+        <!--  Filter bar                                    -->
+        <!-- ══════════════════════════════════════════════ -->
+        <Border Grid.Row="2"
+                Margin="24,8,24,0"
+                Padding="16,10"
+                Background="{StaticResource AppColor.BackgroundPrimary}"
+                BorderBrush="{StaticResource AppColor.BorderThin}"
+                BorderThickness="1"
+                CornerRadius="8">
+            <!-- Hàng lọc — mọi ô cùng Height="36" + VerticalAlignment="Center" để nhãn và
+                 ComboBox/DatePicker canh giữa theo cùng 1 baseline (tránh nhãn bị lệch lên
+                 trên do ComboBox/DatePicker cao hơn text nhãn). -->
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <controls:AppLabel Text="Kỳ:"
+                                   Style="{StaticResource AppTypography.LabelSection}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"/>
+                <ComboBox ItemsSource="{x:Static local:AccountingViewModel.PeriodOptions}"
+                          SelectedItem="{Binding SelectedPeriod, Mode=TwoWay}"
+                          Width="130" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                          Margin="0,0,16,0"/>
 
-                    <controls:AppLabel Text="Từ ngày"
-                                       Style="{StaticResource AppTypography.BodyCaption}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,8,0"/>
-                    <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}"
-                                Width="140" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
-                                Margin="0,0,16,0"/>
-                    <controls:AppLabel Text="Đến ngày"
-                                       Style="{StaticResource AppTypography.BodyCaption}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,8,0"/>
-                    <DatePicker SelectedDate="{Binding ToDate, Mode=TwoWay}"
-                                Width="140" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
-                                Margin="0,0,16,0"/>
+                <controls:AppLabel Text="Từ ngày:"
+                                   Style="{StaticResource AppTypography.LabelSection}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"/>
+                <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}"
+                            Width="140" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                            Margin="0,0,16,0"/>
+                <controls:AppLabel Text="Đến ngày:"
+                                   Style="{StaticResource AppTypography.LabelSection}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"/>
+                <DatePicker SelectedDate="{Binding ToDate, Mode=TwoWay}"
+                            Width="140" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                            Margin="0,0,16,0"/>
 
-                    <controls:AppLabel Text="Trạng thái"
-                                       Style="{StaticResource AppTypography.BodyCaption}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,8,0"/>
-                    <ComboBox ItemsSource="{x:Static local:AccountingViewModel.StatusOptions}"
-                              SelectedItem="{Binding FilterStatus, Mode=TwoWay}"
-                              Width="120" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
-                              Margin="0,0,16,0"/>
+                <controls:AppLabel Text="Trạng thái:"
+                                   Style="{StaticResource AppTypography.LabelSection}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"/>
+                <ComboBox ItemsSource="{x:Static local:AccountingViewModel.StatusOptions}"
+                          SelectedItem="{Binding FilterStatus, Mode=TwoWay}"
+                          Width="120" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                          Margin="0,0,16,0"/>
 
-                    <controls:AppLabel Text="Loại"
-                                       Style="{StaticResource AppTypography.BodyCaption}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,8,0"/>
-                    <ComboBox ItemsSource="{x:Static local:AccountingViewModel.TypeOptions}"
-                              SelectedItem="{Binding FilterType, Mode=TwoWay}"
-                              Width="100" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
-                              Margin="0,0,16,0"/>
+                <controls:AppLabel Text="Loại:"
+                                   Style="{StaticResource AppTypography.LabelSection}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"/>
+                <ComboBox ItemsSource="{x:Static local:AccountingViewModel.TypeOptions}"
+                          SelectedItem="{Binding FilterType, Mode=TwoWay}"
+                          Width="100" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
+                          Margin="0,0,16,0"/>
 
-                    <controls:AppButton Content="🔍 Lấy dữ liệu"
-                                        Style="{StaticResource AppButton.Primary.Medium}"
-                                        Command="{Binding LoadCommand}"/>
-                </StackPanel>
+                <controls:AppButton Content="🔍 Lấy dữ liệu"
+                                    Style="{StaticResource AppButton.Primary.Medium}"
+                                    Command="{Binding LoadCommand}"/>
             </StackPanel>
         </Border>
 
         <!-- ══════════════════════════════════════════════ -->
         <!--  Summary: Số tồn đầu kỳ / cuối kỳ            -->
         <!-- ══════════════════════════════════════════════ -->
-        <Border Grid.Row="2"
+        <Border Grid.Row="3"
                 Margin="24,8,24,0"
                 Padding="16,10"
                 Background="{StaticResource AppColor.BackgroundPrimary}"
@@ -182,14 +224,14 @@
                 <controls:AppLabel Text="Số tồn đầu kỳ:"
                                    Style="{StaticResource AppTypography.BodyCaption}"
                                    Margin="0,0,8,0"/>
-                <controls:AppLabel Text="{Binding OpeningBalance, StringFormat=\{0:N0\}}"
+                <controls:AppLabel helpers:NegativeAmountHighlight.IsEnabled="True" Text="{Binding OpeningBalance, Converter={StaticResource MoneyConverter}}"
                                    Style="{StaticResource AppTypography.LabelSection}"
                                    Foreground="{StaticResource AppColor.TextPrimary}"
                                    Margin="0,0,32,0"/>
                 <controls:AppLabel Text="Số tồn cuối kỳ:"
                                    Style="{StaticResource AppTypography.BodyCaption}"
                                    Margin="0,0,8,0"/>
-                <controls:AppLabel Text="{Binding ClosingBalance, StringFormat=\{0:N0\}}"
+                <controls:AppLabel helpers:NegativeAmountHighlight.IsEnabled="True" Text="{Binding ClosingBalance, Converter={StaticResource MoneyConverter}}"
                                    Style="{StaticResource AppTypography.LabelSection}"
                                    Foreground="{StaticResource AppColor.TextPrimary}"/>
             </StackPanel>
@@ -198,7 +240,7 @@
         <!-- ══════════════════════════════════════════════ -->
         <!--  DataGrid                                      -->
         <!-- ══════════════════════════════════════════════ -->
-        <Grid Grid.Row="3" Margin="24,8,24,24">
+        <Grid Grid.Row="4" Margin="24,8,24,24">
 
             <!-- Error banner -->
             <Border Panel.ZIndex="10"
@@ -227,6 +269,7 @@
                       ItemsSource="{Binding ItemsView}"
                       SelectedItem="{Binding SelectedEntry, Mode=TwoWay}"
                       MouseDoubleClick="LedgerGrid_MouseDoubleClick"
+                      PreviewMouseRightButtonDown="LedgerGrid_PreviewMouseRightButtonDown"
                       AutoGenerateColumns="False"
                       IsReadOnly="True"
                       CanUserAddRows="False"
@@ -246,6 +289,30 @@
                       ScrollViewer.HorizontalScrollBarVisibility="Auto"
                       ScrollViewer.VerticalScrollBarVisibility="Auto"
                       Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibilityConverter}}">
+                <!-- Menu chuột phải — cùng bố cục với Chứng từ bán hàng. Chuột phải tự chọn dòng đang
+                     trỏ (LedgerGrid_PreviewMouseRightButtonDown) để các lệnh áp đúng phiếu đó. -->
+                <DataGrid.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="➕ Thêm">
+                            <MenuItem Header="📄 Phiếu thu" Command="{Binding OpenReceiptCommand}"/>
+                            <MenuItem Header="📄 Phiếu chi" Command="{Binding OpenPaymentCommand}"/>
+                            <MenuItem Header="📄 Thu tiền khách hàng hàng loạt" Command="{Binding OpenBulkCustomerReceiptCommand}"/>
+                        </MenuItem>
+                        <Separator/>
+                        <MenuItem Header="👁 Xem" Command="{Binding ViewEntryCommand}"/>
+                        <MenuItem Header="✏️ Sửa" InputGestureText="Ctrl+E" Command="{Binding EditEntryCommand}"/>
+                        <MenuItem Header="🗑️ Xóa" InputGestureText="Ctrl+D" Command="{Binding DeleteEntryCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="📗 Ghi sổ" InputGestureText="Ctrl+G" Command="{Binding ConfirmEntryCommand}"/>
+                        <MenuItem Header="↩️ Bỏ ghi" InputGestureText="Ctrl+B" Command="{Binding UnconfirmEntryCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="📨 Gửi email, Zalo">
+                            <MenuItem Header="✉️ Email" Command="{Binding SendEmailCommand}"/>
+                            <MenuItem Header="💬 Zalo" Command="{Binding SendZaloCommand}"/>
+                        </MenuItem>
+                    </ContextMenu>
+                </DataGrid.ContextMenu>
+
 
                 <DataGrid.Columns>
 
@@ -388,7 +455,7 @@
                     </DataGridTextColumn>
 
                     <!-- Số tiền — numeric column: operator combo (=, ≤, ≥...) + value box, inline -->
-                    <DataGridTextColumn Binding="{Binding Amount, StringFormat=\{0:N0\}}"
+                    <DataGridTextColumn Binding="{Binding Amount, Converter={StaticResource MoneyConverter}}"
                                         Width="130" ElementStyle="{StaticResource CellNumber}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>

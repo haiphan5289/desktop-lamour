@@ -94,6 +94,13 @@ public partial class DocumentToolbar : UserControl
         DependencyProperty.Register(nameof(ShowClose), typeof(bool), typeof(DocumentToolbar),
             new PropertyMetadata(true));
 
+    // Nút riêng của từng màn (vd. "Xuất khẩu"), hiện canh phải bên trong khung thẻ toolbar.
+    // DataContext kế thừa từ Window nên Command="{Binding ...}" trong nội dung vẫn trỏ đúng ViewModel.
+    public static readonly DependencyProperty TrailingContentProperty =
+        DependencyProperty.Register(nameof(TrailingContent), typeof(object), typeof(DocumentToolbar),
+            new PropertyMetadata(null));
+
+    public object? TrailingContent  { get => GetValue(TrailingContentProperty);               set => SetValue(TrailingContentProperty, value); }
     public string SaveLabel         { get => (string)GetValue(SaveLabelProperty);         set => SetValue(SaveLabelProperty, value); }
     public string UnpostLabel       { get => (string)GetValue(UnpostLabelProperty);       set => SetValue(UnpostLabelProperty, value); }
     public string CreateExportLabel { get => (string)GetValue(CreateExportLabelProperty); set => SetValue(CreateExportLabelProperty, value); }

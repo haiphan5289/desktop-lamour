@@ -32,7 +32,7 @@
         </Style>
 
         <!-- ElementStyle cho ô số (Qty, Value) — right-align để thẳng với header centered -->
-        <Style x:Key="CellNumber" TargetType="TextBlock">
+        <Style x:Key="CellNumber" TargetType="TextBlock" BasedOn="{StaticResource AppNumberCell}">
             <Setter Property="HorizontalAlignment" Value="Right"/>
             <Setter Property="VerticalAlignment"   Value="Center"/>
             <Setter Property="Padding"             Value="0,0,8,0"/>
@@ -341,7 +341,7 @@
                     <!--  Nhóm: Đầu kỳ                      -->
                     <!-- ═══════════════════════════════════ -->
 
-                    <DataGridTextColumn Binding="{Binding OpeningQty, StringFormat=\{0:N0\}}" Width="100"
+                    <DataGridTextColumn Binding="{Binding OpeningQty, Converter={StaticResource MoneyConverter}}" Width="100"
                                         ElementStyle="{StaticResource CellNumber}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
@@ -373,7 +373,7 @@
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
-                    <DataGridTextColumn Binding="{Binding OpeningValue, StringFormat=\{0:N0\}}" Width="110"
+                    <DataGridTextColumn Binding="{Binding OpeningValue, Converter={StaticResource MoneyConverter}}" Width="110"
                                         ElementStyle="{StaticResource CellNumber}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
@@ -404,7 +404,7 @@
                     <!--  Nhóm: Nhập kho                    -->
                     <!-- ═══════════════════════════════════ -->
 
-                    <DataGridTextColumn Binding="{Binding ImportQty, StringFormat=\{0:N0\}}" Width="90"
+                    <DataGridTextColumn Binding="{Binding ImportQty, Converter={StaticResource MoneyConverter}}" Width="90"
                                         ElementStyle="{StaticResource CellNumber}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
@@ -436,7 +436,7 @@
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
-                    <DataGridTextColumn Binding="{Binding ImportValue, StringFormat=\{0:N0\}}" Width="110"
+                    <DataGridTextColumn Binding="{Binding ImportValue, Converter={StaticResource MoneyConverter}}" Width="110"
                                         ElementStyle="{StaticResource CellNumber}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
@@ -467,7 +467,7 @@
                     <!--  Nhóm: Xuất kho                    -->
                     <!-- ═══════════════════════════════════ -->
 
-                    <DataGridTextColumn Binding="{Binding ExportQty, StringFormat=\{0:N0\}}" Width="90"
+                    <DataGridTextColumn Binding="{Binding ExportQty, Converter={StaticResource MoneyConverter}}" Width="90"
                                         ElementStyle="{StaticResource CellNumber}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
@@ -499,7 +499,7 @@
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
-                    <DataGridTextColumn Binding="{Binding ExportValue, StringFormat=\{0:N0\}}" Width="110"
+                    <DataGridTextColumn Binding="{Binding ExportValue, Converter={StaticResource MoneyConverter}}" Width="110"
                                         ElementStyle="{StaticResource CellNumber}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
@@ -530,7 +530,7 @@
                     <!--  Nhóm: Cuối kỳ                     -->
                     <!-- ═══════════════════════════════════ -->
 
-                    <DataGridTextColumn Binding="{Binding ClosingQty, StringFormat=\{0:N0\}}" Width="100"
+                    <DataGridTextColumn Binding="{Binding ClosingQty, Converter={StaticResource MoneyConverter}}" Width="100"
                                         ElementStyle="{StaticResource CellNumber}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
@@ -562,7 +562,7 @@
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
-                    <DataGridTextColumn Binding="{Binding ClosingValue, StringFormat=\{0:N0\}}" Width="110"
+                    <DataGridTextColumn Binding="{Binding ClosingValue, Converter={StaticResource MoneyConverter}}" Width="110"
                                         ElementStyle="{StaticResource CellNumber}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>

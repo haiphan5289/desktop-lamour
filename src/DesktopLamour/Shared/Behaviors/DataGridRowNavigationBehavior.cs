@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using DesktopLamour.Shared.Helpers;
 
 namespace DesktopLamour.Shared.Behaviors;
 
@@ -93,7 +94,7 @@ public static class DataGridRowNavigationBehavior
 
     private static T? FindParent<T>(DependencyObject child) where T : DependencyObject
     {
-        var parent = VisualTreeHelper.GetParent(child);
+        var parent = TreeWalk.GetParent(child);
         if (parent is null) return null;
         return parent is T p ? p : FindParent<T>(parent);
     }

@@ -1,5 +1,6 @@
 <Window x:Class="DesktopLamour.Features.HomePage.Deposits.Views.DepositWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:helpers="clr-namespace:DesktopLamour.Shared.Helpers"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
         Title="Phiếu cọc - CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ LAMOUR"
@@ -213,7 +214,7 @@
                                            Style="{StaticResource AppTypography.LabelSection}"
                                            VerticalAlignment="Center"/>
                         <controls:AppTextField Grid.Column="4"
-                            Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=N0}"
+                            Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=N0, ConverterCulture=vi-VN}"
                             Placeholder="0"/>
                     </Grid>
 
@@ -251,7 +252,7 @@
                     <controls:AppLabel Text="Số dư còn lại"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Margin="0,0,0,4"/>
-                    <controls:AppLabel Text="{Binding RemainingBalance, StringFormat=\{0:N0\}}"
+                    <controls:AppLabel helpers:NegativeAmountHighlight.IsEnabled="True" Text="{Binding RemainingBalance, Converter={StaticResource MoneyConverter}}"
                                        Style="{StaticResource AppTypography.DisplaySection}"
                                        Foreground="{StaticResource AppColor.TextBrand}"/>
                 </StackPanel>

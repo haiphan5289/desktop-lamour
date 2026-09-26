@@ -173,9 +173,9 @@
                                         Binding="{Binding DocumentDate, StringFormat=dd/MM/yyyy}"
                                         Width="120"/>
 
-                    <DataGridTextColumn Header="Tổng tiền" Binding="{Binding TotalAmount, StringFormat=\{0:N0\}}" Width="130">
+                    <DataGridTextColumn Header="Tổng tiền" Binding="{Binding TotalAmount, Converter={StaticResource MoneyConverter}}" Width="130">
                         <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource AppNumberCell}">
                                 <Setter Property="TextAlignment" Value="Right"/>
                                 <Setter Property="Padding" Value="6,0"/>
                             </Style>

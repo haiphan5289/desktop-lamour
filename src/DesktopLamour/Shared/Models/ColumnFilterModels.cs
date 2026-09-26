@@ -63,7 +63,7 @@ public partial class NumericColumnFilter : ObservableObject
 
     public bool Matches(decimal cellValue)
     {
-        if (!decimal.TryParse(ValueText, NumberStyles.Any, CultureInfo.InvariantCulture, out var target))
+        if (!TryParseFilterNumber(ValueText, out var target))
             return true;
 
         return Operator switch
@@ -76,6 +76,24 @@ public partial class NumericColumnFilter : ObservableObject
             FilterOperator.GreaterOrEqual => cellValue >= target,
             _ => true,
         };
+    }
+    // 2026-09-26: ô số trong lưới giờ hiển thị kiểu vi-VN ("1.500.000", "35,50") — ô lọc phải hiểu
+    // đúng kiểu user nhìn thấy mà gõ lại: "1.500.000" (chấm = hàng nghìn), "35,5" (phẩy = thập phân),
+    // đồng thời vẫn nhận kiểu cũ "1500000" / "35.5". Trước đây parse Invariant nên "1.500.000" bị
+    // coi là không hợp lệ và bộ lọc tự bỏ qua.
+    private static bool TryParseFilterNumber(string? text, out decimal value)
+    {
+        value = 0m;
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        var t = text.Trim().Replace(" ", "");
+        if (t.StartsWith('(') && t.EndsWith(')')) t = "-" + t[1..^1];
+        if (System.Text.RegularExpressions.Regex.IsMatch(t, @"^-?\d{1,3}(,\d{3})+$"))
+            t = t.Replace(",", "");                         // kiểu cũ en-US "1,500,000"
+        if (t.Contains(','))
+            return decimal.TryParse(t, NumberStyles.Number, CultureInfo.GetCultureInfo("vi-VN"), out value);
+        if (System.Text.RegularExpressions.Regex.IsMatch(t, @"^-?\d{1,3}(\.\d{3})+$"))
+            t = t.Replace(".", "");
+        return decimal.TryParse(t, NumberStyles.Number, CultureInfo.InvariantCulture, out value);
     }
 }
 

@@ -13,6 +13,7 @@
     -->
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="/DesktopLamour;component/Shared/Styles/AppLabelStyles.xaml"/>
+        <ResourceDictionary Source="/DesktopLamour;component/Shared/Styles/AppNumberStyles.xaml"/>
         <ResourceDictionary Source="/DesktopLamour;component/Shared/Styles/AppButtonStyles.xaml"/>
         <ResourceDictionary Source="/DesktopLamour;component/Shared/Styles/AppTextFieldStyles.xaml"/>
         <ResourceDictionary Source="/DesktopLamour;component/Shared/Styles/AppPasswordFieldStyles.xaml"/>

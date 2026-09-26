@@ -20,4 +20,9 @@ public interface IReceiptService
 
     Task<CreateBulkCustomerReceiptResponseDto> CreateBulkAsync(
         CreateBulkCustomerReceiptRequestDto request, CancellationToken ct = default);
+
+    // Dựng lại tab "2. Chứng từ" khi Sửa 1 phiếu thu hàng loạt đã lưu — ids lấy từ
+    // ReceiptEntryDto.SalesOrderId của phiếu đó.
+    Task<IEnumerable<OutstandingSalesOrderDto>> GetSalesOrdersByIdsAsync(
+        IEnumerable<int> salesOrderIds, CancellationToken ct = default);
 }

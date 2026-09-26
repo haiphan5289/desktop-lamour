@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using DesktopLamour.Shared.Helpers;
 
 namespace DesktopLamour.Features.HomePage.Sales.Views;
 
@@ -41,7 +42,7 @@ public partial class SalesOrderListView : UserControl
         while (current is not null)
         {
             if (current is T match) return match;
-            current = VisualTreeHelper.GetParent(current);
+            current = TreeWalk.GetParent(current);
         }
         return null;
     }

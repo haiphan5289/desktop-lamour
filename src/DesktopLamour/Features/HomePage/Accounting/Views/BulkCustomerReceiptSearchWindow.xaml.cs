@@ -13,9 +13,17 @@ public partial class BulkCustomerReceiptSearchWindow : Window
         InitializeComponent();
         ViewModel   = viewModel;
         DataContext = viewModel;
-        ViewModel.RequestClose += Close;
+        viewModel.HostWindow = this;
+        // 2026-09-26: popup giờ chỉ là bộ chọn — true = đã chọn hợp lệ (bấm "✔ Thu tiền"), false =
+        // "Hủy bỏ". Nơi gọi (BulkCustomerReceiptViewModel.AddNewAsync) đọc ViewModel.SelectedItems +
+        // PaymentMethod/BankAccount/SelectedEmployee/CollectionDate SAU KHI ShowDialog() trả về true.
+        ViewModel.RequestClose += ok => { DialogResult = ok; Close(); };
         Loaded += async (_, _) => await ViewModel.InitializeCommand.ExecuteAsync(null);
     }
 
-    private void CancelButton_Click(object sender, RoutedEventArgs e) => Close();
+    private void CancelButton_Click(object sender, RoutedEventArgs e)
+    {
+        DialogResult = false;
+        Close();
+    }
 }

@@ -13,6 +13,7 @@ using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.HomePage.Accounting.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Accounting.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Accounting.Views;
+using DesktopLamour.Shared.Helpers;
 using DesktopLamour.Shared.Models;
 using Microsoft.Win32;
 
@@ -24,7 +25,13 @@ public partial class AccountingViewModel : ViewModelBase
     private readonly IGetCashLedgerUseCase _getCashLedger;
     private readonly Func<ReceiptWindow>   _receiptWindowFactory;
     private readonly Func<PaymentWindow>   _paymentWindowFactory;
-    private readonly Func<BulkCustomerReceiptSearchWindow> _bulkReceiptSearchWindowFactory;
+    private readonly Func<BulkCustomerReceiptWindow> _bulkReceiptWindowFactory;
+    private readonly IConfirmReceiptUseCase   _confirmReceipt;
+    private readonly IUnconfirmReceiptUseCase _unconfirmReceipt;
+    private readonly IDeleteReceiptUseCase    _deleteReceipt;
+    private readonly IConfirmPaymentUseCase   _confirmPayment;
+    private readonly IUnconfirmPaymentUseCase _unconfirmPayment;
+    private readonly IDeletePaymentUseCase    _deletePayment;
 
     [ObservableProperty] private bool    _isLoading;
     [ObservableProperty] private bool    _hasError;
@@ -47,7 +54,9 @@ public partial class AccountingViewModel : ViewModelBase
 
     // Lọc Trạng thái/Loại áp trực tiếp lên dữ liệu đã tải (không gọi lại BE) — ItemsView là nguồn
     // DataGrid bind vào; Items vẫn là dữ liệu gốc từ LoadAsync.
-    public static string[] StatusOptions { get; } = { "Tất cả", "Nháp", "Treo", "Đã ghi sổ" };
+    // 2026-09-26: bỏ "Nháp" — khớp quy trình Chứng từ bán hàng (ChungTuTraHangBan-Review.html): chỉ còn
+    // Treo (chưa ghi sổ) và Đã ghi sổ. BE trả "Treo" cho mọi dòng chưa ghi sổ.
+    public static string[] StatusOptions { get; } = { "Tất cả", "Treo", "Đã ghi sổ" };
     public static string[] TypeOptions   { get; } = { "Tất cả", "Thu", "Chi" };
 
     [ObservableProperty] private string _filterStatus = "Tất cả";
@@ -93,18 +102,42 @@ public partial class AccountingViewModel : ViewModelBase
 
     private bool HasSelectedEntry => SelectedEntry is not null;
 
+    // 2026-09-26: thanh công cụ giống Chứng từ bán hàng — quy tắc bật/tắt nút theo TRẠNG THÁI phiếu
+    // (khớp quy trình ChungTuTraHangBan-Review.html + quy tắc phiếu thu/chi hiện có):
+    //   Ghi sổ  — phiếu chưa ghi sổ (Treo)
+    //   Bỏ ghi  — phiếu đã ghi sổ
+    //   Sửa/Xóa — chỉ khi chưa ghi sổ (đã ghi sổ phải Bỏ ghi trước)
+    // Dòng không tìm được phiếu gốc (không có receipt_id/payment_id) thì không thao tác được.
+    private bool SelectedHasSource  => SelectedEntry is { ReceiptId: not null } or { PaymentId: not null };
+    private bool SelectedIsPosted   => SelectedEntry?.Status == "Confirmed";
+    private bool CanConfirmSelected   => SelectedHasSource && !SelectedIsPosted;
+    private bool CanUnconfirmSelected => SelectedHasSource && SelectedIsPosted;
+    private bool CanModifySelected    => SelectedHasSource && !SelectedIsPosted;
+
     public AccountingViewModel(
         INavigationService   navigationService,
         IGetCashLedgerUseCase getCashLedger,
         Func<ReceiptWindow>   receiptWindowFactory,
         Func<PaymentWindow>   paymentWindowFactory,
-        Func<BulkCustomerReceiptSearchWindow> bulkReceiptSearchWindowFactory)
+        Func<BulkCustomerReceiptWindow> bulkReceiptWindowFactory,
+        IConfirmReceiptUseCase   confirmReceipt,
+        IUnconfirmReceiptUseCase unconfirmReceipt,
+        IDeleteReceiptUseCase    deleteReceipt,
+        IConfirmPaymentUseCase   confirmPayment,
+        IUnconfirmPaymentUseCase unconfirmPayment,
+        IDeletePaymentUseCase    deletePayment)
     {
         _navigationService    = navigationService;
         _getCashLedger        = getCashLedger;
         _receiptWindowFactory = receiptWindowFactory;
         _paymentWindowFactory = paymentWindowFactory;
-        _bulkReceiptSearchWindowFactory = bulkReceiptSearchWindowFactory;
+        _bulkReceiptWindowFactory = bulkReceiptWindowFactory;
+        _confirmReceipt   = confirmReceipt;
+        _unconfirmReceipt = unconfirmReceipt;
+        _deleteReceipt    = deleteReceipt;
+        _confirmPayment   = confirmPayment;
+        _unconfirmPayment = unconfirmPayment;
+        _deletePayment    = deletePayment;
 
         ItemsView = CollectionViewSource.GetDefaultView(Items);
         ItemsView.Filter = FilterEntry;
@@ -165,7 +198,7 @@ public partial class AccountingViewModel : ViewModelBase
 
         var statusLabel = entry.Status switch
         {
-            "Draft"     => "Nháp",
+            "Draft"     => "Treo", // dữ liệu cũ — coi như Treo, không còn trạng thái "Nháp"
             "Treo"      => "Treo",
             "Confirmed" => "Đã ghi sổ",
             _           => entry.Status,
@@ -227,13 +260,24 @@ public partial class AccountingViewModel : ViewModelBase
         window.Show();
     }
 
+    // 2026-09-26: BulkCustomerReceiptWindow là cửa sổ chứng từ đầy đủ (Trước/Sau/Sửa/Xóa/Ghi sổ),
+    // mở KHÔNG modal (Show) — mirror OpenReceipt/OpenPayment. Khớp MISA: bộ chọn chứng từ hiện
+    // TRƯỚC (StartNewAsync), cửa sổ phiếu chỉ Show() khi đã bấm "✔ Thu tiền"; Hủy → không mở gì.
     [RelayCommand]
-    private void OpenBulkCustomerReceipt()
+    private async Task OpenBulkCustomerReceiptAsync(CancellationToken ct = default)
     {
-        var window = _bulkReceiptSearchWindowFactory();
+        var window = _bulkReceiptWindowFactory();
         window.Owner = Application.Current.MainWindow;
-        window.ShowDialog();
-        _ = LoadAsync(CancellationToken.None);
+        if (!await window.ViewModel.StartNewAsync(ct))
+        {
+            // Phải Close() dù chưa Show — ShutdownMode mặc định OnLastWindowClose: cửa sổ đã tạo mà
+            // không đóng sẽ nằm mãi trong Application.Windows, tắt màn chính xong app vẫn chạy ngầm.
+            window.Close();
+            return;
+        }
+
+        window.ViewModel.BulkReceiptSaved += () => _ = LoadAsync(CancellationToken.None);
+        window.Show();
     }
 
     // "Xem" 1 dòng đã chọn (double-click hoặc nút toolbar) — mở đúng ReceiptWindow/PaymentWindow
@@ -264,7 +308,129 @@ public partial class AccountingViewModel : ViewModelBase
         }
     }
 
-    partial void OnSelectedEntryChanged(CashLedgerEntryDto? value) => ViewEntryCommand.NotifyCanExecuteChanged();
+    partial void OnSelectedEntryChanged(CashLedgerEntryDto? value)
+    {
+        ViewEntryCommand.NotifyCanExecuteChanged();
+        EditEntryCommand.NotifyCanExecuteChanged();
+        ConfirmEntryCommand.NotifyCanExecuteChanged();
+        UnconfirmEntryCommand.NotifyCanExecuteChanged();
+        DeleteEntryCommand.NotifyCanExecuteChanged();
+        SendEmailCommand.NotifyCanExecuteChanged();
+        SendZaloCommand.NotifyCanExecuteChanged();
+    }
+
+    // "✏️ Sửa" — mở đúng phiếu gốc (giống double-click/Xem) nhưng chỉ bấm được khi phiếu chưa ghi sổ.
+    [RelayCommand(CanExecute = nameof(CanModifySelected))]
+    private void EditEntry() => ViewEntry();
+
+    // "📗 Ghi sổ" thẳng từ danh sách, không hỏi xác nhận (khớp Chứng từ bán hàng).
+    [RelayCommand(CanExecute = nameof(CanConfirmSelected))]
+    private async Task ConfirmEntryAsync(CancellationToken ct = default)
+    {
+        if (SelectedEntry is not { } entry) return;
+        try
+        {
+            if (entry.ReceiptId is int receiptId)
+                await _confirmReceipt.ExecuteAsync(receiptId, ct);
+            else if (entry.PaymentId is int paymentId)
+                await _confirmPayment.ExecuteAsync(paymentId, ct);
+            await LoadAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Ghi sổ thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    // "↩️ Bỏ ghi" — không hỏi xác nhận (khớp Chứng từ bán hàng). Phiếu về Treo (chưa ghi sổ).
+    [RelayCommand(CanExecute = nameof(CanUnconfirmSelected))]
+    private async Task UnconfirmEntryAsync(CancellationToken ct = default)
+    {
+        if (SelectedEntry is not { } entry) return;
+        try
+        {
+            if (entry.ReceiptId is int receiptId)
+                await _unconfirmReceipt.ExecuteAsync(receiptId, ct);
+            else if (entry.PaymentId is int paymentId)
+                await _unconfirmPayment.ExecuteAsync(paymentId, ct);
+            await LoadAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Bỏ ghi thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    // "🗑️ Xóa" — chỉ khi chưa ghi sổ, có hỏi Yes/No (khớp Chứng từ bán hàng).
+    [RelayCommand(CanExecute = nameof(CanModifySelected))]
+    private async Task DeleteEntryAsync(CancellationToken ct = default)
+    {
+        if (SelectedEntry is not { } entry) return;
+        var number = entry.ReceiptNumber ?? entry.PaymentNumber;
+
+        var confirm = MessageBox.Show(
+            $"Bạn có chắc muốn xóa chứng từ '{number}'?",
+            "Xác nhận xóa", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        if (confirm != MessageBoxResult.Yes) return;
+
+        try
+        {
+            if (entry.ReceiptId is int receiptId)
+                await _deleteReceipt.ExecuteAsync(receiptId, ct);
+            else if (entry.PaymentId is int paymentId)
+                await _deletePayment.ExecuteAsync(paymentId, ct);
+            SelectedEntry = null;
+            await LoadAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            HasError     = true;
+            ErrorMessage = $"Xóa thất bại: {ex.Message}";
+        }
+    }
+
+    // "Gửi email / Gửi Zalo" phiếu đang chọn — giống Chứng từ bán hàng: app chưa tích hợp SMTP/Zalo OA,
+    // nên xuất file Excel của phiếu rồi mở email/Zalo của máy để người dùng tự đính kèm.
+    [RelayCommand(CanExecute = nameof(HasSelectedEntry))]
+    private void SendEmail()
+    {
+        if (SelectedEntry is not { } entry) return;
+        try
+        {
+            var number = entry.ReceiptNumber ?? entry.PaymentNumber ?? "";
+            using var workbook = BuildWorkbook(new[] { entry });
+            var path = ReportSharingHelper.SaveWorkbookToTempFile(workbook, $"ChungTu_{number}");
+            ReportSharingHelper.RevealInExplorer(path);
+            ReportSharingHelper.OpenMailClient(
+                $"{entry.DocumentType} - {number}",
+                $"File chứng từ đã được lưu tại:\n{path}\n\nVui lòng đính kèm file này vào email trước khi gửi.");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Gửi Email thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(HasSelectedEntry))]
+    private void SendZalo()
+    {
+        if (SelectedEntry is not { } entry) return;
+        try
+        {
+            var number = entry.ReceiptNumber ?? entry.PaymentNumber ?? "";
+            using var workbook = BuildWorkbook(new[] { entry });
+            var path = ReportSharingHelper.SaveWorkbookToTempFile(workbook, $"ChungTu_{number}");
+            ReportSharingHelper.RevealInExplorer(path);
+            ReportSharingHelper.OpenZaloApp();
+
+            MessageBox.Show("Đã mở Zalo và thư mục chứa file chứng từ. Vui lòng kéo-thả file để đính kèm.",
+                "Gửi Zalo", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Gửi Zalo thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
 
     [RelayCommand]
     private async Task LoadAsync(CancellationToken ct = default)
@@ -306,47 +472,7 @@ public partial class AccountingViewModel : ViewModelBase
             };
             if (dialog.ShowDialog() != true) return;
 
-            using var workbook  = new XLWorkbook();
-            var worksheet = workbook.Worksheets.Add("Sổ quỹ tiền mặt");
-
-            string[] headers =
-            {
-                "Ngày hạch toán", "Ngày chứng từ", "Số phiếu thu", "Số phiếu chi",
-                "Diễn giải", "Số tiền", "Người nhận/Người nộp", "Lý do thu/chi", "Loại chứng từ",
-            };
-            for (var i = 0; i < headers.Length; i++)
-            {
-                var cell = worksheet.Cell(1, i + 1);
-                cell.Value           = headers[i];
-                cell.Style.Font.Bold = true;
-            }
-
-            var row = 2;
-            foreach (var e in ItemsView.Cast<CashLedgerEntryDto>())
-            {
-                worksheet.Cell(row, 1).Value = e.AccountingDate;
-                worksheet.Cell(row, 2).Value = e.DocumentDate;
-                worksheet.Cell(row, 3).Value = e.ReceiptNumber;
-                worksheet.Cell(row, 4).Value = e.PaymentNumber;
-                worksheet.Cell(row, 5).Value = e.Description;
-                worksheet.Cell(row, 6).Value = e.Amount;
-                worksheet.Cell(row, 7).Value = e.PersonName;
-                worksheet.Cell(row, 8).Value = e.PaymentReason switch
-                {
-                    "ThuKhac"     => "Thu khác",
-                    "ThuTienHang" => "Thu tiền hàng",
-                    "ThuCongNo"   => "Thu công nợ",
-                    "ChiKhac"     => "Chi khác",
-                    "ChiMuaHang"  => "Chi mua hàng",
-                    "ChiTraNo"    => "Chi trả nợ",
-                    "ChiLuong"    => "Chi lương",
-                    _             => e.PaymentReason,
-                };
-                worksheet.Cell(row, 9).Value = e.DocumentType;
-                row++;
-            }
-
-            worksheet.Columns().AdjustToContents();
+            using var workbook = BuildWorkbook(ItemsView.Cast<CashLedgerEntryDto>());
             workbook.SaveAs(dialog.FileName);
 
             MessageBox.Show("Đã xuất file thành công.", "Xuất Excel",
@@ -356,5 +482,51 @@ public partial class AccountingViewModel : ViewModelBase
         {
             MessageBox.Show(ex.Message, "Xuất Excel thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
+    }
+
+    // Dùng chung cho Xuất khẩu (mọi dòng đang hiển thị) và Gửi email/Zalo (1 phiếu đang chọn).
+    private static XLWorkbook BuildWorkbook(IEnumerable<CashLedgerEntryDto> entries)
+    {
+        var workbook  = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Sổ quỹ tiền mặt");
+
+        string[] headers =
+        {
+            "Ngày hạch toán", "Ngày chứng từ", "Số phiếu thu", "Số phiếu chi",
+            "Diễn giải", "Số tiền", "Người nhận/Người nộp", "Lý do thu/chi", "Loại chứng từ",
+        };
+        for (var i = 0; i < headers.Length; i++)
+        {
+            var cell = worksheet.Cell(1, i + 1);
+            cell.Value           = headers[i];
+            cell.Style.Font.Bold = true;
+        }
+
+        var row = 2;
+        foreach (var e in entries)
+        {
+            worksheet.Cell(row, 1).Value = e.AccountingDate;
+            worksheet.Cell(row, 2).Value = e.DocumentDate;
+            worksheet.Cell(row, 3).Value = e.ReceiptNumber;
+            worksheet.Cell(row, 4).Value = e.PaymentNumber;
+            worksheet.Cell(row, 5).Value = e.Description;
+            worksheet.Cell(row, 6).Value = e.Amount;
+            worksheet.Cell(row, 7).Value = e.PersonName;
+            worksheet.Cell(row, 8).Value = e.PaymentReason switch
+            {
+                "ThuKhac"     => "Thu khác",
+                "ThuTienHang" => "Thu tiền hàng",
+                "ThuCongNo"   => "Thu công nợ",
+                "ChiKhac"     => "Chi khác",
+                "ChiMuaHang"  => "Chi mua hàng",
+                "ChiTraNo"    => "Chi trả nợ",
+                "ChiLuong"    => "Chi lương",
+                _             => e.PaymentReason,
+            };
+            worksheet.Cell(row, 9).Value = e.DocumentType;
+            row++;
+        }
+        worksheet.Columns().AdjustToContents();
+        return workbook;
     }
 }

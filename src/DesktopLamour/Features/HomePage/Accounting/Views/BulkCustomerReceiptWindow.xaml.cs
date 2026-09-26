@@ -1,6 +1,5 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 using System.Windows;
-using DesktopLamour.Features.HomePage.Accounting.Domain.Models;
 using DesktopLamour.Features.HomePage.Accounting.ViewModels;
 
 namespace DesktopLamour.Features.HomePage.Accounting.Views;
@@ -14,13 +13,13 @@ public partial class BulkCustomerReceiptWindow : Window
         InitializeComponent();
         ViewModel   = viewModel;
         DataContext = viewModel;
-        ViewModel.RequestClose += () => { if (IsVisible) DialogResult = true; };
+        viewModel.RequestClose += Close;
+        viewModel.HostWindow    = this;
     }
 
-    public void Initialize(
-        IReadOnlyList<OutstandingSalesOrderCheckItem> selected,
-        string debitAccount, string? bankAccount, int? collectorEmployeeId)
-        => ViewModel.Initialize(selected, debitAccount, bankAccount, collectorEmployeeId);
+    // 2026-09-26 (khớp MISA): KHÔNG còn tự nạp + tự bấm Thêm lúc cửa sổ hiện lên. Nơi mở
+    // (AccountingViewModel.OpenBulkCustomerReceiptAsync) gọi ViewModel.StartNewAsync() TRƯỚC khi
+    // Show() — bộ chọn chứng từ hiện đầu tiên, cửa sổ này chỉ xuất hiện sau khi bấm "✔ Thu tiền".
 
-    private void CancelButton_Click(object sender, RoutedEventArgs e) => Close();
+    private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
 }

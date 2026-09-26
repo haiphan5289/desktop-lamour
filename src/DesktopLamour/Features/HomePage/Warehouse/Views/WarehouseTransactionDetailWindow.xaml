@@ -62,6 +62,8 @@
         <!-- Detail grid: dòng hàng của chứng từ         -->
         <!-- ══════════════════════════════════════════ -->
         <DataGrid Grid.Row="1"
+                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                   Margin="20,16,20,0"
                   ItemsSource="{Binding Lines}"
                   AutoGenerateColumns="False"
@@ -112,25 +114,25 @@
                 <!-- Mã quy cách/Số lô/Hạn sử dụng/Số khế ước: hệ thống chưa theo dõi lô/hạn sử dụng — cột luôn trống, tô xám -->
                 <DataGridTextColumn Header="Mã quy cách" Width="90"  IsReadOnly="True" CellStyle="{StaticResource UntrackedColumnCellStyle}"/>
                 <DataGridTextColumn Header="ĐVT"         Binding="{Binding Unit}"          Width="70"/>
-                <DataGridTextColumn Header="Số lượng"    Binding="{Binding Quantity, StringFormat=N0}" Width="80">
+                <DataGridTextColumn Header="Số lượng"    Binding="{Binding Quantity, Converter={StaticResource MoneyConverter}}" Width="80">
                     <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource AppNumberCell}">
                             <Setter Property="HorizontalAlignment" Value="Right"/>
                             <Setter Property="Padding" Value="0,0,6,0"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="Đơn giá"     Binding="{Binding UnitPrice, StringFormat=N0}" Width="100">
+                <DataGridTextColumn Header="Đơn giá"     Binding="{Binding UnitPrice, Converter={StaticResource MoneyConverter}}" Width="100">
                     <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource AppNumberCell}">
                             <Setter Property="HorizontalAlignment" Value="Right"/>
                             <Setter Property="Padding" Value="0,0,6,0"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="Thành tiền"  Binding="{Binding Amount, StringFormat=N0}" Width="110">
+                <DataGridTextColumn Header="Thành tiền"  Binding="{Binding Amount, Converter={StaticResource MoneyConverter}}" Width="110">
                     <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource AppNumberCell}">
                             <Setter Property="HorizontalAlignment" Value="Right"/>
                             <Setter Property="Padding" Value="0,0,6,0"/>
                         </Style>

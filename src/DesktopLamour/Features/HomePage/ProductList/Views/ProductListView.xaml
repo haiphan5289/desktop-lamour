@@ -135,17 +135,17 @@
                     <DataGridTextColumn Header="Tên sản phẩm" Binding="{Binding Name}" Width="220"/>
                     <DataGridTextColumn Header="Danh mục" Binding="{Binding CategoryName}" Width="130"/>
                     <DataGridTextColumn Header="Đơn vị" Binding="{Binding Unit}" Width="80"/>
-                    <DataGridTextColumn Header="Giá nhập" Binding="{Binding CostPrice, StringFormat=\{0:N0\}}" Width="120">
+                    <DataGridTextColumn Header="Giá nhập" Binding="{Binding CostPrice, Converter={StaticResource MoneyConverter}}" Width="120">
                         <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource AppNumberCell}">
                                 <Setter Property="TextAlignment" Value="Right"/>
                                 <Setter Property="Padding" Value="6,0"/>
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
-                    <DataGridTextColumn Header="Giá bán" Binding="{Binding SellingPrice, StringFormat=\{0:N0\}}" Width="120">
+                    <DataGridTextColumn Header="Giá bán" Binding="{Binding SellingPrice, Converter={StaticResource MoneyConverter}}" Width="120">
                         <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource AppNumberCell}">
                                 <Setter Property="TextAlignment" Value="Right"/>
                                 <Setter Property="Padding" Value="6,0"/>
                             </Style>

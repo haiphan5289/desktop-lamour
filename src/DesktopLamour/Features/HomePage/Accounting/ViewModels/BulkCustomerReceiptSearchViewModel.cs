@@ -6,23 +6,31 @@ using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.HomePage.Accounting.Domain.Models;
 using DesktopLamour.Features.HomePage.Accounting.Domain.UseCases;
-using DesktopLamour.Features.HomePage.Accounting.Views;
 using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Sales.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Sales.Views;
 using DesktopLamour.Shared.Controls;
 using Microsoft.Extensions.Logging;
 
 namespace DesktopLamour.Features.HomePage.Accounting.ViewModels;
 
 // Popup 1/2 của "Phiếu Thu Hàng Loạt" — tìm chứng từ bán hàng còn nợ khớp filter, tick chọn nhiều
-// dòng (có thể nhiều khách hàng khác nhau), bấm "Thu tiền" mở popup xác nhận (BulkCustomerReceiptWindow)
-// để sửa số tiền từng dòng rồi Cất.
+// dòng (có thể nhiều khách hàng khác nhau). 2026-09-26 (so ảnh mẫu MISA, review lại toàn bộ luồng):
+// popup này giờ CHỈ LÀ BỘ CHỌN — bấm "✔ Thu tiền" không tự tạo/mở phiếu nữa, chỉ đóng lại và trả
+// phần đã chọn (Items đã tick + PaymentMethod/BankAccount/SelectedEmployee/CollectionDate) cho nơi
+// gọi (BulkCustomerReceiptViewModel.AddNewAsync) tự dựng dòng và lưu — mirror cách các popup
+// "chọn rồi trả kết quả" khác trong app không tự sinh side-effect ngay trong popup con.
 public partial class BulkCustomerReceiptSearchViewModel : ViewModelBase
 {
-    public event Action? RequestClose;
+    // true = đóng do bấm "✔ Thu tiền" hợp lệ (code-behind set DialogResult=true); false = "Hủy bỏ".
+    public event Action<bool>? RequestClose;
 
     private readonly IGetOutstandingSalesOrdersUseCase _getOutstanding;
     private readonly IGetEmployeesUseCase               _getEmployees;
-    private readonly Func<BulkCustomerReceiptWindow>    _confirmWindowFactory;
+    // "Số chứng từ" trên lưới hiện dạng link bấm được (khớp ảnh mẫu MISA) — mở lại đúng hóa đơn gốc,
+    // chỉ xem. Cùng cách BulkCustomerReceiptViewModel.OpenSalesOrderAsync đã làm cho "Tham chiếu".
+    private readonly IGetSalesOrderByIdUseCase _getSalesOrderById;
+    private readonly Func<SalesOrderWindow>    _salesOrderWindowFactory;
     private readonly ILogger<BulkCustomerReceiptSearchViewModel> _logger;
 
     [ObservableProperty] private bool   _isLoading;
@@ -45,7 +53,19 @@ public partial class BulkCustomerReceiptSearchViewModel : ViewModelBase
     [ObservableProperty] private DateTime _toDate   = DateTime.Today;
     [ObservableProperty] private ISearchableItem? _selectedEmployee;
 
+    // 2026-09-26 (khớp ảnh mẫu MISA "Ngày thu tiền") — chọn 1 lần ở đây, đổ thẳng vào Ngày hạch toán
+    // + Ngày chứng từ của phiếu tạo ra ở BulkCustomerReceiptViewModel.AddNewAsync, không cần gõ lại.
+    [ObservableProperty] private DateTime _collectionDate = DateTime.Today;
+
     [ObservableProperty] private bool _areAllSelected;
+
+    // 2026-09-26 (khớp ảnh mẫu MISA "Số tiền") — tổng số tiền các dòng ĐANG TICK, cập nhật sống mỗi
+    // khi tick/bỏ tick, KHÔNG phải tổng toàn bộ Items như LineSummary/"Số dòng".
+    [ObservableProperty] private decimal _selectedTotal;
+
+    // 2026-09-26: chính popup này (BulkCustomerReceiptSearchWindow tự gán) — hóa đơn mở từ link Số
+    // chứng từ căn giữa popup thay vì cửa sổ chính.
+    public Window? HostWindow { get; set; }
 
     public IReadOnlyList<ISearchableItem> Employees { get; private set; } = Array.Empty<ISearchableItem>();
     public ObservableCollection<OutstandingSalesOrderCheckItem> Items { get; } = new();
@@ -53,13 +73,42 @@ public partial class BulkCustomerReceiptSearchViewModel : ViewModelBase
     public BulkCustomerReceiptSearchViewModel(
         IGetOutstandingSalesOrdersUseCase getOutstanding,
         IGetEmployeesUseCase              getEmployees,
-        Func<BulkCustomerReceiptWindow>   confirmWindowFactory,
+        IGetSalesOrderByIdUseCase         getSalesOrderById,
+        Func<SalesOrderWindow>            salesOrderWindowFactory,
         ILogger<BulkCustomerReceiptSearchViewModel> logger)
     {
-        _getOutstanding        = getOutstanding;
-        _getEmployees          = getEmployees;
-        _confirmWindowFactory  = confirmWindowFactory;
-        _logger                = logger;
+        _getOutstanding          = getOutstanding;
+        _getEmployees            = getEmployees;
+        _getSalesOrderById       = getSalesOrderById;
+        _salesOrderWindowFactory = salesOrderWindowFactory;
+        _logger                  = logger;
+    }
+
+    // "Số chứng từ" trên lưới bấm được — mở lại đúng hóa đơn gốc (chỉ xem), không đụng lựa chọn
+    // (IsSelected) đang tick — giống hệt BulkCustomerReceiptViewModel.OpenSalesOrderAsync.
+    [RelayCommand]
+    private async Task OpenSalesOrderAsync(int salesOrderId, CancellationToken ct = default)
+    {
+        try
+        {
+            var order = await _getSalesOrderById.ExecuteAsync(salesOrderId, ct);
+            if (order is null)
+            {
+                MessageBox.Show("Không tìm thấy chứng từ bán hàng này (có thể đã bị xóa).", "Không tìm thấy",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var window = _salesOrderWindowFactory();
+            window.Owner = HostWindow ?? Application.Current.MainWindow;
+            window.Initialize(order, isReadOnly: true);
+            window.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not open sales order {Id} from outstanding-orders grid", salesOrderId);
+            MessageBox.Show(ex.Message, "Không thể mở chứng từ", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     [RelayCommand]
@@ -108,7 +157,14 @@ public partial class BulkCustomerReceiptSearchViewModel : ViewModelBase
     partial void OnAreAllSelectedChanged(bool value)
     {
         foreach (var item in Items) item.IsSelected = value;
+        // Mỗi item.IsSelected = value ở trên đã tự bắn RecalculateSelectedTotal qua PropertyChanged
+        // handler gắn trong LoadAsync, nhưng gọi lại 1 lần cho chắc (vd. Items rỗng thì vòng for
+        // không chạy lần nào, SelectedTotal có thể còn stale từ trước).
+        RecalculateSelectedTotal();
     }
+
+    private void RecalculateSelectedTotal() =>
+        SelectedTotal = Items.Where(i => i.IsSelected).Sum(i => i.RemainingAmount);
 
     [RelayCommand]
     private async Task LoadAsync(CancellationToken ct = default)
@@ -124,9 +180,19 @@ public partial class BulkCustomerReceiptSearchViewModel : ViewModelBase
 
             AreAllSelected = false;
             Items.Clear();
-            foreach (var order in data) Items.Add(new OutstandingSalesOrderCheckItem(order));
+            foreach (var order in data)
+            {
+                var item = new OutstandingSalesOrderCheckItem(order);
+                item.PropertyChanged += (_, e) =>
+                {
+                    if (e.PropertyName == nameof(OutstandingSalesOrderCheckItem.IsSelected))
+                        RecalculateSelectedTotal();
+                };
+                Items.Add(item);
+            }
             HasItems    = Items.Count > 0;
             LineSummary = $"Số dòng = {Items.Count}";
+            RecalculateSelectedTotal();
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -137,6 +203,10 @@ public partial class BulkCustomerReceiptSearchViewModel : ViewModelBase
         }
         finally { IsLoading = false; }
     }
+
+    // Trả về đúng danh sách đang tick — dùng ngay khi ĐANG mở (trước khi đóng), nên không cần lưu
+    // snapshot riêng: BulkCustomerReceiptViewModel đọc property này SAU KHI ShowDialog() trả về true.
+    public IReadOnlyList<OutstandingSalesOrderCheckItem> SelectedItems { get; private set; } = Array.Empty<OutstandingSalesOrderCheckItem>();
 
     [RelayCommand]
     private void Collect()
@@ -149,18 +219,10 @@ public partial class BulkCustomerReceiptSearchViewModel : ViewModelBase
             return;
         }
 
-        var window = _confirmWindowFactory();
-        window.Owner = Application.Current.MainWindow;
-        window.Initialize(
-            selected,
-            debitAccount: PaymentMethod,
-            bankAccount: PaymentMethod == "Bank112" ? BankAccount : null,
-            collectorEmployeeId: SelectedEmployee?.Id);
-
-        if (window.ShowDialog() == true)
-            _ = LoadAsync(CancellationToken.None);
+        SelectedItems = selected;
+        RequestClose?.Invoke(true);
     }
 
     [RelayCommand]
-    private void Cancel() => RequestClose?.Invoke();
+    private void Cancel() => RequestClose?.Invoke(false);
 }

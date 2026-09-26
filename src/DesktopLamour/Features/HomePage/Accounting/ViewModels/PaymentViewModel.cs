@@ -23,6 +23,12 @@ namespace DesktopLamour.Features.HomePage.Accounting.ViewModels;
 
 public partial class PaymentViewModel : ViewModelBase
 {
+    // 2026-09-26: hiện sẵn N dòng trống để gõ ngay, đỡ phải bấm "+ Thêm dòng" nhiều lần (mirror
+    // SalesOrderViewModel/SalesReturnViewModel InitialEmptyLineCount, giá trị nhỏ hơn vì phiếu chi
+    // hiếm khi có >10 dòng hạch toán thật). QUAN TRỌNG: dòng trống (Amount = 0, chưa chọn TK) phải bị
+    // lọc khỏi request lúc lưu (xem BuildCreateRequest/BuildUpdateRequest) — nếu gửi thẳng lên BE,
+    // CreatePaymentUseCase sẽ ném "Tài khoản Nợ không tồn tại." vì SelectedDebitAccount null → Id=0.
+    private const int InitialEmptyLineCount = 50;
     public event Action? PaymentSaved;
     public event Action? RequestClose;
     private readonly IGetPaymentsUseCase          _getPayments;
@@ -32,7 +38,6 @@ public partial class PaymentViewModel : ViewModelBase
     private readonly IDeletePaymentUseCase        _deletePayment;
     private readonly IConfirmPaymentUseCase       _confirmPayment;
     private readonly IUnconfirmPaymentUseCase     _unconfirmPayment;
-    private readonly ISetPaymentTreoUseCase       _setPaymentTreo;
     private readonly IGetSuppliersUseCase         _getSuppliers;
     private readonly IGetCustomersUseCase         _getCustomers;
     private readonly IGetEmployeesUseCase         _getEmployees;
@@ -87,15 +92,20 @@ public partial class PaymentViewModel : ViewModelBase
         "ChiKhac", "ChiMuaHang", "ChiTraNo"
     };
 
-    // Chỉ Nháp (hoặc phiếu mới, chưa lưu) mới cho phép sửa — phiếu đã Ghi số là bất biến.
-    public bool CanEdit => CurrentPayment is null || CurrentPayment.Status != "Confirmed";
-    public bool CanPrint => CurrentPayment is not null;
-    public bool CanUnconfirm => CurrentPayment is not null && CurrentPayment.Status == "Confirmed";
-    // 2026-09-01: trước đây chỉ check "có chọn phiếu chưa", không check Status — Xóa vẫn bấm được
-    // (rồi mới nhận lỗi từ BE) trên 1 phiếu ĐÃ Ghi sổ, trong khi Sửa (CanEdit) đã chặn đúng từ lâu.
-    // BE (`DeletePaymentUseCase`) đã ném `DomainException("Phiếu chi đã ghi số, không thể xoá.")`
-    // cho trường hợp này — sửa ở đây chỉ để nút tự disable đúng lúc thay vì bấm xong mới báo lỗi.
-    public bool CanDelete => CurrentPayment is not null && CurrentPayment.Status != "Confirmed";
+    // ── Trạng thái popup — 2026-09-26: khớp ĐÚNG quy trình Chứng từ bán hàng
+    // (Sales/docs/ChungTuTraHangBan-Review.html, SalesOrderViewModel):
+    //   • Mở phiếu có sẵn → form KHÓA; bấm "Sửa" (chỉ khi chưa ghi sổ) mới nhập được.
+    //   • "Cất" = Ghi sổ ngay, xong form tự khóa lại, popup vẫn mở (để In).
+    //   • Nút "Ghi sổ / Bỏ ghi" dùng chung 1 nút toggle, chỉ bấm được khi form đang khóa, không hỏi lại.
+    //   • "Xóa" chỉ khi chưa ghi sổ + form đang khóa, có hỏi Yes/No, xóa xong đóng popup.
+    //   • Không còn nút "Treo" (trạng thái chưa ghi sổ chỉ còn là kết quả của "Bỏ ghi").
+    public bool IsConfirmed => CurrentPayment is not null && CurrentPayment.Status == "Confirmed";
+    public bool IsEditable  => CurrentPayment is null || (IsEditing && !IsConfirmed);
+    private bool CanEdit    => CurrentPayment is not null && !IsEditing && !IsConfirmed;
+    public bool CanPrint    => CurrentPayment is not null;
+    private bool CanToggleConfirm => CurrentPayment is not null && !IsEditing;
+    public string UnpostButtonLabel => IsConfirmed ? "Bỏ ghi" : "Ghi sổ";
+    public bool CanDelete   => CurrentPayment is not null && !IsConfirmed && !IsEditing;
 
     // CanExecute cho NavigatePrev/NavigateNextCommand — WPF tự disable (mờ) nút khi đang ở
     // đầu/cuối danh sách, không phải ẩn hẳn (nút vẫn nằm đúng chỗ trong toolbar).
@@ -113,7 +123,6 @@ public partial class PaymentViewModel : ViewModelBase
         IDeletePaymentUseCase        deletePayment,
         IConfirmPaymentUseCase       confirmPayment,
         IUnconfirmPaymentUseCase     unconfirmPayment,
-        ISetPaymentTreoUseCase       setPaymentTreo,
         IGetSuppliersUseCase         getSuppliers,
         IGetCustomersUseCase         getCustomers,
         IGetEmployeesUseCase         getEmployees,
@@ -131,7 +140,6 @@ public partial class PaymentViewModel : ViewModelBase
         _deletePayment             = deletePayment;
         _confirmPayment            = confirmPayment;
         _unconfirmPayment          = unconfirmPayment;
-        _setPaymentTreo            = setPaymentTreo;
         _getSuppliers              = getSuppliers;
         _getCustomers              = getCustomers;
         _getEmployees              = getEmployees;
@@ -192,56 +200,6 @@ public partial class PaymentViewModel : ViewModelBase
     private async Task RefreshAsync(CancellationToken ct = default)
         => await LoadPaymentsAsync(ct);
 
-    // "📌 Treo" — lưu phiếu (thay cho nút Cất đã bỏ). Đang Nháp thì lưu + chuyển sang Treo;
-    // đã Treo rồi thì chỉ lưu lại thay đổi, không gọi lại endpoint /treo.
-    [RelayCommand]
-    private async Task TreoAsync(CancellationToken ct = default)
-    {
-        HasError     = false;
-        ErrorMessage = string.Empty;
-
-        if (CurrentPayment is not null && CurrentPayment.Status == "Confirmed")
-        {
-            HasError     = true;
-            ErrorMessage = "Phiếu chi đã ghi số, không thể sửa.";
-            return;
-        }
-
-        var isDraft = CurrentPayment is null || CurrentPayment.Status == "Draft";
-
-        var savedId = await PersistAsync(ct);
-        if (savedId is null) return;
-
-        if (!isDraft) // đã Treo — vừa lưu lại thay đổi, không cần đổi trạng thái nữa
-        {
-            IsEditing = false;
-            PaymentSaved?.Invoke();
-            RequestClose?.Invoke();
-            return;
-        }
-
-        IsBusy = true;
-        try
-        {
-            var treo = await _setPaymentTreo.ExecuteAsync(savedId.Value, ct);
-            _logger.LogInformation("Payment set to Treo: {Id}", treo.Id);
-            await LoadPaymentsAsync(ct);
-            NavigateToPayment(treo.Id);
-
-            IsEditing = false;
-            PaymentSaved?.Invoke();
-            RequestClose?.Invoke();
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to set payment to Treo");
-            HasError     = true;
-            ErrorMessage = ex.Message;
-        }
-        finally { IsBusy = false; }
-    }
-
     private async Task LoadPaymentsAsync(CancellationToken ct)
     {
         IsBusy   = true;
@@ -276,30 +234,29 @@ public partial class PaymentViewModel : ViewModelBase
         _currentIndex         = -1;
         IsEditing             = true;
         ClearForm();
+        for (var i = 0; i < InitialEmptyLineCount; i++) AddEntry();
     }
 
-    [RelayCommand]
+    // "💾 Cất" = lưu + Ghi sổ ngay (khớp Chứng từ bán hàng).
+    [RelayCommand(CanExecute = nameof(IsEditable))]
     private async Task ConfirmAsync(CancellationToken ct = default)
     {
         HasError     = false;
         ErrorMessage = string.Empty;
 
-        if (CurrentPayment is not null && CurrentPayment.Status != "Treo")
+        // 2026-09-26: bỏ bước bắt buộc "bấm Treo trước" — khớp Chứng từ bán hàng, "Cất" = Ghi sổ ngay
+        // cho mọi phiếu chưa ghi sổ (BE ConfirmPaymentUseCase giờ nhận cả Draft lẫn Treo). Trước đây
+        // phiếu chi MỚI bấm Cất luôn bị BE từ chối vì phiếu vừa tạo ở Draft.
+        if (CurrentPayment is not null && CurrentPayment.Status == "Confirmed")
         {
             HasError     = true;
-            ErrorMessage = CurrentPayment.Status == "Confirmed"
-                ? "Phiếu chi này đã được ghi số trước đó."
-                : "Chỉ phiếu chi ở trạng thái Treo mới có thể ghi số. Vui lòng bấm Treo trước.";
+            ErrorMessage = "Phiếu chi này đã được ghi sổ trước đó.";
             return;
         }
 
-        if (Entries.Count == 0)
-        {
-            HasError     = true;
-            ErrorMessage = "Phiếu chi phải có ít nhất 1 dòng hạch toán.";
-            return;
-        }
-
+        // Kiểm tra "ít nhất 1 dòng hạch toán" đã chuyển vào PersistAsync (dùng chung với Sửa/Cất
+        // khác) — Entries.Count == 0 không còn đúng nữa vì Entries luôn có sẵn InitialEmptyLineCount
+        // dòng trống ngay từ khi mở form.
         var savedId = await PersistAsync(ct);
         if (savedId is null) return;
 
@@ -311,9 +268,9 @@ public partial class PaymentViewModel : ViewModelBase
             await LoadPaymentsAsync(ct);
             NavigateToPayment(confirmed.Id);
 
+            // Cất xong khóa form lại, GIỮ popup mở (khớp Chứng từ bán hàng — để bấm In ngay).
             IsEditing = false;
             PaymentSaved?.Invoke();
-            RequestClose?.Invoke();
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -325,28 +282,31 @@ public partial class PaymentViewModel : ViewModelBase
         finally { IsBusy = false; }
     }
 
-    // "↩️ Hoàn" (MISA) — hủy Ghi số, đưa phiếu về Treo (mirror UnconfirmWarehouseReceiptUseCase).
-    [RelayCommand(CanExecute = nameof(CanUnconfirm))]
-    private async Task UnconfirmAsync(CancellationToken ct = default)
+    // "↩️ Bỏ ghi / 📗 Ghi sổ" — 1 nút toggle (khớp Chứng từ bán hàng), mỗi chiều 1 lần bấm, không hỏi
+    // xác nhận. Bỏ ghi đưa phiếu về Treo, form vẫn khóa — phải bấm "Sửa" mới nhập được.
+    [RelayCommand(CanExecute = nameof(CanToggleConfirm))]
+    private async Task ToggleConfirmAsync(CancellationToken ct = default)
     {
-        if (CurrentPayment is null || CurrentPayment.Status != "Confirmed") return;
+        if (CurrentPayment is null) return;
 
         HasError     = false;
         ErrorMessage = string.Empty;
         IsBusy       = true;
         try
         {
-            var reverted = await _unconfirmPayment.ExecuteAsync(CurrentPayment.Id, ct);
-            _logger.LogInformation("Payment unconfirmed: {Id}", reverted.Id);
+            var result = IsConfirmed
+                ? await _unconfirmPayment.ExecuteAsync(CurrentPayment.Id, ct)
+                : await _confirmPayment.ExecuteAsync(CurrentPayment.Id, ct);
+            _logger.LogInformation("Payment {Id} toggled confirm — new status {Status}", result.Id, result.Status);
             await LoadPaymentsAsync(ct);
-            NavigateToPayment(reverted.Id);
+            NavigateToPayment(result.Id);
+            PaymentSaved?.Invoke();
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to unconfirm payment");
-            HasError     = true;
-            ErrorMessage = ex.Message;
+            _logger.LogError(ex, "Failed to toggle confirm for payment");
+            MessageBox.Show(ex.Message, "Thao tác thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally { IsBusy = false; }
     }
@@ -361,6 +321,15 @@ public partial class PaymentViewModel : ViewModelBase
         {
             HasError     = true;
             ErrorMessage = "Vui lòng chọn đối tượng.";
+            return null;
+        }
+
+        // Lọc dòng trống (Amount = 0 — chưa gõ tới, còn nguyên từ InitialEmptyLineCount) trước khi
+        // validate/gửi BE, khớp SalesOrderViewModel (Lines.Where(l => l.ProductId > 0)).
+        if (!Entries.Any(e => e.Amount != 0))
+        {
+            HasError     = true;
+            ErrorMessage = "Vui lòng nhập ít nhất một dòng hạch toán.";
             return null;
         }
 
@@ -406,12 +375,19 @@ public partial class PaymentViewModel : ViewModelBase
     {
         if (CurrentPayment is null) return;
 
+        // Khớp Chứng từ bán hàng: Xóa có hỏi Yes/No, xóa xong đóng popup.
+        var confirm = MessageBox.Show(
+            $"Bạn có chắc muốn xóa chứng từ '{CurrentPayment.DocumentNumber}'?",
+            "Xác nhận xóa", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        if (confirm != MessageBoxResult.Yes) return;
+
         IsBusy = true;
         try
         {
             await _deletePayment.ExecuteAsync(CurrentPayment.Id, ct);
             _logger.LogInformation("Payment deleted: {Id}", CurrentPayment.Id);
-            await LoadPaymentsAsync(ct);
+            PaymentSaved?.Invoke();
+            RequestClose?.Invoke();
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -426,16 +402,10 @@ public partial class PaymentViewModel : ViewModelBase
     [RelayCommand(CanExecute = nameof(CanEdit))]
     private void Edit()
     {
-        if (CurrentPayment is not null && CurrentPayment.Status == "Confirmed")
-        {
-            MessageBox.Show(
-                "Phiếu chi đã ghi số, không thể sửa.",
-                "Không thể sửa",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-            return;
-        }
         IsEditing = true;
+        // PopulateFormFromCurrent (đã chạy trước đó) chỉ nạp đúng số dòng THẬT — thêm dòng trống để
+        // gõ thêm ngay, không phải tự bấm "+ Thêm dòng" nhiều lần (mirror SalesOrderViewModel.Edit).
+        for (var i = 0; i < InitialEmptyLineCount; i++) AddEntry();
     }
 
     [RelayCommand(CanExecute = nameof(CanPrint))]
@@ -452,6 +422,7 @@ public partial class PaymentViewModel : ViewModelBase
     {
         if (_receiptListCache.Count == 0 || _currentIndex <= 0) return;
         _currentIndex--;
+        IsEditing      = false;
         CurrentPayment = _receiptListCache[_currentIndex];
         PopulateFormFromCurrent();
     }
@@ -461,6 +432,7 @@ public partial class PaymentViewModel : ViewModelBase
     {
         if (_receiptListCache.Count == 0 || _currentIndex >= _receiptListCache.Count - 1) return;
         _currentIndex++;
+        IsEditing      = false;
         CurrentPayment = _receiptListCache[_currentIndex];
         PopulateFormFromCurrent();
     }
@@ -549,16 +521,25 @@ public partial class PaymentViewModel : ViewModelBase
 
     partial void OnCurrentPaymentChanged(PaymentResponseDto? value)
     {
-        OnPropertyChanged(nameof(CanEdit));
+        NotifyEditStateChanged();
         OnPropertyChanged(nameof(CanPrint));
-        OnPropertyChanged(nameof(CanUnconfirm));
-        OnPropertyChanged(nameof(CanDelete));
-        EditCommand.NotifyCanExecuteChanged();
         PrintCommand.NotifyCanExecuteChanged();
-        UnconfirmCommand.NotifyCanExecuteChanged();
-        DeleteCommand.NotifyCanExecuteChanged();
         NavigatePrevCommand.NotifyCanExecuteChanged();
         NavigateNextCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnIsEditingChanged(bool value) => NotifyEditStateChanged();
+
+    private void NotifyEditStateChanged()
+    {
+        OnPropertyChanged(nameof(IsConfirmed));
+        OnPropertyChanged(nameof(IsEditable));
+        OnPropertyChanged(nameof(CanDelete));
+        OnPropertyChanged(nameof(UnpostButtonLabel));
+        EditCommand.NotifyCanExecuteChanged();
+        ConfirmCommand.NotifyCanExecuteChanged();
+        ToggleConfirmCommand.NotifyCanExecuteChanged();
+        DeleteCommand.NotifyCanExecuteChanged();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
@@ -657,7 +638,9 @@ public partial class PaymentViewModel : ViewModelBase
     private void RecalculateTotals()
     {
         TotalAmount   = Entries.Sum(e => e.Amount);
-        EntrySummary  = $"Số dòng = {Entries.Count}";
+        // Đếm dòng THẬT (đã nhập Amount) — không tính dòng trống hiện sẵn để gõ, khớp
+        // SalesOrderViewModel.LineSummary (Lines.Count(l => l.ProductId > 0)).
+        EntrySummary  = $"Số dòng = {Entries.Count(e => e.Amount != 0)}";
     }
 
     private CreatePaymentRequestDto BuildCreateRequest() => new()
@@ -674,7 +657,8 @@ public partial class PaymentViewModel : ViewModelBase
         AccountingDate      = DateTime.SpecifyKind(AccountingDate.Date, DateTimeKind.Unspecified),
         DocumentDate        = DateTime.SpecifyKind(DocumentDate.Date,    DateTimeKind.Unspecified),
         DocumentNumber      = DocumentNumber.Trim(),
-        Entries             = Entries.Select(ToEntryDto).ToList(),
+        // Bỏ dòng trống (Amount = 0) — xem ghi chú ở InitialEmptyLineCount/PersistAsync.
+        Entries             = Entries.Where(e => e.Amount != 0).Select(ToEntryDto).ToList(),
     };
 
     private UpdatePaymentRequestDto BuildUpdateRequest() => new()
@@ -691,7 +675,8 @@ public partial class PaymentViewModel : ViewModelBase
         AccountingDate      = DateTime.SpecifyKind(AccountingDate.Date, DateTimeKind.Unspecified),
         DocumentDate        = DateTime.SpecifyKind(DocumentDate.Date,    DateTimeKind.Unspecified),
         DocumentNumber      = DocumentNumber.Trim(),
-        Entries             = Entries.Select(ToEntryDto).ToList(),
+        // Bỏ dòng trống (Amount = 0) — xem ghi chú ở InitialEmptyLineCount/PersistAsync.
+        Entries             = Entries.Where(e => e.Amount != 0).Select(ToEntryDto).ToList(),
     };
 
     private static PaymentEntryDto ToEntryDto(PaymentEntryItem item) => new()

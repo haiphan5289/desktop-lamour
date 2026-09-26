@@ -1,5 +1,6 @@
 <Window x:Class="DesktopLamour.Features.HomePage.Accounting.Views.PaymentWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:helpers="clr-namespace:DesktopLamour.Shared.Helpers"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
         xmlns:behaviors="clr-namespace:DesktopLamour.Shared.Behaviors"
@@ -127,15 +128,16 @@
                                   EditCommand="{Binding EditCommand}"
                                   DeleteCommand="{Binding DeleteCommand}"
                                   SaveCommand="{Binding ConfirmCommand}"
-                                  UnpostCommand="{Binding UnconfirmCommand}"
-                                  HoldCommand="{Binding TreoCommand}"
+                                  SaveLabel="Cất"
+                                  UnpostCommand="{Binding ToggleConfirmCommand}"
+                                  UnpostLabel="{Binding UnpostButtonLabel}"
                                   PrintCommand="{Binding PrintCommand}"
                                   CloseRequested="CloseButton_Click"/>
 
         <!-- ═══════════════════════════════════════════════════════ -->
         <!-- Form — Thông tin chung + Chứng từ                       -->
         <!-- ═══════════════════════════════════════════════════════ -->
-        <Grid Grid.Row="2" Margin="16,12,16,0" IsEnabled="{Binding CanEdit}">
+        <Grid Grid.Row="2" Margin="16,12,16,0" IsEnabled="{Binding IsEditable}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="16"/>
@@ -318,7 +320,7 @@
         <!-- ═══════════════════════════════════════════════════════ -->
         <!-- Tab area — Hạch toán / Thuế                             -->
         <!-- ═══════════════════════════════════════════════════════ -->
-        <Grid Grid.Row="3" Margin="16,8,16,0" IsEnabled="{Binding CanEdit}">
+        <Grid Grid.Row="3" Margin="16,8,16,0" IsEnabled="{Binding IsEditable}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
@@ -384,7 +386,7 @@
 
                             <!-- Số tiền -->
                             <DataGridTextColumn Header="Số tiền"
-                                                Binding="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=N0}"
+                                                Binding="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=N0, ConverterCulture=vi-VN}"
                                                 Width="110">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
@@ -478,7 +480,7 @@
                 BorderThickness="0,1,0,0"
                 Padding="16,10"
                 Margin="0,6,0,0"
-                IsEnabled="{Binding CanEdit}">
+                IsEnabled="{Binding IsEditable}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -502,7 +504,7 @@
                     <controls:AppLabel Text="Tổng tiền:"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Margin="0,0,12,0"/>
-                    <controls:AppLabel Text="{Binding TotalAmount, StringFormat=\{0:N0\}}"
+                    <controls:AppLabel helpers:NegativeAmountHighlight.IsEnabled="True" Text="{Binding TotalAmount, Converter={StaticResource MoneyConverter}}"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Foreground="{StaticResource AppColor.TextBrand}"/>
                 </StackPanel>

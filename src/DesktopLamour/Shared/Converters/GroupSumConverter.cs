@@ -3,6 +3,7 @@ using System.Collections;
 using System.Globalization;
 using System.Windows.Data;
 using DesktopLamour.Features.HomePage.Sales.Domain.Models;
+using DesktopLamour.Shared.Helpers;
 
 namespace DesktopLamour.Shared.Converters;
 
@@ -12,22 +13,21 @@ public class GroupSumConverter : IValueConverter
     {
         if (value is not IEnumerable items) return "";
         var rows = items.Cast<ReportDisplayRow>().ToList();
-        var money = CultureInfo.GetCultureInfo("vi-VN");
 
         return (parameter as string) switch
         {
             "Quantity"       => rows.Sum(r => r.QuantitySold).ToString(),
-            "SalesAmount"    => rows.Sum(r => r.SalesAmount).ToString("N0", money),
-            "DiscountAmount" => rows.Sum(r => r.DiscountAmount).ToString("N0", money),
+            "SalesAmount"    => MoneyFormat.Format(rows.Sum(r => r.SalesAmount)),
+            "DiscountAmount" => MoneyFormat.Format(rows.Sum(r => r.DiscountAmount)),
             "ReturnQuantity" => rows.Sum(r => r.ReturnQuantity).ToString(),
-            "ReturnValue"    => rows.Sum(r => r.ReturnValue).ToString("N0", money),
-            "DiscountValue"  => rows.Sum(r => r.DiscountValue).ToString("N0", money),
-            "NetRevenue"     => rows.Sum(r => r.NetRevenue).ToString("N0", money),
-            "CostAmount"     => rows.Sum(r => r.CostAmount).ToString("N0", money),
-            "GrossProfit"    => rows.Sum(r => r.GrossProfit).ToString("N0", money),
+            "ReturnValue"    => MoneyFormat.Format(rows.Sum(r => r.ReturnValue)),
+            "DiscountValue"  => MoneyFormat.Format(rows.Sum(r => r.DiscountValue)),
+            "NetRevenue"     => MoneyFormat.Format(rows.Sum(r => r.NetRevenue)),
+            "CostAmount"     => MoneyFormat.Format(rows.Sum(r => r.CostAmount)),
+            "GrossProfit"    => MoneyFormat.Format(rows.Sum(r => r.GrossProfit)),
             // Tính lại từ tổng Lãi gộp/Doanh thu thuần của cả nhóm — không cộng dồn % của từng
             // dòng lẻ (sẽ ra sai số học).
-            "GrossProfitRate" => GrossProfitRateFor(rows).ToString("N2", money),
+            "GrossProfitRate" => MoneyFormat.Format(GrossProfitRateFor(rows), "N2"),
             _ => "",
         };
     }

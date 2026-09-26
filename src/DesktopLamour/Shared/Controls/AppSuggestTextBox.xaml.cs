@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using DesktopLamour.Shared.Helpers;
 
 namespace DesktopLamour.Shared.Controls;
 
@@ -150,7 +151,7 @@ public partial class AppSuggestTextBox : UserControl
                 e.Handled = true;
                 return;
             }
-            element = VisualTreeHelper.GetParent(element);
+            element = TreeWalk.GetParent(element);
         }
     }
 

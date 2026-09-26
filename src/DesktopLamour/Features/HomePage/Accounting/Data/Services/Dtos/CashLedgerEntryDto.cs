@@ -20,4 +20,7 @@ public class CashLedgerEntryDto
     [JsonPropertyName("payment_reason")]  public string?  PaymentReason  { get; set; }
     [JsonPropertyName("document_type")]   public string   DocumentType   { get; set; } = "";
     [JsonPropertyName("status")]          public string   Status         { get; set; } = "Confirmed";
+    // 2026-09-26: id phiếu gốc (BE tra theo số chứng từ) — để Ghi sổ/Bỏ ghi/Xóa/Sửa thẳng từ màn Quỹ.
+    [JsonPropertyName("receipt_id")]      public int?     ReceiptId      { get; set; }
+    [JsonPropertyName("payment_id")]      public int?     PaymentId      { get; set; }
 }

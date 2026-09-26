@@ -68,8 +68,26 @@
                                                     Width="180" Height="44"/>
                 </StackPanel>
 
+                <!-- 2026-09-26 (khớp ảnh mẫu MISA "Ngày thu tiền") — chọn 1 lần, đổ vào Ngày hạch
+                     toán + Ngày chứng từ của phiếu tạo ra, không cần gõ lại ở popup xác nhận. -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,16,8">
+                    <controls:AppLabel Text="Ngày thu tiền" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <DatePicker SelectedDate="{Binding CollectionDate, Mode=TwoWay}" Width="120" Height="44" VerticalContentAlignment="Center"/>
+                </StackPanel>
+
                 <controls:AppButton Content="🔍 Lấy dữ liệu" Style="{StaticResource AppButton.Primary.Medium}"
                                     Command="{Binding LoadCommand}" Height="44" Margin="0,0,0,8"/>
+
+                <!-- 2026-09-26 (khớp ảnh mẫu MISA "Số tiền") — tổng số tiền các dòng ĐANG TICK, cập
+                     nhật sống mỗi khi tick/bỏ tick. Read-only (chỉ để xem trước, sửa số tiền thật sự
+                     nằm ở popup xác nhận). -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <controls:AppLabel Text="Số tiền" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <controls:AppLabel Text="{Binding SelectedTotal, Converter={StaticResource MoneyConverter}}"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Foreground="{StaticResource AppColor.TextBrand}"
+                                       VerticalAlignment="Center" Width="120"/>
+                </StackPanel>
             </WrapPanel>
         </Border>
 
@@ -102,14 +120,34 @@
                             </DataTemplate>
                         </DataGridCheckBoxColumn.HeaderTemplate>
                     </DataGridCheckBoxColumn>
-                    <DataGridTextColumn Header="Ngày chứng từ" Binding="{Binding AccountingDate, StringFormat=dd/MM/yyyy}" Width="100" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="Số chứng từ"   Binding="{Binding DocumentNumber}" Width="100" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Ngày chứng từ" Binding="{Binding DocumentDate, StringFormat=dd/MM/yyyy}" Width="100" IsReadOnly="True">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/><Setter Property="VerticalAlignment" Value="Center"/><Setter Property="Padding" Value="0,0,8,0"/></Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <!-- 2026-09-26 (khớp ảnh mẫu MISA — Số chứng từ hiện dạng link): bấm mở lại đúng
+                         hóa đơn gốc (chỉ xem), không đụng ô tick IsSelected của dòng. Cùng cách
+                         "Tham chiếu" ở BulkCustomerReceiptWindow đã làm. -->
+                    <DataGridTemplateColumn Header="Số chứng từ" Width="100">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Command="{Binding DataContext.OpenSalesOrderCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding SalesOrderId}"
+                                        Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                        Padding="4,0" HorizontalAlignment="Left" HorizontalContentAlignment="Left">
+                                    <TextBlock Text="{Binding DocumentNumber}"
+                                               Foreground="{StaticResource AppColor.TextBrand}"
+                                               TextDecorations="Underline"/>
+                                </Button>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                     <DataGridTextColumn Header="Mã khách hàng" Binding="{Binding CustomerCode}"   Width="100" IsReadOnly="True"/>
                     <DataGridTextColumn Header="Tên khách hàng" Binding="{Binding CustomerName}"  Width="200" IsReadOnly="True"/>
                     <DataGridTextColumn Header="Diễn giải"     Binding="{Binding Description}"    Width="220" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="Còn nợ" Binding="{Binding RemainingAmount, StringFormat=\{0:N0\}}" Width="110" IsReadOnly="True">
+                    <DataGridTextColumn Header="Còn nợ" Binding="{Binding RemainingAmount, Converter={StaticResource MoneyConverter}}" Width="110" IsReadOnly="True">
                         <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource AppNumberCell}">
                                 <Setter Property="HorizontalAlignment" Value="Right"/>
                                 <Setter Property="Padding" Value="0,0,8,0"/>
                             </Style>

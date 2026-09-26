@@ -1,5 +1,6 @@
 <Window x:Class="DesktopLamour.Features.HomePage.Sales.Views.SalesOrderWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:helpers="clr-namespace:DesktopLamour.Shared.Helpers"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
         xmlns:behaviors="clr-namespace:DesktopLamour.Shared.Behaviors"
@@ -584,7 +585,7 @@
 
                             <!-- Đơn giá -->
                             <DataGridTextColumn Header="Đơn giá"
-                                                Binding="{Binding UnitPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=N0}"
+                                                Binding="{Binding UnitPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=N0, ConverterCulture=vi-VN}"
                                                 Width="100">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
@@ -667,7 +668,7 @@
                                              dòng Trừ cọc âm ⇒ AccountingAmountConverter hiện "(1.814.400)".
                                              KHÔNG bind DisplayAmount ở đây: getter của nó trả số dương cho
                                              dòng Trừ cọc (dành cho ô nhập), sẽ mất dạng ngoặc kế toán. -->
-                                        <TextBlock Text="{Binding Amount, Converter={StaticResource AccountingAmountConverter}, ConverterParameter=N0}"
+                                        <TextBlock Text="{Binding Amount, Converter={StaticResource AccountingAmountConverter}, ConverterParameter=N0, ConverterCulture=vi-VN}"
                                                    HorizontalAlignment="Right"
                                                    VerticalAlignment="Center"
                                                    Padding="0,0,6,0"
@@ -692,7 +693,7 @@
                                              thanh toán (gồm thuế)" chỉ tính lại sau khi gõ xong dòng Trừ cọc —
                                              xử lý bằng cách hoãn RecalculateTotals tới CellEditEnding
                                              (SalesOrderViewModel.AttachLineHandlers + SalesOrderWindow.xaml.cs). -->
-                                        <TextBox Text="{Binding DisplayAmount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=N0}"
+                                        <TextBox Text="{Binding DisplayAmount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=N0, ConverterCulture=vi-VN}"
                                                  TextAlignment="Right"
                                                  VerticalContentAlignment="Center"
                                                  Padding="0,0,6,0"/>
@@ -729,7 +730,7 @@
 
                             <!-- Tiền thuế -->
                             <DataGridTextColumn Header="Tiền thuế"
-                                                Binding="{Binding TaxAmount, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=N0}"
+                                                Binding="{Binding TaxAmount, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=N0, ConverterCulture=vi-VN}"
                                                 Width="100"
                                                 IsReadOnly="True">
                                 <DataGridTextColumn.ElementStyle>
@@ -887,7 +888,7 @@
                     <controls:AppLabel Text="Tổng tiền hàng:"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Margin="0,0,8,0"/>
-                    <controls:AppLabel Text="{Binding TotalAmount, StringFormat=\{0:N0\}}"
+                    <controls:AppLabel helpers:NegativeAmountHighlight.IsEnabled="True" Text="{Binding TotalAmount, Converter={StaticResource MoneyConverter}}"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        MinWidth="110"
                                        Foreground="{StaticResource AppColor.TextBrand}"/>
@@ -902,7 +903,7 @@
                     <controls:AppLabel Text="Tổng tiền chiết khấu:"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Margin="0,0,8,0"/>
-                    <controls:AppLabel Text="{Binding TotalDiscount, StringFormat=\{0:N0\}}"
+                    <controls:AppLabel helpers:NegativeAmountHighlight.IsEnabled="True" Text="{Binding TotalDiscount, Converter={StaticResource MoneyConverter}}"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        MinWidth="110"
                                        Foreground="{StaticResource AppColor.TextSecondary}"/>
@@ -917,7 +918,7 @@
                     <controls:AppLabel Text="Tổng tiền thanh toán:"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Margin="0,0,8,0"/>
-                    <controls:AppLabel Text="{Binding TotalPayment, StringFormat=\{0:N0\}}"
+                    <controls:AppLabel helpers:NegativeAmountHighlight.IsEnabled="True" Text="{Binding TotalPayment, Converter={StaticResource MoneyConverter}}"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        MinWidth="110"
                                        Foreground="{StaticResource AppColor.TextBrand}"/>
@@ -932,7 +933,7 @@
                     <controls:AppLabel Text="Tổng tiền thuế:"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Margin="0,0,8,0"/>
-                    <controls:AppLabel Text="{Binding TotalTaxAmount, StringFormat=\{0:N0\}}"
+                    <controls:AppLabel helpers:NegativeAmountHighlight.IsEnabled="True" Text="{Binding TotalTaxAmount, Converter={StaticResource MoneyConverter}}"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        MinWidth="110"
                                        Foreground="{StaticResource AppColor.TextSecondary}"/>
@@ -947,7 +948,7 @@
                     <controls:AppLabel Text="Tổng thanh toán (gồm thuế):"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Margin="0,0,8,0"/>
-                    <controls:AppLabel Text="{Binding GrandTotal, StringFormat=\{0:N0\}}"
+                    <controls:AppLabel helpers:NegativeAmountHighlight.IsEnabled="True" Text="{Binding GrandTotal, Converter={StaticResource MoneyConverter}}"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        MinWidth="110"
                                        FontWeight="Bold"

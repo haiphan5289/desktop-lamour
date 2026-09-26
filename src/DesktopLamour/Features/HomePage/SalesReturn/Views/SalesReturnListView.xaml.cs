@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using DesktopLamour.Features.HomePage.SalesReturn.ViewModels;
+using DesktopLamour.Shared.Helpers;
 
 namespace DesktopLamour.Features.HomePage.SalesReturn.Views;
 
@@ -44,7 +45,7 @@ public partial class SalesReturnListView : UserControl
         while (current is not null)
         {
             if (current is T match) return match;
-            current = VisualTreeHelper.GetParent(current);
+            current = TreeWalk.GetParent(current);
         }
         return null;
     }

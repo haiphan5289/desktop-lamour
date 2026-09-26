@@ -260,3 +260,7 @@ Phiếu Thu (`ReceiptWindow`) **chưa** được áp dụng các thay đổi 202
 `AccountingView` (màn Sổ quỹ, dùng chung cho cả Phiếu thu và Phiếu chi) thêm click-để-Xem (`SelectedEntry`/`ViewEntryCommand`, mở lại `PaymentWindow` qua `InitialDocumentNumber` nếu dòng là Phiếu chi) + 2 cột "Lý do thu/chi"/"Loại chứng từ" — xem chi tiết đầy đủ ở [`phieu-thu.md`](phieu-thu.md) (viết chung 1 chỗ vì cùng 1 màn WPF, không tách riêng theo Thu/Chi). BE side: `ConfirmPaymentUseCase` set `CashTransaction.PaymentReason`/`DocumentType = "Phiếu chi"` — xem `be-window-lamour/.../Accounting/docs/phieu-chi.md`.
 
 **2026-08-31**: `AccountingViewModel`/`BulkCustomerReceiptSearchViewModel` đổi mặc định lọc ngày sang "Đầu tháng đến hiện tại" (đồng bộ toàn app) — chi tiết đầy đủ ở [`phieu-thu.md`](phieu-thu.md) mục "Đổi mặc định lọc ngày..." (cùng 1 màn WPF, viết chung 1 chỗ như trên).
+
+## Update — 2026-09-26: popup theo đúng quy trình Chứng từ bán hàng
+
+Chỉ còn 2 trạng thái **Treo** (chưa ghi sổ) / **Đã ghi sổ** — không còn "Nháp". Mở phiếu có sẵn thì form khóa, bấm Sửa mới nhập (chỉ khi chưa ghi sổ); 💾 Cất = Ghi sổ ngay, form khóa lại, popup vẫn mở; nút Ghi sổ/Bỏ ghi dùng chung (toggle, không hỏi xác nhận, chỉ bật khi form khóa); Xóa chỉ khi chưa ghi sổ, hỏi Yes/No rồi đóng popup. Popup Phiếu chi bỏ nút ⏸ Treo. Chi tiết + bảng trước/sau: `be-window-lamour/src/Lamour.Application/Features/Accounting/docs/phieu-thu.md`.

@@ -147,6 +147,23 @@ public sealed class ReceiptService : IReceiptService
             ?? throw new InvalidOperationException("Empty response from create bulk receipt endpoint.");
     }
 
+    public async Task<IEnumerable<OutstandingSalesOrderDto>> GetSalesOrdersByIdsAsync(
+        IEnumerable<int> salesOrderIds, CancellationToken ct = default)
+    {
+        var idList = salesOrderIds.ToList();
+        if (idList.Count == 0) return Enumerable.Empty<OutstandingSalesOrderDto>();
+
+        _logger.LogInformation("Fetching {Count} sales orders by id", idList.Count);
+        SetBearerToken();
+
+        var response = await _httpClient.GetAsync(
+            $"/api/v1/accounting/receipts/sales-orders?ids={string.Join(",", idList)}", ct);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<IEnumerable<OutstandingSalesOrderDto>>(ct)
+            ?? Enumerable.Empty<OutstandingSalesOrderDto>();
+    }
+
     private record NextCodeResponse(string Code);
 
     private void SetBearerToken()

@@ -519,5 +519,5 @@ public partial class SalesOrderReportDetailViewModel : ViewModelBase, INavigatio
         return row;
     }
 
-    private static string FormatMoney(decimal value) => value.ToString("N0", CultureInfo.GetCultureInfo("vi-VN"));
+    private static string FormatMoney(decimal value) => MoneyFormat.Format(value);
 }
