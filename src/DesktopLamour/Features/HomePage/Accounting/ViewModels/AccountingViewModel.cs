@@ -286,9 +286,28 @@ public partial class AccountingViewModel : ViewModelBase
     // xây UI Sửa/Xóa riêng trên màn Sổ Kế Toán. Rule "phiếu đã Ghi số bất biến" đã tự áp dụng bên
     // trong PaymentViewModel (CanEdit/thông báo "đã ghi số, không thể sửa" khi bấm Sửa/Xóa).
     [RelayCommand(CanExecute = nameof(HasSelectedEntry))]
-    private void ViewEntry()
+    private async Task ViewEntryAsync(CancellationToken ct = default)
     {
         if (SelectedEntry is null) return;
+
+        // 2026-09-26: phiếu thu HÀNG LOẠT phải mở đúng BulkCustomerReceiptWindow — trước đây rơi vào
+        // nhánh ReceiptWindow bên dưới (chỉ phân biệt thu/chi), Cất ở đó báo "Vui lòng chọn đối tượng".
+        if (SelectedEntry is { IsBulkReceipt: true, ReceiptId: int bulkId })
+        {
+            var bulkWindow = _bulkReceiptWindowFactory();
+            bulkWindow.Owner = Application.Current.MainWindow;
+            if (!await bulkWindow.ViewModel.OpenExistingAsync(bulkId, ct))
+            {
+                bulkWindow.Close(); // chưa Show nhưng vẫn phải Close — xem OpenBulkCustomerReceiptAsync
+                MessageBox.Show("Không tìm thấy phiếu thu hàng loạt này (có thể đã bị xóa).", "Không tìm thấy",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                await LoadAsync(ct);
+                return;
+            }
+            bulkWindow.ViewModel.BulkReceiptSaved += () => _ = LoadAsync(CancellationToken.None);
+            bulkWindow.Show();
+            return;
+        }
 
         if (!string.IsNullOrEmpty(SelectedEntry.ReceiptNumber))
         {
@@ -321,7 +340,7 @@ public partial class AccountingViewModel : ViewModelBase
 
     // "✏️ Sửa" — mở đúng phiếu gốc (giống double-click/Xem) nhưng chỉ bấm được khi phiếu chưa ghi sổ.
     [RelayCommand(CanExecute = nameof(CanModifySelected))]
-    private void EditEntry() => ViewEntry();
+    private Task EditEntryAsync(CancellationToken ct = default) => ViewEntryAsync(ct);
 
     // "📗 Ghi sổ" thẳng từ danh sách, không hỏi xác nhận (khớp Chứng từ bán hàng).
     [RelayCommand(CanExecute = nameof(CanConfirmSelected))]

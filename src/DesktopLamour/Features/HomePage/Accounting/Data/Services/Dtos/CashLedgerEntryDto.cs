@@ -20,7 +20,13 @@ public class CashLedgerEntryDto
     [JsonPropertyName("payment_reason")]  public string?  PaymentReason  { get; set; }
     [JsonPropertyName("document_type")]   public string   DocumentType   { get; set; } = "";
     [JsonPropertyName("status")]          public string   Status         { get; set; } = "Confirmed";
+
+    // 2026-09-26: dòng chưa ghi sổ ("Treo", hoặc "Draft" dữ liệu cũ) — lưới Quỹ tô màu giống danh
+    // sách Chứng từ bán hàng (SalesOrderListItem.IsHeld). Không gửi/nhận qua API.
+    [JsonIgnore] public bool IsHeld => Status != "Confirmed";
     // 2026-09-26: id phiếu gốc (BE tra theo số chứng từ) — để Ghi sổ/Bỏ ghi/Xóa/Sửa thẳng từ màn Quỹ.
     [JsonPropertyName("receipt_id")]      public int?     ReceiptId      { get; set; }
     [JsonPropertyName("payment_id")]      public int?     PaymentId      { get; set; }
+    // true = phiếu thu hàng loạt → màn Quỹ mở BulkCustomerReceiptWindow thay vì ReceiptWindow.
+    [JsonPropertyName("is_bulk_receipt")] public bool IsBulkReceipt { get; set; }
 }

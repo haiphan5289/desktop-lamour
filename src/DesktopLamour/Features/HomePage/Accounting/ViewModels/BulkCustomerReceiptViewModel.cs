@@ -261,6 +261,17 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
         return true;
     }
 
+    // 2026-09-26: entry point từ màn Quỹ (double-click / Sửa trên 1 dòng phiếu thu hàng loạt) — mở
+    // thẳng vào phiếu đó, không qua bộ chọn. Trả false nếu phiếu không còn (vd. vừa bị xóa ở nơi khác).
+    public async Task<bool> OpenExistingAsync(int receiptId, CancellationToken ct = default)
+    {
+        await LoadLookupsAsync(ct);   // Employees phải có trước khi PopulateForm map NV thu nợ
+        await LoadBulkReceiptsAsync(ct, showFirst: false);
+        if (!_bulkReceiptListCache.Any(r => r.Id == receiptId)) return false;
+        await NavigateToBulkReceiptAsync(receiptId, ct);
+        return true;
+    }
+
     private BulkCustomerReceiptSearchViewModel? ShowPicker()
     {
         var searchWindow = _searchWindowFactory();

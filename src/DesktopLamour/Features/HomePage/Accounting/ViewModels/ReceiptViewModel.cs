@@ -94,7 +94,9 @@ public partial class ReceiptViewModel : ViewModelBase
     // ── Trạng thái popup — 2026-09-26: khớp ĐÚNG quy trình Chứng từ bán hàng
     // (Sales/docs/ChungTuTraHangBan-Review.html, SalesOrderViewModel) — giống hệt PaymentViewModel:
     //   • Mở phiếu có sẵn → form KHÓA; bấm "Sửa" (chỉ khi chưa ghi sổ = Treo) mới nhập được.
-    //   • "Cất" = Ghi sổ ngay, xong form tự khóa lại, popup vẫn mở.
+    //   • "Cất" = CHỈ LƯU (phiếu ở Treo), xong form tự khóa lại, popup vẫn mở. 2026-09-26: kế toán
+    //     chốt phiếu thu thường làm GIỐNG phiếu thu hàng loạt (khớp MISA) — trước đây Cất = Ghi sổ ngay.
+    //     Ghi sổ là bước riêng qua nút toggle bên dưới (hoặc 📗 Ghi sổ trên màn Quỹ).
     //   • Nút "Ghi sổ / Bỏ ghi" dùng chung 1 nút toggle, chỉ bấm được khi form đang khóa, không hỏi lại.
     //   • "Xóa" chỉ khi chưa ghi sổ + form đang khóa, có hỏi Yes/No, xóa xong đóng popup.
     // "Draft" của phiếu thu = Treo (không còn khái niệm "Nháp").
@@ -246,7 +248,7 @@ public partial class ReceiptViewModel : ViewModelBase
         for (var i = 0; i < InitialEmptyLineCount; i++) AddEntry();
     }
 
-    // "💾 Cất" = lưu + Ghi sổ ngay (khớp Chứng từ bán hàng).
+    // "💾 Cất" = chỉ lưu, phiếu ở Treo — KHÔNG tự Ghi sổ (xem comment trạng thái popup ở trên).
     [RelayCommand(CanExecute = nameof(IsEditable))]
     private async Task SaveAsync(CancellationToken ct = default)
     {
@@ -288,16 +290,9 @@ public partial class ReceiptViewModel : ViewModelBase
                 _logger.LogInformation("Receipt updated: {Id}", result.Id);
             }
 
-            // Nút toolbar "💾 Cất" phải THẬT SỰ ghi sổ — chuyển Draft → Confirmed, mới post
-            // CashTransaction thật (side-effect nằm ở BE ConfirmReceiptUseCase). Create/Update chỉ
-            // tạo bản ghi ở Draft (theo thiết kế "đồng bộ 4 chứng từ" 2026-09-01); không tự Confirm
-            // ở đây thì phiếu thu sẽ kẹt ở Nháp mãi mãi và không lên sổ quỹ tiền mặt. Mirror
-            // SalesReturnViewModel.SaveAsync.
-            if (result.Status == "Draft")
-            {
-                result = await _confirmReceipt.ExecuteAsync(result.Id, ct);
-                _logger.LogInformation("Receipt confirmed (Ghi sổ): {DocumentNumber}", result.DocumentNumber);
-            }
+            // 2026-09-26: bỏ bước tự Confirm sau khi lưu — Create/Update của BE để phiếu ở Draft
+            // (= Treo), phiếu chỉ lên sổ quỹ khi kế toán bấm "Ghi sổ" riêng (ToggleConfirmAsync /
+            // màn Quỹ). Phiếu Treo vẫn hiện trên sổ quỹ (không tính vào số tồn), nên không bị "kẹt".
 
             await LoadReceiptsAsync(ct);
             NavigateToReceipt(result.Id);

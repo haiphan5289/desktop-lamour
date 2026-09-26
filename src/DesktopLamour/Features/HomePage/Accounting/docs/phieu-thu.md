@@ -218,3 +218,9 @@ Theo yêu cầu ("cái chỗ quỹ bấm vào xem để xem chi tiết bên tron
 ## Update — 2026-09-26: popup theo đúng quy trình Chứng từ bán hàng
 
 Chỉ còn 2 trạng thái **Treo** (chưa ghi sổ) / **Đã ghi sổ** — không còn "Nháp". Mở phiếu có sẵn thì form khóa, bấm Sửa mới nhập (chỉ khi chưa ghi sổ); 💾 Cất = Ghi sổ ngay, form khóa lại, popup vẫn mở; nút Ghi sổ/Bỏ ghi dùng chung (toggle, không hỏi xác nhận, chỉ bật khi form khóa); Xóa chỉ khi chưa ghi sổ, hỏi Yes/No rồi đóng popup. Popup Phiếu chi bỏ nút ⏸ Treo. Chi tiết + bảng trước/sau: `be-window-lamour/src/Lamour.Application/Features/Accounting/docs/phieu-thu.md`.
+
+---
+
+## Update — 2026-09-26: Cất = chỉ lưu (Treo), Ghi sổ là bước riêng
+
+Kế toán chốt: phiếu thu thường làm giống phiếu thu hàng loạt (khớp MISA). `ReceiptViewModel.SaveAsync` không còn tự gọi `_confirmReceipt` sau khi Create/Update, nên phiếu nằm ở Treo cho tới khi bấm nút toggle **Ghi sổ** trong popup hoặc **📗 Ghi sổ** trên màn Quỹ. Thay thế ý "💾 Cất = Ghi sổ ngay" ở mục ngay phía trên. Phiếu chi chưa đổi (vẫn Cất = Ghi sổ ngay).
