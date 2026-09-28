@@ -94,9 +94,8 @@ public partial class ReceiptViewModel : ViewModelBase
     // ── Trạng thái popup — 2026-09-26: khớp ĐÚNG quy trình Chứng từ bán hàng
     // (Sales/docs/ChungTuTraHangBan-Review.html, SalesOrderViewModel) — giống hệt PaymentViewModel:
     //   • Mở phiếu có sẵn → form KHÓA; bấm "Sửa" (chỉ khi chưa ghi sổ = Treo) mới nhập được.
-    //   • "Cất" = CHỈ LƯU (phiếu ở Treo), xong form tự khóa lại, popup vẫn mở. 2026-09-26: kế toán
-    //     chốt phiếu thu thường làm GIỐNG phiếu thu hàng loạt (khớp MISA) — trước đây Cất = Ghi sổ ngay.
-    //     Ghi sổ là bước riêng qua nút toggle bên dưới (hoặc 📗 Ghi sổ trên màn Quỹ).
+    //   • "Cất" = Lưu + Ghi sổ ngay, xong form tự khóa lại, popup vẫn mở (2026-09-28, khớp Chứng từ
+    //     bán hàng — đảo lại quyết định 2026-09-26 "Cất = chỉ lưu"). Áp dụng cả phiếu thu hàng loạt.
     //   • Nút "Ghi sổ / Bỏ ghi" dùng chung 1 nút toggle, chỉ bấm được khi form đang khóa, không hỏi lại.
     //   • "Xóa" chỉ khi chưa ghi sổ + form đang khóa, có hỏi Yes/No, xóa xong đóng popup.
     // "Draft" của phiếu thu = Treo (không còn khái niệm "Nháp").
@@ -248,7 +247,7 @@ public partial class ReceiptViewModel : ViewModelBase
         for (var i = 0; i < InitialEmptyLineCount; i++) AddEntry();
     }
 
-    // "💾 Cất" = chỉ lưu, phiếu ở Treo — KHÔNG tự Ghi sổ (xem comment trạng thái popup ở trên).
+    // "💾 Cất" = lưu + Ghi sổ ngay (xem comment trạng thái popup ở trên).
     [RelayCommand(CanExecute = nameof(IsEditable))]
     private async Task SaveAsync(CancellationToken ct = default)
     {
@@ -290,15 +289,31 @@ public partial class ReceiptViewModel : ViewModelBase
                 _logger.LogInformation("Receipt updated: {Id}", result.Id);
             }
 
-            // 2026-09-26: bỏ bước tự Confirm sau khi lưu — Create/Update của BE để phiếu ở Draft
-            // (= Treo), phiếu chỉ lên sổ quỹ khi kế toán bấm "Ghi sổ" riêng (ToggleConfirmAsync /
-            // màn Quỹ). Phiếu Treo vẫn hiện trên sổ quỹ (không tính vào số tồn), nên không bị "kẹt".
+            // 2026-09-28: Cất = Lưu + Ghi sổ ngay (khớp Chứng từ bán hàng / Phiếu chi) — đảo lại quyết
+            // định 2026-09-26 "Cất = chỉ lưu". Create/Update của BE để phiếu ở Draft (= Treo) nên
+            // phải gọi Confirm riêng. Ghi sổ lỗi thì phiếu vẫn đã lưu ở Treo, báo lỗi để bấm lại.
+            string? confirmError = null;
+            try
+            {
+                result = await _confirmReceipt.ExecuteAsync(result.Id, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogError(ex, "Receipt {Id} saved but confirm failed", result.Id);
+                confirmError = $"Đã lưu phiếu (Treo) nhưng ghi sổ thất bại: {ex.Message}";
+            }
 
             await LoadReceiptsAsync(ct);
             NavigateToReceipt(result.Id);
 
             // Cất xong khóa form lại, GIỮ popup mở (khớp Chứng từ bán hàng).
             IsEditing = false;
+            // Load*Async reset HasError — gán lỗi Ghi sổ SAU khi nạp lại để banner không bị xóa.
+            if (confirmError is not null)
+            {
+                HasError     = true;
+                ErrorMessage = confirmError;
+            }
             ReceiptSaved?.Invoke();
         }
         catch (OperationCanceledException) { }

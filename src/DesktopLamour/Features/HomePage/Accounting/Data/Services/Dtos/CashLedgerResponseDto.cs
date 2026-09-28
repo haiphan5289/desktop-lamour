@@ -7,5 +7,7 @@ public class CashLedgerResponseDto
 {
     [JsonPropertyName("opening_balance")] public decimal                  OpeningBalance { get; set; }
     [JsonPropertyName("closing_balance")] public decimal                  ClosingBalance { get; set; }
+    // 2026-09-28: tồn quỹ tính tới hôm nay, độc lập bộ lọc Từ/Đến ngày.
+    [JsonPropertyName("current_balance")] public decimal                  CurrentBalance { get; set; }
     [JsonPropertyName("entries")]         public List<CashLedgerEntryDto> Entries        { get; set; } = new();
 }

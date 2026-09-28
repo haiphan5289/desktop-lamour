@@ -13,6 +13,7 @@ public class PaymentReasonDisplayConverter : IValueConverter
             "ThuKhac"     => "Thu khác",
             "ThuTienHang" => "Thu tiền hàng",
             "ThuCongNo"   => "Thu công nợ",
+            "ThuKhachHangHangLoat" => "Phiếu thu tiền mặt khách hàng hàng loạt",
             "ChiKhac"     => "Chi khác",
             "ChiMuaHang"  => "Chi mua hàng",
             "ChiTraNo"    => "Chi trả nợ",

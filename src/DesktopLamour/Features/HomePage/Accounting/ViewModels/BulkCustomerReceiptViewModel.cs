@@ -323,8 +323,8 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
     [RelayCommand(CanExecute = nameof(CanEdit))]
     private void Edit() => IsEditing = true;
 
-    // "💾 Cất" — CHỈ lưu (Create nếu mới / Update nếu đang sửa phiếu có sẵn), KHÔNG tự Ghi sổ. Khác
-    // ReceiptViewModel.SaveAsync — xem doc comment đầu file.
+    // "💾 Cất" — lưu (Create nếu mới / Update nếu đang sửa phiếu có sẵn) rồi Ghi sổ ngay, giống
+    // ReceiptViewModel.SaveAsync / SalesOrderViewModel.
     [RelayCommand(CanExecute = nameof(IsEditable))]
     private async Task SaveAsync(CancellationToken ct = default)
     {
@@ -379,7 +379,7 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
                     CustomerId          = null,
                     PayerName           = PayerName.Trim(),
                     Address             = string.IsNullOrWhiteSpace(Address) ? null : Address.Trim(),
-                    PaymentReason       = "ThuCongNo",
+                    PaymentReason       = "ThuKhachHangHangLoat",
                     CollectorEmployeeId = SelectedCollectorEmployee?.Id,
                     Attachment          = string.IsNullOrWhiteSpace(Attachment) ? null : Attachment.Trim(),
                     Reference           = string.IsNullOrWhiteSpace(Reference) ? null : Reference.Trim(),
@@ -392,11 +392,31 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
                 _logger.LogInformation("Bulk customer receipt updated: {Id}", result.Id);
             }
 
+            // 2026-09-28: Cất = Lưu + Ghi sổ ngay (khớp Chứng từ bán hàng / Phiếu chi) — đảo lại quyết
+            // định 2026-09-26 "Cất = chỉ lưu". Ghi sổ lỗi thì phiếu vẫn đã lưu ở Treo, báo lỗi để bấm
+            // "Ghi sổ" lại sau.
+            string? confirmError = null;
+            try
+            {
+                result = await _confirmReceipt.ExecuteAsync(result.Id, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogError(ex, "Bulk customer receipt {Id} saved but confirm failed", result.Id);
+                confirmError = $"Đã lưu phiếu (Treo) nhưng ghi sổ thất bại: {ex.Message}";
+            }
+
             await LoadBulkReceiptsAsync(ct);
             await NavigateToBulkReceiptAsync(result.Id, ct);
 
-            // Cất xong khóa form lại, GIỮ cửa sổ mở (giống ReceiptWindow) — Ghi sổ là bước riêng.
+            // Cất xong khóa form lại, GIỮ cửa sổ mở (giống ReceiptWindow).
             IsEditing = false;
+            // Load*Async reset HasError — gán lỗi Ghi sổ SAU khi nạp lại để banner không bị xóa.
+            if (confirmError is not null)
+            {
+                HasError     = true;
+                ErrorMessage = confirmError;
+            }
             BulkReceiptSaved?.Invoke();
         }
         catch (OperationCanceledException) { }

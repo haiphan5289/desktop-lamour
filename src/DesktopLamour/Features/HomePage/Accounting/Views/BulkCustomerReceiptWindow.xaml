@@ -280,15 +280,15 @@
                     <controls:AppLabel Text="Ngày hạch toán"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Margin="0,0,0,4"/>
+                    <!-- Không bind IsEnabled tới IsEditable (khớp SalesOrderWindow): WPF DatePicker
+                         IsEnabled=False làm chữ mờ hẳn qua theme, không sửa được bằng Foreground/Opacity. -->
                     <DatePicker SelectedDate="{Binding AccountingDate, Mode=TwoWay}"
-                                IsEnabled="{Binding IsEditable}"
                                 Height="34" VerticalContentAlignment="Center" Margin="0,0,0,10"/>
 
                     <controls:AppLabel Text="Ngày chứng từ"
                                        Style="{StaticResource AppTypography.LabelSection}"
                                        Margin="0,0,0,4"/>
                     <DatePicker SelectedDate="{Binding DocumentDate, Mode=TwoWay}"
-                                IsEnabled="{Binding IsEditable}"
                                 Height="34" VerticalContentAlignment="Center" Margin="0,0,0,10"/>
 
                     <controls:AppLabel Text="Số chứng từ"
@@ -340,7 +340,7 @@
                                     <Style TargetType="TextBlock" BasedOn="{StaticResource AppNumberCell}">
                                         <Setter Property="HorizontalAlignment" Value="Right"/>
                                         <Setter Property="Padding" Value="0,0,8,0"/>
-                                        <Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/>
+                                        <Setter Property="Foreground" Value="{StaticResource AppColor.TextPrimary}"/>
                                         <Setter Property="FontWeight" Value="SemiBold"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
@@ -417,7 +417,7 @@
                                 </DataGridTextColumn>
                                 <DataGridTextColumn Header="Số thu" Binding="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=\{0:N0\}, ConverterCulture=vi-VN}" Width="110">
                                     <DataGridTextColumn.ElementStyle>
-                                        <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/><Setter Property="Padding" Value="0,0,8,0"/><Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+                                        <Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/><Setter Property="Padding" Value="0,0,8,0"/><Setter Property="Foreground" Value="{StaticResource AppColor.TextPrimary}"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
                                     </DataGridTextColumn.ElementStyle>
                                 </DataGridTextColumn>
                                 <DataGridTextColumn Header="TK phải thu" Binding="{Binding CreditAccountDisplay}" Width="90" IsReadOnly="True"/>
@@ -442,7 +442,7 @@
                                                    Foreground="{StaticResource AppColor.TextSecondary}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                 <controls:AppLabel Text="{Binding TotalAmount, Converter={StaticResource MoneyConverter}}"
                                                    Style="{StaticResource AppTypography.LabelSection}"
-                                                   Foreground="{StaticResource AppColor.TextBrand}"/>
+                                                   Foreground="{StaticResource AppColor.TextPrimary}"/>
                             </StackPanel>
                         </Border>
                     </Grid>
@@ -457,20 +457,12 @@
                 BorderThickness="0,1,0,0"
                 Padding="16,10"
                 Margin="0,6,0,0">
-            <Grid>
-                <controls:AppLabel Text="{Binding LineSummary}"
-                                   Style="{StaticResource AppTypography.BodyCaption}"
-                                   Foreground="{StaticResource AppColor.TextSecondary}"
-                                   VerticalAlignment="Center"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <controls:AppLabel Text="Tổng tiền:"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Margin="0,0,12,0"/>
-                    <controls:AppLabel helpers:NegativeAmountHighlight.IsEnabled="True" Text="{Binding TotalAmount, Converter={StaticResource MoneyConverter}}"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Foreground="{StaticResource AppColor.TextBrand}"/>
-                </StackPanel>
-            </Grid>
+            <!-- 2026-09-28: bỏ nhãn "Tổng tiền" — trùng với "Số thu" đã hiện trong dòng tổng ngay
+                 trên lưới tab "2. Chứng từ" (Số phải thu/Số chưa thu/Số thu), không cần lặp lại. -->
+            <controls:AppLabel Text="{Binding LineSummary}"
+                               Style="{StaticResource AppTypography.BodyCaption}"
+                               Foreground="{StaticResource AppColor.TextSecondary}"
+                               VerticalAlignment="Center"/>
         </Border>
 
         <!-- Status bar -->

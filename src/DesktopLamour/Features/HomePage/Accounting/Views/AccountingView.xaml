@@ -46,6 +46,8 @@
             <Setter Property="HorizontalAlignment" Value="Left"/>
             <Setter Property="VerticalAlignment"   Value="Center"/>
             <Setter Property="Padding"             Value="6,0,0,0"/>
+            <!-- 2026-09-28: chữ dài bị cắt vẫn xem đủ khi rê chuột. -->
+            <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}"/>
         </Style>
 
         <Style x:Key="CellNumber" TargetType="TextBlock">
@@ -76,19 +78,49 @@
         <!-- ══════════════════════════════════════════════ -->
         <!--  Page header                                   -->
         <!-- ══════════════════════════════════════════════ -->
-        <StackPanel Grid.Row="0" Margin="24,32,24,0">
-            <controls:AppButton Content="← Quay lại"
-                                Style="{StaticResource AppButton.Tertiary.Medium}"
-                                Command="{Binding GoBackCommand}"
-                                HorizontalAlignment="Left"
-                                Margin="0,0,0,8"/>
-            <controls:AppLabel Text="Sổ Kế Toán Chi Tiết Quỹ Tiền Mặt"
-                               Style="{StaticResource AppTypography.DisplayPage}"/>
-            <controls:AppLabel Text="Tài khoản: 111 — Tiền mặt"
-                               Style="{StaticResource AppTypography.BodyCaption}"
-                               Foreground="{StaticResource AppColor.TextSecondary}"
-                               Margin="0,4,0,0"/>
-        </StackPanel>
+        <Grid Grid.Row="0" Margin="24,32,24,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <controls:AppButton Content="← Quay lại"
+                                    Style="{StaticResource AppButton.Tertiary.Medium}"
+                                    Command="{Binding GoBackCommand}"
+                                    HorizontalAlignment="Left"
+                                    Margin="0,0,0,8"/>
+                <controls:AppLabel Text="Sổ Kế Toán Chi Tiết Quỹ Tiền Mặt"
+                                   Style="{StaticResource AppTypography.DisplayPage}"/>
+                <controls:AppLabel Text="Tài khoản: 111 — Tiền mặt"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   Foreground="{StaticResource AppColor.TextSecondary}"
+                                   Margin="0,4,0,0"/>
+            </StackPanel>
+
+            <!-- 2026-09-28 (khớp box "Tồn quỹ đến hiện tại" ảnh mẫu MISA, góc trên phải): tồn quỹ
+                 tính tới HÔM NAY, độc lập bộ lọc Từ ngày/Đến ngày — khác "Số tồn cuối kỳ" bên dưới,
+                 vốn chỉ tính tới `to` của filter đang chọn. -->
+            <Border Grid.Column="1"
+                    VerticalAlignment="Top"
+                    Background="{StaticResource AppColor.BackgroundPrimary}"
+                    BorderBrush="{StaticResource AppColor.BorderThin}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="18,10"
+                    MinWidth="220">
+                <StackPanel HorizontalAlignment="Right">
+                    <controls:AppLabel Text="Tồn quỹ đến hiện tại"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       HorizontalAlignment="Right"/>
+                    <controls:AppLabel helpers:NegativeAmountHighlight.IsEnabled="True"
+                                       Text="{Binding CurrentBalance, Converter={StaticResource MoneyConverter}}"
+                                       Style="{StaticResource AppTypography.HeaderSection}"
+                                       HorizontalAlignment="Right"
+                                       Margin="0,2,0,0"/>
+                </StackPanel>
+            </Border>
+        </Grid>
 
         <!-- ══════════════════════════════════════════════ -->
         <!--  Toolbar actions — 2026-09-26: cùng bố cục/thứ tự/kiểu nút với Chứng từ bán hàng      -->
@@ -241,9 +273,13 @@
         <!--  DataGrid                                      -->
         <!-- ══════════════════════════════════════════════ -->
         <Grid Grid.Row="4" Margin="24,8,24,24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>    <!-- DataGrid -->
+                <RowDefinition Height="Auto"/> <!-- Dòng tổng -->
+            </Grid.RowDefinitions>
 
             <!-- Error banner -->
-            <Border Panel.ZIndex="10"
+            <Border Grid.Row="0" Panel.ZIndex="10"
                     Background="{StaticResource AppColor.BackgroundErrorLight}"
                     CornerRadius="8" Padding="12,10" Margin="0,0,0,12"
                     VerticalAlignment="Top"
@@ -266,6 +302,7 @@
             </Border>
 
             <DataGrid x:Name="LedgerGrid"
+                      Grid.Row="0"
                       ItemsSource="{Binding ItemsView}"
                       SelectedItem="{Binding SelectedEntry, Mode=TwoWay}"
                       MouseDoubleClick="LedgerGrid_MouseDoubleClick"
@@ -555,7 +592,7 @@
                     <!-- Lý do thu/chi — text column: plain Contains filter, inline. Display via
                          PaymentReasonDisplayConverter (raw enum string → Vietnamese label). -->
                     <DataGridTextColumn Binding="{Binding PaymentReason, Converter={StaticResource PaymentReasonDisplayConverter}}"
-                                        Width="130" ElementStyle="{StaticResource CellText}">
+                                        Width="290" ElementStyle="{StaticResource CellText}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <Border Background="{StaticResource AppColor.BackgroundSecondary}"
@@ -573,9 +610,26 @@
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
+                    <!-- 2026-09-28 (khớp cột "Ngày ghi sổ quỹ" ảnh mẫu MISA): thời điểm bấm "Ghi sổ"
+                         thật sự (CashTransaction.CreatedAt) — trống với dòng Treo (chưa từng ghi sổ).
+                         Không có ô lọc riêng — chỉ hiển thị. -->
+                    <DataGridTextColumn Binding="{Binding PostedAt, StringFormat=dd/MM/yyyy}"
+                                        Width="130" ElementStyle="{StaticResource CellCenter}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <Border Background="{StaticResource AppColor.BackgroundSecondary}"
+                                        BorderBrush="{StaticResource GroupBorderBrush}"
+                                        BorderThickness="0,1,0,1" Padding="6,4">
+                                    <TextBlock Text="Ngày ghi sổ quỹ" FontWeight="SemiBold" FontSize="12"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
                     <!-- Loại chứng từ — text column: plain Contains filter, inline -->
                     <DataGridTextColumn Binding="{Binding DocumentType}"
-                                        Width="220" ElementStyle="{StaticResource CellText}">
+                                        Width="290" ElementStyle="{StaticResource CellText}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <Border Background="{StaticResource AppColor.BackgroundSecondary}"
@@ -597,7 +651,7 @@
             </DataGrid>
 
             <!-- Empty state -->
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+            <StackPanel Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center"
                         Visibility="{Binding HasItems, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                 <TextBlock Text="💰" FontSize="48" HorizontalAlignment="Center" TextAlignment="Center"/>
                 <controls:AppLabel Text="Chọn khoảng thời gian và nhấn Xem báo cáo."
@@ -606,6 +660,40 @@
                                    Margin="0,12,0,0"
                                    HorizontalAlignment="Center"/>
             </StackPanel>
+
+            <!-- 2026-09-28 (khớp dòng tổng cuối lưới ảnh mẫu MISA): tính trên các dòng ĐANG HIỂN THỊ
+                 sau lọc (VisibleLineCount/TotalThu/TotalChi — AccountingViewModel.RecalculateFooterTotals),
+                 không phải toàn bộ dữ liệu đã tải — khớp "Xuất khẩu" cũng chỉ xuất dòng đang hiển thị. -->
+            <Border Grid.Row="1"
+                    BorderBrush="{StaticResource AppColor.BorderThin}"
+                    BorderThickness="1,0,1,1"
+                    Background="{StaticResource AppColor.BackgroundPrimary}"
+                    Padding="12,8"
+                    Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibilityConverter}}">
+                <Grid>
+                    <controls:AppLabel Text="{Binding VisibleLineCount, StringFormat='Số dòng = {0}'}"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       Foreground="{StaticResource AppColor.TextSecondary}"
+                                       VerticalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <controls:AppLabel Text="Tổng thu:"
+                                           Style="{StaticResource AppTypography.BodyCaption}"
+                                           Foreground="{StaticResource AppColor.TextSecondary}"
+                                           VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <controls:AppLabel Text="{Binding TotalThu, Converter={StaticResource MoneyConverter}}"
+                                           Style="{StaticResource AppTypography.LabelSection}"
+                                           Foreground="{StaticResource AppColor.TextPrimary}"
+                                           Margin="0,0,24,0"/>
+                        <controls:AppLabel Text="Tổng chi:"
+                                           Style="{StaticResource AppTypography.BodyCaption}"
+                                           Foreground="{StaticResource AppColor.TextSecondary}"
+                                           VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <controls:AppLabel Text="{Binding TotalChi, Converter={StaticResource MoneyConverter}}"
+                                           Style="{StaticResource AppTypography.LabelSection}"
+                                           Foreground="{StaticResource AppColor.TextPrimary}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
 
         </Grid>
     </Grid>

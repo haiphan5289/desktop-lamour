@@ -39,6 +39,15 @@ public partial class AccountingViewModel : ViewModelBase
     [ObservableProperty] private bool    _hasItems;
     [ObservableProperty] private decimal _openingBalance;
     [ObservableProperty] private decimal _closingBalance;
+    // 2026-09-28 (khớp box "Tồn quỹ đến hiện tại" ảnh mẫu MISA): tồn quỹ tính tới hôm nay, độc lập
+    // bộ lọc Từ ngày/Đến ngày đang chọn — BE trả sẵn trong CashLedgerResponseDto.current_balance.
+    [ObservableProperty] private decimal _currentBalance;
+    // 2026-09-28 (khớp dòng tổng cuối lưới ảnh mẫu MISA "Số dòng = N · Tổng thu: X · Tổng chi: X"):
+    // tính trên các dòng ĐANG HIỂN THỊ sau lọc (ItemsView), không phải toàn bộ Items — giống cách
+    // "Xuất khẩu" chỉ xuất dòng đang hiển thị.
+    [ObservableProperty] private int     _visibleLineCount;
+    [ObservableProperty] private decimal _totalThu;
+    [ObservableProperty] private decimal _totalChi;
     // 2026-09-16: đổi lại mặc định "Hôm nay" (đảo ngược quyết định 2026-08-31 "Đầu tháng đến hiện
     // tại") — khớp SelectedPeriod bên dưới.
     [ObservableProperty] private DateTime _fromDate = DateTime.Today;
@@ -141,8 +150,19 @@ public partial class AccountingViewModel : ViewModelBase
 
         ItemsView = CollectionViewSource.GetDefaultView(Items);
         ItemsView.Filter = FilterEntry;
+        // Refresh() (đổi bộ lọc) và Items.Clear()/Add() (LoadAsync) đều bắn CollectionChanged trên
+        // ItemsView — 1 chỗ duy nhất tính lại dòng tổng cuối lưới, không cần gọi tay ở nhiều nơi.
+        ItemsView.CollectionChanged += (_, _) => RecalculateFooterTotals();
 
         WireColumnFilters();
+    }
+
+    private void RecalculateFooterTotals()
+    {
+        var visible = ItemsView.Cast<CashLedgerEntryDto>().ToList();
+        VisibleLineCount = visible.Count;
+        TotalThu         = visible.Sum(e => e.DebitAmount);
+        TotalChi         = visible.Sum(e => e.CreditAmount);
     }
 
     partial void OnFilterStatusChanged(string value) => ItemsView.Refresh();
@@ -214,6 +234,7 @@ public partial class AccountingViewModel : ViewModelBase
             "ThuKhac"     => "Thu khác",
             "ThuTienHang" => "Thu tiền hàng",
             "ThuCongNo"   => "Thu công nợ",
+            "ThuKhachHangHangLoat" => "Phiếu thu tiền mặt khách hàng hàng loạt",
             "ChiKhac"     => "Chi khác",
             "ChiMuaHang"  => "Chi mua hàng",
             "ChiTraNo"    => "Chi trả nợ",
@@ -467,6 +488,7 @@ public partial class AccountingViewModel : ViewModelBase
             foreach (var entry in result.Entries) Items.Add(entry);
             OpeningBalance = result.OpeningBalance;
             ClosingBalance = result.ClosingBalance;
+            CurrentBalance = result.CurrentBalance;
             HasItems       = Items.Count > 0;
         }
         catch (OperationCanceledException) { }
@@ -536,6 +558,7 @@ public partial class AccountingViewModel : ViewModelBase
                 "ThuKhac"     => "Thu khác",
                 "ThuTienHang" => "Thu tiền hàng",
                 "ThuCongNo"   => "Thu công nợ",
+                "ThuKhachHangHangLoat" => "Phiếu thu tiền mặt khách hàng hàng loạt",
                 "ChiKhac"     => "Chi khác",
                 "ChiMuaHang"  => "Chi mua hàng",
                 "ChiTraNo"    => "Chi trả nợ",
