@@ -7,19 +7,26 @@ namespace DesktopLamour.Shared.Converters;
 [ValueConversion(typeof(string), typeof(string))]
 public class PaymentReasonDisplayConverter : IValueConverter
 {
+    // Nhãn tiếng Việt của enum PaymentReason (BE) — dùng chung cho lưới Quỹ, Xuất khẩu, ô Lý do chi
+    // và bản in phiếu chi. Giá trị lạ giữ nguyên chuỗi gốc.
+    public static string Label(string? reason) => reason switch
+    {
+        "ThuKhac"     => "Thu khác",
+        "ThuTienHang" => "Thu tiền hàng",
+        "ThuCongNo"   => "Thu công nợ",
+        "ThuKhachHangHangLoat" => "Phiếu thu tiền mặt khách hàng hàng loạt",
+        "ChiKhac"     => "Chi khác",
+        "ChiMuaHang"  => "Chi mua hàng",
+        "ChiTraNo"    => "Chi trả nợ",
+        "ChiLuong"    => "Chi lương",
+        "TamUngNhanVien"  => "Tạm ứng cho nhân viên",
+        "GuiTienNganHang" => "Gửi tiền vào ngân hàng",
+        "ThueTNDNTamTinh" => "Thuế TNDN tạm tính",
+        _             => reason ?? "",
+    };
+
     public object Convert(object? value, Type targetType, object parameter, CultureInfo culture)
-        => value is string reason ? reason switch
-        {
-            "ThuKhac"     => "Thu khác",
-            "ThuTienHang" => "Thu tiền hàng",
-            "ThuCongNo"   => "Thu công nợ",
-            "ThuKhachHangHangLoat" => "Phiếu thu tiền mặt khách hàng hàng loạt",
-            "ChiKhac"     => "Chi khác",
-            "ChiMuaHang"  => "Chi mua hàng",
-            "ChiTraNo"    => "Chi trả nợ",
-            "ChiLuong"    => "Chi lương",
-            _             => reason,
-        } : string.Empty;
+        => value is string reason ? Label(reason) : string.Empty;
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         => throw new NotSupportedException();

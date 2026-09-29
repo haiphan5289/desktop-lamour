@@ -79,6 +79,40 @@
             </Setter>
         </Style>
 
+        <!-- 2026-09-29 (khớp MISA, lưới "1. Hạch toán"): ô chữ canh giữa dọc cho thẳng hàng với các ô
+             ComboBox (trước canh trên nên dòng bị lệch), chữ dài thì "…" thay vì tràn. -->
+        <Style x:Key="EntryTextCell" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Padding"           Value="6,0"/>
+            <Setter Property="TextTrimming"      Value="CharacterEllipsis"/>
+        </Style>
+
+        <!-- Ô chọn TK Nợ / TK Có / Khoản mục CP: ô đã chọn chỉ hiện MÃ (6418, 1111, 01 — như MISA, cột
+             hẹp không bị cắt chữ), danh sách thả xuống vẫn hiện đủ "mã — tên" để chọn. Phân biệt bằng
+             việc TextBlock có nằm trong ComboBoxItem (danh sách) hay không (ô đã chọn). -->
+        <DataTemplate x:Key="EntryCodeItemTemplate">
+            <TextBlock>
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Text" Value="{Binding DisplayText}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ComboBoxItem}}" Value="{x:Null}">
+                                <Setter Property="Text" Value="{Binding Code}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </DataTemplate>
+
+        <Style x:Key="EntryCodeCombo" TargetType="ComboBox">
+            <Setter Property="ItemTemplate"               Value="{StaticResource EntryCodeItemTemplate}"/>
+            <Setter Property="BorderThickness"            Value="0"/>
+            <Setter Property="Background"                 Value="Transparent"/>
+            <Setter Property="VerticalAlignment"          Value="Center"/>
+            <Setter Property="VerticalContentAlignment"   Value="Center"/>
+        </Style>
+
     </Window.Resources>
 
     <Window.InputBindings>
@@ -214,17 +248,25 @@
                     <Grid Grid.Row="6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="120"/>
-                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="200"/>
                             <ColumnDefinition Width="16"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <controls:AppLabel Grid.Column="0" Text="Lý do chi"
                                            Style="{StaticResource AppTypography.LabelSection}"
                                            VerticalAlignment="Center"/>
+                        <!-- 2026-09-29: hiện nhãn tiếng Việt (PaymentReasonDisplayConverter) thay vì chuỗi thô
+                             "ChiKhac"; giá trị gửi lên BE vẫn là chuỗi enum. Rộng 200 để chứa "Gửi tiền vào ngân hàng". -->
                         <ComboBox Grid.Column="1"
                                   ItemsSource="{Binding PaymentReasons}"
                                   SelectedItem="{Binding SelectedPaymentReason, Mode=TwoWay}"
-                                  Height="34"/>
+                                  Height="34">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={StaticResource PaymentReasonDisplayConverter}}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
                         <controls:AppTextField Grid.Column="3"
                             Text="{Binding ReasonDetail, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                             Placeholder="Chi tiết lý do chi (VD: thuê lái xe 21/7)"/>
@@ -353,33 +395,34 @@
                         <DataGrid.Columns>
 
                             <!-- Diễn giải -->
+                            <!-- 2026-09-29: chia lại bề rộng cột (tổng ~1060, vừa cửa sổ 1100) — TK Nợ/TK Có/Khoản
+                                 mục CP chỉ hiện mã nên hẹp lại, nhường chỗ cho Diễn giải/Tên đối tượng. -->
                             <DataGridTextColumn Header="Diễn giải"
                                                 Binding="{Binding Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                Width="220"/>
+                                                ElementStyle="{StaticResource EntryTextCell}"
+                                                Width="230"/>
 
                             <!-- TK Nợ — ComboBox luôn hiện sẵn trong ô, không qua "chế độ sửa" của
                                  DataGrid (né hẳn cơ chế commit/edit-mode gây lỗi mất giá trị). -->
-                            <DataGridTemplateColumn Header="TK Nợ" Width="160">
+                            <DataGridTemplateColumn Header="TK Nợ" Width="90">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <ComboBox ItemsSource="{Binding DataContext.AccountSettings, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                  DisplayMemberPath="DisplayText"
+                                                  Style="{StaticResource EntryCodeCombo}"
                                                   SelectedItem="{Binding SelectedDebitAccount, Mode=TwoWay}"
-                                                  BorderThickness="0"
-                                                  Background="Transparent"/>
+                                                  ToolTip="{Binding SelectedDebitAccount.DisplayText}"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
                             <!-- TK Có -->
-                            <DataGridTemplateColumn Header="TK Có" Width="160">
+                            <DataGridTemplateColumn Header="TK Có" Width="90">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <ComboBox ItemsSource="{Binding DataContext.AccountSettings, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                  DisplayMemberPath="DisplayText"
+                                                  Style="{StaticResource EntryCodeCombo}"
                                                   SelectedItem="{Binding SelectedCreditAccount, Mode=TwoWay}"
-                                                  BorderThickness="0"
-                                                  Background="Transparent"/>
+                                                  ToolTip="{Binding SelectedCreditAccount.DisplayText}"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -387,7 +430,7 @@
                             <!-- Số tiền -->
                             <DataGridTextColumn Header="Số tiền"
                                                 Binding="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=N0, ConverterCulture=vi-VN}"
-                                                Width="110">
+                                                Width="120">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="HorizontalAlignment" Value="Right"/>
@@ -402,27 +445,29 @@
                             <!-- Đối tượng (mã) — tự copy từ header khi chọn/đổi Đối tượng, sửa tay được -->
                             <DataGridTextColumn Header="Đối tượng"
                                                 Binding="{Binding SubjectCode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                ElementStyle="{StaticResource EntryTextCell}"
                                                 Width="100"/>
 
                             <!-- Tên đối tượng -->
                             <DataGridTextColumn Header="Tên đối tượng"
                                                 Binding="{Binding SubjectName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                Width="130"/>
+                                                ElementStyle="{StaticResource EntryTextCell}"
+                                                Width="190"/>
 
                             <!-- TK ngân hàng -->
                             <DataGridTextColumn Header="TK ngân hàng"
                                                 Binding="{Binding BankAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                ElementStyle="{StaticResource EntryTextCell}"
                                                 Width="110"/>
 
                             <!-- Khoản mục CP -->
-                            <DataGridTemplateColumn Header="Khoản mục CP" Width="160">
+                            <DataGridTemplateColumn Header="Khoản mục CP" Width="90">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <ComboBox ItemsSource="{Binding DataContext.ExpenseCategories, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                  DisplayMemberPath="DisplayText"
+                                                  Style="{StaticResource EntryCodeCombo}"
                                                   SelectedItem="{Binding SelectedExpenseCategory, Mode=TwoWay}"
-                                                  BorderThickness="0"
-                                                  Background="Transparent"/>
+                                                  ToolTip="{Binding SelectedExpenseCategory.DisplayText}"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -434,6 +479,7 @@
                                         <Button Content="✕"
                                                 Style="{StaticResource AppButton.RemoveLineIcon}"
                                                 HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
                                                 Command="{Binding DataContext.RemoveEntryCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                 CommandParameter="{Binding}"/>
                                     </DataTemplate>

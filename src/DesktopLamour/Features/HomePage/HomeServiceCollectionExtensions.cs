@@ -399,6 +399,7 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<PaymentWindow>();
         services.AddTransient<PaymentViewModel>();
         services.AddTransient<PaymentPrintWindow>();
+        services.AddTransient<ReceiptPrintWindow>();
         services.AddTransient<BulkCustomerReceiptSearchWindow>();
         services.AddTransient<BulkCustomerReceiptSearchViewModel>();
         services.AddTransient<BulkCustomerReceiptWindow>();
@@ -454,6 +455,7 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<Func<ReceiptWindow>>(sp => () => sp.GetRequiredService<ReceiptWindow>());
         services.AddTransient<Func<PaymentWindow>>(sp => () => sp.GetRequiredService<PaymentWindow>());
         services.AddTransient<Func<PaymentPrintWindow>>(sp => () => sp.GetRequiredService<PaymentPrintWindow>());
+        services.AddTransient<Func<ReceiptPrintWindow>>(sp => () => sp.GetRequiredService<ReceiptPrintWindow>());
         services.AddTransient<Func<BulkCustomerReceiptSearchWindow>>(sp => () => sp.GetRequiredService<BulkCustomerReceiptSearchWindow>());
         services.AddTransient<Func<BulkCustomerReceiptWindow>>(sp => () => sp.GetRequiredService<BulkCustomerReceiptWindow>());
 

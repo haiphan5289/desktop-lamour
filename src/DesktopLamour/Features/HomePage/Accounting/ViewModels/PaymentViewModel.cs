@@ -87,10 +87,36 @@ public partial class PaymentViewModel : ViewModelBase
     public IReadOnlyList<ExpenseCategory> ExpenseCategories { get; private set; }
         = Array.Empty<ExpenseCategory>();
 
-    public IReadOnlyList<string> PaymentReasons { get; } = new[]
+    // 2026-09-29 (khớp MISA): 4 lý do chi. Phiếu cũ có lý do đã bỏ (ChiMuaHang/ChiTraNo/ChiLuong) thì
+    // thêm đúng giá trị đó vào danh sách khi mở phiếu để ô vẫn hiện được (xem RefreshPaymentReasons).
+    private static readonly string[] SelectablePaymentReasons =
     {
-        "ChiKhac", "ChiMuaHang", "ChiTraNo"
+        "TamUngNhanVien", "GuiTienNganHang", "ChiKhac", "ThueTNDNTamTinh",
     };
+
+    public IReadOnlyList<string> PaymentReasons { get; private set; } = SelectablePaymentReasons;
+
+    private void RefreshPaymentReasons(string? currentReason)
+    {
+        PaymentReasons = string.IsNullOrEmpty(currentReason) || SelectablePaymentReasons.Contains(currentReason)
+            ? SelectablePaymentReasons
+            : SelectablePaymentReasons.Append(currentReason).ToArray();
+        OnPropertyChanged(nameof(PaymentReasons));
+    }
+
+    // 2026-09-29 (khớp MISA bước 3-4): dòng hạch toán tự điền "Diễn giải" theo nội dung chi tiết ở ô
+    // bên cạnh Lý do chi, và đổi theo khi gõ tiếp — CHỈ với dòng còn trống hoặc đang mang đúng nội dung
+    // cũ (chưa bị người dùng tự sửa). Dòng đã có diễn giải riêng thì giữ nguyên.
+    partial void OnReasonDetailChanged(string? oldValue, string? newValue)
+    {
+        var oldText = oldValue?.Trim() ?? "";
+        var newText = newValue?.Trim() ?? "";
+        foreach (var entry in Entries)
+        {
+            if (string.IsNullOrWhiteSpace(entry.Description) || entry.Description.Trim() == oldText)
+                entry.Description = newText;
+        }
+    }
 
     // ── Trạng thái popup — 2026-09-26: khớp ĐÚNG quy trình Chứng từ bán hàng
     // (Sales/docs/ChungTuTraHangBan-Review.html, SalesOrderViewModel):
@@ -437,13 +463,24 @@ public partial class PaymentViewModel : ViewModelBase
         PopulateFormFromCurrent();
     }
 
+    private const string DefaultDebitAccountCode  = "6418";
+    private const string DefaultCreditAccountCode = "1111";
+
+    private ISearchableItem? FindAccountByCode(string code) =>
+        AccountSettings.FirstOrDefault(a => string.Equals(a.Code, code, StringComparison.OrdinalIgnoreCase));
+
     [RelayCommand]
     private void AddEntry()
     {
+        // 2026-09-29 (theo kế toán): dòng mới mặc định TK Nợ 6418 / TK Có 1111. Chỉ khi danh mục chưa có
+        // mã đó (DB chưa chạy migration AddPaymentDefaultAccounts6418And1111) mới rơi về TK dùng gần nhất.
         var entry = new PaymentEntryItem
         {
-            SelectedDebitAccount  = AccountSettings.FirstOrDefault(a => a.Id == _lastUsedAccounts.LastDebitAccountId),
-            SelectedCreditAccount = AccountSettings.FirstOrDefault(a => a.Id == _lastUsedAccounts.LastCreditAccountId),
+            SelectedDebitAccount  = FindAccountByCode(DefaultDebitAccountCode)
+                                    ?? AccountSettings.FirstOrDefault(a => a.Id == _lastUsedAccounts.LastDebitAccountId),
+            SelectedCreditAccount = FindAccountByCode(DefaultCreditAccountCode)
+                                    ?? AccountSettings.FirstOrDefault(a => a.Id == _lastUsedAccounts.LastCreditAccountId),
+            Description           = ReasonDetail?.Trim() ?? "",
             SubjectCode           = SelectedPartner?.Code,
             SubjectName           = SelectedPartner?.Name,
         };
@@ -570,6 +607,7 @@ public partial class PaymentViewModel : ViewModelBase
         PayeeName                 = string.Empty;
         Address                   = null;
         SelectedPaymentReason     = "ChiKhac";
+        RefreshPaymentReasons("ChiKhac");
         ReasonDetail              = null;
         SelectedPaymentEmployeeEmployee = null;
         Attachment                = null;
@@ -605,6 +643,9 @@ public partial class PaymentViewModel : ViewModelBase
         };
         PayeeName                 = CurrentPayment.PayeeName;
         Address                   = CurrentPayment.Address;
+        // Phải nạp danh sách TRƯỚC khi gán SelectedItem, không thì lý do cũ (ChiMuaHang...) bị ComboBox
+        // ghi đè về null vì không có trong ItemsSource.
+        RefreshPaymentReasons(CurrentPayment.PaymentReason);
         SelectedPaymentReason     = CurrentPayment.PaymentReason;
         ReasonDetail              = CurrentPayment.ReasonDetail;
         SelectedPaymentEmployeeEmployee = Employees.FirstOrDefault(e => e.Id == CurrentPayment.PaymentEmployeeId);

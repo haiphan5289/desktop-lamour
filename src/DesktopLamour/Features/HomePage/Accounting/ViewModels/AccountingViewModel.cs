@@ -13,6 +13,7 @@ using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.HomePage.Accounting.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Accounting.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Accounting.Views;
+using DesktopLamour.Shared.Converters;
 using DesktopLamour.Shared.Helpers;
 using DesktopLamour.Shared.Models;
 using Microsoft.Win32;
@@ -37,8 +38,6 @@ public partial class AccountingViewModel : ViewModelBase
     [ObservableProperty] private bool    _hasError;
     [ObservableProperty] private string  _errorMessage  = string.Empty;
     [ObservableProperty] private bool    _hasItems;
-    [ObservableProperty] private decimal _openingBalance;
-    [ObservableProperty] private decimal _closingBalance;
     // 2026-09-28 (khớp box "Tồn quỹ đến hiện tại" ảnh mẫu MISA): tồn quỹ tính tới hôm nay, độc lập
     // bộ lọc Từ ngày/Đến ngày đang chọn — BE trả sẵn trong CashLedgerResponseDto.current_balance.
     [ObservableProperty] private decimal _currentBalance;
@@ -48,6 +47,7 @@ public partial class AccountingViewModel : ViewModelBase
     [ObservableProperty] private int     _visibleLineCount;
     [ObservableProperty] private decimal _totalThu;
     [ObservableProperty] private decimal _totalChi;
+    [ObservableProperty] private decimal _totalAmount;
     // 2026-09-16: đổi lại mặc định "Hôm nay" (đảo ngược quyết định 2026-08-31 "Đầu tháng đến hiện
     // tại") — khớp SelectedPeriod bên dưới.
     [ObservableProperty] private DateTime _fromDate = DateTime.Today;
@@ -77,15 +77,13 @@ public partial class AccountingViewModel : ViewModelBase
     // on top of the existing FilterStatus/FilterType toolbar filters via the same ItemsView
     // (CollectionView) filter predicate — FilterEntry — so ItemsView.Refresh() plays the role
     // ApplyFilters() plays on the Sales screen (Items itself is not re-populated here).
-    [ObservableProperty] private string _filterReceiptNumber  = string.Empty;
-    [ObservableProperty] private string _filterPaymentNumber  = string.Empty;
+    [ObservableProperty] private string _filterDocumentNumber = string.Empty;
     [ObservableProperty] private string _filterDescription    = string.Empty;
     [ObservableProperty] private string _filterPersonName     = string.Empty;
     [ObservableProperty] private string _filterPaymentReason  = string.Empty;
     [ObservableProperty] private string _filterDocumentType   = string.Empty;
 
-    partial void OnFilterReceiptNumberChanged(string value)  => ItemsView.Refresh();
-    partial void OnFilterPaymentNumberChanged(string value)  => ItemsView.Refresh();
+    partial void OnFilterDocumentNumberChanged(string value) => ItemsView.Refresh();
     partial void OnFilterDescriptionChanged(string value)    => ItemsView.Refresh();
     partial void OnFilterPersonNameChanged(string value)     => ItemsView.Refresh();
     partial void OnFilterPaymentReasonChanged(string value)  => ItemsView.Refresh();
@@ -163,6 +161,8 @@ public partial class AccountingViewModel : ViewModelBase
         VisibleLineCount = visible.Count;
         TotalThu         = visible.Sum(e => e.DebitAmount);
         TotalChi         = visible.Sum(e => e.CreditAmount);
+        // Khớp MISA: ô tổng dưới cột "Số tiền" = cộng cả thu lẫn chi (Amount luôn dương).
+        TotalAmount      = visible.Sum(e => e.Amount);
     }
 
     partial void OnFilterStatusChanged(string value) => ItemsView.Refresh();
@@ -229,23 +229,11 @@ public partial class AccountingViewModel : ViewModelBase
         if (FilterType == "Thu" && string.IsNullOrEmpty(entry.ReceiptNumber)) return false;
         if (FilterType == "Chi" && string.IsNullOrEmpty(entry.PaymentNumber)) return false;
 
-        var paymentReasonLabel = entry.PaymentReason switch
-        {
-            "ThuKhac"     => "Thu khác",
-            "ThuTienHang" => "Thu tiền hàng",
-            "ThuCongNo"   => "Thu công nợ",
-            "ThuKhachHangHangLoat" => "Phiếu thu tiền mặt khách hàng hàng loạt",
-            "ChiKhac"     => "Chi khác",
-            "ChiMuaHang"  => "Chi mua hàng",
-            "ChiTraNo"    => "Chi trả nợ",
-            "ChiLuong"    => "Chi lương",
-            _             => entry.PaymentReason ?? "",
-        };
+        var paymentReasonLabel = PaymentReasonDisplayConverter.Label(entry.PaymentReason);
 
         return AccountingDateFilter.Matches(entry.AccountingDate)
             && DocumentDateFilter.Matches(entry.DocumentDate)
-            && Matches(FilterReceiptNumber, entry.ReceiptNumber ?? "")
-            && Matches(FilterPaymentNumber, entry.PaymentNumber ?? "")
+            && Matches(FilterDocumentNumber, entry.DocumentNumber)
             && Matches(FilterDescription, entry.Description)
             && AmountFilter.Matches(entry.Amount)
             && Matches(FilterPersonName, entry.PersonName ?? "")
@@ -486,8 +474,6 @@ public partial class AccountingViewModel : ViewModelBase
 
             Items.Clear();
             foreach (var entry in result.Entries) Items.Add(entry);
-            OpeningBalance = result.OpeningBalance;
-            ClosingBalance = result.ClosingBalance;
             CurrentBalance = result.CurrentBalance;
             HasItems       = Items.Count > 0;
         }
@@ -533,8 +519,8 @@ public partial class AccountingViewModel : ViewModelBase
 
         string[] headers =
         {
-            "Ngày hạch toán", "Ngày chứng từ", "Số phiếu thu", "Số phiếu chi",
-            "Diễn giải", "Số tiền", "Người nhận/Người nộp", "Lý do thu/chi", "Loại chứng từ",
+            "Ngày hạch toán", "Ngày chứng từ", "Số chứng từ",
+            "Diễn giải", "Số tiền", "Đối tượng", "Lý do thu/chi", "Loại chứng từ",
         };
         for (var i = 0; i < headers.Length; i++)
         {
@@ -548,24 +534,12 @@ public partial class AccountingViewModel : ViewModelBase
         {
             worksheet.Cell(row, 1).Value = e.AccountingDate;
             worksheet.Cell(row, 2).Value = e.DocumentDate;
-            worksheet.Cell(row, 3).Value = e.ReceiptNumber;
-            worksheet.Cell(row, 4).Value = e.PaymentNumber;
-            worksheet.Cell(row, 5).Value = e.Description;
-            worksheet.Cell(row, 6).Value = e.Amount;
-            worksheet.Cell(row, 7).Value = e.PersonName;
-            worksheet.Cell(row, 8).Value = e.PaymentReason switch
-            {
-                "ThuKhac"     => "Thu khác",
-                "ThuTienHang" => "Thu tiền hàng",
-                "ThuCongNo"   => "Thu công nợ",
-                "ThuKhachHangHangLoat" => "Phiếu thu tiền mặt khách hàng hàng loạt",
-                "ChiKhac"     => "Chi khác",
-                "ChiMuaHang"  => "Chi mua hàng",
-                "ChiTraNo"    => "Chi trả nợ",
-                "ChiLuong"    => "Chi lương",
-                _             => e.PaymentReason,
-            };
-            worksheet.Cell(row, 9).Value = e.DocumentType;
+            worksheet.Cell(row, 3).Value = e.DocumentNumber;
+            worksheet.Cell(row, 4).Value = e.Description;
+            worksheet.Cell(row, 5).Value = e.Amount;
+            worksheet.Cell(row, 6).Value = e.PersonName;
+            worksheet.Cell(row, 7).Value = PaymentReasonDisplayConverter.Label(e.PaymentReason);
+            worksheet.Cell(row, 8).Value = e.DocumentType;
             row++;
         }
         worksheet.Columns().AdjustToContents();

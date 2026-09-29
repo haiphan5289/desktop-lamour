@@ -241,33 +241,9 @@
             </StackPanel>
         </Border>
 
-        <!-- ══════════════════════════════════════════════ -->
-        <!--  Summary: Số tồn đầu kỳ / cuối kỳ            -->
-        <!-- ══════════════════════════════════════════════ -->
-        <Border Grid.Row="3"
-                Margin="24,8,24,0"
-                Padding="16,10"
-                Background="{StaticResource AppColor.BackgroundPrimary}"
-                BorderBrush="{StaticResource AppColor.BorderThin}"
-                BorderThickness="1"
-                CornerRadius="8"
-                Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibilityConverter}}">
-            <StackPanel Orientation="Horizontal">
-                <controls:AppLabel Text="Số tồn đầu kỳ:"
-                                   Style="{StaticResource AppTypography.BodyCaption}"
-                                   Margin="0,0,8,0"/>
-                <controls:AppLabel helpers:NegativeAmountHighlight.IsEnabled="True" Text="{Binding OpeningBalance, Converter={StaticResource MoneyConverter}}"
-                                   Style="{StaticResource AppTypography.LabelSection}"
-                                   Foreground="{StaticResource AppColor.TextPrimary}"
-                                   Margin="0,0,32,0"/>
-                <controls:AppLabel Text="Số tồn cuối kỳ:"
-                                   Style="{StaticResource AppTypography.BodyCaption}"
-                                   Margin="0,0,8,0"/>
-                <controls:AppLabel helpers:NegativeAmountHighlight.IsEnabled="True" Text="{Binding ClosingBalance, Converter={StaticResource MoneyConverter}}"
-                                   Style="{StaticResource AppTypography.LabelSection}"
-                                   Foreground="{StaticResource AppColor.TextPrimary}"/>
-            </StackPanel>
-        </Border>
+        <!-- 2026-09-29: bỏ dải "Số tồn đầu kỳ / Số tồn cuối kỳ" theo yêu cầu kế toán (MISA cũng không
+             có) — tồn quỹ chỉ còn box "Tồn quỹ đến hiện tại" góc trên phải. Hàng này giữ chỗ (Height
+             Auto, rỗng) để không phải đánh lại Grid.Row của các phần bên dưới. -->
 
         <!-- ══════════════════════════════════════════════ -->
         <!--  DataGrid                                      -->
@@ -469,39 +445,20 @@
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
-                    <!-- Số phiếu thu — text column: plain Contains filter, inline -->
-                    <DataGridTextColumn Binding="{Binding ReceiptNumber}"
-                                        Width="110" ElementStyle="{StaticResource CellCenter}">
+                    <!-- 2026-09-29 (khớp MISA): 1 cột "Số chứng từ" thay cho 2 cột Số phiếu thu / Số phiếu
+                         chi — mỗi dòng chỉ có PT... hoặc PC.... Rộng 170 để chứa ô "Tổng thu" ở dòng tổng. -->
+                    <DataGridTextColumn Binding="{Binding DocumentNumber}"
+                                        Width="170" ElementStyle="{StaticResource CellCenter}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <Border Background="{StaticResource AppColor.BackgroundSecondary}"
                                         BorderBrush="{StaticResource GroupBorderBrush}"
                                         BorderThickness="0,1,0,1" Padding="6,4">
                                     <StackPanel>
-                                        <TextBlock Text="Số phiếu thu" FontWeight="SemiBold" FontSize="12"
+                                        <TextBlock Text="Số chứng từ" FontWeight="SemiBold" FontSize="12"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
                                         <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
-                                                                Text="{Binding DataContext.FilterReceiptNumber, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
-                                                                FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,0,2"/>
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </DataGridTextColumn.HeaderTemplate>
-                    </DataGridTextColumn>
-
-                    <!-- Số phiếu chi — text column: plain Contains filter, inline -->
-                    <DataGridTextColumn Binding="{Binding PaymentNumber}"
-                                        Width="110" ElementStyle="{StaticResource CellCenter}">
-                        <DataGridTextColumn.HeaderTemplate>
-                            <DataTemplate>
-                                <Border Background="{StaticResource AppColor.BackgroundSecondary}"
-                                        BorderBrush="{StaticResource GroupBorderBrush}"
-                                        BorderThickness="0,1,0,1" Padding="6,4">
-                                    <StackPanel>
-                                        <TextBlock Text="Số phiếu chi" FontWeight="SemiBold" FontSize="12"
-                                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
-                                        <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
-                                                                Text="{Binding DataContext.FilterPaymentNumber, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                                Text="{Binding DataContext.FilterDocumentNumber, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
                                                                 FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,0,2"/>
                                     </StackPanel>
                                 </Border>
@@ -569,7 +526,7 @@
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>
 
-                    <!-- Người nhận/Người nộp — text column: plain Contains filter, inline -->
+                    <!-- Đối tượng — text column: plain Contains filter, inline -->
                     <DataGridTextColumn Binding="{Binding PersonName}"
                                         Width="170" ElementStyle="{StaticResource CellText}">
                         <DataGridTextColumn.HeaderTemplate>
@@ -578,7 +535,7 @@
                                         BorderBrush="{StaticResource GroupBorderBrush}"
                                         BorderThickness="0,1,0,1" Padding="6,4">
                                     <StackPanel>
-                                        <TextBlock Text="Người nhận/Người nộp" FontWeight="SemiBold" FontSize="12"
+                                        <TextBlock Text="Đối tượng" FontWeight="SemiBold" FontSize="12"
                                                    HorizontalAlignment="Left" VerticalAlignment="Center" TextWrapping="Wrap"/>
                                         <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
                                                                 Text="{Binding DataContext.FilterPersonName, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
@@ -661,29 +618,40 @@
                                    HorizontalAlignment="Center"/>
             </StackPanel>
 
-            <!-- 2026-09-28 (khớp dòng tổng cuối lưới ảnh mẫu MISA): tính trên các dòng ĐANG HIỂN THỊ
-                 sau lọc (VisibleLineCount/TotalThu/TotalChi — AccountingViewModel.RecalculateFooterTotals),
-                 không phải toàn bộ dữ liệu đã tải — khớp "Xuất khẩu" cũng chỉ xuất dòng đang hiển thị. -->
+            <!-- 2026-09-29 (khớp dòng tổng cuối lưới ảnh mẫu MISA): "Tổng thu" nằm dưới cột Số chứng từ,
+                 "Tổng chi" dưới cột Diễn giải, ô tổng dưới cột Số tiền (cộng cả thu lẫn chi, như MISA).
+                 Các cột dưới dùng đúng bề rộng cột lưới (130+130 | 170 | 250 | 130) nên thẳng cột khi
+                 chưa kéo giãn cột/cuộn ngang. Tính trên các dòng ĐANG HIỂN THỊ sau lọc
+                 (AccountingViewModel.RecalculateFooterTotals) — khớp "Xuất khẩu" chỉ xuất dòng đang hiển thị. -->
             <Border Grid.Row="1"
                     BorderBrush="{StaticResource AppColor.BorderThin}"
                     BorderThickness="1,0,1,1"
                     Background="{StaticResource AppColor.BackgroundPrimary}"
-                    Padding="12,8"
+                    Padding="0,8"
                     Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibilityConverter}}">
                 <Grid>
-                    <controls:AppLabel Text="{Binding VisibleLineCount, StringFormat='Số dòng = {0}'}"
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="260"/>
+                        <ColumnDefinition Width="170"/>
+                        <ColumnDefinition Width="250"/>
+                        <ColumnDefinition Width="130"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <controls:AppLabel Grid.Column="0"
+                                       Text="{Binding VisibleLineCount, StringFormat='Số dòng = {0}'}"
                                        Style="{StaticResource AppTypography.BodyCaption}"
                                        Foreground="{StaticResource AppColor.TextSecondary}"
-                                       VerticalAlignment="Center"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                       VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <controls:AppLabel Text="Tổng thu:"
                                            Style="{StaticResource AppTypography.BodyCaption}"
                                            Foreground="{StaticResource AppColor.TextSecondary}"
                                            VerticalAlignment="Center" Margin="0,0,6,0"/>
                         <controls:AppLabel Text="{Binding TotalThu, Converter={StaticResource MoneyConverter}}"
                                            Style="{StaticResource AppTypography.LabelSection}"
-                                           Foreground="{StaticResource AppColor.TextPrimary}"
-                                           Margin="0,0,24,0"/>
+                                           Foreground="{StaticResource AppColor.TextPrimary}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
                         <controls:AppLabel Text="Tổng chi:"
                                            Style="{StaticResource AppTypography.BodyCaption}"
                                            Foreground="{StaticResource AppColor.TextSecondary}"
@@ -692,6 +660,11 @@
                                            Style="{StaticResource AppTypography.LabelSection}"
                                            Foreground="{StaticResource AppColor.TextPrimary}"/>
                     </StackPanel>
+                    <controls:AppLabel Grid.Column="3"
+                                       Text="{Binding TotalAmount, Converter={StaticResource MoneyConverter}}"
+                                       Style="{StaticResource AppTypography.LabelSection}"
+                                       Foreground="{StaticResource AppColor.TextPrimary}"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0"/>
                 </Grid>
             </Border>
 

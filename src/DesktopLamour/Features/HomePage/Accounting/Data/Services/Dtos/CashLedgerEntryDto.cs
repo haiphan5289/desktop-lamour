@@ -23,6 +23,9 @@ public class CashLedgerEntryDto
     // 2026-09-28: lúc CashTransaction được tạo (bấm "Ghi sổ" thật) — null cho dòng Treo.
     [JsonPropertyName("posted_at")]       public DateTime? PostedAt      { get; set; }
 
+    // 2026-09-29 (khớp MISA): cột "Số chứng từ" gộp — mỗi dòng chỉ có 1 trong 2 số (PT... hoặc PC...).
+    [JsonIgnore] public string DocumentNumber => ReceiptNumber ?? PaymentNumber ?? "";
+
     // 2026-09-26: dòng chưa ghi sổ ("Treo", hoặc "Draft" dữ liệu cũ) — lưới Quỹ tô màu giống danh
     // sách Chứng từ bán hàng (SalesOrderListItem.IsHeld). Không gửi/nhận qua API.
     [JsonIgnore] public bool IsHeld => Status != "Confirmed";

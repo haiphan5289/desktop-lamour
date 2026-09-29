@@ -23,9 +23,9 @@ namespace DesktopLamour.Features.HomePage.Accounting.ViewModels;
 // Accounting/docs/phieu-thu-hang-loat.md mục "So sánh chi tiết"): viết lại thành 1 cửa sổ chứng từ
 // ĐẦY ĐỦ giống ReceiptWindow/PaymentWindow (Trước/Sau/Thêm/Sửa/Xóa/Ghi sổ-Bỏ ghi/Xuất khẩu) thay vì
 // popup "tạo 1 lần rồi đóng" như trước — khớp toolbar MISA (Trước·Sau·Thêm·Sửa·Sửa nhanh |
-// Cất·Xóa·Hoàn·Ghi sổ | ...). "Sửa nhanh"/"Nạp"/"Tiện ích"/"Mẫu"/"In" KHÔNG có trong bản này — không
-// có tính năng tương ứng ở bất kỳ đâu khác trong app (kể cả ReceiptWindow/PaymentWindow cũng không
-// có In vì chưa có mẫu in phiếu thu nào).
+// Cất·Xóa·Hoàn·Ghi sổ | ...). "Sửa nhanh"/"Nạp"/"Tiện ích"/"Mẫu" KHÔNG có trong bản này — không
+// có tính năng tương ứng ở bất kỳ đâu khác trong app. "In" có từ 2026-09-29 (ReceiptPrintWindow,
+// mẫu 01-TT khớp bản in MISA).
 public partial class BulkCustomerReceiptViewModel : ViewModelBase
 {
     public event Action? BulkReceiptSaved;
@@ -46,6 +46,7 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
     // Sales) để mở SalesOrderWindow/lấy SalesOrderResponseDto.
     private readonly IGetSalesOrderByIdUseCase _getSalesOrderById;
     private readonly Func<SalesOrderWindow>    _salesOrderWindowFactory;
+    private readonly Func<ReceiptPrintWindow>  _printWindowFactory;
     private readonly ILogger<BulkCustomerReceiptViewModel> _logger;
 
     // ── State ──────────────────────────────────────────────────────────────
@@ -73,6 +74,9 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
     [ObservableProperty] private decimal _totalGrandTotal;
     [ObservableProperty] private decimal _totalRemaining;
     [ObservableProperty] private string  _lineSummary = "Số dòng = 0";
+    // 2026-09-29 (khớp MISA): "Số dòng" dưới tab "1. Hạch toán" đếm dòng ĐÃ GỘP theo khách hàng —
+    // khác LineSummary (tab "2. Chứng từ", đếm từng chứng từ bán hàng).
+    [ObservableProperty] private string  _groupedLineSummary = "Số dòng = 0";
 
     public string ReasonLabel => "Thu tiền khách hàng";
 
@@ -117,6 +121,7 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
         SaveCommand.NotifyCanExecuteChanged();
         ToggleConfirmCommand.NotifyCanExecuteChanged();
         DeleteCommand.NotifyCanExecuteChanged();
+        PrintCommand.NotifyCanExecuteChanged();
     }
 
     public bool CanNavigatePrev => _currentIndex > 0;
@@ -132,6 +137,9 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
     private bool CanToggleConfirm => CurrentReceipt is not null && !IsEditing;
     public string UnpostButtonLabel => IsConfirmed ? "Bỏ ghi" : "Ghi sổ";
     public bool CanDelete   => CurrentReceipt is not null && !IsConfirmed && !IsEditing;
+    // In chỉ phiếu ĐÃ LƯU (Treo hay đã ghi sổ đều in được) và không đang sửa — in đúng dữ liệu BE
+    // trả về, không in số liệu đang gõ dở chưa Cất (giống PaymentViewModel.CanPrint).
+    private bool CanPrint   => CurrentReceipt is not null && !IsEditing;
     // Lưới tab "2. Chứng từ" khóa nhập liệu (IsReadOnly) thay vì IsEnabled — để link "Số chứng từ"
     // vẫn bấm được khi phiếu đang khóa (xem XAML).
     public bool IsGridLocked => !IsEditable;
@@ -149,6 +157,7 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
         Func<BulkCustomerReceiptSearchWindow> searchWindowFactory,
         IGetSalesOrderByIdUseCase         getSalesOrderById,
         Func<SalesOrderWindow>            salesOrderWindowFactory,
+        Func<ReceiptPrintWindow>          printWindowFactory,
         ILogger<BulkCustomerReceiptViewModel> logger)
     {
         _getReceipts             = getReceipts;
@@ -163,6 +172,7 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
         _searchWindowFactory      = searchWindowFactory;
         _getSalesOrderById        = getSalesOrderById;
         _salesOrderWindowFactory  = salesOrderWindowFactory;
+        _printWindowFactory       = printWindowFactory;
         _logger                   = logger;
     }
 
@@ -537,6 +547,17 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
         }
     }
 
+    // "🖨 In" — Phiếu thu mẫu 01-TT (khớp bản in MISA), 1 tổng Số tiền cho cả phiếu.
+    [RelayCommand(CanExecute = nameof(CanPrint))]
+    private void Print()
+    {
+        if (CurrentReceipt is null) return;
+        var window = _printWindowFactory();
+        window.Owner = PopupOwner;
+        window.Initialize(CurrentReceipt, ReasonLabel);
+        window.ShowDialog();
+    }
+
     // "📤 Xuất khẩu" — xuất tab "2. Chứng từ" (đủ chi tiết từng hóa đơn) ra Excel.
     [RelayCommand]
     private void ExportExcel()
@@ -608,6 +629,7 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
 
         GroupedLines.Clear();
         foreach (var g in BulkReceiptGroupedLine.FromLines(Lines)) GroupedLines.Add(g);
+        GroupedLineSummary = $"Số dòng = {GroupedLines.Count}";
     }
 
     private void ClearForm()

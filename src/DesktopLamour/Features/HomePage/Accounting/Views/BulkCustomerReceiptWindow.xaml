@@ -108,8 +108,8 @@
 
         <!-- Toolbar — dải ribbon dùng chung (DocumentToolbar), khớp ReceiptWindow/PaymentWindow, +
              1 nút Xuất khẩu riêng (DocumentToolbar không có sẵn slot xuất Excel — CreateExportCommand
-             của nó là "Lập phiếu xuất kho", khác khái niệm). Không có nút In: app chưa có mẫu in
-             phiếu thu nào (kể cả phiếu thu thường cũng chưa có) — xem docs/phieu-thu-hang-loat.md. -->
+             của nó là "Lập phiếu xuất kho", khác khái niệm). 2026-09-29: có nút In (ReceiptPrintWindow,
+             mẫu 01-TT khớp bản in MISA) — chỉ bật khi phiếu đã lưu và không đang sửa. -->
         <!-- 2026-09-26: Xuất khẩu nằm TRONG khung thẻ toolbar qua slot TrailingContent (trước đặt ở
              cột bên cạnh nên lọt ra ngoài khung bo tròn). -->
         <controls:DocumentToolbar Grid.Row="1"
@@ -122,6 +122,7 @@
                                   SaveLabel="Cất"
                                   UnpostCommand="{Binding ToggleConfirmCommand}"
                                   UnpostLabel="{Binding UnpostButtonLabel}"
+                                  PrintCommand="{Binding PrintCommand}"
                                   CloseRequested="CloseButton_Click">
             <controls:DocumentToolbar.TrailingContent>
                 <controls:AppButton Content="📤 Xuất khẩu"
@@ -318,37 +319,65 @@
                      read-only) — 1 khách hàng nhiều hóa đơn chỉ hiện 1 dòng, Số tiền = tổng. Sửa số
                      tiền từng hóa đơn riêng chuyển sang tab "2. Chứng từ" (cột "Số thu", editable). -->
                 <TabItem Header="1. Hạch toán" Style="{StaticResource AppTabItem.Modern}">
-                    <DataGrid ItemsSource="{Binding GroupedLines}"
-                              IsReadOnly="True"
-                              AutoGenerateColumns="False"
-                              CanUserAddRows="False" CanUserDeleteRows="False"
-                              HeadersVisibility="Column" GridLinesVisibility="All"
-                              HorizontalGridLinesBrush="#9CB8D4"
-                              VerticalGridLinesBrush="#9CB8D4"
-                              MaxHeight="360"
-                              BorderThickness="0"
-                              RowBackground="{StaticResource AppColor.BackgroundPrimary}"
-                              AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
-                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                              ScrollViewer.VerticalScrollBarVisibility="Auto">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Diễn giải" Binding="{Binding Description}" Width="220"/>
-                            <DataGridTextColumn Header="TK Nợ" Binding="{Binding DebitAccountDisplay}" Width="80"/>
-                            <DataGridTextColumn Header="TK Có" Binding="{Binding CreditAccountDisplay}" Width="80"/>
-                            <DataGridTextColumn Header="Số tiền" Binding="{Binding Amount, Converter={StaticResource MoneyConverter}}" Width="120">
-                                <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock" BasedOn="{StaticResource AppNumberCell}">
-                                        <Setter Property="HorizontalAlignment" Value="Right"/>
-                                        <Setter Property="Padding" Value="0,0,8,0"/>
-                                        <Setter Property="Foreground" Value="{StaticResource AppColor.TextPrimary}"/>
-                                        <Setter Property="FontWeight" Value="SemiBold"/>
-                                    </Style>
-                                </DataGridTextColumn.ElementStyle>
-                            </DataGridTextColumn>
-                            <DataGridTextColumn Header="Mã khách hàng" Binding="{Binding CustomerCode}" Width="110"/>
-                            <DataGridTextColumn Header="Tên khách hàng" Binding="{Binding CustomerName}" Width="220"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <DataGrid Grid.Row="0" ItemsSource="{Binding GroupedLines}"
+                                  IsReadOnly="True"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False" CanUserDeleteRows="False"
+                                  HeadersVisibility="Column" GridLinesVisibility="All"
+                                  HorizontalGridLinesBrush="#9CB8D4"
+                                  VerticalGridLinesBrush="#9CB8D4"
+                                  MaxHeight="360"
+                                  BorderThickness="0"
+                                  RowBackground="{StaticResource AppColor.BackgroundPrimary}"
+                                  AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Diễn giải" Binding="{Binding Description}" Width="220"/>
+                                <DataGridTextColumn Header="TK Nợ" Binding="{Binding DebitAccountDisplay}" Width="80"/>
+                                <DataGridTextColumn Header="TK Có" Binding="{Binding CreditAccountDisplay}" Width="80"/>
+                                <DataGridTextColumn Header="Số tiền" Binding="{Binding Amount, Converter={StaticResource MoneyConverter}}" Width="120">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource AppNumberCell}">
+                                            <Setter Property="HorizontalAlignment" Value="Right"/>
+                                            <Setter Property="Padding" Value="0,0,8,0"/>
+                                            <Setter Property="Foreground" Value="{StaticResource AppColor.TextPrimary}"/>
+                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="Mã khách hàng" Binding="{Binding CustomerCode}" Width="110"/>
+                                <DataGridTextColumn Header="Tên khách hàng" Binding="{Binding CustomerName}" Width="220"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <!-- 2026-09-29 (khớp MISA — ô tổng dưới cột Số tiền): cột footer cùng bề rộng
+                             các cột lưới (220 | 80 | 80 | 120) để Tổng tiền nằm thẳng cột "Số tiền".
+                             Lưới này hẹp hơn cửa sổ nên không cuộn ngang, footer không bị lệch cột. -->
+                        <Border Grid.Row="1" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,1,0,0"
+                                Padding="0,8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="380"/>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <controls:AppLabel Grid.Column="0" Text="{Binding GroupedLineSummary}"
+                                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                                   Foreground="{StaticResource AppColor.TextSecondary}"
+                                                   VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                <controls:AppLabel Grid.Column="1"
+                                                   Text="{Binding TotalAmount, Converter={StaticResource MoneyConverter}}"
+                                                   Style="{StaticResource AppTypography.LabelSection}"
+                                                   Foreground="{StaticResource AppColor.TextPrimary}"
+                                                   HorizontalAlignment="Right" Margin="0,0,8,0"/>
+                            </Grid>
+                        </Border>
+                    </Grid>
                 </TabItem>
 
                 <!-- 2026-09-26: "Số thu" giờ SỬA ĐƯỢC (dời từ tab "Hạch toán" cũ sang đây — hợp lý
@@ -429,21 +458,26 @@
                              DataGrid không có footer row cuộn theo cột). -->
                         <Border Grid.Row="1" BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="0,1,0,0"
                                 Padding="12,8">
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                <controls:AppLabel Text="Số phải thu:" Style="{StaticResource AppTypography.BodyCaption}"
-                                                   Foreground="{StaticResource AppColor.TextSecondary}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <controls:AppLabel Text="{Binding TotalGrandTotal, Converter={StaticResource MoneyConverter}}"
-                                                   Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,24,0"/>
-                                <controls:AppLabel Text="Số chưa thu:" Style="{StaticResource AppTypography.BodyCaption}"
-                                                   Foreground="{StaticResource AppColor.TextSecondary}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <controls:AppLabel Text="{Binding TotalRemaining, Converter={StaticResource MoneyConverter}}"
-                                                   Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,24,0"/>
-                                <controls:AppLabel Text="Số thu:" Style="{StaticResource AppTypography.BodyCaption}"
-                                                   Foreground="{StaticResource AppColor.TextSecondary}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <controls:AppLabel Text="{Binding TotalAmount, Converter={StaticResource MoneyConverter}}"
-                                                   Style="{StaticResource AppTypography.LabelSection}"
-                                                   Foreground="{StaticResource AppColor.TextPrimary}"/>
-                            </StackPanel>
+                            <Grid>
+                                <controls:AppLabel Text="{Binding LineSummary}" Style="{StaticResource AppTypography.BodyCaption}"
+                                                   Foreground="{StaticResource AppColor.TextSecondary}"
+                                                   HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <controls:AppLabel Text="Số phải thu:" Style="{StaticResource AppTypography.BodyCaption}"
+                                                       Foreground="{StaticResource AppColor.TextSecondary}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <controls:AppLabel Text="{Binding TotalGrandTotal, Converter={StaticResource MoneyConverter}}"
+                                                       Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,24,0"/>
+                                    <controls:AppLabel Text="Số chưa thu:" Style="{StaticResource AppTypography.BodyCaption}"
+                                                       Foreground="{StaticResource AppColor.TextSecondary}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <controls:AppLabel Text="{Binding TotalRemaining, Converter={StaticResource MoneyConverter}}"
+                                                       Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,24,0"/>
+                                    <controls:AppLabel Text="Số thu:" Style="{StaticResource AppTypography.BodyCaption}"
+                                                       Foreground="{StaticResource AppColor.TextSecondary}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <controls:AppLabel Text="{Binding TotalAmount, Converter={StaticResource MoneyConverter}}"
+                                                       Style="{StaticResource AppTypography.LabelSection}"
+                                                       Foreground="{StaticResource AppColor.TextPrimary}"/>
+                                </StackPanel>
+                            </Grid>
                         </Border>
                     </Grid>
                 </TabItem>
@@ -451,19 +485,8 @@
             </TabControl>
         </Grid>
 
-        <!-- Footer -->
-        <Border Grid.Row="4"
-                BorderBrush="{StaticResource AppColor.BorderThin}"
-                BorderThickness="0,1,0,0"
-                Padding="16,10"
-                Margin="0,6,0,0">
-            <!-- 2026-09-28: bỏ nhãn "Tổng tiền" — trùng với "Số thu" đã hiện trong dòng tổng ngay
-                 trên lưới tab "2. Chứng từ" (Số phải thu/Số chưa thu/Số thu), không cần lặp lại. -->
-            <controls:AppLabel Text="{Binding LineSummary}"
-                               Style="{StaticResource AppTypography.BodyCaption}"
-                               Foreground="{StaticResource AppColor.TextSecondary}"
-                               VerticalAlignment="Center"/>
-        </Border>
+        <!-- 2026-09-29: bỏ footer "Số dòng" chung của cửa sổ — mỗi tab tự có "Số dòng" riêng ngay
+             dưới lưới (tab 1 đếm dòng gộp theo khách hàng, tab 2 đếm chứng từ), khớp MISA. -->
 
         <!-- Status bar -->
         <Border Grid.Row="5"
