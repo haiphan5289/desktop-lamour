@@ -84,7 +84,7 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
     [ObservableProperty] private ReceiptResponseDto? _currentReceipt;
 
     // "Cash111"/"Bank112" — TK Nợ áp dụng cho MỌI dòng của phiếu hiện tại. Đọc lại từ
-    // entries[0].DebitAccount khi mở 1 phiếu đã lưu (mọi dòng luôn cùng 1 TK Nợ — chọn 1 lần ở popup
+    // entries[0].DebitAccountCode khi mở 1 phiếu đã lưu (mọi dòng luôn cùng 1 TK Nợ — chọn 1 lần ở popup
     // tìm kiếm lúc tạo). Không phải ObservableProperty vì không có control nào bind trực tiếp — chỉ
     // dùng nội bộ lúc build request lưu.
     private string  _debitAccount = "Cash111";
@@ -209,7 +209,7 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
     [RelayCommand]
     private async Task RefreshAsync(CancellationToken ct = default) => await LoadBulkReceiptsAsync(ct);
 
-    // Chỉ phiếu thu hàng loạt (CustomerId == null) — Trước/Sau chỉ browse trong nhóm này, không lẫn
+    // Chỉ phiếu thu hàng loạt (PartnerType == null) — Trước/Sau chỉ browse trong nhóm này, không lẫn
     // phiếu thu 1 khách hàng bình thường (ReceiptWindow lo phần đó).
     // showFirst = false: chỉ nạp cache cho Trước/Sau, KHÔNG đổ phiếu mới nhất lên form (dùng ở
     // StartNewAsync — form đang là phiếu mới vừa chọn, không được bị ghi đè).
@@ -221,7 +221,7 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
         {
             var all = await _getReceipts.ExecuteAsync(ct);
             _bulkReceiptListCache = all
-                .Where(r => r.CustomerId is null)
+                .Where(r => r.PartnerType is null)
                 .OrderByDescending(r => r.AccountingDate)
                 .ThenByDescending(r => r.Id)
                 .ToList();
@@ -386,7 +386,6 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
             {
                 var request = new UpdateReceiptRequestDto
                 {
-                    CustomerId          = null,
                     PayerName           = PayerName.Trim(),
                     Address             = string.IsNullOrWhiteSpace(Address) ? null : Address.Trim(),
                     PaymentReason       = "ThuKhachHangHangLoat",
@@ -669,7 +668,8 @@ public partial class BulkCustomerReceiptViewModel : ViewModelBase
             return;
         }
 
-        _debitAccount = entries[0].DebitAccount;
+        // BE trả mã TK trong danh mục (1111 / 1121) — đổi về lựa chọn "Tiền mặt / Tiền gửi" của màn này.
+        _debitAccount = entries[0].DebitAccountCode?.StartsWith("112") == true ? "Bank112" : "Cash111";
         _bankAccount  = entries[0].BankAccount;
         var debitDisplay = _debitAccount == "Bank112" ? "112" : "111";
 

@@ -111,11 +111,31 @@ public partial class PaymentViewModel : ViewModelBase
     {
         var oldText = oldValue?.Trim() ?? "";
         var newText = newValue?.Trim() ?? "";
-        foreach (var entry in Entries)
+        foreach (var entry in Entries.Where(IsActiveEntry))
         {
             if (string.IsNullOrWhiteSpace(entry.Description) || entry.Description.Trim() == oldText)
                 entry.Description = newText;
         }
+    }
+
+    // 2026-10-01 (giống ReceiptViewModel): form mở sẵn nhiều dòng trống, lưới trống hẳn như các popup chứng
+    // từ khác. Chỉ tự điền (Diễn giải, TK Nợ/Có, Đối tượng) cho dòng ĐẦU sau khi đã chọn Đối tượng và cho
+    // dòng đã có số tiền.
+    private bool IsActiveEntry(PaymentEntryItem entry) =>
+        entry.Amount != 0
+        || (SelectedPartner is not null && Entries.Count > 0 && ReferenceEquals(Entries[0], entry));
+
+    // Điền các ô còn trống của 1 dòng theo header; không ghi đè ô người dùng đã nhập. Mặc định TK Nợ 6418 /
+    // TK Có 1111 (theo kế toán); danh mục chưa có mã đó thì rơi về TK dùng gần nhất.
+    private void ApplyEntryDefaults(PaymentEntryItem entry)
+    {
+        entry.SelectedDebitAccount  ??= FindAccountByCode(DefaultDebitAccountCode)
+                                        ?? AccountSettings.FirstOrDefault(a => a.Id == _lastUsedAccounts.LastDebitAccountId);
+        entry.SelectedCreditAccount ??= FindAccountByCode(DefaultCreditAccountCode)
+                                        ?? AccountSettings.FirstOrDefault(a => a.Id == _lastUsedAccounts.LastCreditAccountId);
+        if (string.IsNullOrWhiteSpace(entry.Description)) entry.Description = ReasonDetail?.Trim() ?? "";
+        if (string.IsNullOrWhiteSpace(entry.SubjectCode)) entry.SubjectCode = SelectedPartner?.Code;
+        if (string.IsNullOrWhiteSpace(entry.SubjectName)) entry.SubjectName = SelectedPartner?.Name;
     }
 
     // ── Trạng thái popup — 2026-09-26: khớp ĐÚNG quy trình Chứng từ bán hàng
@@ -472,20 +492,12 @@ public partial class PaymentViewModel : ViewModelBase
     [RelayCommand]
     private void AddEntry()
     {
-        // 2026-09-29 (theo kế toán): dòng mới mặc định TK Nợ 6418 / TK Có 1111. Chỉ khi danh mục chưa có
-        // mã đó (DB chưa chạy migration AddPaymentDefaultAccounts6418And1111) mới rơi về TK dùng gần nhất.
-        var entry = new PaymentEntryItem
-        {
-            SelectedDebitAccount  = FindAccountByCode(DefaultDebitAccountCode)
-                                    ?? AccountSettings.FirstOrDefault(a => a.Id == _lastUsedAccounts.LastDebitAccountId),
-            SelectedCreditAccount = FindAccountByCode(DefaultCreditAccountCode)
-                                    ?? AccountSettings.FirstOrDefault(a => a.Id == _lastUsedAccounts.LastCreditAccountId),
-            Description           = ReasonDetail?.Trim() ?? "",
-            SubjectCode           = SelectedPartner?.Code,
-            SubjectName           = SelectedPartner?.Name,
-        };
+        // Chỉ dòng đầu được điền sẵn (sau khi chọn Đối tượng); dòng trống phía sau tự điền khi gõ số tiền
+        // (xem AttachEntryHandlers / ApplyEntryDefaults).
+        var entry = new PaymentEntryItem();
         AttachEntryHandlers(entry);
         Entries.Add(entry);
+        if (IsActiveEntry(entry)) ApplyEntryDefaults(entry);
     }
 
     [RelayCommand]
@@ -539,10 +551,11 @@ public partial class PaymentViewModel : ViewModelBase
 
             // Khớp ảnh mẫu MISA — đổi "Đối tượng" ở header đồng bộ luôn "Đối tượng"/"Tên đối tượng"
             // xuống mọi dòng hạch toán hiện có (dòng mới thêm sau đó cũng mặc định theo AddEntry()).
-            foreach (var entry in Entries)
+            foreach (var entry in Entries.Where(IsActiveEntry))
             {
                 entry.SubjectCode = value.Code;
                 entry.SubjectName = value.Name;
+                ApplyEntryDefaults(entry);
             }
         }
     }
@@ -595,6 +608,10 @@ public partial class PaymentViewModel : ViewModelBase
                     break;
                 case nameof(PaymentEntryItem.SelectedCreditAccount):
                     _lastUsedAccounts.LastCreditAccountId = entry.SelectedCreditAccount?.Id;
+                    break;
+                // Gõ số tiền vào 1 dòng trống → lúc đó mới tự điền dòng ấy.
+                case nameof(PaymentEntryItem.Amount) when entry.Amount != 0 && IsEditable:
+                    ApplyEntryDefaults(entry);
                     break;
             }
             RecalculateTotals();

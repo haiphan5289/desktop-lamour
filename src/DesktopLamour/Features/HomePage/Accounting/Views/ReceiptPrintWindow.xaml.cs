@@ -8,7 +8,7 @@ namespace DesktopLamour.Features.HomePage.Accounting.Views;
 // mặt khách hàng hàng loạt (2026-09-29): 1 phiếu = 1 tổng Số tiền (Σ mọi dòng hạch toán), KHÔNG in
 // bảng chi tiết từng khách hàng. 5 chữ ký (Giám đốc · Kế toán trưởng · Người nộp tiền · Người lập
 // phiếu · Thủ quỹ) theo đúng mẫu MISA. Layout dùng chung với Phiếu chi: CashVoucherDocumentBuilder.
-// Nhận ReceiptResponseDto nên phiếu thu thường (ReceiptWindow) dùng lại được sau này.
+// Phiếu thu thường (ReceiptWindow) dùng chung, truyền "Lý do nộp" chi tiết vào reasonLabel.
 public partial class ReceiptPrintWindow : Window
 {
     private ReceiptResponseDto? _receipt;
@@ -26,8 +26,8 @@ public partial class ReceiptPrintWindow : Window
             FormNumber:     "01 - TT",
             DocumentNumber: receipt.DocumentNumber,
             DocumentDate:   receipt.DocumentDate,
-            DebitCodes:     CashVoucherDocumentBuilder.JoinAccountCodes(receipt.Entries.Select(e => e.DebitAccount)),
-            CreditCodes:    CashVoucherDocumentBuilder.JoinAccountCodes(receipt.Entries.Select(e => e.CreditAccount)),
+            DebitCodes:     CashVoucherDocumentBuilder.JoinAccountCodes(receipt.Entries.Select(e => e.DebitAccountCode)),
+            CreditCodes:    CashVoucherDocumentBuilder.JoinAccountCodes(receipt.Entries.Select(e => e.CreditAccountCode)),
             PartyLabel:     "Họ tên người nộp tiền",
             PartyName:      receipt.PayerName,
             Address:        receipt.Address,

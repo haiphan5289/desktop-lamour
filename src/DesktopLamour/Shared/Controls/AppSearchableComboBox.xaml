@@ -18,7 +18,7 @@
                 CornerRadius="8"
                 Background="{StaticResource AppColor.BackgroundPrimary}">
 
-            <Grid Margin="12,0,4,0">
+            <Grid x:Name="FieldGrid" Margin="12,0,4,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>

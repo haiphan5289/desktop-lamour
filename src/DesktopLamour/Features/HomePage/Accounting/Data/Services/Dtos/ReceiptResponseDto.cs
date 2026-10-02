@@ -8,9 +8,14 @@ public class ReceiptResponseDto
     [JsonPropertyName("id")]                      public int      Id                    { get; set; }
     [JsonPropertyName("customer_id")]             public int?     CustomerId            { get; set; }
     [JsonPropertyName("customer_name")]           public string   CustomerName          { get; set; } = "";
+    // Null = phiếu thu hàng loạt (không có đối tượng ở header).
+    [JsonPropertyName("partner_type")]            public string?  PartnerType           { get; set; }
+    [JsonPropertyName("partner_id")]              public int?     PartnerId             { get; set; }
+    [JsonPropertyName("partner_name")]            public string?  PartnerName           { get; set; }
     [JsonPropertyName("payer_name")]              public string   PayerName             { get; set; } = "";
     [JsonPropertyName("address")]                 public string?  Address               { get; set; }
     [JsonPropertyName("payment_reason")]          public string   PaymentReason         { get; set; } = "";
+    [JsonPropertyName("reason_detail")]           public string?  ReasonDetail          { get; set; }
     [JsonPropertyName("collector_employee_id")]   public int?     CollectorEmployeeId   { get; set; }
     [JsonPropertyName("collector_employee_name")] public string?  CollectorEmployeeName { get; set; }
     [JsonPropertyName("attachment")]              public string?  Attachment            { get; set; }

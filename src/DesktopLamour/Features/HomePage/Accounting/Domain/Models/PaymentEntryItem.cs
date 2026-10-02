@@ -72,6 +72,18 @@ public class PaymentEntryItem : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    // Dòng chưa nhập gì — lưới hiện trống hẳn (ẩn nút xoá, ô TK), giống ReceiptEntryItem.IsEmpty.
+    public bool IsEmpty =>
+        Amount == 0
+        && string.IsNullOrWhiteSpace(Description)
+        && SelectedDebitAccount is null && SelectedCreditAccount is null && SelectedExpenseCategory is null
+        && string.IsNullOrWhiteSpace(SubjectCode) && string.IsNullOrWhiteSpace(SubjectName)
+        && string.IsNullOrWhiteSpace(BankAccount);
+
     protected void OnPropertyChanged([CallerMemberName] string? name = null)
-        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        if (name != nameof(IsEmpty))
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsEmpty)));
+    }
 }

@@ -50,7 +50,7 @@ public sealed class ReceiptService : IReceiptService
 
     public async Task<ReceiptResponseDto> CreateAsync(CreateReceiptRequestDto request, CancellationToken ct = default)
     {
-        _logger.LogInformation("Creating receipt for customer {CustomerId}", request.CustomerId);
+        _logger.LogInformation("Creating receipt for {PartnerType} {PartnerId}", request.PartnerType, request.PartnerId);
         SetBearerToken();
 
         var response = await _httpClient.PostAsJsonAsync("/api/v1/accounting/receipts", request, ct);

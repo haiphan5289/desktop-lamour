@@ -277,3 +277,7 @@ Chỉ còn 2 trạng thái **Treo** (chưa ghi sổ) / **Đã ghi sổ** — kh�
 | Bản in | `PaymentPrintWindow` làm lại theo layout Phiếu thu (khớp MISA): PHIẾU CHI, Mẫu số 02 - TT, Nợ = TK Nợ của phiếu (6418), Có = TK Có (1111; mã 111 cũ in là 1111), Họ tên người nhận tiền, Lý do chi = nội dung chi tiết (trống thì nhãn lý do), Số tiền + Viết bằng chữ, 5 chữ ký Giám đốc · Kế toán trưởng · Thủ quỹ · Người lập phiếu · Người nhận tiền, tên người nhận in dưới cột của họ, khối "Đã nhận đủ số tiền". Layout dùng chung với phiếu thu: `Views/CashVoucherDocumentBuilder.cs` |
 
 Chưa test qua UTM thật.
+
+## Update — 2026-10-01: gõ mã TK Nợ / TK Có / Khoản mục CP trực tiếp
+
+Ô TK Nợ / TK Có / Khoản mục CP đổi từ `ComboBox` sang `controls:AppSearchableComboBox` với `IsCompact="True" CodeOnlyDisplay="True" CommitTypedText="True"`, vẫn nằm thẳng trong `CellTemplate` (không `CellEditingTemplate`) nên không đụng bug commit ở trên; binding `SelectedItem` đặt `UpdateSourceTrigger=PropertyChanged`. Đã thử `ComboBox IsEditable` và bỏ (tự bôi đen chữ khi mở danh sách → gõ bị đè mất ký tự). Bảng hành vi + lý do: `be-window-lamour/.../Accounting/docs/phieu-thu.md` (mục "gõ mã TK").

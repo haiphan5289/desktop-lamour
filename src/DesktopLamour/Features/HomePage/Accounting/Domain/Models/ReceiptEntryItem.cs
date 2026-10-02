@@ -1,14 +1,15 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using DesktopLamour.Shared.Controls;
 
 namespace DesktopLamour.Features.HomePage.Accounting.Domain.Models;
 
 public class ReceiptEntryItem : INotifyPropertyChanged
 {
     private string  _description   = "";
-    private string  _debitAccount  = "";
-    private string  _creditAccount = "";
+    private ISearchableItem? _selectedDebitAccount;
+    private ISearchableItem? _selectedCreditAccount;
     private decimal _amount;
     private string? _subjectCode;
     private string? _subjectName;
@@ -21,16 +22,18 @@ public class ReceiptEntryItem : INotifyPropertyChanged
         set { _description = value; OnPropertyChanged(); }
     }
 
-    public string DebitAccount
+    // TK Nợ/Có chọn từ danh mục Tài khoản kế toán — bind qua SelectedItem (cả object), cùng lý do với
+    // PaymentEntryItem.SelectedDebitAccount.
+    public ISearchableItem? SelectedDebitAccount
     {
-        get => _debitAccount;
-        set { _debitAccount = value; OnPropertyChanged(); }
+        get => _selectedDebitAccount;
+        set { _selectedDebitAccount = value; OnPropertyChanged(); }
     }
 
-    public string CreditAccount
+    public ISearchableItem? SelectedCreditAccount
     {
-        get => _creditAccount;
-        set { _creditAccount = value; OnPropertyChanged(); }
+        get => _selectedCreditAccount;
+        set { _selectedCreditAccount = value; OnPropertyChanged(); }
     }
 
     public decimal Amount
@@ -67,6 +70,18 @@ public class ReceiptEntryItem : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    // Dòng chưa nhập gì — lưới hiện trống hẳn (ẩn nút xoá, ô TK) như dòng trống ở các popup chứng từ khác.
+    public bool IsEmpty =>
+        Amount == 0
+        && string.IsNullOrWhiteSpace(Description)
+        && SelectedDebitAccount is null && SelectedCreditAccount is null
+        && string.IsNullOrWhiteSpace(SubjectCode) && string.IsNullOrWhiteSpace(SubjectName)
+        && string.IsNullOrWhiteSpace(BankAccount);
+
     protected void OnPropertyChanged([CallerMemberName] string? name = null)
-        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        if (name != nameof(IsEmpty))
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsEmpty)));
+    }
 }

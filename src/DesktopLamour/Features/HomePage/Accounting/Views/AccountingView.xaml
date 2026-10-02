@@ -175,7 +175,22 @@
                                     Margin="0,0,8,0"/>
                 <controls:AppButton Content="💬 Gửi Zalo"
                                     Style="{StaticResource AppButton.Secondary.Medium}"
-                                    Command="{Binding SendZaloCommand}"/>
+                                    Command="{Binding SendZaloCommand}"
+                                    Margin="0,0,8,0"/>
+                <!-- 2026-10-02: 4 báo cáo Quỹ như MISA; mới làm "Sổ kế toán chi tiết quỹ tiền mặt", 3 mục còn
+                     lại chờ mẫu nên để mờ. Dùng chung AddButton_Click để mở menu ngay dưới nút. -->
+                <controls:AppButton Content="📊 Báo cáo ▾"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Click="AddButton_Click">
+                    <controls:AppButton.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Sổ kế toán chi tiết quỹ tiền mặt" Command="{Binding OpenCashLedgerReportCommand}"/>
+                            <MenuItem Header="Dòng tiền (chưa hỗ trợ)" IsEnabled="False"/>
+                            <MenuItem Header="Dự báo thu, chi công nợ (chưa hỗ trợ)" IsEnabled="False"/>
+                            <MenuItem Header="Bảng kê số dư tiền theo ngày (chưa hỗ trợ)" IsEnabled="False"/>
+                        </ContextMenu>
+                    </controls:AppButton.ContextMenu>
+                </controls:AppButton>
             </StackPanel>
         </Border>
 

@@ -50,6 +50,23 @@ public partial class AppSearchableComboBox : UserControl
             typeof(AppSearchableComboBox),
             new PropertyMetadata(false));
 
+    // Dạng gọn để đặt thẳng trong ô DataGrid (TK Nợ/TK Có/Khoản mục CP của Phiếu thu/Phiếu chi): không
+    // viền, không bo góc, nền trong suốt, thấp hơn, không có nút mũi tên — dòng chưa nhập trông trống hẳn.
+    // Bấm vào ô là gõ được ngay và danh sách tự lọc (dùng chung phần xử lý gõ tiếng Việt của control).
+    public static readonly DependencyProperty IsCompactProperty =
+        DependencyProperty.Register(nameof(IsCompact), typeof(bool),
+            typeof(AppSearchableComboBox),
+            new PropertyMetadata(false, OnIsCompactChanged));
+
+    // Khi true: gõ xong rồi Enter / rời ô mà chưa bấm chọn dòng nào thì tự chọn — mã khớp hẳn, không thì
+    // mã bắt đầu bằng chữ đã gõ, không thì dòng đầu của danh sách đang lọc; không có dòng nào khớp thì
+    // trả về lựa chọn trước khi gõ. Xoá trắng ô = bỏ chọn. Mặc định false: giữ nguyên hành vi cũ ở mọi
+    // màn hình khác (gõ mà không chọn thì SelectedItem = null).
+    public static readonly DependencyProperty CommitTypedTextProperty =
+        DependencyProperty.Register(nameof(CommitTypedText), typeof(bool),
+            typeof(AppSearchableComboBox),
+            new PropertyMetadata(false));
+
     // Bắn khi user THẬT SỰ chọn 1 item (click item trong dropdown) — không bắn khi chỉ gõ tay
     // (SelectedItem bị set null trong OnSearchTextChanged, không đi qua SelectItem). Bubble lên để
     // container (ví dụ DataGrid chứa control này trong CellEditingTemplate) có thể bắt và tự
@@ -98,6 +115,18 @@ public partial class AppSearchableComboBox : UserControl
         set => SetValue(AddCommandProperty, value);
     }
 
+    public bool IsCompact
+    {
+        get => (bool)GetValue(IsCompactProperty);
+        set => SetValue(IsCompactProperty, value);
+    }
+
+    public bool CommitTypedText
+    {
+        get => (bool)GetValue(CommitTypedTextProperty);
+        set => SetValue(CommitTypedTextProperty, value);
+    }
+
     public bool CodeOnlyDisplay
     {
         get => (bool)GetValue(CodeOnlyDisplayProperty);
@@ -108,6 +137,9 @@ public partial class AppSearchableComboBox : UserControl
 
     private readonly ObservableCollection<ISearchableItem> _filtered = new();
     private bool _suppressTextChange;
+    // Lựa chọn ngay trước khi user bắt đầu gõ (gõ là SelectedItem bị xoá) — CommitTypedText dùng để trả lại
+    // khi chữ đã gõ không khớp dòng nào.
+    private ISearchableItem? _beforeTyping;
 
     public AppSearchableComboBox()
     {
@@ -118,6 +150,7 @@ public partial class AppSearchableComboBox : UserControl
         SearchBox.GotFocus         += OnSearchGotFocus;
         SearchBox.LostFocus        += OnSearchLostFocus;
         SearchBox.TextChanged      += OnSearchTextChanged;
+        SearchBox.PreviewKeyDown   += OnSearchPreviewKeyDown;
         ItemsList.PreviewMouseDown += OnListPreviewMouseDown;
         ToggleButton.Click         += OnToggleClick;
         ClearButton.Click          += OnClearClick;
@@ -146,6 +179,19 @@ public partial class AppSearchableComboBox : UserControl
         combo._suppressTextChange = false;
         combo.UpdatePlaceholder();
         combo.UpdateClearButton();
+    }
+
+    private static void OnIsCompactChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is not AppSearchableComboBox combo || e.NewValue is not true) return;
+        combo.FieldBorder.Height          = 28;
+        combo.FieldBorder.BorderThickness = new Thickness(0);
+        combo.FieldBorder.CornerRadius    = new CornerRadius(0);
+        combo.FieldBorder.Background      = Brushes.Transparent;
+        combo.FieldGrid.Margin            = new Thickness(4, 0, 0, 0);
+        combo.FieldGrid.ColumnDefinitions[2].Width = new GridLength(0);
+        combo.ToggleButton.Visibility     = Visibility.Collapsed;
+        combo.SearchBox.FontSize          = 12;
     }
 
     private static void OnPlaceholderChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -177,8 +223,48 @@ public partial class AppSearchableComboBox : UserControl
             SearchBox.Text      = FieldText(SelectedItem);
             _suppressTextChange = false;
         }
+        if (CommitTypedText) CommitTyped();
         DropdownPopup.IsOpen = false;
         UpdatePlaceholder();
+    }
+
+    private void OnSearchPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (!CommitTypedText || e.Key != Key.Enter) return;
+        CommitTyped();
+        DropdownPopup.IsOpen = false;
+        e.Handled = true;
+    }
+
+    // Xem CommitTypedTextProperty.
+    private void CommitTyped()
+    {
+        var before = _beforeTyping;
+        _beforeTyping = null;
+        if (SelectedItem is not null) return;          // đã chọn bằng click, không phải gõ dở
+
+        var typed = SearchBox.Text.Trim();
+        if (typed.Length == 0) return;                 // xoá trắng = bỏ chọn
+
+        var match = FindTyped(typed) ?? before;
+        if (match is not null)
+        {
+            SelectItem(match);
+            return;
+        }
+
+        _suppressTextChange = true;
+        SearchBox.Text      = string.Empty;
+        _suppressTextChange = false;
+    }
+
+    private ISearchableItem? FindTyped(string typed)
+    {
+        if (ItemsSource is null) return null;
+        var items = ItemsSource.OfType<ISearchableItem>().ToList();
+        return items.FirstOrDefault(i => string.Equals(i.Code, typed, StringComparison.OrdinalIgnoreCase))
+            ?? items.FirstOrDefault(i => i.Code.StartsWith(typed, StringComparison.OrdinalIgnoreCase))
+            ?? _filtered.FirstOrDefault();
     }
 
     private void OnSearchTextChanged(object sender, TextChangedEventArgs e)
@@ -188,6 +274,7 @@ public partial class AppSearchableComboBox : UserControl
         // Clear selection when user edits text manually
         if (SelectedItem is not null)
         {
+            _beforeTyping     ??= SelectedItem;
             _suppressTextChange = true;
             SelectedItem        = null;
             _suppressTextChange = false;
@@ -261,6 +348,7 @@ public partial class AppSearchableComboBox : UserControl
 
     private void SelectItem(ISearchableItem item)
     {
+        _beforeTyping        = null;
         _suppressTextChange  = true;
         SelectedItem         = item;
         SearchBox.Text       = FieldText(item);

@@ -394,6 +394,10 @@ public static class HomeServiceCollectionExtensions
         // ── Accounting: Views + ViewModels ───────────────────────────────────────
         services.AddTransient<AccountingView>();
         services.AddTransient<AccountingViewModel>();
+        services.AddTransient<CashLedgerReportFilterWindow>();
+        services.AddTransient<CashLedgerReportFilterViewModel>();
+        services.AddTransient<CashLedgerDetailReportView>();
+        services.AddTransient<CashLedgerDetailReportViewModel>();
         services.AddTransient<ReceiptWindow>();
         services.AddTransient<ReceiptViewModel>();
         services.AddTransient<PaymentWindow>();
@@ -407,6 +411,7 @@ public static class HomeServiceCollectionExtensions
 
         // ── Accounting: UseCases ─────────────────────────────────────────────────
         services.AddTransient<IGetCashLedgerUseCase, GetCashLedgerUseCase>();
+        services.AddTransient<IGetCashLedgerDetailReportUseCase, GetCashLedgerDetailReportUseCase>();
         services.AddTransient<IGetReceiptsUseCase, GetReceiptsUseCase>();
         services.AddTransient<IGetReceiptByIdUseCase, GetReceiptByIdUseCase>();
         services.AddTransient<ICreateReceiptUseCase, CreateReceiptUseCase>();
@@ -453,6 +458,7 @@ public static class HomeServiceCollectionExtensions
 
         // ── Accounting: Window factory ───────────────────────────────────────────
         services.AddTransient<Func<ReceiptWindow>>(sp => () => sp.GetRequiredService<ReceiptWindow>());
+        services.AddTransient<Func<CashLedgerReportFilterWindow>>(sp => () => sp.GetRequiredService<CashLedgerReportFilterWindow>());
         services.AddTransient<Func<PaymentWindow>>(sp => () => sp.GetRequiredService<PaymentWindow>());
         services.AddTransient<Func<PaymentPrintWindow>>(sp => () => sp.GetRequiredService<PaymentPrintWindow>());
         services.AddTransient<Func<ReceiptPrintWindow>>(sp => () => sp.GetRequiredService<ReceiptPrintWindow>());

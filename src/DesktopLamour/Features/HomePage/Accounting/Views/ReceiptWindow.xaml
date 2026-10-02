@@ -11,6 +11,23 @@
         WindowStyle="SingleBorderWindow"
         ResizeMode="CanResize">
 
+    <Window.Resources>
+
+        <!-- Cùng style lưới "1. Hạch toán" với PaymentWindow. -->
+        <!-- 2026-09-29 (khớp MISA, lưới "1. Hạch toán"): ô chữ canh giữa dọc cho thẳng hàng với các ô
+             ComboBox (trước canh trên nên dòng bị lệch), chữ dài thì "…" thay vì tràn. -->
+        <Style x:Key="EntryTextCell" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Padding"           Value="6,0"/>
+            <Setter Property="TextTrimming"      Value="CharacterEllipsis"/>
+        </Style>
+
+    </Window.Resources>
+
+    <Window.InputBindings>
+        <KeyBinding Key="F9" Command="{Binding AddEntryCommand}"/>
+    </Window.InputBindings>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -56,6 +73,7 @@
                                   SaveLabel="Cất"
                                   UnpostCommand="{Binding ToggleConfirmCommand}"
                                   UnpostLabel="{Binding UnpostButtonLabel}"
+                                  PrintCommand="{Binding PrintCommand}"
                                   CloseRequested="CloseButton_Click"/>
 
         <!-- ═══════════════════════════════════════════════════════ -->
@@ -90,7 +108,7 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Đối tượng -->
+                    <!-- Đối tượng — 1 ô tìm kiếm chung (Khách hàng + Nhân viên), khớp ảnh mẫu MISA -->
                     <Grid Grid.Row="0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="120"/>
@@ -100,11 +118,10 @@
                                            Style="{StaticResource AppTypography.LabelSection}"
                                            VerticalAlignment="Center"/>
                         <controls:AppSearchableComboBox Grid.Column="1"
-                            ItemsSource="{Binding Customers}"
-                            SelectedItem="{Binding SelectedCustomer, Mode=TwoWay}"
-                            Placeholder="Chọn khách hàng"
-                            IsNullable="True"
-                            AddCommand="{Binding AddCustomerCommand}"/>
+                            ItemsSource="{Binding PartnerItems}"
+                            SelectedItem="{Binding SelectedPartner, Mode=TwoWay}"
+                            Placeholder="Chọn đối tượng (khách hàng / nhân viên)"
+                            IsNullable="True"/>
                     </Grid>
 
                     <!-- Người nộp -->
@@ -135,10 +152,12 @@
                             Placeholder="Địa chỉ"/>
                     </Grid>
 
-                    <!-- Lý do nộp -->
+                    <!-- Lý do nộp + nội dung chi tiết (tự điền theo lý do, sửa tay được) -->
                     <Grid Grid.Row="6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="16"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <controls:AppLabel Grid.Column="0" Text="Lý do nộp"
@@ -147,7 +166,16 @@
                         <ComboBox Grid.Column="1"
                                   ItemsSource="{Binding PaymentReasons}"
                                   SelectedItem="{Binding SelectedPaymentReason, Mode=TwoWay}"
-                                  Height="34"/>
+                                  Height="34">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={StaticResource PaymentReasonDisplayConverter}}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <controls:AppTextField Grid.Column="3"
+                            Text="{Binding ReasonDetail, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            Placeholder="Nội dung nộp (VD: nhập quỹ)"/>
                     </Grid>
 
                     <!-- Nhân viên thu | Kèm theo | Tham chiếu -->
@@ -265,51 +293,50 @@
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
                       ScrollViewer.HorizontalScrollBarVisibility="Auto"
                       ScrollViewer.VerticalScrollBarVisibility="Auto"
-                      behaviors:DataGridRowNavigationBehavior.EnableArrowRowNavigation="True">
+                      behaviors:DataGridRowNavigationBehavior.EnableArrowRowNavigation="True"
+                      behaviors:DataGridLineContextMenuBehavior.EnableLineContextMenu="True"
+                      behaviors:DataGridLineContextMenuBehavior.AddCommandName="AddEntryCommand"
+                      behaviors:DataGridLineContextMenuBehavior.RemoveCommandName="RemoveEntryCommand"
+                      behaviors:DataGridLineContextMenuBehavior.ShowProductStockMenuItem="False">
 
                 <DataGrid.Columns>
 
-                    <!-- Diễn giải -->
+                    <!-- Diễn giải — tự lấy theo nội dung Lý do nộp -->
                     <DataGridTextColumn Header="Diễn giải"
                                         Binding="{Binding Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                        Width="220"/>
+                                        ElementStyle="{StaticResource EntryTextCell}"
+                                        Width="250"/>
 
-                    <!-- TK Nợ -->
-                    <DataGridTemplateColumn Header="TK Nợ" Width="130">
+                    <!-- TK Nợ — ô tìm kiếm (AppSearchableComboBox dạng gọn) luôn hiện sẵn trong ô (cùng cách PaymentWindow, né edit-mode của DataGrid) -->
+                    <DataGridTemplateColumn Header="TK Nợ" Width="90">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding DebitAccount}"
-                                           VerticalAlignment="Center" Padding="4,0"/>
+                                <controls:AppSearchableComboBox
+                                            IsCompact="True" CodeOnlyDisplay="True" CommitTypedText="True"
+                                            ItemsSource="{Binding DataContext.AccountSettings, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            SelectedItem="{Binding SelectedDebitAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            ToolTip="{Binding SelectedDebitAccount.DisplayText}"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
-                        <DataGridTemplateColumn.CellEditingTemplate>
-                            <DataTemplate>
-                                <ComboBox ItemsSource="{Binding DataContext.AccountCodes, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                          SelectedItem="{Binding DebitAccount, Mode=TwoWay}"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellEditingTemplate>
                     </DataGridTemplateColumn>
 
-                    <!-- TK Có -->
-                    <DataGridTemplateColumn Header="TK Có" Width="130">
+                    <!-- TK Có — không có mặc định, kế toán tự chọn -->
+                    <DataGridTemplateColumn Header="TK Có" Width="90">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding CreditAccount}"
-                                           VerticalAlignment="Center" Padding="4,0"/>
+                                <controls:AppSearchableComboBox
+                                            IsCompact="True" CodeOnlyDisplay="True" CommitTypedText="True"
+                                            ItemsSource="{Binding DataContext.AccountSettings, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            SelectedItem="{Binding SelectedCreditAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            ToolTip="{Binding SelectedCreditAccount.DisplayText}"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
-                        <DataGridTemplateColumn.CellEditingTemplate>
-                            <DataTemplate>
-                                <ComboBox ItemsSource="{Binding DataContext.AccountCodes, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                          SelectedItem="{Binding CreditAccount, Mode=TwoWay}"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellEditingTemplate>
                     </DataGridTemplateColumn>
 
                     <!-- Số tiền -->
                     <DataGridTextColumn Header="Số tiền"
-                                        Binding="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=N0, ConverterCulture=vi-VN}"
-                                        Width="110">
+                                        Binding="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=N0, ConverterCulture=vi-VN}"
+                                        Width="120">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="HorizontalAlignment" Value="Right"/>
@@ -324,27 +351,40 @@
                     <!-- Đối tượng (SubjectCode) -->
                     <DataGridTextColumn Header="Đối tượng"
                                         Binding="{Binding SubjectCode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        ElementStyle="{StaticResource EntryTextCell}"
                                         Width="100"/>
 
                     <!-- Tên đối tượng -->
                     <DataGridTextColumn Header="Tên đối tượng"
                                         Binding="{Binding SubjectName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                        Width="130"/>
+                                        ElementStyle="{StaticResource EntryTextCell}"
+                                        Width="210"/>
 
                     <!-- TK ngân hàng -->
                     <DataGridTextColumn Header="TK ngân hàng"
                                         Binding="{Binding BankAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        ElementStyle="{StaticResource EntryTextCell}"
                                         Width="120"/>
 
                     <!-- Remove -->
                     <DataGridTemplateColumn Header="" Width="40">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
+                                <!-- Ẩn nút xoá ở dòng trống — không có gì để xoá (như SalesOrderWindow) -->
                                 <Button Content="✕"
-                                        Style="{StaticResource AppButton.RemoveLineIcon}"
                                         HorizontalAlignment="Center"
                                         Command="{Binding DataContext.RemoveEntryCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                        CommandParameter="{Binding}"/>
+                                        CommandParameter="{Binding}">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource AppButton.RemoveLineIcon}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsEmpty}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>

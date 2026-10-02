@@ -4,14 +4,16 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.ViewModels;
+using DesktopLamour.Features.HomePage.AccountSettings.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Accounting.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Accounting.Domain.Models;
 using DesktopLamour.Features.HomePage.Accounting.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Accounting.Views;
 using DesktopLamour.Features.HomePage.Customers.Domain.UseCases;
-using DesktopLamour.Features.HomePage.Customers.Views;
 using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Employees.Views;
 using DesktopLamour.Shared.Controls;
+using DesktopLamour.Shared.Converters;
 using Microsoft.Extensions.Logging;
 
 namespace DesktopLamour.Features.HomePage.Accounting.ViewModels;
@@ -33,8 +35,9 @@ public partial class ReceiptViewModel : ViewModelBase
     private readonly IGetNextReceiptCodeUseCase _getNextCode;
     private readonly IGetCustomersUseCase     _getCustomers;
     private readonly IGetEmployeesUseCase     _getEmployees;
+    private readonly IGetAccountSettingsUseCase _getAccountSettings;
     private readonly Func<EmployeeFormWindow> _employeeFormWindowFactory;
-    private readonly Func<CustomerFormWindow> _customerFormWindowFactory;
+    private readonly Func<ReceiptPrintWindow> _printWindowFactory;
     private readonly ILogger<ReceiptViewModel> _logger;
 
     // ── State ──────────────────────────────────────────────────────────────
@@ -44,10 +47,14 @@ public partial class ReceiptViewModel : ViewModelBase
     [ObservableProperty] private bool    _isEditing;
 
     // ── Header — Thông tin chung ──────────────────────────────────────────
-    [ObservableProperty] private ISearchableItem? _selectedCustomer;
+    // 2026-10-01 (khớp MISA): "Đối tượng" là 1 ô tìm chung Khách hàng + Nhân viên, giống Phiếu chi
+    // (Phiếu chi có thêm Nhà cung cấp).
+    [ObservableProperty] private ISearchableItem? _selectedPartner;
+    [ObservableProperty] private IReadOnlyList<ISearchableItem> _partnerItems = Array.Empty<ISearchableItem>();
     [ObservableProperty] private string  _payerName             = string.Empty;
     [ObservableProperty] private string? _address;
-    [ObservableProperty] private string  _selectedPaymentReason = "ThuKhac";
+    [ObservableProperty] private string  _selectedPaymentReason = DefaultPaymentReason;
+    [ObservableProperty] private string? _reasonDetail;
     [ObservableProperty] private ISearchableItem? _selectedCollectorEmployee;
     [ObservableProperty] private string? _attachment;
     [ObservableProperty] private string? _reference;
@@ -67,6 +74,8 @@ public partial class ReceiptViewModel : ViewModelBase
 
     partial void OnCurrentReceiptChanged(ReceiptResponseDto? value)
     {
+        OnPropertyChanged(nameof(CanPrint));
+        PrintCommand.NotifyCanExecuteChanged();
         NavigatePrevCommand.NotifyCanExecuteChanged();
         NavigateNextCommand.NotifyCanExecuteChanged();
         NotifyEditStateChanged();
@@ -102,6 +111,7 @@ public partial class ReceiptViewModel : ViewModelBase
     public bool IsConfirmed => CurrentReceipt is not null && CurrentReceipt.Status == "Confirmed";
     public bool IsEditable  => CurrentReceipt is null || (IsEditing && !IsConfirmed);
     private bool CanEdit    => CurrentReceipt is not null && !IsEditing && !IsConfirmed;
+    public bool CanPrint    => CurrentReceipt is not null;
     private bool CanToggleConfirm => CurrentReceipt is not null && !IsEditing;
     public string UnpostButtonLabel => IsConfirmed ? "Bỏ ghi" : "Ghi sổ";
     public bool CanDelete   => CurrentReceipt is not null && !IsConfirmed && !IsEditing;
@@ -111,15 +121,76 @@ public partial class ReceiptViewModel : ViewModelBase
     public IReadOnlyList<ISearchableItem> Customers { get; private set; } = Array.Empty<ISearchableItem>();
     public IReadOnlyList<ISearchableItem> Employees { get; private set; } = Array.Empty<ISearchableItem>();
 
-    public IReadOnlyList<string> PaymentReasons { get; } = new[]
+    public IReadOnlyList<ISearchableItem> AccountSettings { get; private set; } = Array.Empty<ISearchableItem>();
+
+    private const string DefaultPaymentReason = "ThuKhac";
+
+    // 2026-10-01 (khớp MISA): 4 lý do nộp. Phiếu cũ có lý do đã bỏ (ThuTienHang/ThuCongNo) thì thêm đúng
+    // giá trị đó vào danh sách khi mở phiếu để ô vẫn hiện được (xem RefreshPaymentReasons).
+    private static readonly string[] SelectablePaymentReasons =
     {
-        "ThuKhac", "ThuTienHang", "ThuCongNo"
+        "RutTienGuiVeNopQuy", "ThuHoanThueGTGT", "ThuHoanUng", DefaultPaymentReason,
     };
 
-    public IReadOnlyList<string> AccountCodes { get; } = new[]
+    public IReadOnlyList<string> PaymentReasons { get; private set; } = SelectablePaymentReasons;
+
+    private void RefreshPaymentReasons(string? currentReason)
     {
-        "Cash111", "Bank112", "Receivable131", "Payroll334"
-    };
+        PaymentReasons = string.IsNullOrEmpty(currentReason) || SelectablePaymentReasons.Contains(currentReason)
+            ? SelectablePaymentReasons
+            : SelectablePaymentReasons.Append(currentReason).ToArray();
+        OnPropertyChanged(nameof(PaymentReasons));
+    }
+
+    // Bước 3 MISA: chọn Lý do nộp thì ô nội dung bên cạnh tự điền nhãn lý do — chỉ khi ô đang trống hoặc
+    // còn mang nhãn của lý do trước (người dùng chưa gõ nội dung riêng).
+    partial void OnSelectedPaymentReasonChanged(string? oldValue, string newValue)
+    {
+        var current = ReasonDetail?.Trim() ?? "";
+        if (current.Length == 0 || current == PaymentReasonDisplayConverter.Label(oldValue))
+            ReasonDetail = PaymentReasonDisplayConverter.Label(newValue);
+    }
+
+    // Bước 4 MISA: "Diễn giải" của dòng hạch toán đi theo ô nội dung — chỉ với dòng còn trống hoặc đang
+    // mang đúng nội dung cũ; dòng người dùng tự sửa thì giữ nguyên (giống PaymentViewModel).
+    partial void OnReasonDetailChanged(string? oldValue, string? newValue)
+    {
+        var oldText = oldValue?.Trim() ?? "";
+        var newText = newValue?.Trim() ?? "";
+        foreach (var entry in Entries.Where(IsActiveEntry))
+        {
+            if (string.IsNullOrWhiteSpace(entry.Description) || entry.Description.Trim() == oldText)
+                entry.Description = newText;
+        }
+    }
+
+    // Form mở sẵn nhiều dòng trống để gõ, lưới trống hẳn như các popup chứng từ khác. Chỉ tự điền
+    // (Diễn giải, TK Nợ, Đối tượng) cho dòng ĐẦU sau khi đã chọn Đối tượng (bước 4 MISA) và cho dòng
+    // đã có số tiền.
+    private bool IsActiveEntry(ReceiptEntryItem entry) =>
+        entry.Amount != 0
+        || (SelectedPartner is not null && Entries.Count > 0 && ReferenceEquals(Entries[0], entry));
+
+    // Điền các ô còn trống của 1 dòng theo header; không ghi đè ô người dùng đã nhập.
+    private void ApplyEntryDefaults(ReceiptEntryItem entry)
+    {
+        entry.SelectedDebitAccount  ??= FindAccountByCode(DefaultDebitAccountCode);
+        entry.SelectedCreditAccount ??= FindAccountByCode(DefaultCreditAccountCode);
+        if (string.IsNullOrWhiteSpace(entry.Description)) entry.Description = ReasonDetail?.Trim() ?? "";
+        if (string.IsNullOrWhiteSpace(entry.SubjectCode)) entry.SubjectCode = SelectedPartner?.Code;
+        if (string.IsNullOrWhiteSpace(entry.SubjectName)) entry.SubjectName = SelectedPartner?.Name;
+    }
+
+    private void AttachEntryHandlers(ReceiptEntryItem entry)
+    {
+        entry.PropertyChanged += (_, e) =>
+        {
+            // Gõ số tiền vào 1 dòng trống → lúc đó mới tự điền dòng ấy.
+            if (e.PropertyName == nameof(ReceiptEntryItem.Amount) && entry.Amount != 0 && IsEditable)
+                ApplyEntryDefaults(entry);
+            RecalculateTotals();
+        };
+    }
 
     private List<ReceiptResponseDto> _receiptListCache = new();
     private int _currentIndex = -1;
@@ -135,8 +206,9 @@ public partial class ReceiptViewModel : ViewModelBase
         IGetNextReceiptCodeUseCase getNextCode,
         IGetCustomersUseCase     getCustomers,
         IGetEmployeesUseCase     getEmployees,
+        IGetAccountSettingsUseCase getAccountSettings,
         Func<EmployeeFormWindow> employeeFormWindowFactory,
-        Func<CustomerFormWindow> customerFormWindowFactory,
+        Func<ReceiptPrintWindow> printWindowFactory,
         ILogger<ReceiptViewModel> logger)
     {
         _getReceipts               = getReceipts;
@@ -149,8 +221,9 @@ public partial class ReceiptViewModel : ViewModelBase
         _getNextCode               = getNextCode;
         _getCustomers              = getCustomers;
         _getEmployees              = getEmployees;
+        _getAccountSettings        = getAccountSettings;
         _employeeFormWindowFactory = employeeFormWindowFactory;
-        _customerFormWindowFactory = customerFormWindowFactory;
+        _printWindowFactory        = printWindowFactory;
         _logger                    = logger;
 
         Entries.CollectionChanged += (_, _) => RecalculateTotals();
@@ -170,12 +243,17 @@ public partial class ReceiptViewModel : ViewModelBase
         {
             var customers = await _getCustomers.ExecuteAsync(ct);
             var employees = await _getEmployees.ExecuteAsync(ct);
+            var accountSettings = await _getAccountSettings.ExecuteAsync(ct);
 
             Customers = customers.Cast<ISearchableItem>().ToList().AsReadOnly();
             Employees = employees.Cast<ISearchableItem>().ToList().AsReadOnly();
+            AccountSettings = accountSettings.Cast<ISearchableItem>().ToList().AsReadOnly();
 
             OnPropertyChanged(nameof(Customers));
             OnPropertyChanged(nameof(Employees));
+            OnPropertyChanged(nameof(AccountSettings));
+
+            PartnerItems = Customers.Concat(Employees).ToList();
         }
         catch (Exception ex)
         {
@@ -196,7 +274,9 @@ public partial class ReceiptViewModel : ViewModelBase
         try
         {
             var list = await _getReceipts.ExecuteAsync(ct);
-            _receiptListCache = list.ToList();
+            // Phiếu thu hàng loạt (không có đối tượng ở header) có cửa sổ riêng — Trước/Sau ở đây chỉ
+            // duyệt phiếu thu thường (BulkCustomerReceiptViewModel lọc chiều ngược lại).
+            _receiptListCache = list.Where(r => r.PartnerType is not null).ToList();
             ReceiptList       = _receiptListCache;
 
             if (_receiptListCache.Count > 0)
@@ -254,10 +334,10 @@ public partial class ReceiptViewModel : ViewModelBase
         HasError     = false;
         ErrorMessage = string.Empty;
 
-        if (SelectedCustomer is null)
+        if (SelectedPartner is null)
         {
             HasError     = true;
-            ErrorMessage = "Vui lòng chọn đối tượng (khách hàng).";
+            ErrorMessage = "Vui lòng chọn đối tượng.";
             return;
         }
 
@@ -267,6 +347,14 @@ public partial class ReceiptViewModel : ViewModelBase
         {
             HasError     = true;
             ErrorMessage = "Vui lòng nhập ít nhất một dòng hạch toán.";
+            return;
+        }
+
+        // Người dùng có thể đã xoá TK — báo ngay tại đây thay vì để BE từ chối.
+        if (Entries.Any(e => e.Amount != 0 && (e.SelectedDebitAccount is null || e.SelectedCreditAccount is null)))
+        {
+            HasError     = true;
+            ErrorMessage = "Vui lòng chọn TK Nợ và TK Có cho mọi dòng có số tiền.";
             return;
         }
 
@@ -403,16 +491,23 @@ public partial class ReceiptViewModel : ViewModelBase
         PopulateFormFromCurrent();
     }
 
+    // Theo kế toán (khớp MISA): TK Nợ 1111 / TK Có 1388, đổi tay được. Danh mục chưa có mã đó (DB chưa
+    // chạy migration AddReceiptDefaultCreditAccount1388) thì ô để trống.
+    private const string DefaultDebitAccountCode  = "1111";
+    private const string DefaultCreditAccountCode = "1388";
+
+    private ISearchableItem? FindAccountByCode(string code) =>
+        AccountSettings.FirstOrDefault(a => string.Equals(a.Code, code, StringComparison.OrdinalIgnoreCase));
+
     [RelayCommand]
     private void AddEntry()
     {
-        var entry = new ReceiptEntryItem
-        {
-            DebitAccount  = "Cash111",
-            CreditAccount = "Receivable131",
-        };
-        entry.PropertyChanged += (_, _) => RecalculateTotals();
+        // Chỉ dòng đầu được điền sẵn (sau khi chọn Đối tượng); dòng trống phía sau tự điền khi gõ số
+        // tiền (xem AttachEntryHandlers / ApplyEntryDefaults).
+        var entry = new ReceiptEntryItem();
+        AttachEntryHandlers(entry);
         Entries.Add(entry);
+        if (IsActiveEntry(entry)) ApplyEntryDefaults(entry);
     }
 
     [RelayCommand]
@@ -430,22 +525,18 @@ public partial class ReceiptViewModel : ViewModelBase
         await LoadReceiptsAsync(ct);
     }
 
-    [RelayCommand]
-    private async Task AddCustomerAsync(CancellationToken ct = default)
+    [RelayCommand(CanExecute = nameof(CanPrint))]
+    private void Print()
     {
-        var before = Customers.Select(c => c.Id).ToHashSet();
-        var window = _customerFormWindowFactory();
-        window.Initialize(null);
-        if (window.ShowDialog() != true) return;
-        try
-        {
-            var customers = await _getCustomers.ExecuteAsync(ct);
-            Customers = customers.Cast<ISearchableItem>().ToList().AsReadOnly();
-            OnPropertyChanged(nameof(Customers));
-            var newItem = Customers.FirstOrDefault(c => !before.Contains(c.Id));
-            if (newItem is not null) SelectedCustomer = newItem;
-        }
-        catch (Exception ex) { _logger.LogWarning(ex, "Could not reload customers after add"); }
+        if (CurrentReceipt is null) return;
+
+        // "Lý do nộp" in nội dung chi tiết người dùng gõ (vd "nhập quỹ"); trống thì lấy nhãn lý do.
+        var reasonText = string.IsNullOrWhiteSpace(CurrentReceipt.ReasonDetail)
+            ? PaymentReasonDisplayConverter.Label(CurrentReceipt.PaymentReason)
+            : CurrentReceipt.ReasonDetail.Trim();
+        var window = _printWindowFactory();
+        window.Initialize(CurrentReceipt, reasonText);
+        window.ShowDialog();
     }
 
     [RelayCommand]
@@ -468,28 +559,39 @@ public partial class ReceiptViewModel : ViewModelBase
 
     // ── Partial property change hooks ─────────────────────────────────────
 
-    partial void OnSelectedCustomerChanged(ISearchableItem? value)
+    partial void OnSelectedPartnerChanged(ISearchableItem? value)
     {
-        if (value is not null)
+        if (value is null) return;
+
+        PayerName = value.Name;
+
+        // Chỉ Khách hàng có Địa chỉ; Nhân viên thì giữ nguyên ô.
+        if (value is DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer customer)
+            Address = customer.Address;
+
+        // Khớp MISA — đổi "Đối tượng" ở header đồng bộ "Đối tượng"/"Tên đối tượng" xuống mọi dòng.
+        foreach (var entry in Entries.Where(IsActiveEntry))
         {
-            PayerName = value.Name;
-            
-            // Auto-populate Address from Customer
-            if (value is DesktopLamour.Features.HomePage.Customers.Domain.Models.Customer customer)
-            {
-                Address = customer.Address;
-            }
+            entry.SubjectCode = value.Code;
+            entry.SubjectName = value.Name;
+            ApplyEntryDefaults(entry);
         }
     }
+
+    // Loại đối tượng suy ra từ kiểu runtime của object đã chọn (không có combo "chọn loại" riêng).
+    private static string ResolvePartnerType(ISearchableItem partner) =>
+        partner is DesktopLamour.Features.HomePage.Employees.Domain.Models.Employee ? "Employee" : "Customer";
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private void ClearForm()
     {
-        SelectedCustomer          = null;
+        SelectedPartner           = null;
         PayerName                 = string.Empty;
         Address                   = null;
-        SelectedPaymentReason     = "ThuKhac";
+        RefreshPaymentReasons(DefaultPaymentReason);
+        SelectedPaymentReason     = DefaultPaymentReason;
+        ReasonDetail              = PaymentReasonDisplayConverter.Label(DefaultPaymentReason);
         SelectedCollectorEmployee = null;
         Attachment                = null;
         Reference                 = null;
@@ -504,10 +606,18 @@ public partial class ReceiptViewModel : ViewModelBase
     {
         if (CurrentReceipt is null) return;
 
-        SelectedCustomer          = Customers.FirstOrDefault(c => c.Id == CurrentReceipt.CustomerId);
+        SelectedPartner           = CurrentReceipt.PartnerType == "Employee"
+            ? Employees.FirstOrDefault(e => e.Id == CurrentReceipt.PartnerId)
+            : Customers.FirstOrDefault(c => c.Id == CurrentReceipt.PartnerId);
+        // Gán SAU SelectedPartner: OnSelectedPartnerChanged tự điền Người nộp/Địa chỉ theo danh mục, còn
+        // phiếu đã lưu phải hiện đúng giá trị đã lưu.
         PayerName                 = CurrentReceipt.PayerName;
         Address                   = CurrentReceipt.Address;
+        // Phải nạp danh sách TRƯỚC khi gán SelectedItem, không thì lý do cũ (ThuTienHang...) bị ComboBox
+        // ghi đè về null vì không có trong ItemsSource.
+        RefreshPaymentReasons(CurrentReceipt.PaymentReason);
         SelectedPaymentReason     = CurrentReceipt.PaymentReason;
+        ReasonDetail              = CurrentReceipt.ReasonDetail;
         SelectedCollectorEmployee = Employees.FirstOrDefault(e => e.Id == CurrentReceipt.CollectorEmployeeId);
         Attachment                = CurrentReceipt.Attachment;
         Reference                 = CurrentReceipt.Reference;
@@ -521,15 +631,15 @@ public partial class ReceiptViewModel : ViewModelBase
             var item = new ReceiptEntryItem
             {
                 Description   = e.Description,
-                DebitAccount  = e.DebitAccount,
-                CreditAccount = e.CreditAccount,
+                SelectedDebitAccount  = AccountSettings.FirstOrDefault(a => a.Id == e.DebitAccountId),
+                SelectedCreditAccount = AccountSettings.FirstOrDefault(a => a.Id == e.CreditAccountId),
                 Amount        = e.Amount,
                 SubjectCode   = e.SubjectCode,
                 SubjectName   = e.SubjectName,
                 BankAccount   = e.BankAccount,
                 SalesOrderId  = e.SalesOrderId,
             };
-            item.PropertyChanged += (_, _) => RecalculateTotals();
+            AttachEntryHandlers(item);
             Entries.Add(item);
         }
 
@@ -545,10 +655,12 @@ public partial class ReceiptViewModel : ViewModelBase
 
     private CreateReceiptRequestDto BuildCreateRequest() => new()
     {
-        CustomerId          = SelectedCustomer!.Id,
+        PartnerType         = ResolvePartnerType(SelectedPartner!),
+        PartnerId           = SelectedPartner!.Id,
         PayerName           = PayerName.Trim(),
         Address             = string.IsNullOrWhiteSpace(Address)         ? null : Address.Trim(),
         PaymentReason       = SelectedPaymentReason,
+        ReasonDetail        = string.IsNullOrWhiteSpace(ReasonDetail)    ? null : ReasonDetail.Trim(),
         CollectorEmployeeId = SelectedCollectorEmployee?.Id,
         Attachment          = string.IsNullOrWhiteSpace(Attachment)      ? null : Attachment.Trim(),
         Reference           = string.IsNullOrWhiteSpace(Reference)       ? null : Reference.Trim(),
@@ -561,10 +673,12 @@ public partial class ReceiptViewModel : ViewModelBase
 
     private UpdateReceiptRequestDto BuildUpdateRequest() => new()
     {
-        CustomerId          = SelectedCustomer!.Id,
+        PartnerType         = ResolvePartnerType(SelectedPartner!),
+        PartnerId           = SelectedPartner!.Id,
         PayerName           = PayerName.Trim(),
         Address             = string.IsNullOrWhiteSpace(Address)         ? null : Address.Trim(),
         PaymentReason       = SelectedPaymentReason,
+        ReasonDetail        = string.IsNullOrWhiteSpace(ReasonDetail)    ? null : ReasonDetail.Trim(),
         CollectorEmployeeId = SelectedCollectorEmployee?.Id,
         Attachment          = string.IsNullOrWhiteSpace(Attachment)      ? null : Attachment.Trim(),
         Reference           = string.IsNullOrWhiteSpace(Reference)       ? null : Reference.Trim(),
@@ -578,8 +692,8 @@ public partial class ReceiptViewModel : ViewModelBase
     private static ReceiptEntryDto ToEntryDto(ReceiptEntryItem item) => new()
     {
         Description   = item.Description,
-        DebitAccount  = item.DebitAccount,
-        CreditAccount = item.CreditAccount,
+        DebitAccountId  = item.SelectedDebitAccount?.Id ?? 0,
+        CreditAccountId = item.SelectedCreditAccount?.Id ?? 0,
         Amount        = item.Amount,
         SubjectCode   = item.SubjectCode,
         SubjectName   = item.SubjectName,

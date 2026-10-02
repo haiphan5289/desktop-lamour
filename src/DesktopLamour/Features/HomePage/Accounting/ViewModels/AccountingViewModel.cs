@@ -27,6 +27,7 @@ public partial class AccountingViewModel : ViewModelBase
     private readonly Func<ReceiptWindow>   _receiptWindowFactory;
     private readonly Func<PaymentWindow>   _paymentWindowFactory;
     private readonly Func<BulkCustomerReceiptWindow> _bulkReceiptWindowFactory;
+    private readonly Func<CashLedgerReportFilterWindow> _reportFilterWindowFactory;
     private readonly IConfirmReceiptUseCase   _confirmReceipt;
     private readonly IUnconfirmReceiptUseCase _unconfirmReceipt;
     private readonly IDeleteReceiptUseCase    _deleteReceipt;
@@ -127,6 +128,7 @@ public partial class AccountingViewModel : ViewModelBase
         Func<ReceiptWindow>   receiptWindowFactory,
         Func<PaymentWindow>   paymentWindowFactory,
         Func<BulkCustomerReceiptWindow> bulkReceiptWindowFactory,
+        Func<CashLedgerReportFilterWindow> reportFilterWindowFactory,
         IConfirmReceiptUseCase   confirmReceipt,
         IUnconfirmReceiptUseCase unconfirmReceipt,
         IDeleteReceiptUseCase    deleteReceipt,
@@ -139,6 +141,7 @@ public partial class AccountingViewModel : ViewModelBase
         _receiptWindowFactory = receiptWindowFactory;
         _paymentWindowFactory = paymentWindowFactory;
         _bulkReceiptWindowFactory = bulkReceiptWindowFactory;
+        _reportFilterWindowFactory = reportFilterWindowFactory;
         _confirmReceipt   = confirmReceipt;
         _unconfirmReceipt = unconfirmReceipt;
         _deleteReceipt    = deleteReceipt;
@@ -250,6 +253,18 @@ public partial class AccountingViewModel : ViewModelBase
 
     [RelayCommand]
     private void DismissError() => HasError = false;
+
+    // "📊 Báo cáo ▾ → Sổ kế toán chi tiết quỹ tiền mặt": hộp Chọn tham số trước, Đồng ý mới sang trang báo
+    // cáo (cùng cách SalesViewModel.OpenReport).
+    [RelayCommand]
+    private void OpenCashLedgerReport()
+    {
+        var window = _reportFilterWindowFactory();
+        window.Owner = Application.Current.MainWindow;
+        if (window.ShowDialog() != true) return;
+
+        _navigationService.NavigateTo(NavigationRoutes.Accounting.CashLedgerDetailReport, window.BuildFilter());
+    }
 
     [RelayCommand]
     private void OpenReceipt()

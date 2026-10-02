@@ -1,0 +1,255 @@
+<UserControl x:Class="DesktopLamour.Features.HomePage.Accounting.Views.CashLedgerDetailReportView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+             Background="{StaticResource AppColor.BackgroundSecondary}">
+
+    <UserControl.Resources>
+
+        <Style x:Key="ReportTextCell" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Padding"           Value="6,0"/>
+            <Setter Property="TextTrimming"      Value="CharacterEllipsis"/>
+        </Style>
+
+        <Style x:Key="ReportMoneyCell" TargetType="TextBlock" BasedOn="{StaticResource ReportTextCell}">
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+        </Style>
+
+        <Style x:Key="ReportCenterCell" TargetType="TextBlock" BasedOn="{StaticResource ReportTextCell}">
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- Số chứng từ dạng link: bấm mở phiếu gốc. Dòng không còn phiếu gốc (IsEnabled bind thẳng vào
+             CanOpenReceipt/CanOpenPayment của dòng) hiện chữ thường, không gạch chân. Không dựa vào
+             CanExecute của command: DataGrid tái dùng dòng khi cuộn, CommandParameter đổi mà nút không
+             hỏi lại CanExecute. -->
+        <Style x:Key="VoucherLinkButton" TargetType="Button">
+            <Setter Property="Cursor"            Value="Hand"/>
+            <Setter Property="Foreground"        Value="{StaticResource AppColor.TextBrand}"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin"            Value="6,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <TextBlock x:Name="LinkText"
+                                   Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}"
+                                   Foreground="{TemplateBinding Foreground}"
+                                   TextDecorations="Underline"/>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="LinkText" Property="TextDecorations" Value="{x:Null}"/>
+                                <Setter TargetName="LinkText" Property="Foreground" Value="{StaticResource AppColor.TextPrimary}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Cursor" Value="Arrow"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>   <!-- Toolbar -->
+            <RowDefinition Height="Auto"/>   <!-- Title -->
+            <RowDefinition Height="Auto"/>   <!-- Error -->
+            <RowDefinition Height="*"/>      <!-- DataGrid -->
+            <RowDefinition Height="Auto"/>   <!-- Footer -->
+        </Grid.RowDefinitions>
+
+        <controls:AppLoadingOverlay Grid.RowSpan="5" IsLoading="{Binding IsLoading}"/>
+
+        <!-- Toolbar — cùng thứ tự/kiểu nút với SalesOrderReportView -->
+        <Border Grid.Row="0"
+                Background="{StaticResource AppColor.BackgroundPrimary}"
+                Padding="16,10">
+            <StackPanel Orientation="Horizontal">
+                <controls:AppButton Content="⚙️ Chọn tham số..."
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding ChooseParametersCommand}"
+                                    Margin="0,0,8,0"/>
+                <controls:AppButton Content="🔄 Nạp"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding ReloadCommand}"
+                                    Margin="0,0,16,0"/>
+                <controls:AppButton Content="🖨️ In"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding PrintCommand}"
+                                    Margin="0,0,8,0"/>
+                <controls:AppButton Content="📤 Xuất khẩu"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding ExportExcelCommand}"
+                                    Margin="0,0,8,0"/>
+                <controls:AppButton Content="✉️ Gửi Email"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding SendEmailCommand}"
+                                    Margin="0,0,8,0"/>
+                <controls:AppButton Content="💬 Zalo"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    Command="{Binding SendZaloCommand}"
+                                    Margin="0,0,8,0"/>
+                <controls:AppButton Content="✖ Đóng"
+                                    Style="{StaticResource AppButton.Tertiary.Medium}"
+                                    Command="{Binding GoBackCommand}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Title -->
+        <StackPanel Grid.Row="1" Margin="24,16,24,0" HorizontalAlignment="Center">
+            <controls:AppLabel Text="{Binding ReportTitle}"
+                               Style="{StaticResource AppTypography.DisplaySection}"
+                               HorizontalAlignment="Center"/>
+            <controls:AppLabel Text="{Binding Subtitle}"
+                               Style="{StaticResource AppTypography.BodySection}"
+                               Foreground="{StaticResource AppColor.TextSecondary}"
+                               FontStyle="Italic"
+                               HorizontalAlignment="Center"
+                               Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <!-- Error -->
+        <Border Grid.Row="2"
+                Margin="24,10,24,0"
+                Padding="12,8"
+                Background="{StaticResource AppColor.BackgroundErrorLight}"
+                CornerRadius="6"
+                Visibility="{Binding HasError, Converter={StaticResource BoolToVisibilityConverter}}">
+            <controls:AppLabel Text="{Binding ErrorMessage}"
+                               Style="{StaticResource AppTypography.BodyCaption}"
+                               Foreground="{StaticResource AppColor.TextError}"/>
+        </Border>
+
+        <!-- Lưới báo cáo -->
+        <Border Grid.Row="3"
+                Margin="24,12,24,0"
+                Background="{StaticResource AppColor.BackgroundPrimary}"
+                BorderBrush="{StaticResource AppColor.BorderThin}"
+                BorderThickness="1"
+                CornerRadius="8">
+            <DataGrid ItemsSource="{Binding Rows}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      CanUserResizeColumns="True"
+                      CanUserSortColumns="False"
+                      SelectionMode="Single"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="All"
+                      HorizontalGridLinesBrush="#9CB8D4"
+                      VerticalGridLinesBrush="#9CB8D4"
+                      BorderThickness="0"
+                      RowHeight="28"
+                      RowBackground="{StaticResource AppColor.BackgroundPrimary}"
+                      AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto">
+
+                <!-- Dòng "Số tồn đầu kỳ" in đậm -->
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsOpening}" Value="True">
+                                <Setter Property="FontWeight" Value="Bold"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
+
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Ngày hạch toán"
+                                        Binding="{Binding AccountingDate, StringFormat=dd/MM/yyyy}"
+                                        ElementStyle="{StaticResource ReportCenterCell}" Width="110"/>
+                    <DataGridTextColumn Header="Ngày chứng từ"
+                                        Binding="{Binding DocumentDate, StringFormat=dd/MM/yyyy}"
+                                        ElementStyle="{StaticResource ReportCenterCell}" Width="110"/>
+
+                    <DataGridTemplateColumn Header="Số phiếu thu" Width="110">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource VoucherLinkButton}"
+                                        Content="{Binding ReceiptNumber}"
+                                        IsEnabled="{Binding CanOpenReceipt}"
+                                        CommandParameter="{Binding}"
+                                        Command="{Binding DataContext.OpenReceiptCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Header="Số phiếu chi" Width="110">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource VoucherLinkButton}"
+                                        Content="{Binding PaymentNumber}"
+                                        IsEnabled="{Binding CanOpenPayment}"
+                                        CommandParameter="{Binding}"
+                                        Command="{Binding DataContext.OpenPaymentCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTextColumn Header="Diễn giải" Binding="{Binding Description}"
+                                        ElementStyle="{StaticResource ReportTextCell}" Width="240"/>
+                    <DataGridTextColumn Header="Tài khoản" Binding="{Binding Account}"
+                                        ElementStyle="{StaticResource ReportTextCell}" Width="85"/>
+                    <DataGridTextColumn Header="TK đối ứng" Binding="{Binding CounterAccount}"
+                                        ElementStyle="{StaticResource ReportTextCell}" Width="90"/>
+                    <DataGridTextColumn Header="Phát sinh Nợ"
+                                        Binding="{Binding DebitAmount, Converter={StaticResource MoneyConverter}}"
+                                        ElementStyle="{StaticResource ReportMoneyCell}" Width="125"/>
+                    <DataGridTextColumn Header="Phát sinh Có"
+                                        Binding="{Binding CreditAmount, Converter={StaticResource MoneyConverter}}"
+                                        ElementStyle="{StaticResource ReportMoneyCell}" Width="125"/>
+                    <DataGridTextColumn Header="Số tồn"
+                                        Binding="{Binding Balance, Converter={StaticResource MoneyConverter}}"
+                                        ElementStyle="{StaticResource ReportMoneyCell}" Width="135"/>
+                    <DataGridTextColumn Header="Người nhận/Người nộp" Binding="{Binding PersonName}"
+                                        ElementStyle="{StaticResource ReportTextCell}" Width="200"/>
+                    <DataGridTextColumn Header="Mã mục thu/chi" Binding="{Binding CategoryCode}"
+                                        ElementStyle="{StaticResource ReportTextCell}" Width="120"/>
+                    <DataGridTextColumn Header="Tên mục thu/chi" Binding="{Binding CategoryName}"
+                                        ElementStyle="{StaticResource ReportTextCell}" Width="200"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- Footer: Số dòng · Tổng Nợ · Tổng Có · Tồn cuối kỳ -->
+        <Border Grid.Row="4"
+                Margin="24,8,24,16"
+                Padding="16,10"
+                Background="{StaticResource AppColor.BackgroundPrimary}"
+                BorderBrush="{StaticResource AppColor.BorderThin}"
+                BorderThickness="1"
+                CornerRadius="8">
+            <StackPanel Orientation="Horizontal">
+                <controls:AppLabel Text="Số dòng ="
+                                   Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,6,0"/>
+                <controls:AppLabel Text="{Binding RowCount}"
+                                   Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,32,0"/>
+                <controls:AppLabel Text="Tổng phát sinh Nợ:"
+                                   Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,6,0"/>
+                <controls:AppLabel Text="{Binding TotalDebit, Converter={StaticResource MoneyConverter}}"
+                                   Style="{StaticResource AppTypography.LabelSection}"
+                                   Foreground="{StaticResource AppColor.TextBrand}" Margin="0,0,32,0"/>
+                <controls:AppLabel Text="Tổng phát sinh Có:"
+                                   Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,6,0"/>
+                <controls:AppLabel Text="{Binding TotalCredit, Converter={StaticResource MoneyConverter}}"
+                                   Style="{StaticResource AppTypography.LabelSection}"
+                                   Foreground="{StaticResource AppColor.TextBrand}" Margin="0,0,32,0"/>
+                <controls:AppLabel Text="Số tồn cuối kỳ:"
+                                   Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,6,0"/>
+                <controls:AppLabel Text="{Binding ClosingBalance, Converter={StaticResource MoneyConverter}}"
+                                   Style="{StaticResource AppTypography.LabelSection}"
+                                   Foreground="{StaticResource AppColor.TextBrand}"/>
+            </StackPanel>
+        </Border>
+
+    </Grid>
+</UserControl>

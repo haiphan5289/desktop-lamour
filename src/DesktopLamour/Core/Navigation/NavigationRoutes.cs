@@ -93,6 +93,7 @@ public static class NavigationRoutes
     public static class Accounting
     {
         public const string Hub = "AccountingView";
+        public const string CashLedgerDetailReport = "CashLedgerDetailReportView";
     }
 
     public static class Deposits

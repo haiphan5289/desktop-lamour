@@ -1,0 +1,185 @@
+<Window x:Class="DesktopLamour.Features.HomePage.Accounting.Views.CashLedgerReportFilterWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+        Title="Sổ kế toán chi tiết quỹ tiền mặt - Tham số"
+        Width="640"
+        Height="600"
+        MinWidth="560"
+        MinHeight="480"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="CanResize">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <controls:AppLoadingOverlay Grid.RowSpan="6" IsLoading="{Binding IsLoading}"/>
+
+        <!-- Header -->
+        <Border Grid.Row="0"
+                Background="{StaticResource AppColor.BackgroundBrand}"
+                Padding="20,14">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="📊" FontSize="22" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <StackPanel VerticalAlignment="Center">
+                    <controls:AppLabel Text="Sổ kế toán chi tiết quỹ tiền mặt"
+                                       Style="{StaticResource AppTypography.DisplaySection}"
+                                       Foreground="{StaticResource AppColor.TextBrand}"/>
+                    <controls:AppLabel Text="Chọn kỳ báo cáo và tài khoản trước khi xem"
+                                       Style="{StaticResource AppTypography.BodyCaption}"
+                                       Foreground="{StaticResource AppColor.TextSecondary}"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Kỳ báo cáo + Từ / Đến -->
+        <Grid Grid.Row="1" Margin="20,16,20,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="10"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="120"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="60"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <controls:AppLabel Grid.Row="0" Grid.Column="0" Text="Kỳ báo cáo"
+                               Style="{StaticResource AppTypography.LabelSection}"
+                               VerticalAlignment="Center"/>
+            <ComboBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="4"
+                      Height="34" HorizontalAlignment="Stretch"
+                      ItemsSource="{Binding Periods}"
+                      SelectedItem="{Binding SelectedPeriod, Mode=TwoWay}"/>
+
+            <controls:AppLabel Grid.Row="2" Grid.Column="0" Text="Từ"
+                               Style="{StaticResource AppTypography.LabelSection}"
+                               VerticalAlignment="Center"/>
+            <DatePicker Grid.Row="2" Grid.Column="1"
+                        SelectedDate="{Binding FromDate, Mode=TwoWay}"
+                        Height="34" HorizontalAlignment="Stretch" VerticalContentAlignment="Center"/>
+
+            <controls:AppLabel Grid.Row="2" Grid.Column="3" Text="Đến"
+                               Style="{StaticResource AppTypography.LabelSection}"
+                               VerticalAlignment="Center"/>
+            <DatePicker Grid.Row="2" Grid.Column="4"
+                        SelectedDate="{Binding ToDate, Mode=TwoWay}"
+                        Height="34" HorizontalAlignment="Stretch" VerticalContentAlignment="Center"/>
+        </Grid>
+
+        <!-- Bảng tài khoản -->
+        <Grid Grid.Row="2" Margin="20,16,20,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <DockPanel Grid.Row="0" Margin="0,0,0,6">
+                <controls:AppLabel DockPanel.Dock="Left" Text="Tài khoản"
+                                   Style="{StaticResource AppTypography.LabelSection}"/>
+                <CheckBox DockPanel.Dock="Right" Content="Chọn tất cả"
+                          IsChecked="{Binding AreAllAccountsSelected, Mode=TwoWay}"
+                          HorizontalAlignment="Right"/>
+            </DockPanel>
+
+            <DataGrid Grid.Row="1"
+                      ItemsSource="{Binding Accounts}"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="All"
+                      HorizontalGridLinesBrush="#9CB8D4"
+                      VerticalGridLinesBrush="#9CB8D4"
+                      SelectionMode="Single"
+                      BorderBrush="{StaticResource AppColor.BorderThin}"
+                      BorderThickness="1"
+                      RowBackground="{StaticResource AppColor.BackgroundPrimary}"
+                      AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}">
+                <DataGrid.Columns>
+                    <!-- CheckBox đặt thẳng trong CellTemplate: tick 1 lần bấm, không qua chế độ sửa của DataGrid -->
+                    <DataGridTemplateColumn Header="" Width="40">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Số tài khoản" Binding="{Binding Code}" Width="140" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Tên tài khoản" Binding="{Binding Name}" Width="*" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Bậc" Binding="{Binding Level}" Width="70" IsReadOnly="True">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="HorizontalAlignment" Value="Right"/>
+                                <Setter Property="Padding" Value="0,0,8,0"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+
+        <!-- Tuỳ chọn -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="20,12,20,0">
+            <CheckBox Content="Cộng gộp các bút toán giống nhau"
+                      IsChecked="{Binding MergeSimilar, Mode=TwoWay}"
+                      Margin="0,0,32,0"/>
+            <CheckBox Content="Sắp xếp chứng từ theo thứ tự lập"
+                      IsChecked="{Binding OrderByCreated, Mode=TwoWay}"/>
+        </StackPanel>
+
+        <!-- Lỗi -->
+        <Border Grid.Row="4"
+                Margin="20,10,20,0"
+                Padding="12,8"
+                Background="{StaticResource AppColor.BackgroundErrorLight}"
+                CornerRadius="6"
+                Visibility="{Binding HasError, Converter={StaticResource BoolToVisibilityConverter}}">
+            <controls:AppLabel Text="{Binding ErrorMessage}"
+                               Style="{StaticResource AppTypography.BodyCaption}"
+                               Foreground="{StaticResource AppColor.TextError}"/>
+        </Border>
+
+        <!-- Nút -->
+        <Border Grid.Row="5"
+                BorderBrush="{StaticResource AppColor.BorderThin}"
+                BorderThickness="0,1,0,0"
+                Margin="0,12,0,0"
+                Padding="20,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <controls:AppButton Grid.Column="0"
+                                    Content="Xóa điều kiện"
+                                    Style="{StaticResource AppButton.Tertiary.Medium}"
+                                    Command="{Binding ClearFiltersCommand}"/>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <controls:AppButton Content="Hủy bỏ"
+                                        Style="{StaticResource AppButton.Tertiary.Medium}"
+                                        Command="{Binding CancelCommand}"
+                                        Margin="0,0,8,0"/>
+                    <controls:AppButton Content="Đồng ý"
+                                        Style="{StaticResource AppButton.Primary.Medium}"
+                                        Command="{Binding SubmitCommand}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+    </Grid>
+</Window>

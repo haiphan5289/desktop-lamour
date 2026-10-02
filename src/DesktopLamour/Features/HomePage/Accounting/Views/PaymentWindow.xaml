@@ -87,32 +87,6 @@
             <Setter Property="TextTrimming"      Value="CharacterEllipsis"/>
         </Style>
 
-        <!-- Ô chọn TK Nợ / TK Có / Khoản mục CP: ô đã chọn chỉ hiện MÃ (6418, 1111, 01 — như MISA, cột
-             hẹp không bị cắt chữ), danh sách thả xuống vẫn hiện đủ "mã — tên" để chọn. Phân biệt bằng
-             việc TextBlock có nằm trong ComboBoxItem (danh sách) hay không (ô đã chọn). -->
-        <DataTemplate x:Key="EntryCodeItemTemplate">
-            <TextBlock>
-                <TextBlock.Style>
-                    <Style TargetType="TextBlock">
-                        <Setter Property="Text" Value="{Binding DisplayText}"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ComboBoxItem}}" Value="{x:Null}">
-                                <Setter Property="Text" Value="{Binding Code}"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBlock.Style>
-            </TextBlock>
-        </DataTemplate>
-
-        <Style x:Key="EntryCodeCombo" TargetType="ComboBox">
-            <Setter Property="ItemTemplate"               Value="{StaticResource EntryCodeItemTemplate}"/>
-            <Setter Property="BorderThickness"            Value="0"/>
-            <Setter Property="Background"                 Value="Transparent"/>
-            <Setter Property="VerticalAlignment"          Value="Center"/>
-            <Setter Property="VerticalContentAlignment"   Value="Center"/>
-        </Style>
-
     </Window.Resources>
 
     <Window.InputBindings>
@@ -402,15 +376,16 @@
                                                 ElementStyle="{StaticResource EntryTextCell}"
                                                 Width="230"/>
 
-                            <!-- TK Nợ — ComboBox luôn hiện sẵn trong ô, không qua "chế độ sửa" của
+                            <!-- TK Nợ — ô tìm kiếm (AppSearchableComboBox dạng gọn) luôn hiện sẵn trong ô, không qua "chế độ sửa" của
                                  DataGrid (né hẳn cơ chế commit/edit-mode gây lỗi mất giá trị). -->
                             <DataGridTemplateColumn Header="TK Nợ" Width="90">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <ComboBox ItemsSource="{Binding DataContext.AccountSettings, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                  Style="{StaticResource EntryCodeCombo}"
-                                                  SelectedItem="{Binding SelectedDebitAccount, Mode=TwoWay}"
-                                                  ToolTip="{Binding SelectedDebitAccount.DisplayText}"/>
+                                        <controls:AppSearchableComboBox
+                                            IsCompact="True" CodeOnlyDisplay="True" CommitTypedText="True"
+                                            ItemsSource="{Binding DataContext.AccountSettings, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            SelectedItem="{Binding SelectedDebitAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            ToolTip="{Binding SelectedDebitAccount.DisplayText}"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -419,17 +394,18 @@
                             <DataGridTemplateColumn Header="TK Có" Width="90">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <ComboBox ItemsSource="{Binding DataContext.AccountSettings, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                  Style="{StaticResource EntryCodeCombo}"
-                                                  SelectedItem="{Binding SelectedCreditAccount, Mode=TwoWay}"
-                                                  ToolTip="{Binding SelectedCreditAccount.DisplayText}"/>
+                                        <controls:AppSearchableComboBox
+                                            IsCompact="True" CodeOnlyDisplay="True" CommitTypedText="True"
+                                            ItemsSource="{Binding DataContext.AccountSettings, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            SelectedItem="{Binding SelectedCreditAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            ToolTip="{Binding SelectedCreditAccount.DisplayText}"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
                             <!-- Số tiền -->
                             <DataGridTextColumn Header="Số tiền"
-                                                Binding="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=N0, ConverterCulture=vi-VN}"
+                                                Binding="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource BlankPreserveConverter}, ConverterParameter=N0, ConverterCulture=vi-VN}"
                                                 Width="120">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
@@ -464,10 +440,11 @@
                             <DataGridTemplateColumn Header="Khoản mục CP" Width="90">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <ComboBox ItemsSource="{Binding DataContext.ExpenseCategories, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                  Style="{StaticResource EntryCodeCombo}"
-                                                  SelectedItem="{Binding SelectedExpenseCategory, Mode=TwoWay}"
-                                                  ToolTip="{Binding SelectedExpenseCategory.DisplayText}"/>
+                                        <controls:AppSearchableComboBox
+                                            IsCompact="True" CodeOnlyDisplay="True" CommitTypedText="True"
+                                            ItemsSource="{Binding DataContext.ExpenseCategories, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            SelectedItem="{Binding SelectedExpenseCategory, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            ToolTip="{Binding SelectedExpenseCategory.DisplayText}"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -476,12 +453,22 @@
                             <DataGridTemplateColumn Header="" Width="40">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
+                                        <!-- Ẩn nút xoá ở dòng trống — không có gì để xoá (như SalesOrderWindow) -->
                                         <Button Content="✕"
-                                                Style="{StaticResource AppButton.RemoveLineIcon}"
                                                 HorizontalAlignment="Center"
                                                 VerticalAlignment="Center"
                                                 Command="{Binding DataContext.RemoveEntryCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                CommandParameter="{Binding}"/>
+                                                CommandParameter="{Binding}">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource AppButton.RemoveLineIcon}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsEmpty}" Value="True">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
