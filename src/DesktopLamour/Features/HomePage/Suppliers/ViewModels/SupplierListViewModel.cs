@@ -32,14 +32,49 @@ public partial class SupplierListViewModel : ViewModelBase
     [ObservableProperty] private bool      _hasSuppliers;
     [ObservableProperty] private Supplier? _selectedSupplier;
 
-    // 1 ô tìm kiếm chung — khớp OR trên các trường text chính, không phân biệt hoa/thường.
-    [ObservableProperty] private string _searchText = string.Empty;
+    // ── Filter theo từng cột — nhúng ngay trong header lưới (khớp UI MISA), AND với nhau và với
+    // radio Tổ chức/Cá nhân/Cả hai + dropdown "Nhóm KH, NCC".
+    [ObservableProperty] private string _filterCode    = string.Empty;
+    [ObservableProperty] private string _filterName    = string.Empty;
+    [ObservableProperty] private string _filterAddress = string.Empty;
+    [ObservableProperty] private string _filterGroup   = string.Empty;
+    [ObservableProperty] private string _filterTaxCode = string.Empty;
+    [ObservableProperty] private string _filterPhone   = string.Empty;
+    // null = không lọc (checkbox 3 trạng thái), true = chỉ NCC ngừng theo dõi, false = chỉ NCC đang theo dõi.
+    [ObservableProperty] private bool?  _filterStopTracking;
+
+    partial void OnFilterCodeChanged(string value)        => SuppliersView.Refresh();
+    partial void OnFilterNameChanged(string value)        => SuppliersView.Refresh();
+    partial void OnFilterAddressChanged(string value)     => SuppliersView.Refresh();
+    partial void OnFilterGroupChanged(string value)       => SuppliersView.Refresh();
+    partial void OnFilterTaxCodeChanged(string value)     => SuppliersView.Refresh();
+    partial void OnFilterPhoneChanged(string value)       => SuppliersView.Refresh();
+    partial void OnFilterStopTrackingChanged(bool? value) => SuppliersView.Refresh();
+
+    // Radio "Tổ chức / Cá nhân / Cả hai" — mặc định Cả hai như MISA.
+    [ObservableProperty] private bool _showOrganizationOnly;
+    [ObservableProperty] private bool _showIndividualOnly;
+    [ObservableProperty] private bool _showBothTypes = true;
+
+    partial void OnShowOrganizationOnlyChanged(bool value) => SuppliersView.Refresh();
+    partial void OnShowIndividualOnlyChanged(bool value)   => SuppliersView.Refresh();
+    partial void OnShowBothTypesChanged(bool value)        => SuppliersView.Refresh();
+
+    // Dropdown "Nhóm KH, NCC" — lấy từ các nhóm đang có trong danh sách; mục đầu AllGroups = không lọc.
+    private const string AllGroups = "Tất cả";
+    public ObservableCollection<string> GroupOptions { get; } = new() { AllGroups };
+    [ObservableProperty] private string _selectedGroupOption = AllGroups;
+
+    partial void OnSelectedGroupOptionChanged(string value) => SuppliersView.Refresh();
 
     public ObservableCollection<Supplier> Suppliers { get; } = new();
 
     // View lọc live theo các Filter* per-cột — DataGrid bind vào đây thay vì Suppliers trực tiếp;
     // Suppliers vẫn là nguồn dữ liệu thật (Add/Remove/Clear ở Load/Duplicate/Delete không đổi).
     public ICollectionView SuppliersView { get; }
+
+    // Footer — đếm đúng số dòng đang hiển thị sau lọc.
+    public string RowCountText => $"Số dòng = {SuppliersView.Cast<object>().Count()}";
 
     private bool HasSelection => SelectedSupplier is not null;
 
@@ -60,21 +95,44 @@ public partial class SupplierListViewModel : ViewModelBase
 
         SuppliersView = CollectionViewSource.GetDefaultView(Suppliers);
         SuppliersView.Filter = FilterSupplier;
+        // ICollectionView tự bắn CollectionChanged (Reset) sau mỗi Refresh() — dùng chung 1 chỗ để
+        // cập nhật RowCountText, khỏi phải gọi tay ở từng OnFilterXChanged/Load/Duplicate/Delete.
+        SuppliersView.CollectionChanged += (_, _) => OnPropertyChanged(nameof(RowCountText));
     }
 
-    partial void OnSearchTextChanged(string value) => SuppliersView.Refresh();
+    // Nạp lại danh sách nhóm từ dữ liệu hiện có, giữ nguyên mục "Tất cả" ở đầu và lựa chọn đang có.
+    private void RefreshGroupOptions()
+    {
+        var selected = SelectedGroupOption;
+        while (GroupOptions.Count > 1) GroupOptions.RemoveAt(GroupOptions.Count - 1);
+        foreach (var g in Suppliers.Select(s => s.Group)
+                     .Where(g => !string.IsNullOrWhiteSpace(g))
+                     .Distinct(StringComparer.OrdinalIgnoreCase)
+                     .OrderBy(g => g, StringComparer.CurrentCultureIgnoreCase))
+            GroupOptions.Add(g);
+        SelectedGroupOption = !string.IsNullOrEmpty(selected) && GroupOptions.Contains(selected) ? selected : AllGroups;
+    }
 
     private bool FilterSupplier(object obj)
     {
         if (obj is not Supplier s) return false;
-        if (string.IsNullOrWhiteSpace(SearchText)) return true;
 
-        return Matches(s.Code, SearchText)
-            || Matches(s.Name, SearchText)
-            || Matches(s.Address, SearchText)
-            || Matches(s.Group, SearchText)
-            || Matches(s.TaxCode, SearchText)
-            || Matches(s.Phone, SearchText);
+        if (ShowOrganizationOnly && s.IsIndividual) return false;
+        if (ShowIndividualOnly && !s.IsIndividual) return false;
+
+        if (!string.IsNullOrEmpty(SelectedGroupOption) && SelectedGroupOption != AllGroups
+            && !string.Equals(s.Group, SelectedGroupOption, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        if (FilterStopTracking is { } stopTracking && s.IsStopTracking != stopTracking)
+            return false;
+
+        return Matches(s.Code, FilterCode)
+            && Matches(s.Name, FilterName)
+            && Matches(s.Address, FilterAddress)
+            && Matches(s.Group, FilterGroup)
+            && Matches(s.TaxCode, FilterTaxCode)
+            && Matches(s.Phone, FilterPhone);
     }
 
     private static bool Matches(string? value, string filter)
@@ -105,6 +163,7 @@ public partial class SupplierListViewModel : ViewModelBase
             Suppliers.Clear();
             foreach (var s in items) Suppliers.Add(s);
             HasSuppliers = Suppliers.Count > 0;
+            RefreshGroupOptions();
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)

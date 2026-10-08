@@ -56,4 +56,8 @@ public class Product : ISearchableItem
     public bool    IsDepositProduct          { get; set; }
 
     public string DisplayText => $"{Code} — {Name}";
+
+    // Cột lưới "Vật tư hàng hóa" (khớp MISA) — tính tại client, BE không lưu.
+    public decimal StockValue     => StockQuantity * CostPrice;
+    public bool    IsStopTracking => !IsActive;
 }

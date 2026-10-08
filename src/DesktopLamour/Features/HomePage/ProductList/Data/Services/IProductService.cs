@@ -6,6 +6,7 @@ namespace DesktopLamour.Features.HomePage.ProductList.Data.Services;
 public interface IProductService
 {
     Task<IEnumerable<ProductResponseDto>> GetAllAsync(CancellationToken ct = default);
+    Task<string> GetNextCodeAsync(CancellationToken ct = default);
     Task<ProductResponseDto> CreateAsync(CreateProductRequestDto request, CancellationToken ct = default);
     Task<ProductResponseDto> UpdateAsync(int productId, UpdateProductRequestDto request, CancellationToken ct = default);
     Task DeleteAsync(int productId, CancellationToken ct = default);

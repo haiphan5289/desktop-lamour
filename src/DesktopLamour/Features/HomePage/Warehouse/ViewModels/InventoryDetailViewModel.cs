@@ -6,7 +6,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.Navigation;
 using DesktopLamour.Core.ViewModels;
-using DesktopLamour.Features.HomePage.Customers.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Sales.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Sales.Views;
 using DesktopLamour.Features.HomePage.Warehouse.Data.Services.Dtos;
@@ -25,10 +24,9 @@ public partial class InventoryDetailViewModel : ViewModelBase, INavigationParame
     private readonly IGetInventoryDetailByProductUseCase _getDetail;
     private readonly IGetSalesOrderByIdUseCase           _getSalesOrderById;
     private readonly IGetWarehouseReceiptByIdUseCase     _getReceiptById;
-    private readonly IGetCustomersUseCase                _getCustomers;
     private readonly INavigationService                  _navigationService;
-    private readonly Func<SalesOrderPrintWindow>         _printWindowFactory;
-    private readonly Func<WarehouseTransactionDetailWindow> _detailWindowFactory;
+    private readonly Func<SalesOrderWindow>              _salesOrderWindowFactory;
+    private readonly Func<WarehouseReceiptFormWindow>    _receiptWindowFactory;
     private readonly ILogger<InventoryDetailViewModel>   _logger;
 
     [ObservableProperty] private bool     _isLoading;
@@ -50,10 +48,12 @@ public partial class InventoryDetailViewModel : ViewModelBase, INavigationParame
     [ObservableProperty] private string _filterDocumentNumber = string.Empty;
     [ObservableProperty] private string _filterDescription    = string.Empty;
     [ObservableProperty] private string _filterUnit           = string.Empty;
+    [ObservableProperty] private string _filterWarehouse      = string.Empty;
 
     partial void OnFilterDocumentNumberChanged(string value) => ApplyFilters();
     partial void OnFilterDescriptionChanged(string value)    => ApplyFilters();
     partial void OnFilterUnitChanged(string value)           => ApplyFilters();
+    partial void OnFilterWarehouseChanged(string value)      => ApplyFilters();
 
     public DateColumnFilter AccountingDateFilter { get; } = new();
     public DateColumnFilter DocumentDateFilter   { get; } = new();
@@ -81,6 +81,11 @@ public partial class InventoryDetailViewModel : ViewModelBase, INavigationParame
 
     // Full unfiltered dataset from the last LoadAsync — Lines is derived from this via ApplyFilters.
     private List<InventoryDetailLine> _allItems = new();
+    // Số dư đầu/cuối kỳ riêng từng kho + thông tin mặt hàng — dựng dòng "Số dư đầu kỳ" và dòng nhóm.
+    private List<InventoryDetailWarehouse> _warehouses = new();
+    private string _productCode = string.Empty;
+    private string _productName = string.Empty;
+    private string _productUnit = string.Empty;
 
     private InventoryDetailFilter? _filter;
 
@@ -88,19 +93,17 @@ public partial class InventoryDetailViewModel : ViewModelBase, INavigationParame
         IGetInventoryDetailByProductUseCase getDetail,
         IGetSalesOrderByIdUseCase           getSalesOrderById,
         IGetWarehouseReceiptByIdUseCase     getReceiptById,
-        IGetCustomersUseCase                getCustomers,
         INavigationService                  navigationService,
-        Func<SalesOrderPrintWindow>         printWindowFactory,
-        Func<WarehouseTransactionDetailWindow> detailWindowFactory,
+        Func<SalesOrderWindow>              salesOrderWindowFactory,
+        Func<WarehouseReceiptFormWindow>    receiptWindowFactory,
         ILogger<InventoryDetailViewModel>   logger)
     {
         _getDetail           = getDetail;
         _getSalesOrderById   = getSalesOrderById;
         _getReceiptById      = getReceiptById;
-        _getCustomers        = getCustomers;
         _navigationService   = navigationService;
-        _printWindowFactory  = printWindowFactory;
-        _detailWindowFactory = detailWindowFactory;
+        _salesOrderWindowFactory = salesOrderWindowFactory;
+        _receiptWindowFactory    = receiptWindowFactory;
         _logger              = logger;
 
         WireColumnFilters();
@@ -110,20 +113,20 @@ public partial class InventoryDetailViewModel : ViewModelBase, INavigationParame
     {
         if (parameter is not InventoryDetailFilter filter) return;
         _filter       = filter;
-        Title         = $"Sổ chi tiết vật tư hàng hóa — {filter.ProductLabel}";
+        Title         = string.Empty;
         FilterSummary = BuildFilterSummary(filter);
         _ = LoadAsync();
     }
 
+    // Khớp tiêu đề MISA: "Kho: Hàng Hóa; Mặt hàng: Meso Fills; Từ ngày 01/10/2026 đến ngày 07/10/2026".
     private static string BuildFilterSummary(InventoryDetailFilter filter)
     {
-        var parts = new List<string>
-        {
-            $"Từ ngày {filter.FromDate:dd/MM/yyyy} đến ngày {filter.ToDate:dd/MM/yyyy}",
-        };
+        var parts = new List<string>();
         if (!string.IsNullOrWhiteSpace(filter.WarehouseLabel))
             parts.Add($"Kho: {filter.WarehouseLabel}");
-        return string.Join(" · ", parts);
+        parts.Add($"Mặt hàng: {filter.ProductLabel}");
+        parts.Add($"Từ ngày {filter.FromDate:dd/MM/yyyy} đến ngày {filter.ToDate:dd/MM/yyyy}");
+        return string.Join("; ", parts);
     }
 
     private async Task LoadAsync()
@@ -143,7 +146,11 @@ public partial class InventoryDetailViewModel : ViewModelBase, INavigationParame
 
             if (detail is not null)
             {
-                _allItems = detail.Lines.ToList();
+                _allItems    = detail.Lines.ToList();
+                _warehouses  = detail.Warehouses.ToList();
+                _productCode = detail.Code;
+                _productName = detail.Name;
+                _productUnit = detail.Unit;
 
                 OpeningQty   = detail.OpeningQty;
                 OpeningValue = detail.OpeningValue;
@@ -152,7 +159,8 @@ public partial class InventoryDetailViewModel : ViewModelBase, INavigationParame
             }
             else
             {
-                _allItems = new List<InventoryDetailLine>();
+                _allItems   = new List<InventoryDetailLine>();
+                _warehouses = new List<InventoryDetailWarehouse>();
             }
 
             ApplyFilters();
@@ -165,12 +173,63 @@ public partial class InventoryDetailViewModel : ViewModelBase, INavigationParame
         finally { IsLoading = false; }
     }
 
-    // Re-derives Lines from _allItems using the active column filters.
+    // Re-derives Lines from _allItems using the active column filters, then dựng bố cục MISA cho từng kho:
+    //   Mã kho : HH (n)            ← dòng nhóm kho (tổng Nhập/Xuất, Tồn = tồn cuối kỳ của kho)
+    //     Mã hàng : 15 (n)         ← dòng nhóm mặt hàng
+    //       Số dư đầu kỳ           ← tồn đầu kỳ của kho
+    //       … các dòng giao dịch (Tồn chạy dần riêng từng kho)
+    // n ở nhóm mặt hàng = số dòng giao dịch + dòng số dư đầu kỳ (khớp "Mã hàng : 15 (8)" của MISA).
     private void ApplyFilters()
     {
         Lines.Clear();
-        foreach (var item in _allItems.Where(MatchesAllFilters))
-            Lines.Add(item);
+
+        var filtered = _allItems.Where(MatchesAllFilters).ToList();
+
+        // Thứ tự kho theo BE (đã sắp theo tên kho); kho nào chỉ có trong dòng giao dịch mà BE không liệt kê
+        // thì vẫn hiện (không mất dữ liệu) với số dư đầu kỳ 0.
+        var warehouses = _warehouses.ToList();
+        foreach (var l in _allItems)
+            if (warehouses.All(w => w.WarehouseId != l.WarehouseId))
+                warehouses.Add(new InventoryDetailWarehouse
+                {
+                    WarehouseId = l.WarehouseId, WarehouseCode = l.WarehouseCode, WarehouseName = l.WarehouseName,
+                });
+
+        foreach (var wh in warehouses)
+        {
+            var lines = filtered.Where(l => l.WarehouseId == wh.WarehouseId).ToList();
+            if (lines.Count == 0 && _allItems.Count > 0 && _allItems.All(l => l.WarehouseId != wh.WarehouseId)
+                && wh.OpeningQty == 0 && wh.ClosingQty == 0)
+                continue; // kho không dính gì tới mặt hàng này
+
+            var importQty    = lines.Sum(l => l.ImportQty);
+            var importValue  = lines.Sum(l => l.ImportValue);
+            var exportQty    = lines.Sum(l => l.ExportQty);
+            var exportValue  = lines.Sum(l => l.ExportValue);
+
+            Lines.Add(new InventoryDetailLine
+            {
+                RowKind = InventoryDetailRowKind.WarehouseHeader,
+                WarehouseId = wh.WarehouseId, WarehouseName = $"Mã kho : {wh.WarehouseCode} (1)",
+                ImportQty = importQty, ImportValue = importValue, ExportQty = exportQty, ExportValue = exportValue,
+                RunningQty = wh.ClosingQty, RunningValue = wh.ClosingValue,
+            });
+            Lines.Add(new InventoryDetailLine
+            {
+                RowKind = InventoryDetailRowKind.ProductHeader,
+                WarehouseId = wh.WarehouseId, WarehouseName = $"Mã hàng : {_productCode} ({lines.Count + 1})",
+                ImportQty = importQty, ImportValue = importValue, ExportQty = exportQty, ExportValue = exportValue,
+                RunningQty = wh.ClosingQty, RunningValue = wh.ClosingValue,
+            });
+            Lines.Add(new InventoryDetailLine
+            {
+                RowKind = InventoryDetailRowKind.Opening,
+                WarehouseId = wh.WarehouseId, WarehouseCode = wh.WarehouseCode, WarehouseName = wh.WarehouseName,
+                ProductName = _productName, Description = "Số dư đầu kỳ", Unit = _productUnit,
+                RunningQty = wh.OpeningQty, RunningValue = wh.OpeningValue,
+            });
+            foreach (var l in lines) Lines.Add(l);
+        }
 
         HasLines = Lines.Count > 0;
     }
@@ -181,6 +240,7 @@ public partial class InventoryDetailViewModel : ViewModelBase, INavigationParame
         && Matches(FilterDocumentNumber, item.DocumentNumber)
         && Matches(FilterDescription, item.Description ?? string.Empty)
         && Matches(FilterUnit, item.Unit)
+        && Matches(FilterWarehouse, item.WarehouseName)
         && ImportQtyFilter.Matches(item.ImportQty)
         && ImportValueFilter.Matches(item.ImportValue)
         && ExportQtyFilter.Matches(item.ExportQty)
@@ -198,8 +258,9 @@ public partial class InventoryDetailViewModel : ViewModelBase, INavigationParame
     [RelayCommand]
     private void DismissError() => HasError = false;
 
-    // Click "Số chứng từ" — Import mở lại phiếu nhập (popup Chi tiết cũ), Export mở popup
-    // "In Hóa Đơn" (giống double-click dòng XK ở màn Kho — xem WarehouseTransactionListViewModel).
+    // Nhấp đúp "Số chứng từ" — mở lại đúng chứng từ gốc như MISA, ở chế độ chỉ xem:
+    // Export → form "Chứng từ bán hàng" (SalesOrderWindow, khóa không sửa được; cùng cách màn Kho mở dòng XK),
+    // Import → form "Phiếu nhập kho" (WarehouseReceiptFormWindow, phiếu đã ghi sổ nên tự khóa).
     [RelayCommand]
     private async Task OpenDocumentAsync(InventoryDetailLine? line, CancellationToken ct = default)
     {
@@ -217,13 +278,10 @@ public partial class InventoryDetailViewModel : ViewModelBase, INavigationParame
                     return;
                 }
 
-                var customers = await _getCustomers.ExecuteAsync(ct);
-                var customer  = customers.FirstOrDefault(c => c.Id == order.CustomerId);
-
-                var printWindow = _printWindowFactory();
-                printWindow.Initialize(order, customer?.Phone, customer?.Address);
-                printWindow.Owner = Application.Current.MainWindow;
-                printWindow.ShowDialog();
+                var window = _salesOrderWindowFactory();
+                window.Initialize(order, isFromWarehouseExport: true, isReadOnly: true);
+                window.Owner = Application.Current.MainWindow;
+                window.ShowDialog();
                 return;
             }
 
@@ -237,9 +295,8 @@ public partial class InventoryDetailViewModel : ViewModelBase, INavigationParame
                     return;
                 }
 
-                var transaction = ToTransactionDto(receipt);
-                var window = _detailWindowFactory();
-                window.Initialize(transaction);
+                var window = _receiptWindowFactory();
+                window.Initialize(receipt);
                 window.Owner = Application.Current.MainWindow;
                 window.ShowDialog();
             }
@@ -251,35 +308,4 @@ public partial class InventoryDetailViewModel : ViewModelBase, INavigationParame
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
-
-    // Map thủ công sang shape mà WarehouseTransactionDetailWindow đang bind (chỉ dùng lại UI có
-    // sẵn, không đổi gì ở đó) — khớp cách BE tự map WarehouseReceipt → WarehouseTransactionResponseDto
-    // trong GetWarehouseTransactionsUseCase.MapReceipt.
-    private static WarehouseTransactionResponseDto ToTransactionDto(WarehouseReceiptResponseDto r) => new()
-    {
-        Id                 = r.Id,
-        TransactionType    = "Import",
-        DocumentNumber     = r.ReceiptNumber,
-        AccountingDate     = r.AccountingDate,
-        DocumentDate       = r.DocumentDate,
-        Description        = r.Description,
-        TotalAmount        = r.TotalAmount,
-        DeliveryOrReceiver = r.DeliveryPerson,
-        ObjectName         = r.CustomerName ?? r.SupplierName,
-        HasSalesOrder      = false,
-        LedgerDate         = r.CreatedAt,
-        DocumentTypeLabel  = "Nhập kho",
-        Lines = r.Lines.Select(l => new WarehouseTransactionLineDto
-        {
-            ProductCode   = l.ProductCode,
-            ProductName   = l.ProductName,
-            WarehouseName = l.WarehouseName,
-            DebitAccount  = l.DebitAccount,
-            CreditAccount = l.CreditAccount,
-            Unit          = l.Unit,
-            Quantity      = l.Quantity,
-            UnitPrice     = l.UnitPrice,
-            Amount        = l.Amount,
-        }).ToList(),
-    };
 }

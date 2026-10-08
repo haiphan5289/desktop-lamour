@@ -13,5 +13,7 @@ public class Supplier : ISearchableItem
     public string TaxCode        { get; set; } = string.Empty;
     public string Phone          { get; set; } = string.Empty;
     public bool   IsStopTracking { get; set; }
+    // false = Tổ chức (mặc định), true = Cá nhân.
+    public bool   IsIndividual   { get; set; }
     public string DisplayText    => $"{Code} — {Name}";
 }

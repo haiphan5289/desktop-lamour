@@ -1,0 +1,156 @@
+<Window x:Class="DesktopLamour.Features.HomePage.Warehouse.Views.TongHopTonKhoParamsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+        Title="Tổng hợp tồn kho"
+        Width="640"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False">
+
+    <!-- Hộp "Chọn tham số" của báo cáo — khớp hộp "Tổng hợp tồn kho" của MISA: Kỳ báo cáo + Từ/Đến,
+         Đơn vị tính + Nhóm VTHH, danh sách kho có ô tick (Mã kho / Tên kho), Xóa điều kiện / Đồng ý /
+         Hủy bỏ. DataContext = TongHopTonKhoViewModel (gán lúc mở, xem ShowParamsDialog) — sửa trực
+         tiếp tham số của view model; Hủy bỏ thì view model tự trả về như lúc mở hộp. -->
+    <Grid Margin="20,16,20,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="8"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Chọn tham số báo cáo" FontSize="16" FontWeight="SemiBold"/>
+
+        <!-- Kỳ báo cáo / Từ / Đến -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="110"/>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="50"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="50"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <controls:AppLabel Grid.Column="0" Text="Kỳ báo cáo"
+                               Style="{StaticResource AppTypography.LabelSection}" VerticalAlignment="Center"/>
+            <ComboBox Grid.Column="1"
+                      ItemsSource="{Binding PeriodPresetOptions}"
+                      SelectedItem="{Binding PeriodPreset, Mode=TwoWay}"
+                      Height="34" VerticalContentAlignment="Center"/>
+            <controls:AppLabel Grid.Column="3" Text="Từ"
+                               Style="{StaticResource AppTypography.LabelSection}" VerticalAlignment="Center"/>
+            <DatePicker Grid.Column="4" SelectedDate="{Binding FromDate, Mode=TwoWay}"
+                        Height="34" VerticalContentAlignment="Center"/>
+            <controls:AppLabel Grid.Column="6" Text="Đến"
+                               Style="{StaticResource AppTypography.LabelSection}" VerticalAlignment="Center"/>
+            <DatePicker Grid.Column="7" SelectedDate="{Binding ToDate, Mode=TwoWay}"
+                        Height="34" VerticalContentAlignment="Center"/>
+        </Grid>
+
+        <!-- Đơn vị tính / Nhóm VTHH -->
+        <Grid Grid.Row="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="110"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="110"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <controls:AppLabel Grid.Column="0" Text="Đơn vị tính"
+                               Style="{StaticResource AppTypography.LabelSection}" VerticalAlignment="Center"/>
+            <controls:AppSearchableComboBox Grid.Column="1"
+                ItemsSource="{Binding ProductUnits}"
+                SelectedItem="{Binding SelectedProductUnit, Mode=TwoWay}"
+                Placeholder="Tất cả"
+                IsNullable="True"/>
+            <controls:AppLabel Grid.Column="3" Text="Nhóm VTHH"
+                               Style="{StaticResource AppTypography.LabelSection}" VerticalAlignment="Center"/>
+            <controls:AppSearchableComboBox Grid.Column="4"
+                ItemsSource="{Binding Categories}"
+                SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
+                Placeholder="Tất cả"
+                IsNullable="True"/>
+        </Grid>
+
+        <!-- Danh sách kho — tick kho nào lấy kho đó (mặc định tick hết) -->
+        <Border Grid.Row="6" Margin="0,0,0,0"
+                BorderBrush="{StaticResource AppColor.BorderThin}" BorderThickness="1" CornerRadius="6">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <DataGrid Grid.Row="0"
+                          ItemsSource="{Binding WarehouseItems}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          CanUserSortColumns="False"
+                          CanUserResizeColumns="False"
+                          SelectionMode="Single"
+                          HeadersVisibility="Column"
+                          GridLinesVisibility="All"
+                          HorizontalGridLinesBrush="#9CB8D4"
+                          VerticalGridLinesBrush="#9CB8D4"
+                          BorderThickness="0"
+                          MinHeight="130" MaxHeight="220"
+                          RowBackground="{StaticResource AppColor.BackgroundPrimary}"
+                          AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Width="44">
+                            <DataGridTemplateColumn.Header>
+                                <CheckBox IsChecked="{Binding DataContext.AreAllWarehousesSelected, RelativeSource={RelativeSource AncestorType=DataGrid}, Mode=TwoWay}"
+                                          HorizontalAlignment="Center" ToolTip="Chọn tất cả kho"/>
+                            </DataGridTemplateColumn.Header>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Mã kho"  Binding="{Binding Code}" Width="120" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Tên kho" Binding="{Binding Name}" Width="*"   IsReadOnly="True"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+
+        <!-- Nút -->
+        <Grid Grid.Row="8" Margin="0,0,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <controls:AppButton Grid.Column="0" Content="Xóa điều kiện"
+                                Style="{StaticResource AppButton.Tertiary.Medium}"
+                                Command="{Binding ClearConditionsCommand}"/>
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <controls:AppButton Content="✓ Đồng ý"
+                                    Style="{StaticResource AppButton.Primary.Medium}"
+                                    IsDefault="True"
+                                    Click="OkButton_Click"
+                                    Margin="0,0,8,0"/>
+                <controls:AppButton Content="Hủy bỏ"
+                                    Style="{StaticResource AppButton.Secondary.Medium}"
+                                    IsCancel="True"
+                                    Click="CancelButton_Click"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

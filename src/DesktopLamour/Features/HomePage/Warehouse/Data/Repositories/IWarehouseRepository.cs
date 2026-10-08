@@ -14,6 +14,16 @@ public interface IWarehouseRepository
         IReadOnlyList<int>? productIds = null,
         CancellationToken ct = default);
 
+    // Tổng hợp tồn kho chia theo kho — mỗi nhóm kho có số liệu riêng từng sản phẩm (khớp MISA).
+    Task<IEnumerable<InventoryWarehouseGroup>> GetSummaryByWarehouseAsync(
+        DateOnly fromDate,
+        DateOnly toDate,
+        IReadOnlyList<int>? warehouseIds = null,
+        int? categoryId = null,
+        int? productUnitId = null,
+        IReadOnlyList<int>? productIds = null,
+        CancellationToken ct = default);
+
     Task<InventoryDetail?> GetDetailAsync(
         int productId,
         DateOnly fromDate,

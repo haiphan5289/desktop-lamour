@@ -172,3 +172,6 @@ graph TD
 ---
 
 *Updated by `/ct-ai-document` on 2026-04-26*
+
+
+*Updated 2026-10-08 (danh sách Nhân viên — nhấp đúp dòng mở form Sửa như MISA): lưới gắn `DataGridRowDoubleClickBehavior.Command` (`Shared/Behaviors`) → `EditEmployeeCommand`, cùng hành vi nút "Sửa" (đóng form xong tải lại danh sách). Chỉ kích hoạt khi nhấp đúp trúng `DataGridRow` — nhấp đúp tiêu đề cột/ô lọc/vùng trống không mở gì. Cùng behavior được gắn cho Vật tư hàng hóa, Nhà cung cấp, Khách hàng, Nhân viên. Không đổi BE.*

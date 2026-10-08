@@ -138,7 +138,7 @@
                                        Style="{StaticResource AppTypography.HeaderSection}"
                                        Margin="0,0,0,16"/>
 
-                    <!-- Mã (*) + Tên (*) -->
+                    <!-- Mã (tự động tăng, không nhập tay) + Tên (*) -->
                     <Grid Margin="0,0,0,16">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -147,12 +147,13 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0">
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                <controls:AppLabel Text="Mã" Style="{StaticResource AppTypography.LabelSection}"/>
-                                <controls:AppLabel Text=" *" Style="{StaticResource AppTypography.LabelSection}" Foreground="{StaticResource AppColor.TextBrand}"/>
+                                <controls:AppLabel Text="Mã (tự động tăng)" Style="{StaticResource AppTypography.LabelSection}"/>
                             </StackPanel>
-                            <controls:AppTextField Text="{Binding Code, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                   Placeholder="VD: SP001"
-                                                   IsEnabled="{Binding IsAddMode}"/>
+                            <!-- IsReadOnly thay cho IsEnabled="False" — theme làm mờ cả chữ khi disable. -->
+                            <controls:AppTextField Text="{Binding Code, Mode=OneWay}"
+                                                   Placeholder="Tự động tăng"
+                                                   IsReadOnly="True"
+                                                   IsTabStop="False"/>
                         </StackPanel>
                         <StackPanel Grid.Column="2">
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">

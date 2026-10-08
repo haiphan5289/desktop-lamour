@@ -9,9 +9,12 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.Navigation;
 using DesktopLamour.Core.ViewModels;
+using DesktopLamour.Features.HomePage.Categories.Domain.UseCases;
 using DesktopLamour.Features.HomePage.ProductList.Domain.Models;
 using DesktopLamour.Features.HomePage.ProductList.Domain.UseCases;
 using DesktopLamour.Features.HomePage.ProductList.Views;
+using DesktopLamour.Shared.Helpers;
+using DesktopLamour.Shared.Models;
 using Microsoft.Win32;
 
 namespace DesktopLamour.Features.HomePage.ProductList.ViewModels;
@@ -20,6 +23,7 @@ public partial class ProductListViewModel : ViewModelBase
 {
     private readonly INavigationService         _navigationService;
     private readonly IGetProductsUseCase        _getProducts;
+    private readonly IGetCategoriesUseCase      _getCategories;
     private readonly IDeleteProductUseCase      _deleteProduct;
     private readonly IDuplicateProductUseCase   _duplicateProduct;
     private readonly IImportExcelProductsUseCase _importExcel;
@@ -34,17 +38,54 @@ public partial class ProductListViewModel : ViewModelBase
     // 1 ô tìm kiếm chung — khớp OR trên các trường text chính, không phân biệt hoa/thường.
     [ObservableProperty] private string _searchText = string.Empty;
 
+    // ── Filter theo từng cột — nhúng ngay trong header lưới (khớp UI MISA), AND với nhau và với
+    // ô Tìm kiếm chung + dropdown "Nhóm vật tư, hàng hóa, dịch vụ".
+    [ObservableProperty] private string _filterCode         = string.Empty;
+    [ObservableProperty] private string _filterName         = string.Empty;
+    [ObservableProperty] private string _filterNature       = string.Empty;
+    [ObservableProperty] private string _filterCategory     = string.Empty;
+    [ObservableProperty] private string _filterUnit         = string.Empty;
+    [ObservableProperty] private string _filterTaxReduction = string.Empty;
+    // null = không lọc (checkbox 3 trạng thái), true = chỉ dòng ngừng theo dõi, false = chỉ dòng đang theo dõi.
+    [ObservableProperty] private bool?  _filterStopTracking;
+
+    public NumericColumnFilter StockQuantityFilter { get; } = new();
+    public NumericColumnFilter StockValueFilter    { get; } = new();
+
+    partial void OnFilterCodeChanged(string value)         => ProductsView.Refresh();
+    partial void OnFilterNameChanged(string value)         => ProductsView.Refresh();
+    partial void OnFilterNatureChanged(string value)       => ProductsView.Refresh();
+    partial void OnFilterCategoryChanged(string value)     => ProductsView.Refresh();
+    partial void OnFilterUnitChanged(string value)         => ProductsView.Refresh();
+    partial void OnFilterTaxReductionChanged(string value) => ProductsView.Refresh();
+    partial void OnFilterStopTrackingChanged(bool? value)  => ProductsView.Refresh();
+
+    // Dropdown "Nhóm vật tư, hàng hóa, dịch vụ" phía trên lưới — mục đầu AllCategories = không lọc.
+    private const string AllCategories = "Tất cả";
+    public ObservableCollection<string> CategoryOptions { get; } = new() { AllCategories };
+    [ObservableProperty] private string _selectedCategoryOption = AllCategories;
+
+    partial void OnSelectedCategoryOptionChanged(string value) => ProductsView.Refresh();
+
     public ObservableCollection<Product> Products { get; } = new();
 
     // View lọc live theo các Filter* per-cột — DataGrid bind vào đây thay vì Products trực tiếp;
     // Products vẫn là nguồn dữ liệu thật (Add/Remove/Clear ở Load/Duplicate/Delete không đổi).
     public ICollectionView ProductsView { get; }
 
+    // Footer — tính trên các dòng đang hiển thị sau lọc.
+    public string RowCountText           => $"Số dòng = {VisibleProducts.Count()}";
+    public string TotalStockQuantityText => MoneyFormat.Format(VisibleProducts.Sum(p => (decimal)p.StockQuantity), "N0");
+    public string TotalStockValueText    => MoneyFormat.Format(VisibleProducts.Sum(p => p.StockValue), "N0");
+
+    private IEnumerable<Product> VisibleProducts => ProductsView.Cast<Product>();
+
     private bool HasSelection => SelectedProduct is not null;
 
     public ProductListViewModel(
         INavigationService       navigationService,
         IGetProductsUseCase      getProducts,
+        IGetCategoriesUseCase    getCategories,
         IDeleteProductUseCase    deleteProduct,
         IDuplicateProductUseCase duplicateProduct,
         IImportExcelProductsUseCase importExcel,
@@ -52,6 +93,7 @@ public partial class ProductListViewModel : ViewModelBase
     {
         _navigationService = navigationService;
         _getProducts       = getProducts;
+        _getCategories     = getCategories;
         _deleteProduct     = deleteProduct;
         _duplicateProduct  = duplicateProduct;
         _importExcel       = importExcel;
@@ -59,6 +101,17 @@ public partial class ProductListViewModel : ViewModelBase
 
         ProductsView = CollectionViewSource.GetDefaultView(Products);
         ProductsView.Filter = FilterProduct;
+        // ICollectionView tự bắn CollectionChanged (Reset) sau mỗi Refresh() — dùng chung 1 chỗ để
+        // cập nhật footer, khỏi phải gọi tay ở từng OnFilterXChanged/Load/Duplicate/Delete.
+        ProductsView.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(RowCountText));
+            OnPropertyChanged(nameof(TotalStockQuantityText));
+            OnPropertyChanged(nameof(TotalStockValueText));
+        };
+
+        StockQuantityFilter.Changed = ProductsView.Refresh;
+        StockValueFilter.Changed    = ProductsView.Refresh;
     }
 
     partial void OnSearchTextChanged(string value) => ProductsView.Refresh();
@@ -66,13 +119,47 @@ public partial class ProductListViewModel : ViewModelBase
     private bool FilterProduct(object obj)
     {
         if (obj is not Product p) return false;
-        if (string.IsNullOrWhiteSpace(SearchText)) return true;
 
-        return Matches(p.Code, SearchText)
-            || Matches(p.Name, SearchText)
-            || Matches(p.CategoryName, SearchText)
-            || Matches(p.Unit, SearchText);
+        if (!string.IsNullOrWhiteSpace(SearchText)
+            && !(Matches(p.Code, SearchText)
+                || Matches(p.Name, SearchText)
+                || Matches(p.CategoryName, SearchText)
+                || Matches(p.Unit, SearchText)))
+            return false;
+
+        if (!string.IsNullOrEmpty(SelectedCategoryOption) && SelectedCategoryOption != AllCategories
+            && !string.Equals(p.CategoryName, SelectedCategoryOption, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        if (FilterStopTracking is { } stopTracking && p.IsStopTracking != stopTracking)
+            return false;
+
+        return Matches(p.Code, FilterCode)
+            && Matches(p.Name, FilterName)
+            && Matches(NatureText(p.Nature), FilterNature)
+            && Matches(p.CategoryName, FilterCategory)
+            && Matches(p.Unit, FilterUnit)
+            && Matches(TaxReductionText(p.TaxReductionType), FilterTaxReduction)
+            && StockQuantityFilter.Matches(p.StockQuantity)
+            && StockValueFilter.Matches(p.StockValue);
     }
+
+    // Chữ hiển thị trên lưới — phải khớp ProductNatureDisplayConverter/TaxReductionStatusDisplayConverter
+    // để ô lọc so đúng với chữ user đang nhìn thấy.
+    private static string NatureText(ProductNature nature) => nature switch
+    {
+        ProductNature.VatTuHangHoa => "Vật tư hàng hóa",
+        ProductNature.DichVu       => "Dịch vụ",
+        _                          => nature.ToString(),
+    };
+
+    private static string TaxReductionText(TaxReductionStatus? status) => status switch
+    {
+        TaxReductionStatus.CoGiamThue   => "Có giảm thuế",
+        TaxReductionStatus.ChuaGiamThue => "Không giảm thuế",
+        TaxReductionStatus.ChuaXacDinh  => "Chưa xác định",
+        _                               => string.Empty,
+    };
 
     private static bool Matches(string? value, string filter)
         => string.IsNullOrWhiteSpace(filter) || (!string.IsNullOrEmpty(value) && value.Contains(filter, StringComparison.OrdinalIgnoreCase));
@@ -106,6 +193,13 @@ public partial class ProductListViewModel : ViewModelBase
             Products.Clear();
             foreach (var p in items) Products.Add(p);
             HasProducts = Products.Count > 0;
+
+            var categories = await _getCategories.ExecuteAsync(ct);
+            var selected   = SelectedCategoryOption;
+            // Giữ nguyên mục "Tất cả" ở đầu — ComboBox tự set SelectedItem = null khi mục đang chọn bị gỡ.
+            while (CategoryOptions.Count > 1) CategoryOptions.RemoveAt(CategoryOptions.Count - 1);
+            foreach (var c in categories) CategoryOptions.Add(c.Name);
+            SelectedCategoryOption = CategoryOptions.Contains(selected) ? selected : AllCategories;
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)

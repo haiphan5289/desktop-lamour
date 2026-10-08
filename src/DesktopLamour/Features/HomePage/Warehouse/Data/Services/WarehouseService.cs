@@ -53,6 +53,35 @@ public sealed class WarehouseService : IWarehouseService
             ?? Enumerable.Empty<InventorySummaryItemDto>();
     }
 
+    public async Task<IEnumerable<InventorySummaryByWarehouseDto>> GetInventorySummaryByWarehouseAsync(
+        DateOnly fromDate,
+        DateOnly toDate,
+        IReadOnlyList<int>? warehouseIds = null,
+        int? categoryId = null,
+        int? productUnitId = null,
+        IReadOnlyList<int>? productIds = null,
+        CancellationToken ct = default)
+    {
+        _logger.LogInformation("Fetching inventory summary by warehouse {From} → {To}", fromDate, toDate);
+        SetBearerToken();
+
+        var url = $"/api/v1/inventory/summary-by-warehouse?from_date={fromDate:yyyy-MM-dd}&to_date={toDate:yyyy-MM-dd}";
+        if (warehouseIds is { Count: > 0 })
+            url += string.Concat(warehouseIds.Select(id => $"&warehouse_ids={id}"));
+        if (categoryId.HasValue)
+            url += $"&category_id={categoryId.Value}";
+        if (productUnitId.HasValue)
+            url += $"&product_unit_id={productUnitId.Value}";
+        if (productIds is { Count: > 0 })
+            url += string.Concat(productIds.Select(id => $"&product_ids={id}"));
+
+        var response = await _httpClient.GetAsync(url, ct);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<IEnumerable<InventorySummaryByWarehouseDto>>(ct)
+            ?? Enumerable.Empty<InventorySummaryByWarehouseDto>();
+    }
+
     public async Task<InventoryDetailResponseDto?> GetInventoryDetailAsync(
         int productId,
         DateOnly fromDate,

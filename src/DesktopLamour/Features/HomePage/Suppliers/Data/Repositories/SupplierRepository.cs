@@ -24,6 +24,7 @@ public sealed class SupplierRepository : ISupplierRepository
             Group          = d.Group,
             TaxCode        = d.TaxCode,
             Phone          = d.Phone,
+            IsIndividual   = d.IsIndividual,
             IsStopTracking = d.IsStopTracking
         });
     }
@@ -43,6 +44,7 @@ public sealed class SupplierRepository : ISupplierRepository
             Group          = d.Group,
             TaxCode        = d.TaxCode,
             Phone          = d.Phone,
+            IsIndividual   = d.IsIndividual,
             IsStopTracking = d.IsStopTracking
         };
     }
@@ -57,6 +59,7 @@ public sealed class SupplierRepository : ISupplierRepository
             Address        = input.Address,
             Group          = input.Group,
             TaxCode        = input.TaxCode,
+            IsIndividual   = input.IsIndividual,
             IsStopTracking = input.IsStopTracking
         };
         var d = await _service.CreateAsync(request, ct);
@@ -69,6 +72,7 @@ public sealed class SupplierRepository : ISupplierRepository
             Address        = d.Address,
             Group          = d.Group,
             TaxCode        = d.TaxCode,
+            IsIndividual   = d.IsIndividual,
             IsStopTracking = d.IsStopTracking
         };
     }
@@ -83,6 +87,7 @@ public sealed class SupplierRepository : ISupplierRepository
             Address        = input.Address,
             Group          = input.Group,
             TaxCode        = input.TaxCode,
+            IsIndividual   = input.IsIndividual,
             IsStopTracking = input.IsStopTracking
         };
         var d = await _service.UpdateAsync(input.Id, request, ct);
@@ -95,6 +100,7 @@ public sealed class SupplierRepository : ISupplierRepository
             Address        = d.Address,
             Group          = d.Group,
             TaxCode        = d.TaxCode,
+            IsIndividual   = d.IsIndividual,
             IsStopTracking = d.IsStopTracking
         };
     }

@@ -29,8 +29,8 @@ public partial class WarehouseReceiptLineItem : ObservableObject
         {
             UnitPrice     = p.CostPrice;
             Quantity      = 1;
-            DebitAccount  = "111";
-            CreditAccount = "131";
+            DebitAccount  = "1561";
+            CreditAccount = "1112";
         }
     }
 

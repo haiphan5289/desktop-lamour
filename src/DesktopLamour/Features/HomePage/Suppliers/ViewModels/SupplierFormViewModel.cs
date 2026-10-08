@@ -29,6 +29,16 @@ public partial class SupplierFormViewModel : ViewModelBase
     [ObservableProperty] private string _group         = string.Empty;
     [ObservableProperty] private string _taxCode       = string.Empty;
     [ObservableProperty] private bool   _isStopTracking;
+    // false = Tổ chức (mặc định), true = Cá nhân — 2 radio trên form bind vào IsOrganization/IsIndividual.
+    [ObservableProperty] private bool   _isIndividual;
+
+    public bool IsOrganization
+    {
+        get => !IsIndividual;
+        set => IsIndividual = !value;
+    }
+
+    partial void OnIsIndividualChanged(bool value) => OnPropertyChanged(nameof(IsOrganization));
 
     public bool IsAddMode => !_isEditMode;
 
@@ -46,6 +56,7 @@ public partial class SupplierFormViewModel : ViewModelBase
     {
         ErrorMessage   = string.Empty;
         IsStopTracking = false;
+        IsIndividual   = false;
 
         if (supplier is null)
         {
@@ -66,6 +77,7 @@ public partial class SupplierFormViewModel : ViewModelBase
             Group          = supplier.Group;
             TaxCode        = supplier.TaxCode;
             IsStopTracking = supplier.IsStopTracking;
+            IsIndividual   = supplier.IsIndividual;
         }
 
         OnPropertyChanged(nameof(IsAddMode));
@@ -83,14 +95,14 @@ public partial class SupplierFormViewModel : ViewModelBase
             {
                 var input = new CreateSupplierInput(
                     Code.Trim(), Name.Trim(), Phone.Trim(), Address.Trim(),
-                    Group.Trim(), TaxCode.Trim(), IsStopTracking);
+                    Group.Trim(), TaxCode.Trim(), IsStopTracking, IsIndividual);
                 await _createUseCase.ExecuteAsync(input, ct);
             }
             else
             {
                 var input = new UpdateSupplierInput(
                     _editingId, Code.Trim(), Name.Trim(), Phone.Trim(), Address.Trim(),
-                    Group.Trim(), TaxCode.Trim(), IsStopTracking);
+                    Group.Trim(), TaxCode.Trim(), IsStopTracking, IsIndividual);
                 await _updateUseCase.ExecuteAsync(input, ct);
             }
             StopDirtyTracking();

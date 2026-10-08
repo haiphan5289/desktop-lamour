@@ -101,6 +101,40 @@ public sealed class WarehouseReceiptService : IWarehouseReceiptService
             ?? throw new InvalidOperationException("Empty response from unconfirm warehouse receipt endpoint.");
     }
 
+    public async Task DeleteAsync(int id, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Deleting warehouse receipt {Id}", id);
+        SetBearerToken();
+
+        var response = await _httpClient.DeleteAsync($"/api/v1/warehouse-receipts/{id}", ct);
+        if (response.IsSuccessStatusCode) return;
+
+        // BE trả { "error": "..." } (vd. phiếu đã ghi sổ phải Bỏ ghi trước) — hiện đúng lý do thay vì mã lỗi HTTP trần.
+        string? message = null;
+        try { message = (await response.Content.ReadFromJsonAsync<ApiErrorResponse>(ct))?.Error; }
+        catch { /* body không phải JSON — dùng thông báo mặc định bên dưới */ }
+        throw new Exception(message ?? $"Lỗi {(int)response.StatusCode}");
+    }
+
+    // Số chứng từ kế tiếp — chỉ để hiện trước trên phiếu mới; số thật vẫn do BE sinh lúc Cất.
+    public async Task<string?> GetNextNumberAsync(CancellationToken ct = default)
+    {
+        _logger.LogInformation("Fetching next warehouse receipt number from API");
+        SetBearerToken();
+
+        var response = await _httpClient.GetAsync("/api/v1/warehouse-receipts/next-number", ct);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<NextCodeResponse>(ct);
+        return result?.Code;
+    }
+
+    private sealed record NextCodeResponse(
+        [property: System.Text.Json.Serialization.JsonPropertyName("code")] string? Code);
+
+    private sealed record ApiErrorResponse(
+        [property: System.Text.Json.Serialization.JsonPropertyName("error")] string? Error);
+
     private void SetBearerToken()
     {
         var token = _tokenStorage.GetToken();

@@ -43,6 +43,43 @@ public class InventoryDetailLineDto
 
     [JsonPropertyName("running_value")]
     public decimal RunningValue { get; set; }
+
+    [JsonPropertyName("warehouse_id")]
+    public int WarehouseId { get; set; }
+
+    [JsonPropertyName("warehouse_code")]
+    public string WarehouseCode { get; set; } = string.Empty;
+
+    [JsonPropertyName("warehouse_name")]
+    public string WarehouseName { get; set; } = string.Empty;
+
+    [JsonPropertyName("unit_price")]
+    public decimal UnitPrice { get; set; }
+}
+
+// Số dư đầu/cuối kỳ riêng từng kho — dùng cho dòng "Số dư đầu kỳ" và dòng tổng của từng nhóm kho.
+public class InventoryDetailWarehouseDto
+{
+    [JsonPropertyName("warehouse_id")]
+    public int WarehouseId { get; set; }
+
+    [JsonPropertyName("warehouse_code")]
+    public string WarehouseCode { get; set; } = string.Empty;
+
+    [JsonPropertyName("warehouse_name")]
+    public string WarehouseName { get; set; } = string.Empty;
+
+    [JsonPropertyName("opening_qty")]
+    public int OpeningQty { get; set; }
+
+    [JsonPropertyName("opening_value")]
+    public decimal OpeningValue { get; set; }
+
+    [JsonPropertyName("closing_qty")]
+    public int ClosingQty { get; set; }
+
+    [JsonPropertyName("closing_value")]
+    public decimal ClosingValue { get; set; }
 }
 
 public class InventoryDetailResponseDto
@@ -70,6 +107,9 @@ public class InventoryDetailResponseDto
 
     [JsonPropertyName("closing_value")]
     public decimal ClosingValue { get; set; }
+
+    [JsonPropertyName("warehouses")]
+    public List<InventoryDetailWarehouseDto> Warehouses { get; set; } = new();
 
     [JsonPropertyName("lines")]
     public List<InventoryDetailLineDto> Lines { get; set; } = new();

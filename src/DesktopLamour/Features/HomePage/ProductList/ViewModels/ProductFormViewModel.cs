@@ -7,6 +7,7 @@ using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.HomePage.AccountSettings.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Categories.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Categories.Views;
+using DesktopLamour.Features.HomePage.ProductList.Data.Services;
 using DesktopLamour.Features.HomePage.ProductList.Domain.Models;
 using DesktopLamour.Features.HomePage.ProductList.Domain.UseCases;
 using DesktopLamour.Features.HomePage.ProductUnits.Domain.UseCases;
@@ -23,6 +24,7 @@ public partial class ProductFormViewModel : ViewModelBase
 {
     private readonly ICreateProductUseCase          _createUseCase;
     private readonly IUpdateProductUseCase          _updateUseCase;
+    private readonly IProductService                _productService;
     private readonly IGetCategoriesUseCase          _getCategories;
     private readonly IGetProductUnitsUseCase        _getProductUnits;
     private readonly IGetWarehouseSettingsUseCase   _getWarehouses;
@@ -163,6 +165,7 @@ public partial class ProductFormViewModel : ViewModelBase
     public ProductFormViewModel(
         ICreateProductUseCase createUseCase,
         IUpdateProductUseCase updateUseCase,
+        IProductService productService,
         IGetCategoriesUseCase getCategories,
         IGetProductUnitsUseCase getProductUnits,
         IGetWarehouseSettingsUseCase getWarehouses,
@@ -174,6 +177,7 @@ public partial class ProductFormViewModel : ViewModelBase
     {
         _createUseCase                = createUseCase;
         _updateUseCase                = updateUseCase;
+        _productService               = productService;
         _getCategories                = getCategories;
         _getProductUnits              = getProductUnits;
         _getWarehouses                = getWarehouses;
@@ -292,6 +296,19 @@ public partial class ProductFormViewModel : ViewModelBase
 
     private async Task LoadLookupsAsync(CancellationToken ct = default)
     {
+        // Mã tự tăng — chỉ hiển thị mã dự kiến, BE mới là nơi cấp mã thật lúc Cất.
+        if (!_isEditMode)
+        {
+            try
+            {
+                Code = await _productService.GetNextCodeAsync(ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not load next product code");
+            }
+        }
+
         try
         {
             var categories = await _getCategories.ExecuteAsync(ct);
@@ -466,7 +483,8 @@ public partial class ProductFormViewModel : ViewModelBase
             {
                 var input = new CreateProductInput
                 {
-                    Code             = Code.Trim(),
+                    // Để trống: BE tự cấp mã kế tiếp (mã đang hiện trên form chỉ là dự kiến).
+                    Code             = string.Empty,
                     Name             = Name.Trim(),
                     CategoryId       = SelectedCategory?.Id,
                     Unit             = (SelectedProductUnit?.Name ?? Unit).Trim(),

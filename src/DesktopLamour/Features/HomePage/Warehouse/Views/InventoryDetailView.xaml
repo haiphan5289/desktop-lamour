@@ -24,6 +24,22 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
+        <!-- Dòng nhóm kho / nhóm mặt hàng / số dư đầu kỳ — đậm, nền nhạt (khớp sổ chi tiết MISA). -->
+        <Style x:Key="LedgerRowStyle" TargetType="DataGridRow">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding RowKind}" Value="WarehouseHeader">
+                    <Setter Property="Background" Value="{StaticResource AppColor.BackgroundBrand}"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding RowKind}" Value="ProductHeader">
+                    <Setter Property="Background" Value="{StaticResource AppColor.BackgroundSecondary}"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding RowKind}" Value="Opening">
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </UserControl.Resources>
 
     <Grid>
@@ -57,29 +73,6 @@
                                HorizontalAlignment="Center"
                                Margin="0,4,0,0"/>
         </StackPanel>
-
-        <!-- Số dư đầu kỳ -->
-        <Border Grid.Row="1"
-                Margin="24,16,24,0"
-                Padding="16,10"
-                Background="{StaticResource AppColor.BackgroundPrimary}"
-                BorderBrush="{StaticResource AppColor.BorderThin}"
-                BorderThickness="1"
-                CornerRadius="8">
-            <StackPanel Orientation="Horizontal">
-                <controls:AppLabel Text="Số dư đầu kỳ:" Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,8,0"/>
-                <controls:AppLabel helpers:NegativeAmountHighlight.IsEnabled="True" Text="{Binding OpeningQty, Converter={StaticResource MoneyConverter}}" Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,4,0"/>
-                <controls:AppLabel Text="(" Style="{StaticResource AppTypography.BodyCaption}"/>
-                <controls:AppLabel helpers:NegativeAmountHighlight.IsEnabled="True" Text="{Binding OpeningValue, Converter={StaticResource MoneyConverter}}" Style="{StaticResource AppTypography.BodyCaption}"/>
-                <controls:AppLabel Text=")" Style="{StaticResource AppTypography.BodyCaption}" Margin="0,0,24,0"/>
-
-                <controls:AppLabel Text="Tồn cuối kỳ:" Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,8,0"/>
-                <controls:AppLabel helpers:NegativeAmountHighlight.IsEnabled="True" Text="{Binding ClosingQty, Converter={StaticResource MoneyConverter}}" Style="{StaticResource AppTypography.LabelSection}" Margin="0,0,4,0"/>
-                <controls:AppLabel Text="(" Style="{StaticResource AppTypography.BodyCaption}"/>
-                <controls:AppLabel helpers:NegativeAmountHighlight.IsEnabled="True" Text="{Binding ClosingValue, Converter={StaticResource MoneyConverter}}" Style="{StaticResource AppTypography.BodyCaption}"/>
-                <controls:AppLabel Text=")" Style="{StaticResource AppTypography.BodyCaption}"/>
-            </StackPanel>
-        </Border>
 
         <!-- DataGrid -->
         <Grid Grid.Row="2" Margin="24,12,24,24">
@@ -124,6 +117,7 @@
                       BorderThickness="1"
                       RowBackground="{StaticResource AppColor.BackgroundPrimary}"
                       AlternatingRowBackground="{StaticResource AppColor.BackgroundSecondary}"
+                      RowStyle="{StaticResource LedgerRowStyle}"
                       MouseDoubleClick="LinesDataGrid_MouseDoubleClick"
                       ScrollViewer.HorizontalScrollBarVisibility="Auto"
                       ScrollViewer.VerticalScrollBarVisibility="Auto"
@@ -137,8 +131,31 @@
                     </Style>
                 </DataGrid.ColumnHeaderStyle>
                 <DataGrid.Columns>
+                    <!-- Tên kho — cột nhóm: dòng nhóm hiện "Mã kho : HH (1)", dòng thường hiện tên kho -->
+                    <DataGridTextColumn Header="Tên kho" Binding="{Binding WarehouseName}" Width="140">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="Tên kho" FontWeight="SemiBold"/>
+                                    <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
+                                                            Text="{Binding DataContext.FilterWarehouse, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
+                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- Tên hàng — chỉ hiện (sổ chi tiết của đúng 1 mặt hàng, không cần ô lọc) -->
+                    <DataGridTextColumn Header="Tên hàng" Binding="{Binding ProductName}" Width="150">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="Tên hàng" FontWeight="SemiBold"/>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
                     <!-- Ngày hạch toán — date column: operator combo (=, ≤, ≥...) + DatePicker, inline -->
-                    <DataGridTextColumn Header="Ngày hạch toán" Binding="{Binding AccountingDate, StringFormat=dd/MM/yyyy}" Width="120">
+                    <DataGridTextColumn Header="Ngày hạch toán" Binding="{Binding AccountingDateText}" Width="120">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel>
@@ -170,7 +187,7 @@
                     </DataGridTextColumn>
 
                     <!-- Ngày chứng từ — date column: operator combo (=, ≤, ≥...) + DatePicker, inline -->
-                    <DataGridTextColumn Header="Ngày chứng từ" Binding="{Binding DocumentDate, StringFormat=dd/MM/yyyy}" Width="120">
+                    <DataGridTextColumn Header="Ngày chứng từ" Binding="{Binding DocumentDateText}" Width="120">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel>
@@ -243,6 +260,15 @@
                                                             Text="{Binding DataContext.FilterUnit, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
                                                             FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
                                 </StackPanel>
+                            </DataTemplate>
+                        </DataGridTextColumn.HeaderTemplate>
+                    </DataGridTextColumn>
+
+                    <!-- Đơn giá — chỉ hiện (giá của chính dòng giao dịch) -->
+                    <DataGridTextColumn Header="Đơn giá" Binding="{Binding UnitPrice, Converter={StaticResource MoneyConverter}}" Width="100" ElementStyle="{StaticResource CellNumber}">
+                        <DataGridTextColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="Đơn giá" FontWeight="SemiBold" TextAlignment="Right"/>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
                     </DataGridTextColumn>

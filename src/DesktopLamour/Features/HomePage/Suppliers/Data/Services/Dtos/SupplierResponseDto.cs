@@ -12,4 +12,5 @@ public class SupplierResponseDto
     [JsonPropertyName("tax_code")]         public string TaxCode        { get; set; } = string.Empty;
     [JsonPropertyName("phone")]            public string Phone          { get; set; } = string.Empty;
     [JsonPropertyName("is_stop_tracking")] public bool   IsStopTracking { get; set; }
+    [JsonPropertyName("is_individual")]    public bool   IsIndividual   { get; set; }
 }

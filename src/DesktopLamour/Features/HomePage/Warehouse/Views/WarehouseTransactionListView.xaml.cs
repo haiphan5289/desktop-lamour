@@ -24,6 +24,22 @@ public partial class WarehouseTransactionListView : System.Windows.Controls.User
             vm.LoadCommand.Execute(null);
     }
 
+    // "Thêm ▾" — mở menu chọn loại chứng từ ngay dưới nút (ContextMenu gắn trên nút, mở bằng code vì
+    // mặc định chỉ mở khi chuột phải).
+    private void AddButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (AddButton.ContextMenu is not { } menu) return;
+        menu.PlacementTarget = AddButton;
+        menu.Placement       = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        menu.IsOpen          = true;
+    }
+
+    private void AddReceiptMenuItem_Click(object sender, RoutedEventArgs e)
+        => _viewModel.OpenFormCommand.Execute(null);
+
+    private void AddExportMenuItem_Click(object sender, RoutedEventArgs e)
+        => _viewModel.OpenSalesOrderCommand.Execute(null);
+
     private void TransactionGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
         if (TransactionGrid.SelectedItem is WarehouseTransactionResponseDto item && _viewModel.ShowDetailCommand.CanExecute(item))

@@ -16,4 +16,21 @@ public class InventorySummaryItem
     public int      ClosingQty            { get; set; }
     public decimal  ClosingValue          { get; set; }
     public DateTime? LatestAccountingDate { get; set; }
+
+    // Báo cáo chia theo kho: mỗi dòng thuộc 1 kho; dòng IsGroupHeader là dòng tổng của nhóm kho
+    // ("Tên kho : Hàng Hóa (66)" nằm ở cột Tên hàng, số liệu là tổng của nhóm).
+    public int     WarehouseId   { get; set; }
+    public string  WarehouseCode { get; set; } = string.Empty;
+    public string  WarehouseName { get; set; } = string.Empty;
+    public bool    IsGroupHeader { get; set; }
+}
+
+// 1 nhóm kho của báo cáo Tổng hợp tồn kho.
+public class InventoryWarehouseGroup
+{
+    public int    WarehouseId   { get; set; }
+    public string WarehouseCode { get; set; } = string.Empty;
+    public string WarehouseName { get; set; } = string.Empty;
+
+    public List<InventorySummaryItem> Items { get; set; } = new();
 }

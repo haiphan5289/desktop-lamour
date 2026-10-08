@@ -16,8 +16,8 @@ public partial class TongHopTonKhoView : System.Windows.Controls.UserControl
         DataContext = viewModel;
         Loaded += async (_, _) =>
         {
-            await viewModel.InitializeFiltersCommand.ExecuteAsync(null);
-            await viewModel.LoadCommand.ExecuteAsync(null);
+            // Hộp "Chọn tham số" hiện ngay khi vào màn; Đồng ý mới nạp báo cáo (xem StartAsync).
+            await viewModel.StartCommand.ExecuteAsync(null);
         };
     }
 

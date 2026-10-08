@@ -123,6 +123,24 @@
                 </StackPanel>
             </Grid>
 
+            <!-- Loại nhà cung cấp: Tổ chức / Cá nhân (khớp bộ lọc trên lưới MISA) -->
+            <StackPanel Margin="0,0,0,16">
+                <controls:AppLabel Text="Loại nhà cung cấp"
+                                   Style="{StaticResource AppTypography.LabelSection}"
+                                   Margin="0,0,0,6"/>
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton Content="Tổ chức"
+                                 GroupName="SupplierFormType"
+                                 IsChecked="{Binding IsOrganization, Mode=TwoWay}"
+                                 VerticalContentAlignment="Center"
+                                 Margin="0,0,24,0"/>
+                    <RadioButton Content="Cá nhân"
+                                 GroupName="SupplierFormType"
+                                 IsChecked="{Binding IsIndividual, Mode=TwoWay}"
+                                 VerticalContentAlignment="Center"/>
+                </StackPanel>
+            </StackPanel>
+
             <!-- Ngừng theo dõi -->
             <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                 <CheckBox IsChecked="{Binding IsStopTracking, Mode=TwoWay}"

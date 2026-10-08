@@ -468,11 +468,14 @@ public static class HomeServiceCollectionExtensions
         // ── Warehouse: Views + ViewModels ────────────────────────────────────────
         services.AddTransient<TongHopTonKhoView>();
         services.AddTransient<TongHopTonKhoViewModel>();
+        services.AddTransient<TongHopTonKhoParamsWindow>();
+        services.AddTransient<Func<TongHopTonKhoParamsWindow>>(sp => () => sp.GetRequiredService<TongHopTonKhoParamsWindow>());
         services.AddTransient<InventoryDetailView>();
         services.AddTransient<InventoryDetailViewModel>();
 
         // ── Warehouse: UseCases ──────────────────────────────────────────────────
         services.AddTransient<IGetInventorySummaryUseCase, GetInventorySummaryUseCase>();
+        services.AddTransient<IGetInventorySummaryByWarehouseUseCase, GetInventorySummaryByWarehouseUseCase>();
         services.AddTransient<IGetInventoryDetailByProductUseCase, GetInventoryDetailByProductUseCase>();
 
         // ── Warehouse: Repository ────────────────────────────────────────────────
@@ -500,6 +503,8 @@ public static class HomeServiceCollectionExtensions
         services.AddTransient<IConfirmWarehouseReceiptUseCase, ConfirmWarehouseReceiptUseCase>();
         services.AddTransient<IUpdateWarehouseReceiptUseCase, UpdateWarehouseReceiptUseCase>();
         services.AddTransient<IUnconfirmWarehouseReceiptUseCase, UnconfirmWarehouseReceiptUseCase>();
+        services.AddTransient<IDeleteWarehouseReceiptUseCase, DeleteWarehouseReceiptUseCase>();
+        services.AddTransient<IGetNextWarehouseReceiptNumberUseCase, GetNextWarehouseReceiptNumberUseCase>();
 
         // ── WarehouseReceipts: Service + typed HttpClient ────────────────────────
         services.AddHttpClient<IWarehouseReceiptService, WarehouseReceiptService>(client =>

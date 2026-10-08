@@ -12,7 +12,7 @@ public abstract partial class ViewModelBase : ObservableObject
     private static readonly HashSet<string> _noDirtyProps = new()
     {
         nameof(IsDirty), "IsLoading", "HasError", "ErrorMessage", "WindowTitle",
-        "IsAddMode", "IsEditMode", "TotalAmount", "SelectedReceiptType"
+        "IsAddMode", "IsEditMode", "TotalAmount", "SelectedReceiptType", "LineCount", "TotalQuantity"
     };
 
     private bool _dirtyTracking;

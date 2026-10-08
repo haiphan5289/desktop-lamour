@@ -1,8 +1,10 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 using DesktopLamour.Features.HomePage.Warehouse.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Warehouse.ViewModels;
+using DesktopLamour.Shared.Controls;
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace DesktopLamour.Features.HomePage.Warehouse.Views;
 
@@ -10,12 +12,25 @@ public partial class WarehouseReceiptFormWindow : Window
 {
     public WarehouseReceiptFormViewModel ViewModel { get; }
 
+    // Cất/Bỏ ghi không còn tự đóng popup (xem WarehouseReceiptFormViewModel.SaveAsync) — nhớ đã có thay
+    // đổi để trả DialogResult=true khi đóng, nếu không danh sách "Nhập, Xuất Kho" sẽ không reload
+    // (chỉ reload khi ShowDialog() == true).
+    private bool _hasSaved;
+
     public WarehouseReceiptFormWindow(WarehouseReceiptFormViewModel viewModel)
     {
         InitializeComponent();
         ViewModel   = viewModel;
         DataContext = viewModel;
         viewModel.RequestClose += result => { DialogResult = result; };
+        viewModel.ReceiptSaved += () => _hasSaved = true;
+
+        // Chọn xong 1 sản phẩm trong AppSearchableComboBox (Mã hàng/Tên hàng) → CommitEdit ngay cho cả
+        // dòng để các cột tự điền (Tên/Kho/TK/ĐVT/Đơn giá) cập nhật liền — cùng cách SalesOrderWindow.
+        LinesDataGrid.AddHandler(AppSearchableComboBox.SelectionCommittedEvent,
+            new RoutedEventHandler((_, _) => Dispatcher.BeginInvoke(
+                System.Windows.Threading.DispatcherPriority.ContextIdle,
+                new Action(() => LinesDataGrid.CommitEdit(DataGridEditingUnit.Row, true)))));
     }
 
     // Mở form ở chế độ Sửa 1 phiếu đã tồn tại (vd. click 1 dòng NK từ "Nhập, Xuất Kho").
@@ -37,8 +52,10 @@ public partial class WarehouseReceiptFormWindow : Window
                 "Xác nhận thoát",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
-            if (r != MessageBoxResult.Yes) e.Cancel = true;
+            if (r != MessageBoxResult.Yes) { e.Cancel = true; return; }
         }
+
+        if (_hasSaved && DialogResult is null) DialogResult = true;
     }
 
     protected override async void OnContentRendered(EventArgs e)

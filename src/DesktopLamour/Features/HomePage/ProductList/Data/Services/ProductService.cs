@@ -50,6 +50,18 @@ public sealed class ProductService : IProductService
         return result;
     }
 
+    public async Task<string> GetNextCodeAsync(CancellationToken ct = default)
+    {
+        _logger.LogInformation("Fetching next product code from API");
+        SetBearerToken();
+
+        var response = await _httpClient.GetAsync("/api/v1/products/next-code", ct);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<NextCodeResponse>(ct);
+        return result?.Code ?? string.Empty;
+    }
+
     public async Task<ProductResponseDto> CreateAsync(CreateProductRequestDto request, CancellationToken ct = default)
     {
         _logger.LogInformation("Creating product '{Name}'", request.Name);
@@ -137,6 +149,9 @@ public sealed class ProductService : IProductService
         var body = await response.Content.ReadFromJsonAsync<ApiErrorResponse>(ct);
         throw new Exception(body?.Error ?? $"Lỗi {(int)response.StatusCode}");
     }
+
+    private sealed record NextCodeResponse(
+        [property: System.Text.Json.Serialization.JsonPropertyName("code")] string Code);
 
     private record ApiErrorResponse([property: System.Text.Json.Serialization.JsonPropertyName("error")] string? Error);
 }

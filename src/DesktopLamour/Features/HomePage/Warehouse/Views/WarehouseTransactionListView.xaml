@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
              xmlns:models="clr-namespace:DesktopLamour.Shared.Models"
+             xmlns:local="clr-namespace:DesktopLamour.Features.HomePage.Warehouse.ViewModels"
              Background="{StaticResource AppColor.BackgroundSecondary}">
 
     <UserControl.Resources>
@@ -26,6 +27,13 @@
         <!-- Căn giữa theo chiều dọc cho mọi ô — mặc định TextBlock trong DataGridCell dồn lên top khi RowHeight > chiều cao chữ -->
         <Style x:Key="VerticalCenterCellStyle" TargetType="DataGridCell">
             <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <!-- VerticalContentAlignment ở trên không tới được TextBlock của DataGridTextColumn (template mặc định
+             của DataGridCell không bind thuộc tính đó) — cột chữ phải tự căn giữa dọc qua ElementStyle. -->
+        <Style x:Key="CenteredTextCell" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Padding"           Value="4,0"/>
         </Style>
 
         <!-- Toolbar filters: text căn giữa trong ô thay vì dồn trái, viền bo tròn nhẹ đồng bộ AppButton -->
@@ -89,48 +97,92 @@
                 BorderBrush="{StaticResource AppColor.BorderThin}"
                 BorderThickness="1"
                 CornerRadius="8">
-            <StackPanel Orientation="Horizontal">
-                <controls:AppButton Content="📥 Phiếu Nhập"
-                                    Style="{StaticResource AppButton.Primary.Medium}"
-                                    Command="{Binding OpenFormCommand}"
-                                    Margin="0,0,8,0"/>
-                <controls:AppButton Content="📤 Phiếu Xuất"
-                                    Style="{StaticResource AppButton.Primary.Medium}"
-                                    Command="{Binding OpenSalesOrderCommand}"
-                                    Margin="0,0,8,0"/>
-                <controls:AppButton Content="📊 Tổng hợp tồn kho"
-                                    Style="{StaticResource AppButton.Tertiary.Medium}"
-                                    Command="{Binding NavigateToTongHopTonKhoCommand}"
-                                    Margin="0,0,16,0"/>
+            <StackPanel>
+                <!-- Ribbon thao tác trên dòng đang chọn (khớp MISA). Nút bật/tắt theo trạng thái dòng:
+                     Ghi sổ/Xóa chỉ khi chưa ghi sổ, Bỏ ghi chỉ khi đã ghi sổ. -->
+                <WrapPanel Orientation="Horizontal">
+                    <!-- "Thêm" dạng dropdown — chọn Phiếu nhập kho hoặc Phiếu xuất kho (xem AddButton_Click) -->
+                    <controls:AppButton x:Name="AddButton"
+                                        Content="➕ Thêm ▾"
+                                        Style="{StaticResource AppButton.Primary.Medium}"
+                                        Click="AddButton_Click"
+                                        Margin="0,0,8,8">
+                        <controls:AppButton.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="📥 Phiếu nhập kho" Click="AddReceiptMenuItem_Click"/>
+                                <MenuItem Header="📤 Phiếu xuất kho" Click="AddExportMenuItem_Click"/>
+                            </ContextMenu>
+                        </controls:AppButton.ContextMenu>
+                    </controls:AppButton>
+                    <controls:AppButton Content="👁 Xem"
+                                        Style="{StaticResource AppButton.Secondary.Medium}"
+                                        Command="{Binding ShowDetailSelectedCommand}"
+                                        Margin="0,0,8,8"/>
+                    <controls:AppButton Content="🗑️ Xóa"
+                                        Style="{StaticResource AppButton.Destructive.Medium}"
+                                        Command="{Binding DeleteSelectedCommand}"
+                                        Margin="0,0,8,8"/>
+                    <controls:AppButton Content="📗 Ghi sổ"
+                                        Style="{StaticResource AppButton.Secondary.Medium}"
+                                        Command="{Binding PostSelectedCommand}"
+                                        Margin="0,0,8,8"/>
+                    <controls:AppButton Content="↩️ Bỏ ghi"
+                                        Style="{StaticResource AppButton.Secondary.Medium}"
+                                        Command="{Binding UnpostSelectedCommand}"
+                                        Margin="0,0,8,8"/>
+                    <controls:AppButton Content="🧾 Xem hóa đơn"
+                                        Style="{StaticResource AppButton.Secondary.Medium}"
+                                        Command="{Binding ViewInvoiceCommand}"
+                                        Margin="0,0,8,8"/>
+                    <controls:AppButton Content="📤 Xuất khẩu"
+                                        Style="{StaticResource AppButton.Secondary.Medium}"
+                                        Command="{Binding ExportExcelCommand}"
+                                        Margin="0,0,16,8"/>
+                    <controls:AppButton Content="📊 Tổng hợp tồn kho"
+                                        Style="{StaticResource AppButton.Tertiary.Medium}"
+                                        Command="{Binding NavigateToTongHopTonKhoCommand}"
+                                        Margin="0,0,0,8"/>
+                </WrapPanel>
 
-                <Border Width="1" Height="24"
-                        Background="{StaticResource AppColor.BorderThin}"
-                        Margin="0,0,16,0"/>
+                <!-- Bộ lọc: Kỳ / Từ / Đến / Trạng thái / Loại + Lấy dữ liệu -->
+                <WrapPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <controls:AppLabel Text="Kỳ" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <ComboBox ItemsSource="{x:Static local:WarehouseTransactionListViewModel.PeriodOptions}"
+                              SelectedItem="{Binding SelectedPeriod, Mode=TwoWay}"
+                              Style="{StaticResource ToolbarComboBox}"
+                              Width="170" Height="34" Margin="0,0,16,0"/>
 
-                <controls:AppLabel Text="Từ" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}"
-                            Language="vi-VN"
-                            Style="{StaticResource ToolbarDatePicker}"
-                            Width="130" Height="34" Margin="0,0,16,0"/>
+                    <controls:AppLabel Text="Từ" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}"
+                                Language="vi-VN"
+                                Style="{StaticResource ToolbarDatePicker}"
+                                Width="130" Height="34" Margin="0,0,16,0"/>
 
-                <controls:AppLabel Text="Đến" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                <DatePicker SelectedDate="{Binding ToDate, Mode=TwoWay}"
-                            Language="vi-VN"
-                            Style="{StaticResource ToolbarDatePicker}"
-                            Width="130" Height="34" Margin="0,0,16,0"/>
+                    <controls:AppLabel Text="Đến" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <DatePicker SelectedDate="{Binding ToDate, Mode=TwoWay}"
+                                Language="vi-VN"
+                                Style="{StaticResource ToolbarDatePicker}"
+                                Width="130" Height="34" Margin="0,0,16,0"/>
 
-                <controls:AppLabel Text="Loại" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                <ComboBox SelectedIndex="{Binding SelectedTypeIndex, Mode=TwoWay}"
-                          Style="{StaticResource ToolbarComboBox}"
-                          Width="140" Height="34" Margin="0,0,16,0">
-                    <ComboBoxItem Content="Tất cả"/>
-                    <ComboBoxItem Content="Nhập kho"/>
-                    <ComboBoxItem Content="Xuất kho"/>
-                </ComboBox>
+                    <controls:AppLabel Text="Trạng thái" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <ComboBox ItemsSource="{x:Static local:WarehouseTransactionListViewModel.StatusOptions}"
+                              SelectedItem="{Binding FilterStatus, Mode=TwoWay}"
+                              Style="{StaticResource ToolbarComboBox}"
+                              Width="130" Height="34" Margin="0,0,16,0"/>
 
-                <controls:AppButton Content="Lấy dữ liệu"
-                                    Style="{StaticResource AppButton.Tertiary.Medium}"
-                                    Command="{Binding LoadCommand}"/>
+                    <controls:AppLabel Text="Loại" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <ComboBox SelectedIndex="{Binding SelectedTypeIndex, Mode=TwoWay}"
+                              Style="{StaticResource ToolbarComboBox}"
+                              Width="140" Height="34" Margin="0,0,16,0">
+                        <ComboBoxItem Content="Tất cả"/>
+                        <ComboBoxItem Content="Nhập kho"/>
+                        <ComboBoxItem Content="Xuất kho"/>
+                    </ComboBox>
+
+                    <controls:AppButton Content="Lấy dữ liệu"
+                                        Style="{StaticResource AppButton.Tertiary.Medium}"
+                                        Command="{Binding LoadCommand}"/>
+                </WrapPanel>
             </StackPanel>
         </Border>
 
@@ -138,9 +190,14 @@
         <!--  Master (double-click 1 dòng để xem Chi tiết)   -->
         <!-- ══════════════════════════════════════════════ -->
         <Grid Grid.Row="2" Margin="24,12,24,24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
             <!-- Error banner -->
-            <Border Panel.ZIndex="10"
+            <Border Grid.Row="0"
+                    Panel.ZIndex="10"
                     Background="{StaticResource AppColor.BackgroundErrorLight}"
                     CornerRadius="8" Padding="12,10" Margin="0,0,0,12"
                     VerticalAlignment="Top"
@@ -164,6 +221,7 @@
 
             <!-- Master grid: 1 dòng = 1 chứng từ (Nhập kho hoặc Xuất kho bán hàng). Double-click 1 dòng để xem Chi tiết. -->
             <DataGrid x:Name="TransactionGrid"
+                      Grid.Row="0"
                       ItemsSource="{Binding Items}"
                       SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
                       MouseDoubleClick="TransactionGrid_MouseDoubleClick"
@@ -209,7 +267,7 @@
                     <!-- Ngày hạch toán — date column: operator combo (=, ≤, ≥...) + DatePicker, inline -->
                     <DataGridTextColumn Header="Ngày hạch toán"
                                         Binding="{Binding AccountingDate, StringFormat=dd/MM/yyyy}"
-                                        Width="110">
+                                        Width="110" ElementStyle="{StaticResource CenteredTextCell}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel>
@@ -243,7 +301,7 @@
                     <!-- Ngày chứng từ — date column: operator combo (=, ≤, ≥...) + DatePicker, inline -->
                     <DataGridTextColumn Header="Ngày chứng từ"
                                         Binding="{Binding DocumentDate, StringFormat=dd/MM/yyyy}"
-                                        Width="110">
+                                        Width="110" ElementStyle="{StaticResource CenteredTextCell}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel>
@@ -277,7 +335,7 @@
                     <!-- Số chứng từ — text column: plain Contains filter, inline -->
                     <DataGridTextColumn Header="Số chứng từ"
                                         Binding="{Binding DocumentNumber}"
-                                        Width="110">
+                                        Width="110" ElementStyle="{StaticResource CenteredTextCell}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel>
@@ -295,7 +353,7 @@
                          DataGrid quirk that clips trailing columns instead of scrolling to them. -->
                     <DataGridTextColumn Header="Diễn giải"
                                         Binding="{Binding Description}"
-                                        Width="250">
+                                        Width="250" ElementStyle="{StaticResource CenteredTextCell}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel>
@@ -351,7 +409,7 @@
                     <!-- Người giao/Người nhận — text column: plain Contains filter, inline -->
                     <DataGridTextColumn Header="Người giao/Người nhận"
                                         Binding="{Binding DeliveryOrReceiver}"
-                                        Width="150">
+                                        Width="150" ElementStyle="{StaticResource CenteredTextCell}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel>
@@ -367,7 +425,7 @@
                     <!-- Đối tượng — text column: plain Contains filter, inline -->
                     <DataGridTextColumn Header="Đối tượng"
                                         Binding="{Binding ObjectName}"
-                                        Width="160">
+                                        Width="160" ElementStyle="{StaticResource CenteredTextCell}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel>
@@ -427,7 +485,7 @@
                     <!-- Ngày ghi sổ kho — date column: operator combo (=, ≤, ≥...) + DatePicker, inline -->
                     <DataGridTextColumn Header="Ngày ghi sổ kho"
                                         Binding="{Binding LedgerDate, StringFormat=dd/MM/yyyy}"
-                                        Width="110">
+                                        Width="110" ElementStyle="{StaticResource CenteredTextCell}">
                         <DataGridTextColumn.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel>
@@ -504,7 +562,7 @@
             </DataGrid>
 
             <!-- Empty state -->
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+            <StackPanel Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center"
                         Visibility="{Binding HasItems, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                 <TextBlock Text="📦" FontSize="48" HorizontalAlignment="Center" TextAlignment="Center"/>
                 <controls:AppLabel Text="Chưa có giao dịch nhập/xuất kho nào trong khoảng thời gian này."
@@ -512,6 +570,23 @@
                                    Foreground="{StaticResource AppColor.TextSecondary}"
                                    Margin="0,12,0,0"
                                    HorizontalAlignment="Center"/>
+            </StackPanel>
+
+            <!-- Footer — "Số dòng = N" + Tổng tiền (khớp dòng tổng lưới MISA), tính trên các dòng đang hiển thị sau lọc. -->
+            <StackPanel Grid.Row="1"
+                        Orientation="Horizontal"
+                        Margin="4,8,0,0"
+                        Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibilityConverter}}">
+                <controls:AppLabel Text="{Binding RowCountText}"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   Foreground="{StaticResource AppColor.TextSecondary}"/>
+                <controls:AppLabel Text="Tổng tiền:"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   Foreground="{StaticResource AppColor.TextSecondary}"
+                                   Margin="32,0,6,0"/>
+                <controls:AppLabel Text="{Binding TotalAmountText}"
+                                   Style="{StaticResource AppTypography.BodyCaption}"
+                                   FontWeight="SemiBold"/>
             </StackPanel>
         </Grid>
     </Grid>
