@@ -1,5 +1,8 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 using System.Collections.ObjectModel;
+using System.Windows;
+using System.Windows.Documents;
+using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopLamour.Core.Navigation;
@@ -12,7 +15,10 @@ using DesktopLamour.Features.HomePage.Warehouse.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Warehouse.Views;
 using DesktopLamour.Features.HomePage.Warehouses.Domain.UseCases;
 using DesktopLamour.Shared.Controls;
+using DesktopLamour.Shared.Helpers;
+using DesktopLamour.Shared.Models;
 using Microsoft.Extensions.Logging;
+using Microsoft.Win32;
 
 namespace DesktopLamour.Features.HomePage.Warehouse.ViewModels;
 
@@ -58,7 +64,35 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
     public ObservableCollection<WarehouseCheckItem> WarehouseItems { get; } = new();
     public ObservableCollection<ProductCheckItem>   ProductItems   { get; } = new();
 
+    // Dòng đang hiển thị = các nhóm kho đã nạp, sau khi áp hàng ô lọc theo cột (Filters).
     public ObservableCollection<InventorySummaryItem> Items { get; } = new();
+
+    // Hàng ô lọc dưới tiêu đề cột (khớp MISA) — lọc ngay trên dữ liệu đã nạp, không gọi lại BE. Cùng
+    // mẫu với InventoryDetailViewModel/SalesOrderReportDetailViewModel (Shared/Models/ColumnFilterModels.cs):
+    // cột chữ lọc "chứa chuỗi", cột số có toán tử (mặc định ≤) + giá trị.
+    [ObservableProperty] private string _filterCode = string.Empty;
+    [ObservableProperty] private string _filterName = string.Empty;
+    [ObservableProperty] private string _filterUnit = string.Empty;
+    [ObservableProperty] private string _filterDate = string.Empty;
+
+    partial void OnFilterCodeChanged(string value) => ApplyFilters();
+    partial void OnFilterNameChanged(string value) => ApplyFilters();
+    partial void OnFilterUnitChanged(string value) => ApplyFilters();
+    partial void OnFilterDateChanged(string value) => ApplyFilters();
+
+    public NumericColumnFilter OpeningQtyFilter   { get; } = new();
+    public NumericColumnFilter OpeningValueFilter { get; } = new();
+    public NumericColumnFilter ImportQtyFilter    { get; } = new();
+    public NumericColumnFilter ImportValueFilter  { get; } = new();
+    public NumericColumnFilter ExportQtyFilter    { get; } = new();
+    public NumericColumnFilter ExportValueFilter  { get; } = new();
+    public NumericColumnFilter ClosingQtyFilter   { get; } = new();
+    public NumericColumnFilter ClosingValueFilter { get; } = new();
+
+    private const string FilePrefix = "TongHopTonKho";
+    private List<InventoryWarehouseGroup> _groups = new();
+
+    public string ReportTitle => "TỔNG HỢP TỒN KHO";
 
     public TongHopTonKhoViewModel(
         INavigationService              navigationService,
@@ -78,6 +112,12 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
         _getProductUnits   = getProductUnits;
         _getProducts       = getProducts;
         _logger            = logger;
+        foreach (var filter in new[]
+                 {
+                     OpeningQtyFilter, OpeningValueFilter, ImportQtyFilter, ImportValueFilter,
+                     ExportQtyFilter, ExportValueFilter, ClosingQtyFilter, ClosingValueFilter,
+                 })
+            filter.Changed = ApplyFilters;
     }
 
     [RelayCommand]
@@ -240,7 +280,8 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
 
             foreach (var old in WarehouseItems) old.PropertyChanged -= OnWarehouseItemChanged;
             WarehouseItems.Clear();
-            foreach (var w in warehouseTask.Result.Cast<ISearchableItem>())
+            // Chỉ liệt kê kho đang hoạt động — kho đã ngưng không được lên hộp tham số/báo cáo.
+            foreach (var w in warehouseTask.Result.Where(w => w.IsActive).Cast<ISearchableItem>())
             {
                 // Mặc định tick tất cả kho (HH, TB) như hộp tham số MISA — bỏ tick bớt kho để lọc.
                 var item = new WarehouseCheckItem(w) { IsSelected = true };
@@ -272,40 +313,12 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
             var to            = DateOnly.FromDateTime(ToDate);
             var warehouseIds  = WarehouseItems.Where(w => w.IsSelected).Select(w => w.Id).ToList();
             var productIds    = ProductItems.Where(p => p.IsSelected).Select(p => p.Id).ToList();
-            var groups = (await _getSummary.ExecuteAsync(
+            _groups = (await _getSummary.ExecuteAsync(
                 from, to, warehouseIds, SelectedCategory?.Id, SelectedProductUnit?.Id, productIds, ct)).ToList();
 
-            // Mỗi kho: 1 dòng tổng (tiêu đề nhóm, số liệu = tổng các mặt hàng của kho) rồi tới các mặt hàng.
-            Items.Clear();
-            foreach (var g in groups)
-            {
-                Items.Add(new InventorySummaryItem
-                {
-                    IsGroupHeader = true,
-                    WarehouseId   = g.WarehouseId,
-                    WarehouseCode = g.WarehouseCode,
-                    WarehouseName = g.WarehouseName,
-                    Name          = $"Tên kho : {g.WarehouseName} ({g.Items.Count})",
-                    OpeningQty    = g.Items.Sum(i => i.OpeningQty),
-                    OpeningValue  = g.Items.Sum(i => i.OpeningValue),
-                    ImportQty     = g.Items.Sum(i => i.ImportQty),
-                    ImportValue   = g.Items.Sum(i => i.ImportValue),
-                    ExportQty     = g.Items.Sum(i => i.ExportQty),
-                    ExportValue   = g.Items.Sum(i => i.ExportValue),
-                    ClosingQty    = g.Items.Sum(i => i.ClosingQty),
-                    ClosingValue  = g.Items.Sum(i => i.ClosingValue),
-                });
-                foreach (var item in g.Items) Items.Add(item);
-            }
-
-            var dataRows    = Items.Where(i => !i.IsGroupHeader).ToList();
-            RowCount        = dataRows.Count;
-            TotalOpeningQty = dataRows.Sum(i => i.OpeningQty);
-            TotalImportQty  = dataRows.Sum(i => i.ImportQty);
-            TotalExportQty  = dataRows.Sum(i => i.ExportQty);
-            TotalClosingQty = dataRows.Sum(i => i.ClosingQty);
-            ReportSubtitle  = $"Từ ngày {FromDate:dd/MM/yyyy} đến ngày {ToDate:dd/MM/yyyy}";
-            HasItems        = Items.Count > 0;
+            ReportSubtitle = $"Từ ngày {FromDate:dd/MM/yyyy} đến ngày {ToDate:dd/MM/yyyy}";
+            HasItems       = _groups.Count > 0;
+            ApplyFilters();
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -314,5 +327,337 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
             ErrorMessage = $"Không thể tải dữ liệu: {ex.Message}";
         }
         finally { IsLoading = false; }
+    }
+
+    // ── Hàng lọc theo cột ─────────────────────────────────────────────────────────────────────────
+    // Mỗi kho: 1 dòng tổng (tiêu đề nhóm, số liệu = tổng các mặt hàng CÒN HIỂN THỊ của kho) rồi tới các
+    // mặt hàng khớp bộ lọc; kho không còn mặt hàng nào khớp thì ẩn luôn dòng tổng.
+    private void ApplyFilters()
+    {
+        Items.Clear();
+        foreach (var g in _groups)
+        {
+            var visible = g.Items.Where(MatchesFilters).ToList();
+            if (visible.Count == 0) continue;
+
+            Items.Add(new InventorySummaryItem
+            {
+                IsGroupHeader = true,
+                WarehouseId   = g.WarehouseId,
+                WarehouseCode = g.WarehouseCode,
+                WarehouseName = g.WarehouseName,
+                Name          = $"Tên kho : {g.WarehouseName} ({visible.Count})",
+                OpeningQty    = visible.Sum(i => i.OpeningQty),
+                OpeningValue  = visible.Sum(i => i.OpeningValue),
+                ImportQty     = visible.Sum(i => i.ImportQty),
+                ImportValue   = visible.Sum(i => i.ImportValue),
+                ExportQty     = visible.Sum(i => i.ExportQty),
+                ExportValue   = visible.Sum(i => i.ExportValue),
+                ClosingQty    = visible.Sum(i => i.ClosingQty),
+                ClosingValue  = visible.Sum(i => i.ClosingValue),
+            });
+            foreach (var item in visible) Items.Add(item);
+        }
+
+        // Chân bảng: chỉ cộng các dòng mặt hàng (không cộng dòng tổng nhóm kho để khỏi tính đôi).
+        var dataRows    = Items.Where(i => !i.IsGroupHeader).ToList();
+        RowCount        = dataRows.Count;
+        TotalOpeningQty = dataRows.Sum(i => i.OpeningQty);
+        TotalImportQty  = dataRows.Sum(i => i.ImportQty);
+        TotalExportQty  = dataRows.Sum(i => i.ExportQty);
+        TotalClosingQty = dataRows.Sum(i => i.ClosingQty);
+    }
+
+    private bool MatchesFilters(InventorySummaryItem i) =>
+        TextMatches(i.Code, FilterCode)
+        && TextMatches(i.Name, FilterName)
+        && TextMatches(i.Unit, FilterUnit)
+        && TextMatches(DateText(i), FilterDate)
+        && OpeningQtyFilter.Matches(i.OpeningQty)
+        && OpeningValueFilter.Matches(i.OpeningValue)
+        && ImportQtyFilter.Matches(i.ImportQty)
+        && ImportValueFilter.Matches(i.ImportValue)
+        && ExportQtyFilter.Matches(i.ExportQty)
+        && ExportValueFilter.Matches(i.ExportValue)
+        && ClosingQtyFilter.Matches(i.ClosingQty)
+        && ClosingValueFilter.Matches(i.ClosingValue);
+
+    // Cùng định dạng cột "Ngày HT" trên lưới (yyyyMMddHHmm).
+    private static string DateText(InventorySummaryItem i) =>
+        i.LatestAccountingDate?.ToString("yyyyMMddHHmm") ?? string.Empty;
+
+    private static bool TextMatches(string? text, string filter) =>
+        string.IsNullOrWhiteSpace(filter)
+        || (text ?? string.Empty).Contains(filter.Trim(), StringComparison.OrdinalIgnoreCase);
+
+    // ── Xuất khẩu / Gửi / In ─ làm trên đúng các dòng đang hiển thị (đã áp bộ lọc), như MISA ───────
+    private bool EnsureHasData()
+    {
+        if (HasItems) return true;
+        MessageBox.Show("Chưa có dữ liệu báo cáo. Vui lòng bấm \"Chọn tham số...\" để xem báo cáo trước.",
+            "Tổng hợp tồn kho", MessageBoxButton.OK, MessageBoxImage.Information);
+        return false;
+    }
+
+    [RelayCommand]
+    private void ExportExcel()
+    {
+        if (!EnsureHasData()) return;
+        try
+        {
+            var dialog = new SaveFileDialog
+            {
+                Filter   = "Excel Files|*.xlsx",
+                FileName = $"{FilePrefix}_{DateTime.Now:yyyyMMdd}.xlsx",
+            };
+            if (dialog.ShowDialog() != true) return;
+
+            using var workbook = BuildWorkbook();
+            workbook.SaveAs(dialog.FileName);
+
+            MessageBox.Show("Đã xuất file thành công.", "Xuất Excel", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Xuất Excel thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    [RelayCommand]
+    private void SendEmail()
+    {
+        if (!EnsureHasData()) return;
+        try
+        {
+            using var workbook = BuildWorkbook();
+            var path = ReportSharingHelper.SaveWorkbookToTempFile(workbook, FilePrefix);
+            ReportSharingHelper.RevealInExplorer(path);
+            ReportSharingHelper.OpenMailClient(
+                ReportTitle,
+                $"File báo cáo đã được lưu tại:\n{path}\n\nVui lòng đính kèm file này vào email trước khi gửi.");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Gửi Email thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    [RelayCommand]
+    private void SendZalo()
+    {
+        if (!EnsureHasData()) return;
+        try
+        {
+            using var workbook = BuildWorkbook();
+            var path = ReportSharingHelper.SaveWorkbookToTempFile(workbook, FilePrefix);
+            ReportSharingHelper.RevealInExplorer(path);
+            ReportSharingHelper.OpenZaloApp();
+
+            MessageBox.Show("Đã mở Zalo và thư mục chứa file báo cáo. Vui lòng kéo-thả file để đính kèm.",
+                "Gửi Zalo", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Gửi Zalo thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    [RelayCommand]
+    private void Print()
+    {
+        if (!EnsureHasData()) return;
+
+        var printDialog = new System.Windows.Controls.PrintDialog();
+        if (printDialog.ShowDialog() != true) return;
+
+        var document = BuildReportDocument();
+        document.PageHeight  = printDialog.PrintableAreaHeight;
+        document.PageWidth   = printDialog.PrintableAreaWidth;
+        document.PagePadding = new Thickness(30);
+        document.ColumnWidth = printDialog.PrintableAreaWidth;
+
+        IDocumentPaginatorSource paginatorSource = document;
+        printDialog.PrintDocument(paginatorSource.DocumentPaginator, "Tổng hợp tồn kho");
+    }
+
+    // 12 cột (A–L) giống lưới: Mã hàng, Tên hàng, ĐVT, 4 nhóm × (Số lượng, Giá trị), Ngày HT.
+    private const int ExcelLastColumn = 12;
+
+    private ClosedXML.Excel.XLWorkbook BuildWorkbook()
+    {
+        var workbook  = new ClosedXML.Excel.XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Tổng hợp tồn kho");
+        var blue      = ClosedXML.Excel.XLColor.FromHtml("#BDD7EE");
+        var center    = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
+
+        worksheet.Range(1, 1, 1, ExcelLastColumn).Merge();
+        worksheet.Cell(1, 1).Value = ReportTitle;
+        worksheet.Cell(1, 1).Style.Font.Bold     = true;
+        worksheet.Cell(1, 1).Style.Font.FontSize = 14;
+        worksheet.Cell(1, 1).Style.Alignment.Horizontal = center;
+
+        worksheet.Range(2, 1, 2, ExcelLastColumn).Merge();
+        worksheet.Cell(2, 1).Value = ReportSubtitle;
+        worksheet.Cell(2, 1).Style.Font.Italic = true;
+        worksheet.Cell(2, 1).Style.Alignment.Horizontal = center;
+
+        // Tiêu đề 2 tầng: Mã hàng/Tên hàng/ĐVT/Ngày HT gộp dọc, mỗi nhóm số liệu gộp ngang 2 ô.
+        const int headerRow = 4;
+        void Merged(int row1, int col1, int row2, int col2, string text)
+        {
+            var range = worksheet.Range(row1, col1, row2, col2);
+            if (row1 != row2 || col1 != col2) range.Merge();
+            worksheet.Cell(row1, col1).Value = text;
+        }
+        Merged(headerRow, 1, headerRow + 1, 1, "Mã hàng");
+        Merged(headerRow, 2, headerRow + 1, 2, "Tên hàng");
+        Merged(headerRow, 3, headerRow + 1, 3, "ĐVT");
+        var groupTitles = new[] { "Đầu kỳ", "Nhập kho", "Xuất kho", "Cuối kỳ" };
+        for (var g = 0; g < groupTitles.Length; g++)
+        {
+            var col = 4 + g * 2;
+            Merged(headerRow, col, headerRow, col + 1, groupTitles[g]);
+            worksheet.Cell(headerRow + 1, col).Value     = "Số lượng";
+            worksheet.Cell(headerRow + 1, col + 1).Value = "Giá trị";
+        }
+        Merged(headerRow, ExcelLastColumn, headerRow + 1, ExcelLastColumn, "Ngày HT");
+
+        var headerRange = worksheet.Range(headerRow, 1, headerRow + 1, ExcelLastColumn);
+        headerRange.Style.Font.Bold = true;
+        headerRange.Style.Fill.BackgroundColor = blue;
+        headerRange.Style.Alignment.Horizontal = center;
+        headerRange.Style.Alignment.Vertical   = ClosedXML.Excel.XLAlignmentVerticalValues.Center;
+
+        var r = headerRow + 2;
+        foreach (var item in Items)
+        {
+            // Mã hàng là chữ (vd "01") — ép kiểu text để Excel không đổi thành số.
+            worksheet.Cell(r, 1).SetValue(item.Code);
+            worksheet.Cell(r, 2).Value = item.Name;
+            worksheet.Cell(r, 3).Value = item.Unit;
+            worksheet.Cell(r, 4).Value  = item.OpeningQty;
+            worksheet.Cell(r, 5).Value  = item.OpeningValue;
+            worksheet.Cell(r, 6).Value  = item.ImportQty;
+            worksheet.Cell(r, 7).Value  = item.ImportValue;
+            worksheet.Cell(r, 8).Value  = item.ExportQty;
+            worksheet.Cell(r, 9).Value  = item.ExportValue;
+            worksheet.Cell(r, 10).Value = item.ClosingQty;
+            worksheet.Cell(r, 11).Value = item.ClosingValue;
+            worksheet.Cell(r, 12).SetValue(DateText(item));
+            if (item.IsGroupHeader)
+            {
+                var groupRow = worksheet.Range(r, 1, r, ExcelLastColumn);
+                groupRow.Style.Font.Bold = true;
+                groupRow.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromHtml("#FFF2CC");
+            }
+            r++;
+        }
+
+        // Chân bảng: Số dòng + tổng các dòng mặt hàng (không cộng dòng tổng nhóm kho).
+        var dataRows = Items.Where(i => !i.IsGroupHeader).ToList();
+        worksheet.Cell(r, 2).Value  = $"Số dòng = {dataRows.Count}";
+        worksheet.Cell(r, 4).Value  = dataRows.Sum(i => i.OpeningQty);
+        worksheet.Cell(r, 5).Value  = dataRows.Sum(i => i.OpeningValue);
+        worksheet.Cell(r, 6).Value  = dataRows.Sum(i => i.ImportQty);
+        worksheet.Cell(r, 7).Value  = dataRows.Sum(i => i.ImportValue);
+        worksheet.Cell(r, 8).Value  = dataRows.Sum(i => i.ExportQty);
+        worksheet.Cell(r, 9).Value  = dataRows.Sum(i => i.ExportValue);
+        worksheet.Cell(r, 10).Value = dataRows.Sum(i => i.ClosingQty);
+        worksheet.Cell(r, 11).Value = dataRows.Sum(i => i.ClosingValue);
+        worksheet.Range(r, 1, r, ExcelLastColumn).Style.Font.Bold = true;
+
+        worksheet.Range(headerRow + 2, 4, r, 11).Style.NumberFormat.Format = "#,##0";
+        var table = worksheet.Range(headerRow, 1, r, ExcelLastColumn);
+        table.Style.Border.OutsideBorder = ClosedXML.Excel.XLBorderStyleValues.Thin;
+        table.Style.Border.InsideBorder  = ClosedXML.Excel.XLBorderStyleValues.Thin;
+
+        // Chỉ đo độ rộng theo bảng — tiêu đề báo cáo ở dòng 1–2 đã gộp ô nên không được làm cột A phình ra.
+        worksheet.Columns(1, ExcelLastColumn).AdjustToContents(headerRow, r);
+        return workbook;
+    }
+
+    private FlowDocument BuildReportDocument()
+    {
+        var doc = new FlowDocument
+        {
+            FontFamily  = new FontFamily("Segoe UI"),
+            FontSize    = 9,
+            PagePadding = new Thickness(20),
+        };
+
+        doc.Blocks.Add(new Paragraph(new Bold(new Run(ReportTitle)) { FontSize = 16 })
+        {
+            TextAlignment = TextAlignment.Center,
+            Margin        = new Thickness(0, 0, 0, 4),
+        });
+        doc.Blocks.Add(new Paragraph(new Italic(new Run(ReportSubtitle)))
+        {
+            TextAlignment = TextAlignment.Center,
+            FontSize      = 11,
+            Margin        = new Thickness(0, 0, 0, 12),
+        });
+
+        // Bản in bỏ cột Ngày HT cho vừa khổ giấy dọc (vẫn có trong lưới và file Excel).
+        var table = new Table { CellSpacing = 0 };
+        foreach (var width in new[] { 50, 150, 40, 48, 70, 48, 70, 48, 70, 48, 70 })
+            table.Columns.Add(new TableColumn { Width = new GridLength(width) });
+
+        var group = new TableRowGroup();
+        var top = new TableRow { Background = Brushes.WhiteSmoke };
+        top.Cells.Add(PrintCell("Mã hàng", true, TextAlignment.Center, rowSpan: 2));
+        top.Cells.Add(PrintCell("Tên hàng", true, TextAlignment.Center, rowSpan: 2));
+        top.Cells.Add(PrintCell("ĐVT",      true, TextAlignment.Center, rowSpan: 2));
+        foreach (var title in new[] { "Đầu kỳ", "Nhập kho", "Xuất kho", "Cuối kỳ" })
+            top.Cells.Add(PrintCell(title, true, TextAlignment.Center, columnSpan: 2));
+        group.Rows.Add(top);
+
+        var sub = new TableRow { Background = Brushes.WhiteSmoke };
+        for (var i = 0; i < 4; i++)
+        {
+            sub.Cells.Add(PrintCell("Số lượng", true, TextAlignment.Center));
+            sub.Cells.Add(PrintCell("Giá trị",  true, TextAlignment.Center));
+        }
+        group.Rows.Add(sub);
+
+        foreach (var item in Items)
+            group.Rows.Add(PrintDataRow(item.IsGroupHeader, item.Code, item.Name, item.Unit,
+                item.OpeningQty, item.OpeningValue, item.ImportQty, item.ImportValue,
+                item.ExportQty, item.ExportValue, item.ClosingQty, item.ClosingValue));
+
+        var dataRows = Items.Where(i => !i.IsGroupHeader).ToList();
+        group.Rows.Add(PrintDataRow(true, string.Empty, $"Số dòng = {dataRows.Count}", string.Empty,
+            dataRows.Sum(i => i.OpeningQty), dataRows.Sum(i => i.OpeningValue),
+            dataRows.Sum(i => i.ImportQty),  dataRows.Sum(i => i.ImportValue),
+            dataRows.Sum(i => i.ExportQty),  dataRows.Sum(i => i.ExportValue),
+            dataRows.Sum(i => i.ClosingQty), dataRows.Sum(i => i.ClosingValue)));
+
+        table.RowGroups.Add(group);
+        doc.Blocks.Add(table);
+        return doc;
+    }
+
+    private static TableRow PrintDataRow(bool bold, string code, string name, string unit, params decimal[] numbers)
+    {
+        var row = new TableRow { Background = bold ? Brushes.WhiteSmoke : Brushes.Transparent };
+        row.Cells.Add(PrintCell(code, bold, TextAlignment.Left));
+        row.Cells.Add(PrintCell(name, bold, TextAlignment.Left));
+        row.Cells.Add(PrintCell(unit, bold, TextAlignment.Left));
+        foreach (var n in numbers)
+            row.Cells.Add(PrintCell(MoneyFormat.Format(n), bold, TextAlignment.Right));
+        return row;
+    }
+
+    private static TableCell PrintCell(
+        string text, bool bold, TextAlignment alignment, int rowSpan = 1, int columnSpan = 1)
+    {
+        Inline content = bold ? new Bold(new Run(text)) : new Run(text);
+        return new TableCell(new Paragraph(content) { TextAlignment = alignment })
+        {
+            RowSpan         = rowSpan,
+            ColumnSpan      = columnSpan,
+            Padding         = new Thickness(3),
+            BorderBrush     = Brushes.Black,
+            BorderThickness = new Thickness(0.5),
+        };
     }
 }

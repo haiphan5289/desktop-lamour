@@ -53,13 +53,15 @@
         <!-- ══════════════════════════════════════════ -->
         <!-- Toolbar — dải ribbon dùng chung (DocumentToolbar). "Bỏ ghi" chuyển từ header  -->
         <!-- xuống đây; "Cất"/"Hủy bỏ" chuyển từ footer lên đây — khớp bố cục 4 popup còn lại. -->
-        <!-- Cất/Bỏ ghi/In disable (mờ) qua CanExecute (IsEditable/IsConfirmed) khi không   -->
+        <!-- Sửa/Xóa/Cất/Bỏ ghi/In disable (mờ) qua CanExecute (IsEditable/IsConfirmed) khi không -->
         <!-- thực hiện được — không ẩn hẳn khỏi toolbar.                                    -->
         <!-- ══════════════════════════════════════════ -->
         <controls:DocumentToolbar Grid.Row="1"
                                   PrevCommand="{Binding NavigatePrevCommand}"
                                   NextCommand="{Binding NavigateNextCommand}"
                                   AddCommand="{Binding AddNewCommand}"
+                                  EditCommand="{Binding EditCommand}"
+                                  DeleteCommand="{Binding DeleteCommand}"
                                   SaveCommand="{Binding SaveCommand}"
                                   SaveLabel="Cất"
                                   UnpostCommand="{Binding UnconfirmCommand}"
@@ -247,40 +249,64 @@
                     </DataGridTemplateColumn.CellEditingTemplate>
                 </DataGridTemplateColumn>
 
-                <!-- Kho — mã kho ngầm định của sản phẩm đang chọn (HH/TB), không cho sửa tay.
-                     Chưa gán kho ngầm định thì hiển thị/lưu fallback "HH" (Id=4). -->
-                <DataGridTemplateColumn Header="Kho" Width="80">
+                <!-- Kho — chọn kho nhập cho từng dòng (HH/TB…); chọn sản phẩm thì tự điền kho ngầm định của nó,
+                     đổi tay được. Dropdown chỉ liệt kê kho đang hoạt động; ô hiện mã kho (HH/TB). -->
+                <DataGridTemplateColumn Header="Kho" Width="90">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding SelectedProduct.DefaultWarehouseCode, TargetNullValue=HH}"
+                            <TextBlock Text="{Binding SelectedWarehouse.Code}"
                                        VerticalAlignment="Center" Padding="4,0"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <ComboBox ItemsSource="{Binding DataContext.Warehouses, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                      SelectedItem="{Binding SelectedWarehouse, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      DisplayMemberPath="DisplayText"
+                                      VerticalContentAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
                 </DataGridTemplateColumn>
 
-                <!-- TK Nợ -->
-                <DataGridTextColumn Header="TK Nợ"
-                                    Binding="{Binding DebitAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                    Width="80">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="HorizontalAlignment" Value="Center"/>
-                            <Setter Property="VerticalAlignment"   Value="Center"/>
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
+                <!-- TK Nợ — chọn trong danh mục tài khoản (Cài đặt → Tài khoản); mặc định 1561 khi chọn sản phẩm.
+                     Ô hiện mã TK; mã đã lưu mà không còn trong danh mục vẫn hiện nguyên. Ô chọn là AppSearchableComboBox
+                     dạng gọn — cùng control với cột TK của Phiếu thu/Phiếu chi (gõ mã để tìm). -->
+                <DataGridTemplateColumn Header="TK Nợ" Width="90">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding DebitAccount}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <controls:AppSearchableComboBox
+                                IsCompact="True" CodeOnlyDisplay="True" CommitTypedText="True"
+                                ItemsSource="{Binding DataContext.AccountSettings, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                SelectedItem="{Binding SelectedDebitAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                ToolTip="{Binding SelectedDebitAccount.DisplayText}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
 
-                <!-- TK Có -->
-                <DataGridTextColumn Header="TK Có"
-                                    Binding="{Binding CreditAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                    Width="80">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="HorizontalAlignment" Value="Center"/>
-                            <Setter Property="VerticalAlignment"   Value="Center"/>
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
+                <!-- TK Có — như TK Nợ; mặc định 1112 -->
+                <DataGridTemplateColumn Header="TK Có" Width="90">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding CreditAccount}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <controls:AppSearchableComboBox
+                                IsCompact="True" CodeOnlyDisplay="True" CommitTypedText="True"
+                                ItemsSource="{Binding DataContext.AccountSettings, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                SelectedItem="{Binding SelectedCreditAccount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                ToolTip="{Binding SelectedCreditAccount.DisplayText}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
 
                 <!-- ĐVT -->
                 <DataGridTemplateColumn Header="ĐVT" Width="70">

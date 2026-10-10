@@ -2,6 +2,8 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DesktopLamour.Features.HomePage.AccountSettings.Domain.UseCases;
+using DesktopLamour.Features.HomePage.Warehouses.Domain.UseCases;
 using DesktopLamour.Core.ViewModels;
 using DesktopLamour.Features.HomePage.Customers.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Employees.Domain.UseCases;
@@ -25,10 +27,13 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
     private readonly IConfirmWarehouseReceiptUseCase      _confirmUseCase;
     private readonly IUpdateWarehouseReceiptUseCase       _updateUseCase;
     private readonly IUnconfirmWarehouseReceiptUseCase    _unconfirmUseCase;
+    private readonly IDeleteWarehouseReceiptUseCase       _deleteUseCase;
     private readonly IGetCustomersUseCase                 _getCustomers;
     private readonly IGetSuppliersUseCase                 _getSuppliers;
     private readonly IGetEmployeesUseCase                 _getEmployees;
     private readonly IGetProductsUseCase                  _getProducts;
+    private readonly IGetWarehouseSettingsUseCase         _getWarehouses;
+    private readonly IGetAccountSettingsUseCase           _getAccounts;
     private readonly Func<EmployeeFormWindow>             _employeeFormWindowFactory;
     private readonly Func<SupplierFormWindow>             _supplierFormWindowFactory;
     private readonly Func<WarehouseReceiptPrintWindow>    _printWindowFactory;
@@ -64,12 +69,20 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
     // Số chứng từ kế tiếp lấy từ BE để hiện trước trên phiếu mới — số thật do BE sinh lúc Cất.
     private string _nextNumberPreview = string.Empty;
 
+    // Phiếu đã tồn tại luôn mở ở trạng thái khóa (cả nháp lẫn đã ghi sổ) — nháp phải bấm "Sửa" mới mở
+    // khóa, giống Chứng từ bán hàng (SalesOrderViewModel.IsReadOnly). Phiếu mới (ReceiptId == null) không khóa.
+    [ObservableProperty] private bool _isReadOnly;
+
     public bool IsConfirmed => Status == "Confirmed";
-    public bool IsEditable  => !IsConfirmed;
+    public bool IsEditable  => !IsConfirmed && !IsReadOnly;
     // Khóa lưới hàng hóa bằng DataGrid.IsReadOnly (không dùng IsEnabled — theme làm mờ chữ), xem XAML.
     public bool IsGridLocked => !IsEditable;
 
-    partial void OnStatusChanged(string value)
+    partial void OnStatusChanged(string value) => NotifyStateChanged();
+    partial void OnIsReadOnlyChanged(bool value) => NotifyStateChanged();
+    partial void OnReceiptIdChanged(int? value) => NotifyStateChanged();
+
+    private void NotifyStateChanged()
     {
         OnPropertyChanged(nameof(IsConfirmed));
         OnPropertyChanged(nameof(IsEditable));
@@ -79,6 +92,8 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
         UnconfirmCommand.NotifyCanExecuteChanged();
         PrintCommand.NotifyCanExecuteChanged();
         SaveCommand.NotifyCanExecuteChanged();
+        EditCommand.NotifyCanExecuteChanged();
+        DeleteCommand.NotifyCanExecuteChanged();
     }
 
     // 0-based index for ComboBox binding; maps to ReceiptType 1, 2, 3, 4
@@ -96,6 +111,15 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
     public IReadOnlyList<ISearchableItem> Employees { get; private set; } = Array.Empty<ISearchableItem>();
     public IReadOnlyList<ISearchableItem> Products  { get; private set; } = Array.Empty<ISearchableItem>();
 
+    // Kho/TK chọn ở từng dòng hàng tiền. Warehouses chỉ liệt kê kho đang hoạt động (cho chọn MỚI);
+    // _allWarehouses không lọc để nạp lại kho đã lưu của phiếu cũ (kể cả kho đã ngưng hoạt động).
+    public IReadOnlyList<ISearchableItem> Warehouses      { get; private set; } = Array.Empty<ISearchableItem>();
+    public IReadOnlyList<ISearchableItem> AccountSettings { get; private set; } = Array.Empty<ISearchableItem>();
+    private IReadOnlyList<DesktopLamour.Features.HomePage.Warehouses.Domain.Models.WarehouseSetting> _allWarehouses
+        = Array.Empty<DesktopLamour.Features.HomePage.Warehouses.Domain.Models.WarehouseSetting>();
+
+    private const string DefaultWarehouseCode = "HH";
+
     public ObservableCollection<WarehouseReceiptLineItem> Lines { get; } = new();
 
     public event Action<bool>? RequestClose;
@@ -110,6 +134,7 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
         IConfirmWarehouseReceiptUseCase      confirmUseCase,
         IUpdateWarehouseReceiptUseCase       updateUseCase,
         IUnconfirmWarehouseReceiptUseCase    unconfirmUseCase,
+        IDeleteWarehouseReceiptUseCase       deleteUseCase,
         IGetCustomersUseCase                 getCustomers,
         IGetSuppliersUseCase                 getSuppliers,
         IGetEmployeesUseCase                 getEmployees,
@@ -119,12 +144,15 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
         Func<WarehouseReceiptPrintWindow>    printWindowFactory,
         IGetWarehouseReceiptByIdUseCase      getReceiptById,
         IGetNextWarehouseReceiptNumberUseCase getNextNumber,
+        IGetWarehouseSettingsUseCase         getWarehouses,
+        IGetAccountSettingsUseCase           getAccounts,
         ILogger<WarehouseReceiptFormViewModel> logger)
     {
         _createUseCase             = createUseCase;
         _confirmUseCase            = confirmUseCase;
         _updateUseCase             = updateUseCase;
         _unconfirmUseCase          = unconfirmUseCase;
+        _deleteUseCase             = deleteUseCase;
         _getCustomers              = getCustomers;
         _getSuppliers              = getSuppliers;
         _getEmployees              = getEmployees;
@@ -134,6 +162,8 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
         _printWindowFactory        = printWindowFactory;
         _getReceiptById            = getReceiptById;
         _getNextNumber             = getNextNumber;
+        _getWarehouses             = getWarehouses;
+        _getAccounts               = getAccounts;
         _logger                    = logger;
     }
 
@@ -261,6 +291,7 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
         ReceiptId                = null;
         ReceiptNumber            = existing is null ? _nextNumberPreview : string.Empty;
         Status                   = "Draft";
+        IsReadOnly               = existing is not null; // phiếu đã có: khóa tới khi bấm "Sửa" (nháp) hoặc "Bỏ ghi" rồi "Sửa"
         SelectedReceiptTypeIndex = 2; // phiếu mới mặc định "3. Khác" như MISA
         AccountingDate           = DateTime.Today;
         DocumentDate             = DateTime.Today;
@@ -306,6 +337,12 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
 
             OnPropertyChanged(nameof(Employees));
             OnPropertyChanged(nameof(Products));
+
+            _allWarehouses  = (await _getWarehouses.ExecuteAsync(ct)).ToList().AsReadOnly();
+            Warehouses      = _allWarehouses.Where(w => w.IsActive).Cast<ISearchableItem>().ToList().AsReadOnly();
+            AccountSettings = (await _getAccounts.ExecuteAsync(ct)).OrderBy(a => a.Code).Cast<ISearchableItem>().ToList().AsReadOnly();
+            OnPropertyChanged(nameof(Warehouses));
+            OnPropertyChanged(nameof(AccountSettings));
         }
         catch (Exception ex)
         {
@@ -361,6 +398,7 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
             line.SelectedProduct = Products.FirstOrDefault(p => p.Id == lineDto.ProductId);
             line.Quantity        = lineDto.Quantity;
             line.UnitPrice        = lineDto.UnitPrice;
+            line.SelectedWarehouse = _allWarehouses.FirstOrDefault(w => w.Id == lineDto.WarehouseId);
             line.DebitAccount     = lineDto.DebitAccount;
             line.CreditAccount    = lineDto.CreditAccount;
             line.CostItem              = lineDto.CostItem              ?? string.Empty;
@@ -382,9 +420,19 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
         OnPropertyChanged(nameof(Objects));
     }
 
+    // Kho mặc định khi chọn sản phẩm: kho ngầm định của sản phẩm (nếu còn hoạt động) → "HH" → kho đầu tiên.
+    private ISearchableItem? ResolveDefaultWarehouse(WarehouseProductItem product)
+        => Warehouses.FirstOrDefault(w => w.Id == product.DefaultWarehouseId)
+           ?? Warehouses.FirstOrDefault(w => w.Code == DefaultWarehouseCode)
+           ?? Warehouses.FirstOrDefault();
+
     private WarehouseReceiptLineItem CreateLine()
     {
-        var line = new WarehouseReceiptLineItem();
+        var line = new WarehouseReceiptLineItem
+        {
+            DefaultWarehouseResolver = ResolveDefaultWarehouse,
+            AccountResolver          = code => AccountSettings.FirstOrDefault(a => a.Code == code),
+        };
         line.PropertyChanged += (_, _) => { RecalculateTotal(); IsDirty = true; EnsureTrailingEmptyLine(); };
         return line;
     }
@@ -511,9 +559,10 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
             var lineDtos          = filledLines.Select(l => new CreateWarehouseReceiptLineDto
             {
                 ProductId           = l.SelectedProduct!.Id,
-                // Kho ngầm định của sản phẩm (HH/TB, xem cột "Kho") — fallback kho "HH" (Id=4)
-                // nếu sản phẩm chưa gán kho ngầm định.
-                WarehouseId         = (l.SelectedProduct as WarehouseProductItem)?.DefaultWarehouseId ?? 4,
+                // Kho chọn ở cột "Kho"; chưa chọn (không xảy ra bình thường) thì kho ngầm định của sản phẩm,
+                // rồi fallback kho "HH" (Id=4).
+                WarehouseId         = l.SelectedWarehouse?.Id
+                                      ?? (l.SelectedProduct as WarehouseProductItem)?.DefaultWarehouseId ?? 4,
                 Quantity            = l.Quantity,
                 UnitPrice           = l.UnitPrice,
                 Amount              = l.Amount,
@@ -607,14 +656,30 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
         window.ShowDialog();
     }
 
-    [RelayCommand(CanExecute = nameof(IsConfirmed))]
-    private async Task UnconfirmAsync(CancellationToken ct = default)
+    // "Sửa" — chỉ bật khi phiếu là nháp đang khóa (phiếu đã ghi sổ phải "Bỏ ghi" trước, BE từ chối sửa
+    // phiếu Confirmed). Mở khóa form + nạp sẵn dòng trống để gõ thêm hàng hóa ngay.
+    private bool CanEdit => ReceiptId is not null && !IsConfirmed && IsReadOnly;
+
+    [RelayCommand(CanExecute = nameof(CanEdit))]
+    private void Edit()
+    {
+        IsReadOnly = false;
+        FillEmptyLines();
+        BeginDirtyTracking();
+    }
+
+    // "Xóa" — chỉ bật khi phiếu là nháp đang khóa (sau "Bỏ ghi", hoặc mở phiếu nháp từ danh sách).
+    // BE cũng từ chối xóa phiếu đã ghi sổ. Xóa xong đóng popup và báo danh sách reload.
+    private bool CanDelete => ReceiptId is not null && !IsConfirmed && IsReadOnly;
+
+    [RelayCommand(CanExecute = nameof(CanDelete))]
+    private async Task DeleteAsync(CancellationToken ct = default)
     {
         if (ReceiptId is not int id) return;
 
         var r = MessageBox.Show(
-            "Bạn có chắc muốn bỏ ghi sổ phiếu này? Sau khi bỏ ghi, phiếu sẽ quay về trạng thái nháp để chỉnh sửa.",
-            "Xác nhận bỏ ghi",
+            $"Bạn có chắc muốn xóa phiếu nhập kho '{ReceiptNumber}'?",
+            "Xác nhận xóa",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
         if (r != MessageBoxResult.Yes) return;
@@ -624,9 +689,38 @@ public partial class WarehouseReceiptFormViewModel : ViewModelBase
         IsLoading    = true;
         try
         {
+            await _deleteUseCase.ExecuteAsync(id, ct);
+            _logger.LogInformation("Deleted warehouse receipt {ReceiptNumber}", ReceiptNumber);
+            ReceiptSaved?.Invoke(); // danh sách "Nhập, Xuất Kho" cần reload
+            StopDirtyTracking();
+            RequestClose?.Invoke(true);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete warehouse receipt {Id}", id);
+            HasError     = true;
+            ErrorMessage = ex.Message;
+        }
+        finally { IsLoading = false; }
+    }
+
+    [RelayCommand(CanExecute = nameof(IsConfirmed))]
+    private async Task UnconfirmAsync(CancellationToken ct = default)
+    {
+        if (ReceiptId is not int id) return;
+
+        // Không hỏi xác nhận — khớp nút Bỏ ghi ở Chứng từ bán hàng/Phiếu thu/Phiếu chi (chỉ "Xóa" mới hỏi).
+        HasError     = false;
+        ErrorMessage = string.Empty;
+        IsLoading    = true;
+        try
+        {
             var result = await _unconfirmUseCase.ExecuteAsync(id, ct);
-            Status = result.Status;
-            FillEmptyLines(); // phiếu mở khóa lại — nạp lại dòng trống để gõ thêm hàng hóa
+            // Về nháp nhưng form VẪN KHÓA tới khi bấm "Sửa" (giống Chứng từ bán hàng) — "Xóa" bật ở trạng thái này.
+            IsReadOnly = true;
+            Status     = result.Status;
+            BeginDirtyTracking();
             ReceiptSaved?.Invoke(); // Bỏ ghi cũng là thay đổi dữ liệu — báo để danh sách reload khi đóng popup
             _logger.LogInformation("Unconfirmed warehouse receipt {ReceiptNumber}", result.ReceiptNumber);
         }

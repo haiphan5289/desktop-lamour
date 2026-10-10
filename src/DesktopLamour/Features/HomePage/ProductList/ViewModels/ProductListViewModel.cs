@@ -35,9 +35,6 @@ public partial class ProductListViewModel : ViewModelBase
     [ObservableProperty] private bool     _hasProducts;
     [ObservableProperty] private Product? _selectedProduct;
 
-    // 1 ô tìm kiếm chung — khớp OR trên các trường text chính, không phân biệt hoa/thường.
-    [ObservableProperty] private string _searchText = string.Empty;
-
     // ── Filter theo từng cột — nhúng ngay trong header lưới (khớp UI MISA), AND với nhau và với
     // ô Tìm kiếm chung + dropdown "Nhóm vật tư, hàng hóa, dịch vụ".
     [ObservableProperty] private string _filterCode         = string.Empty;
@@ -114,18 +111,9 @@ public partial class ProductListViewModel : ViewModelBase
         StockValueFilter.Changed    = ProductsView.Refresh;
     }
 
-    partial void OnSearchTextChanged(string value) => ProductsView.Refresh();
-
     private bool FilterProduct(object obj)
     {
         if (obj is not Product p) return false;
-
-        if (!string.IsNullOrWhiteSpace(SearchText)
-            && !(Matches(p.Code, SearchText)
-                || Matches(p.Name, SearchText)
-                || Matches(p.CategoryName, SearchText)
-                || Matches(p.Unit, SearchText)))
-            return false;
 
         if (!string.IsNullOrEmpty(SelectedCategoryOption) && SelectedCategoryOption != AllCategories
             && !string.Equals(p.CategoryName, SelectedCategoryOption, StringComparison.OrdinalIgnoreCase))

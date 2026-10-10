@@ -93,7 +93,7 @@
 
             </StackPanel>
 
-            <!-- Bộ lọc "Nhóm vật tư, hàng hóa, dịch vụ" (khớp MISA) + ô tìm kiếm chung -->
+            <!-- Bộ lọc "Nhóm vật tư, hàng hóa, dịch vụ" (khớp MISA). Ô tìm kiếm chung đã bỏ (2026-10-10) — dùng ô lọc riêng ở tiêu đề từng cột. -->
             <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
                 <controls:AppLabel Text="Nhóm vật tư, hàng hóa, dịch vụ:"
                                    Style="{StaticResource AppTypography.LabelSection}"
@@ -102,10 +102,7 @@
                 <ComboBox ItemsSource="{Binding CategoryOptions}"
                           SelectedItem="{Binding SelectedCategoryOption, Mode=TwoWay}"
                           Width="240" Height="36" VerticalAlignment="Center" VerticalContentAlignment="Center"
-                          Margin="0,0,16,0"/>
-                <controls:AppTextField Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                       Placeholder="🔍 Tìm kiếm vật tư hàng hóa..."
-                                       Width="320" Height="36"/>
+                          Margin="0"/>
             </StackPanel>
             </StackPanel>
         </Border>

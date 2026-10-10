@@ -192,7 +192,7 @@ User gửi thêm ảnh chụp popup mẫu (đã điền sẵn) và yêu cầu á
 - **Cột lưới** (thay bộ cột cũ): Mã · Tên · Tính chất (`Nature`) · Nhóm VTHH (`CategoryName`) · ĐVT chính (`Unit`) · Số lượng tồn (`StockQuantity`) · Giá trị tồn · Giảm thuế theo QĐ (`TaxReductionType`) · Ngừng theo dõi. **Bỏ** 2 cột Giá nhập/Giá bán (vẫn xem/sửa trong popup Sửa).
 - **Giá trị tồn** = `StockQuantity × CostPrice`, tính tại client (`Product.StockValue`) — sản phẩm chưa nhập giá sẽ ra 0.
 - **Ngừng theo dõi** = đảo của `IsActive` (`Product.IsStopTracking`). Cột bind `Mode=OneWay` vì property chỉ có getter.
-- **Dòng lọc theo từng cột** nhúng trong header (pattern `CustomerListView`): cột chữ lọc Contains; 2 cột số dùng `NumericColumnFilter` (toán tử + giá trị); Ngừng theo dõi dùng checkbox 3 trạng thái (▪ tất cả / ✓ chỉ ngừng / trống chỉ đang theo dõi). Tất cả AND với nhau, với dropdown Nhóm VTHH và ô Tìm kiếm chung.
+- **Dòng lọc theo từng cột** nhúng trong header (pattern `CustomerListView`): cột chữ lọc Contains; 2 cột số dùng `NumericColumnFilter` (toán tử + giá trị); Ngừng theo dõi dùng checkbox 3 trạng thái (▪ tất cả / ✓ chỉ ngừng / trống chỉ đang theo dõi). Tất cả AND với nhau và với dropdown Nhóm VTHH. (Ô "Tìm kiếm vật tư hàng hóa..." chung đã bỏ 2026-10-10 vì dư so với ô lọc từng cột — `SearchText` trong `ProductListViewModel` đã xóa.)
 - **Dropdown "Nhóm vật tư, hàng hóa, dịch vụ"** — nạp từ `IGetCategoriesUseCase` (inject thêm vào `ProductListViewModel`), mục đầu "Tất cả".
 - **Footer**: "Số dòng = N" + Tổng số lượng tồn + Tổng giá trị tồn, tính trên các dòng đang hiển thị sau lọc.
 - **Nút "🔄 Nạp"** — gọi lại `LoadProductsCommand`.

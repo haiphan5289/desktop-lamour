@@ -3,6 +3,7 @@ using DesktopLamour.Features.HomePage.Warehouse.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Warehouse.ViewModels;
 using System.Windows;
 using System.Windows.Input;
+using DesktopLamour.Shared.Helpers;
 
 namespace DesktopLamour.Features.HomePage.Warehouse.Views;
 
@@ -39,6 +40,27 @@ public partial class WarehouseTransactionListView : System.Windows.Controls.User
 
     private void AddExportMenuItem_Click(object sender, RoutedEventArgs e)
         => _viewModel.OpenSalesOrderCommand.Execute(null);
+
+    // Chuột phải chọn luôn dòng dưới con trỏ — mặc định DataGrid chỉ chọn khi chuột trái, nên menu sẽ tác động
+    // lên dòng cũ (hoặc không dòng nào, mờ hết) thay vì dòng vừa bấm.
+    private void TransactionGrid_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.OriginalSource is not DependencyObject source) return;
+
+        var row = FindAncestor<System.Windows.Controls.DataGridRow>(source);
+        if (row?.Item is not null)
+            TransactionGrid.SelectedItem = row.Item;
+    }
+
+    private static T? FindAncestor<T>(DependencyObject? current) where T : DependencyObject
+    {
+        while (current is not null)
+        {
+            if (current is T match) return match;
+            current = TreeWalk.GetParent(current);
+        }
+        return null;
+    }
 
     private void TransactionGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {

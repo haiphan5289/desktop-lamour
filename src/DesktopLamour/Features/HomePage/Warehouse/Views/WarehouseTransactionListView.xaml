@@ -6,6 +6,17 @@
              xmlns:local="clr-namespace:DesktopLamour.Features.HomePage.Warehouse.ViewModels"
              Background="{StaticResource AppColor.BackgroundSecondary}">
 
+    <!-- Phím tắt thật — khớp danh sách trên menu chuột phải của lưới (cùng bộ với SalesOrderListView).
+         Ctrl+N mở Phiếu nhập kho (Phiếu xuất kho chọn qua nút/menu "Thêm"). Không gán Ctrl+C: DataGrid
+         dùng để copy ô/dòng đang chọn. -->
+    <UserControl.InputBindings>
+        <KeyBinding Gesture="Ctrl+N" Command="{Binding OpenFormCommand}"/>
+        <KeyBinding Gesture="Ctrl+E" Command="{Binding ShowDetailSelectedCommand}"/>
+        <KeyBinding Gesture="Ctrl+D" Command="{Binding DeleteSelectedCommand}"/>
+        <KeyBinding Gesture="Ctrl+G" Command="{Binding PostSelectedCommand}"/>
+        <KeyBinding Gesture="Ctrl+B" Command="{Binding UnpostSelectedCommand}"/>
+    </UserControl.InputBindings>
+
     <UserControl.Resources>
         <!-- Header nhấn nhá cùng tông với TongHopTonKhoView để đồng bộ trong module Kho -->
         <SolidColorBrush x:Key="GridHeaderBrush" Color="#BDD7EE"/>
@@ -225,6 +236,7 @@
                       ItemsSource="{Binding Items}"
                       SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
                       MouseDoubleClick="TransactionGrid_MouseDoubleClick"
+                      PreviewMouseRightButtonDown="TransactionGrid_PreviewMouseRightButtonDown"
                       AutoGenerateColumns="False"
                       IsReadOnly="True"
                       CanUserAddRows="False"
@@ -247,18 +259,75 @@
                       ScrollViewer.VerticalScrollBarVisibility="Auto"
                       Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibilityConverter}}">
 
-                <!-- IsHeld → tô nền cảnh báo cho cả dòng, khớp cách SalesOrderListView tô dòng Treo
-                     (xem DataGrid.CellStyle ở đó). Dòng Xuất kho: SalesOrder đang Treo. Dòng Nhập
-                     kho: phiếu chưa ghi sổ (Draft — kể cả sau khi bấm "Bỏ ghi", xem
-                     GetWarehouseTransactionsUseCase.MapReceipt phía BE). BasedOn
-                     VerticalCenterCellStyle vì CellStyle chỉ được set 1 lần (trước đây set qua
-                     thuộc tính CellStyle= ở trên). -->
+                <!-- IsHeld (dòng Xuất kho: SalesOrder đang Treo; dòng Nhập kho: phiếu chưa ghi sổ — kể cả sau
+                     khi bấm "Bỏ ghi", xem GetWarehouseTransactionsUseCase.MapReceipt phía BE) → tô CHỮ cả
+                     dòng màu cam thương hiệu + đậm, khớp SalesOrderListView. 2026-10-09 (bug user report
+                     "bấm vào không thấy dòng chữ"): trước đây tô NỀN vàng nhạt qua CellStyle — khi CLICK
+                     CHỌN dòng, DataGridCell mặc định đổi Foreground sang trắng nhưng nền vàng vẫn đè lên
+                     nền xanh chọn → chữ trắng trên nền vàng nhạt gần như vô hình. Fix: bỏ tô nền, đổi
+                     sang tô Foreground qua RowStyle (kế thừa xuống TextBlock con), và lúc Held+Selected
+                     thay hẳn Template của cell (Foreground trong ControlTemplate.Triggers của cell mặc
+                     định ưu tiên cao hơn mọi Style đặt từ ngoài) — cùng fix với SalesOrderListView. -->
+                <!-- Chuột phải trên lưới (khớp Chứng từ bán hàng): chỉ các thao tác thật của màn này. Nút bật/tắt
+                     theo trạng thái dòng đang chọn qua CanExecute (Xóa/Ghi sổ chỉ khi chưa ghi sổ, Bỏ ghi chỉ khi
+                     đã ghi sổ). Chuột phải tự chọn dòng dưới con trỏ trước (xem TransactionGrid_PreviewMouseRightButtonDown). -->
+                <DataGrid.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="➕ Thêm" InputGestureText="Ctrl+N">
+                            <MenuItem Header="📥 Phiếu nhập kho" Click="AddReceiptMenuItem_Click"/>
+                            <MenuItem Header="📤 Phiếu xuất kho" Click="AddExportMenuItem_Click"/>
+                        </MenuItem>
+                        <Separator/>
+                        <MenuItem Header="👁 Xem" InputGestureText="Ctrl+E" Command="{Binding ShowDetailSelectedCommand}"/>
+                        <MenuItem Header="🗑️ Xóa" InputGestureText="Ctrl+D" Command="{Binding DeleteSelectedCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="📗 Ghi sổ" InputGestureText="Ctrl+G" Command="{Binding PostSelectedCommand}"/>
+                        <MenuItem Header="↩️ Bỏ ghi" InputGestureText="Ctrl+B" Command="{Binding UnpostSelectedCommand}"/>
+                        <Separator/>
+                        <MenuItem Header="🧾 Xem hóa đơn" Command="{Binding ViewInvoiceCommand}"/>
+                        <MenuItem Header="📨 Gửi email, Zalo">
+                            <MenuItem Header="✉️ Email" Command="{Binding SendEmailCommand}"/>
+                            <MenuItem Header="💬 Zalo" Command="{Binding SendZaloCommand}"/>
+                        </MenuItem>
+                    </ContextMenu>
+                </DataGrid.ContextMenu>
+
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsHeld}" Value="True">
+                                <Setter Property="Foreground" Value="{StaticResource AppColor.TextBrand}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
                 <DataGrid.CellStyle>
                     <Style TargetType="DataGridCell" BasedOn="{StaticResource VerticalCenterCellStyle}">
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsHeld}" Value="True">
-                                <Setter Property="Background" Value="{StaticResource AppColor.BackgroundWarningLight}"/>
-                            </DataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsHeld}" Value="True"/>
+                                    <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type DataGridCell}">
+                                            <Border Padding="{TemplateBinding Padding}"
+                                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                                    Background="{StaticResource AppColor.BackgroundBrand}"
+                                                    SnapsToDevicePixels="True">
+                                                <!-- 2026-10-10: nền cam đậm + chữ trắng (ButtonPrimaryHover/TextInverted) bị chê quá gắt
+                                                     → nền cam nhạt thương hiệu + chữ tối, vẫn đọc rõ khi chọn. -->
+                                                <ContentPresenter VerticalAlignment="Center"
+                                                                  TextElement.Foreground="{StaticResource AppColor.TextPrimary}"
+                                                                  TextElement.FontWeight="SemiBold"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </MultiDataTrigger>
                         </Style.Triggers>
                     </Style>
                 </DataGrid.CellStyle>

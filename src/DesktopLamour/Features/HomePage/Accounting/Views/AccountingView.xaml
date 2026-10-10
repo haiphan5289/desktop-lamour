@@ -344,10 +344,12 @@
                                             <Border Padding="{TemplateBinding Padding}"
                                                     BorderBrush="{TemplateBinding BorderBrush}"
                                                     BorderThickness="{TemplateBinding BorderThickness}"
-                                                    Background="{StaticResource AppColor.ButtonPrimaryHover}"
+                                                    Background="{StaticResource AppColor.BackgroundBrand}"
                                                     SnapsToDevicePixels="True">
+                                                <!-- 2026-10-10: nền cam đậm + chữ trắng bị chê quá gắt → nền cam nhạt thương hiệu + chữ tối
+                                                     (đồng bộ với WarehouseTransactionListView). -->
                                                 <ContentPresenter VerticalAlignment="Center"
-                                                                  TextElement.Foreground="{StaticResource AppColor.TextInverted}"
+                                                                  TextElement.Foreground="{StaticResource AppColor.TextPrimary}"
                                                                   TextElement.FontWeight="SemiBold"/>
                                             </Border>
                                         </ControlTemplate>

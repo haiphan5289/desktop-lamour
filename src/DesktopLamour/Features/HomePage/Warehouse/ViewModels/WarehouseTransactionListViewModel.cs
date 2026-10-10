@@ -125,6 +125,8 @@ public partial class WarehouseTransactionListViewModel : ViewModelBase
         PostSelectedCommand.NotifyCanExecuteChanged();
         UnpostSelectedCommand.NotifyCanExecuteChanged();
         ViewInvoiceCommand.NotifyCanExecuteChanged();
+        SendEmailCommand.NotifyCanExecuteChanged();
+        SendZaloCommand.NotifyCanExecuteChanged();
     }
 
     // 0 = Tất cả, 1 = Nhập kho, 2 = Xuất kho
@@ -484,39 +486,7 @@ public partial class WarehouseTransactionListViewModel : ViewModelBase
             };
             if (dialog.ShowDialog() != true) return;
 
-            using var workbook = new XLWorkbook();
-            var worksheet = workbook.Worksheets.Add("Nhập, xuất kho");
-
-            string[] headers =
-            {
-                "Ngày hạch toán", "Ngày chứng từ", "Số chứng từ", "Diễn giải", "Tổng tiền",
-                "Người giao/Người nhận", "Đối tượng", "Đã lập CT bán hàng", "Ngày ghi sổ kho", "Loại chứng từ", "Trạng thái",
-            };
-            for (var i = 0; i < headers.Length; i++)
-            {
-                var cell = worksheet.Cell(1, i + 1);
-                cell.Value           = headers[i];
-                cell.Style.Font.Bold = true;
-            }
-
-            var row = 2;
-            foreach (var t in Items)
-            {
-                worksheet.Cell(row, 1).Value  = t.AccountingDate.ToString("dd/MM/yyyy");
-                worksheet.Cell(row, 2).Value  = t.DocumentDate.ToString("dd/MM/yyyy");
-                worksheet.Cell(row, 3).Value  = t.DocumentNumber;
-                worksheet.Cell(row, 4).Value  = t.Description ?? string.Empty;
-                worksheet.Cell(row, 5).Value  = t.TotalAmount;
-                worksheet.Cell(row, 6).Value  = t.DeliveryOrReceiver ?? string.Empty;
-                worksheet.Cell(row, 7).Value  = t.ObjectName ?? string.Empty;
-                worksheet.Cell(row, 8).Value  = t.HasSalesOrder ? "Đã lập" : string.Empty;
-                worksheet.Cell(row, 9).Value  = t.LedgerDate.ToString("dd/MM/yyyy");
-                worksheet.Cell(row, 10).Value = t.DocumentTypeLabel;
-                worksheet.Cell(row, 11).Value = t.IsPosted ? "Đã ghi sổ" : "Chưa ghi sổ";
-                row++;
-            }
-
-            worksheet.Columns().AdjustToContents();
+            using var workbook = BuildWorkbook(Items);
             workbook.SaveAs(dialog.FileName);
 
             MessageBox.Show("Đã xuất file thành công.", "Xuất Excel",
@@ -525,6 +495,86 @@ public partial class WarehouseTransactionListViewModel : ViewModelBase
         catch (Exception ex)
         {
             MessageBox.Show(ex.Message, "Xuất Excel thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    // Workbook danh sách giao dịch — dùng chung cho "Xuất khẩu" (các dòng đang hiện) và "Gửi email, Zalo" (dòng đang chọn).
+    private static XLWorkbook BuildWorkbook(IEnumerable<WarehouseTransactionResponseDto> rows)
+    {
+        var workbook  = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add("Nhập, xuất kho");
+
+        string[] headers =
+        {
+            "Ngày hạch toán", "Ngày chứng từ", "Số chứng từ", "Diễn giải", "Tổng tiền",
+            "Người giao/Người nhận", "Đối tượng", "Đã lập CT bán hàng", "Ngày ghi sổ kho", "Loại chứng từ", "Trạng thái",
+        };
+        for (var i = 0; i < headers.Length; i++)
+        {
+            var cell = worksheet.Cell(1, i + 1);
+            cell.Value           = headers[i];
+            cell.Style.Font.Bold = true;
+        }
+
+        var row = 2;
+        foreach (var t in rows)
+        {
+            worksheet.Cell(row, 1).Value  = t.AccountingDate.ToString("dd/MM/yyyy");
+            worksheet.Cell(row, 2).Value  = t.DocumentDate.ToString("dd/MM/yyyy");
+            worksheet.Cell(row, 3).Value  = t.DocumentNumber;
+            worksheet.Cell(row, 4).Value  = t.Description ?? string.Empty;
+            worksheet.Cell(row, 5).Value  = t.TotalAmount;
+            worksheet.Cell(row, 6).Value  = t.DeliveryOrReceiver ?? string.Empty;
+            worksheet.Cell(row, 7).Value  = t.ObjectName ?? string.Empty;
+            worksheet.Cell(row, 8).Value  = t.HasSalesOrder ? "Đã lập" : string.Empty;
+            worksheet.Cell(row, 9).Value  = t.LedgerDate.ToString("dd/MM/yyyy");
+            worksheet.Cell(row, 10).Value = t.DocumentTypeLabel;
+            worksheet.Cell(row, 11).Value = t.IsPosted ? "Đã ghi sổ" : "Chưa ghi sổ";
+            row++;
+        }
+
+        worksheet.Columns().AdjustToContents();
+        return workbook;
+    }
+
+    // "Gửi email, Zalo" (chuột phải) — như Chứng từ bán hàng: app chưa tích hợp SMTP/Zalo OA thật, nên
+    // chỉ xuất file của dòng đang chọn rồi mở Email/Zalo client của máy để người dùng tự đính kèm.
+    [RelayCommand(CanExecute = nameof(HasSelection))]
+    private void SendEmail()
+    {
+        if (SelectedItem is not { } item) return;
+        try
+        {
+            using var workbook = BuildWorkbook(new[] { item });
+            var path = ReportSharingHelper.SaveWorkbookToTempFile(workbook, $"ChungTu_{item.DocumentNumber}");
+            ReportSharingHelper.RevealInExplorer(path);
+            ReportSharingHelper.OpenMailClient(
+                $"Chứng từ kho - {item.DocumentNumber}",
+                $"File chứng từ đã được lưu tại:\n{path}\n\nVui lòng đính kèm file này vào email trước khi gửi.");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Gửi Email thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(HasSelection))]
+    private void SendZalo()
+    {
+        if (SelectedItem is not { } item) return;
+        try
+        {
+            using var workbook = BuildWorkbook(new[] { item });
+            var path = ReportSharingHelper.SaveWorkbookToTempFile(workbook, $"ChungTu_{item.DocumentNumber}");
+            ReportSharingHelper.RevealInExplorer(path);
+            ReportSharingHelper.OpenZaloApp();
+
+            MessageBox.Show("Đã mở Zalo và thư mục chứa file chứng từ. Vui lòng kéo-thả file để đính kèm.",
+                "Gửi Zalo", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Gửi Zalo thất bại", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
