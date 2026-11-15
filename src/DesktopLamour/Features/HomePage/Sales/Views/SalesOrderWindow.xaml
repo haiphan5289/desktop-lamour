@@ -462,6 +462,7 @@
                                             ItemsSource="{Binding DataContext.Products, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                             SelectedItem="{Binding SelectedProduct, Mode=TwoWay}"
                                             Placeholder="Chọn sản phẩm"
+                                            ShowStockAndPrice="True"
                                             IsNullable="True"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellEditingTemplate>
@@ -482,6 +483,7 @@
                                             ItemsSource="{Binding DataContext.Products, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                             SelectedItem="{Binding SelectedProduct, Mode=TwoWay}"
                                             Placeholder="Chọn sản phẩm"
+                                            ShowStockAndPrice="True"
                                             IsNullable="True"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellEditingTemplate>
@@ -872,18 +874,21 @@
                 Padding="16,10"
                 Margin="0,6,0,0">
             <Grid>
+                <!-- 2026-11-15: "Số dòng = N" Auto (không bị ép hẹp rồi xuống dòng "Số dòng =" / "1" khi
+                     cửa sổ hẹp); cụm tổng tiền dồn phải trong phần còn lại. -->
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
                 <controls:AppLabel Grid.Column="0"
                                    Text="{Binding LineSummary}"
                                    Style="{StaticResource AppTypography.BodyCaption}"
                                    Foreground="{StaticResource AppColor.TextSecondary}"
+                                   Margin="0,0,24,0"
                                    VerticalAlignment="Center"/>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                     <!-- Tổng tiền hàng -->
                     <controls:AppLabel Text="Tổng tiền hàng:"
                                        Style="{StaticResource AppTypography.LabelSection}"
@@ -914,20 +919,9 @@
                                        Foreground="{StaticResource AppColor.BorderThin}"
                                        Margin="16,0"/>
 
-                    <!-- Tổng tiền thanh toán -->
-                    <controls:AppLabel Text="Tổng tiền thanh toán:"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Margin="0,0,8,0"/>
-                    <controls:AppLabel helpers:NegativeAmountHighlight.IsEnabled="True" Text="{Binding TotalPayment, Converter={StaticResource MoneyConverter}}"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       MinWidth="110"
-                                       Foreground="{StaticResource AppColor.TextBrand}"/>
-
-                    <!-- separator -->
-                    <controls:AppLabel Text="|"
-                                       Style="{StaticResource AppTypography.LabelSection}"
-                                       Foreground="{StaticResource AppColor.BorderThin}"
-                                       Margin="16,0"/>
+                    <!-- 2026-11-15: bỏ ô "Tổng tiền thanh toán" (TotalPayment, chưa thuế) — dư so với MISA
+                         (Tổng tiền hàng / Tiền chiết khấu / Tiền thuế / Tổng thanh toán). TotalPayment vẫn
+                         tính trong ViewModel (dùng để lưu total_amount lên BE), chỉ bỏ hiển thị. -->
 
                     <!-- Tổng tiền thuế -->
                     <controls:AppLabel Text="Tổng tiền thuế:"

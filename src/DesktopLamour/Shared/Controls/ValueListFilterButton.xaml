@@ -1,0 +1,89 @@
+<UserControl x:Class="DesktopLamour.Shared.Controls.ValueListFilterButton"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DesktopLamour.Shared.Controls"
+             xmlns:models="clr-namespace:DesktopLamour.Shared.Models"
+             x:Name="Self">
+
+    <!-- Nút mũi tên nhỏ mở popup checkbox value-list kiểu Excel/MISA AutoFilter — đặt cạnh ô lọc
+         hiện có (text Contains / toán tử số) của từng cột, không thay thế. Filter là 1
+         ValueListColumnFilter do ViewModel sở hữu (1 instance/cột), gán qua DependencyProperty Filter
+         bên ngoài, ví dụ: <controls:ValueListFilterButton Filter="{Binding CodeValueFilter}"/>. -->
+    <Grid>
+        <ToggleButton x:Name="ToggleBtn"
+                      Width="16" Height="16"
+                      Background="Transparent"
+                      BorderThickness="0"
+                      Cursor="Hand"
+                      Focusable="False"
+                      IsChecked="{Binding Filter.IsPopupOpen, ElementName=Self, Mode=TwoWay}"
+                      ToolTip="Lọc giá trị">
+            <ToggleButton.Template>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border Background="{TemplateBinding Background}">
+                        <Path Data="M1,2 L9,2 L5,8 Z" Stretch="Uniform" Width="8" Height="6"
+                              Fill="{Binding Filter.IsActive, ElementName=Self, Converter={StaticResource FilterActiveBrushConverter}}"
+                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </ToggleButton.Template>
+        </ToggleButton>
+
+        <Popup x:Name="FilterPopup"
+               IsOpen="{Binding Filter.IsPopupOpen, ElementName=Self, Mode=TwoWay}"
+               PlacementTarget="{Binding ElementName=ToggleBtn}"
+               Placement="Bottom"
+               StaysOpen="False"
+               AllowsTransparency="True"
+               PopupAnimation="Fade">
+            <Border Background="{StaticResource AppColor.BackgroundPrimary}"
+                    BorderBrush="{StaticResource AppColor.BorderRegular}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="8"
+                    MinWidth="190" MaxWidth="260"
+                    DataContext="{Binding Filter, ElementName=Self}">
+                <Border.Effect>
+                    <DropShadowEffect Color="#000000" Opacity="0.10" BlurRadius="12" ShadowDepth="2"/>
+                </Border.Effect>
+                <DockPanel>
+                    <controls:AppTextField DockPanel.Dock="Top"
+                                           Placeholder="Tìm kiếm..."
+                                           Height="24" FontSize="12"
+                                           Margin="0,0,0,6"
+                                           Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"/>
+
+                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal"
+                                HorizontalAlignment="Right" Margin="0,6,0,0">
+                        <!-- Thứ tự Đồng ý trước / Hủy sau khớp TongHopTonKhoParamsWindow (cùng feature) -->
+                        <controls:AppButton Content="OK" Width="56" Height="26" FontSize="12"
+                                            Style="{StaticResource AppButton.Primary.Small}"
+                                            Command="{Binding ApplyCommand}"
+                                            Margin="0,0,6,0"/>
+                        <controls:AppButton Content="Hủy" Width="56" Height="26" FontSize="12"
+                                            Style="{StaticResource AppButton.Tertiary.Medium}"
+                                            Command="{Binding CancelPopupCommand}"/>
+                    </StackPanel>
+
+                    <CheckBox DockPanel.Dock="Top" Content="Tất cả" FontSize="12"
+                              Margin="2,2,0,4"
+                              IsThreeState="True"
+                              IsChecked="{Binding AllChecked, Mode=TwoWay}"/>
+
+                    <ScrollViewer DockPanel.Dock="Top" MaxHeight="220"
+                                 VerticalScrollBarVisibility="Auto"
+                                 HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding FilteredOptions}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type models:FilterValueOption}">
+                                    <CheckBox Content="{Binding Display}" FontSize="12"
+                                              Margin="2,1" IsChecked="{Binding IsChecked}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+        </Popup>
+    </Grid>
+</UserControl>

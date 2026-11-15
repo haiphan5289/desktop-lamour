@@ -63,7 +63,7 @@
                 <Button x:Name="ToggleButton"
                         Grid.Column="1"
                         Content="▾"
-                        FontSize="11"
+                        FontSize="12"
                         Background="Transparent"
                         BorderThickness="0"
                         Foreground="{StaticResource AppColor.TextSecondary}"

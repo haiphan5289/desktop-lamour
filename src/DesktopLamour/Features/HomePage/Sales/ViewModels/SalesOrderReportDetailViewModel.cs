@@ -1,5 +1,6 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
@@ -8,8 +9,10 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DesktopLamour.Core.Diagnostics;
 using DesktopLamour.Core.Navigation;
 using DesktopLamour.Core.ViewModels;
+using DesktopLamour.Features.HomePage.Sales.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Sales.Domain.Models;
 using DesktopLamour.Features.HomePage.Sales.Domain.UseCases;
 using DesktopLamour.Features.HomePage.Sales.Views;
@@ -137,6 +140,8 @@ public partial class SalesOrderReportDetailViewModel : ViewModelBase, INavigatio
         WireColumnFilters();
     }
 
+    private static readonly TimeSpan FetchOrderTimeout = TimeSpan.FromSeconds(15);
+
     // Double-click 1 dòng trong "Sổ chi tiết bán hàng" → mở lại popup "Chứng từ bán hàng" ở chế
     // độ chỉ xem (IsReadOnly=true) — xem code-behind DetailGrid_MouseDoubleClick.
     [RelayCommand]
@@ -144,10 +149,24 @@ public partial class SalesOrderReportDetailViewModel : ViewModelBase, INavigatio
     {
         if (row is null) return;
 
+        // 2026-11-15: người dùng báo nhấp đúp → hộp "Đang tải..." xoay 10–30 giây rồi popup mới mở, trông
+        // như app đơ. Trước đây (1) chờ BE tối đa 30 giây của HttpClient mới báo lỗi, (2) overlay còn bật
+        // suốt lúc popup đang mở (tắt ở finally SAU KHI popup đóng). Nay: chờ tối đa FetchTimeout rồi báo
+        // lỗi rõ ràng, tắt overlay ngay trước ShowDialog, và ghi mốc thời gian từng bước vào PerfLog để
+        // biết bước nào chậm (BE trả chứng từ, hay dựng popup).
+        var sw = Stopwatch.StartNew();
+        PerfLog.Write($"OpenOrder {row.DocumentNumber} (id={row.OrderId}): bắt đầu");
         IsLoading = true;
         try
         {
-            var order = await _getOrderById.ExecuteAsync(row.OrderId, ct);
+            SalesOrderResponseDto? order;
+            using (var cts = CancellationTokenSource.CreateLinkedTokenSource(ct))
+            {
+                cts.CancelAfter(FetchOrderTimeout);
+                order = await _getOrderById.ExecuteAsync(row.OrderId, cts.Token);
+            }
+            PerfLog.Write($"OpenOrder {row.DocumentNumber}: BE trả chứng từ sau {sw.ElapsedMilliseconds} ms (found={order is not null})");
+
             if (order is null)
             {
                 MessageBox.Show($"Không tìm thấy chứng từ '{row.DocumentNumber}'.", "Không tìm thấy",
@@ -157,10 +176,23 @@ public partial class SalesOrderReportDetailViewModel : ViewModelBase, INavigatio
 
             var window = _salesOrderWindowFactory();
             window.Initialize(order, isReadOnly: true);
+            PerfLog.Write($"OpenOrder {row.DocumentNumber}: dựng popup xong sau {sw.ElapsedMilliseconds} ms, chuẩn bị ShowDialog");
+
+            IsLoading = false; // tắt overlay trước khi popup mở, không để hộp xoay phủ suốt lúc popup hiện
             window.ShowDialog();
+            PerfLog.Write($"OpenOrder {row.DocumentNumber}: popup đã đóng sau {sw.ElapsedMilliseconds} ms");
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            PerfLog.Write($"OpenOrder {row.DocumentNumber}: QUÁ {FetchOrderTimeout.TotalSeconds:0}s chờ BE ({sw.ElapsedMilliseconds} ms)");
+            MessageBox.Show(
+                $"Máy chủ phản hồi quá chậm (hơn {FetchOrderTimeout.TotalSeconds:0} giây) nên chưa mở được chứng từ '{row.DocumentNumber}'.\n" +
+                "Vui lòng kiểm tra kết nối tới máy chủ rồi thử lại.",
+                "Máy chủ phản hồi chậm", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         catch (Exception ex)
         {
+            PerfLog.Write($"OpenOrder {row.DocumentNumber}: LỖI sau {sw.ElapsedMilliseconds} ms — {ex.GetType().Name}: {ex.Message}");
             MessageBox.Show($"Không thể tải chứng từ: {ex.Message}", "Lỗi",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }

@@ -67,6 +67,14 @@ public partial class AppSearchableComboBox : UserControl
             typeof(AppSearchableComboBox),
             new PropertyMetadata(false));
 
+    // 2026-11-15: dropdown dạng bảng "Mã hàng | Tên hàng | SL tồn | Giá bán" (khớp MISA) cho ô chọn sản
+    // phẩm — item phải là Product (bind DropdownStockText/DropdownPriceText/IsDropdownOutOfStock). Mặc
+    // định false: mọi dropdown khác (khách hàng, nhân viên, kho, TK...) giữ nguyên 1 cột DropdownText.
+    public static readonly DependencyProperty ShowStockAndPriceProperty =
+        DependencyProperty.Register(nameof(ShowStockAndPrice), typeof(bool),
+            typeof(AppSearchableComboBox),
+            new PropertyMetadata(false, OnShowStockAndPriceChanged));
+
     // Bắn khi user THẬT SỰ chọn 1 item (click item trong dropdown) — không bắn khi chỉ gõ tay
     // (SelectedItem bị set null trong OnSearchTextChanged, không đi qua SelectItem). Bubble lên để
     // container (ví dụ DataGrid chứa control này trong CellEditingTemplate) có thể bắt và tự
@@ -133,6 +141,12 @@ public partial class AppSearchableComboBox : UserControl
         set => SetValue(CodeOnlyDisplayProperty, value);
     }
 
+    public bool ShowStockAndPrice
+    {
+        get => (bool)GetValue(ShowStockAndPriceProperty);
+        set => SetValue(ShowStockAndPriceProperty, value);
+    }
+
     // ─── Internal ─────────────────────────────────────────────────────────────
 
     private readonly ObservableCollection<ISearchableItem> _filtered = new();
@@ -192,6 +206,18 @@ public partial class AppSearchableComboBox : UserControl
         combo.FieldGrid.ColumnDefinitions[2].Width = new GridLength(0);
         combo.ToggleButton.Visibility     = Visibility.Collapsed;
         combo.SearchBox.FontSize          = 12;
+    }
+
+    private static void OnShowStockAndPriceChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is not AppSearchableComboBox combo) return;
+        var on = e.NewValue is true;
+        combo.ItemsList.ItemTemplate = (DataTemplate)combo.FindResource(on ? "StockPriceItemTemplate" : "DefaultItemTemplate");
+        combo.StockPriceHeader.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+        // Cột cố định (xem StockPriceItemTemplate) nên popup rộng cố định, không theo bề rộng ô nhập
+        // (ô "Mã hàng" trong lưới hẹp hơn nhiều). Cao hơn mặc định để thấy ~8 dòng như MISA.
+        combo.DropdownBorder.Width  = on ? 600 : double.NaN;
+        combo.ItemsList.MaxHeight   = on ? 280 : 200;
     }
 
     private static void OnPlaceholderChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

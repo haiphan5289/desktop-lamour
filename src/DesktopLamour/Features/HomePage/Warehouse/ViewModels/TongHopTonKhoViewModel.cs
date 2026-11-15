@@ -73,12 +73,10 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
     [ObservableProperty] private string _filterCode = string.Empty;
     [ObservableProperty] private string _filterName = string.Empty;
     [ObservableProperty] private string _filterUnit = string.Empty;
-    [ObservableProperty] private string _filterDate = string.Empty;
 
     partial void OnFilterCodeChanged(string value) => ApplyFilters();
     partial void OnFilterNameChanged(string value) => ApplyFilters();
     partial void OnFilterUnitChanged(string value) => ApplyFilters();
-    partial void OnFilterDateChanged(string value) => ApplyFilters();
 
     public NumericColumnFilter OpeningQtyFilter   { get; } = new();
     public NumericColumnFilter OpeningValueFilter { get; } = new();
@@ -88,6 +86,23 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
     public NumericColumnFilter ExportValueFilter  { get; } = new();
     public NumericColumnFilter ClosingQtyFilter   { get; } = new();
     public NumericColumnFilter ClosingValueFilter { get; } = new();
+
+    // Popup checkbox value-list kiểu Excel/MISA AutoFilter (2026-10-17) — thêm BÊN CẠNH các ô lọc
+    // "chứa chuỗi"/toán tử ở trên, không thay thế. Áp dụng cho TẤT CẢ các cột như yêu cầu, kể cả các
+    // cột số đã có toán tử riêng (2 kiểu lọc AND với nhau). SetSource() được gọi lại mỗi khi LoadAsync
+    // nạp dữ liệu mới (xem bên dưới), dùng đúng chuỗi hiển thị trên lưới (MoneyFormat cho cột số) để
+    // danh sách trong popup khớp với những gì user nhìn thấy.
+    public ValueListColumnFilter CodeValueFilter          { get; } = new();
+    public ValueListColumnFilter NameValueFilter          { get; } = new();
+    public ValueListColumnFilter UnitValueFilter          { get; } = new();
+    public ValueListColumnFilter OpeningQtyValueFilter    { get; } = new();
+    public ValueListColumnFilter OpeningValueValueFilter  { get; } = new();
+    public ValueListColumnFilter ImportQtyValueFilter     { get; } = new();
+    public ValueListColumnFilter ImportValueValueFilter   { get; } = new();
+    public ValueListColumnFilter ExportQtyValueFilter     { get; } = new();
+    public ValueListColumnFilter ExportValueValueFilter   { get; } = new();
+    public ValueListColumnFilter ClosingQtyValueFilter    { get; } = new();
+    public ValueListColumnFilter ClosingValueValueFilter  { get; } = new();
 
     private const string FilePrefix = "TongHopTonKho";
     private List<InventoryWarehouseGroup> _groups = new();
@@ -116,6 +131,14 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
                  {
                      OpeningQtyFilter, OpeningValueFilter, ImportQtyFilter, ImportValueFilter,
                      ExportQtyFilter, ExportValueFilter, ClosingQtyFilter, ClosingValueFilter,
+                 })
+            filter.Changed = ApplyFilters;
+
+        foreach (var filter in new[]
+                 {
+                     CodeValueFilter, NameValueFilter, UnitValueFilter,
+                     OpeningQtyValueFilter, OpeningValueValueFilter, ImportQtyValueFilter, ImportValueValueFilter,
+                     ExportQtyValueFilter, ExportValueValueFilter, ClosingQtyValueFilter, ClosingValueValueFilter,
                  })
             filter.Changed = ApplyFilters;
     }
@@ -318,6 +341,7 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
 
             ReportSubtitle = $"Từ ngày {FromDate:dd/MM/yyyy} đến ngày {ToDate:dd/MM/yyyy}";
             HasItems       = _groups.Count > 0;
+            RefreshValueListFilterSources();
             ApplyFilters();
         }
         catch (OperationCanceledException) { }
@@ -330,6 +354,28 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
     }
 
     // ── Hàng lọc theo cột ─────────────────────────────────────────────────────────────────────────
+    // Nạp lại danh sách giá trị khác nhau cho popup checkbox của từng cột — lấy từ TẤT CẢ mặt hàng vừa
+    // tải (không phải chỉ các dòng đang hiển thị sau filter khác), giống Excel AutoFilter liệt kê toàn
+    // bộ giá trị gốc của cột chứ không lọc chéo theo cột khác. Dòng tổng nhóm kho (IsGroupHeader) là
+    // dòng tổng hợp tự sinh, không phải dữ liệu thật nên không tính vào danh sách giá trị.
+    private void RefreshValueListFilterSources()
+    {
+        var items = _groups.SelectMany(g => g.Items).ToList();
+
+        CodeValueFilter.SetSource(items.Select(i => i.Code));
+        NameValueFilter.SetSource(items.Select(i => i.Name));
+        UnitValueFilter.SetSource(items.Select(i => i.Unit));
+
+        OpeningQtyValueFilter.SetSource(items.Select(i => MoneyFormat.Format(i.OpeningQty)));
+        OpeningValueValueFilter.SetSource(items.Select(i => MoneyFormat.Format(i.OpeningValue)));
+        ImportQtyValueFilter.SetSource(items.Select(i => MoneyFormat.Format(i.ImportQty)));
+        ImportValueValueFilter.SetSource(items.Select(i => MoneyFormat.Format(i.ImportValue)));
+        ExportQtyValueFilter.SetSource(items.Select(i => MoneyFormat.Format(i.ExportQty)));
+        ExportValueValueFilter.SetSource(items.Select(i => MoneyFormat.Format(i.ExportValue)));
+        ClosingQtyValueFilter.SetSource(items.Select(i => MoneyFormat.Format(i.ClosingQty)));
+        ClosingValueValueFilter.SetSource(items.Select(i => MoneyFormat.Format(i.ClosingValue)));
+    }
+
     // Mỗi kho: 1 dòng tổng (tiêu đề nhóm, số liệu = tổng các mặt hàng CÒN HIỂN THỊ của kho) rồi tới các
     // mặt hàng khớp bộ lọc; kho không còn mặt hàng nào khớp thì ẩn luôn dòng tổng.
     private void ApplyFilters()
@@ -372,7 +418,6 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
         TextMatches(i.Code, FilterCode)
         && TextMatches(i.Name, FilterName)
         && TextMatches(i.Unit, FilterUnit)
-        && TextMatches(DateText(i), FilterDate)
         && OpeningQtyFilter.Matches(i.OpeningQty)
         && OpeningValueFilter.Matches(i.OpeningValue)
         && ImportQtyFilter.Matches(i.ImportQty)
@@ -380,11 +425,18 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
         && ExportQtyFilter.Matches(i.ExportQty)
         && ExportValueFilter.Matches(i.ExportValue)
         && ClosingQtyFilter.Matches(i.ClosingQty)
-        && ClosingValueFilter.Matches(i.ClosingValue);
-
-    // Cùng định dạng cột "Ngày HT" trên lưới (yyyyMMddHHmm).
-    private static string DateText(InventorySummaryItem i) =>
-        i.LatestAccountingDate?.ToString("yyyyMMddHHmm") ?? string.Empty;
+        && ClosingValueFilter.Matches(i.ClosingValue)
+        && CodeValueFilter.Matches(i.Code)
+        && NameValueFilter.Matches(i.Name)
+        && UnitValueFilter.Matches(i.Unit)
+        && OpeningQtyValueFilter.Matches(MoneyFormat.Format(i.OpeningQty))
+        && OpeningValueValueFilter.Matches(MoneyFormat.Format(i.OpeningValue))
+        && ImportQtyValueFilter.Matches(MoneyFormat.Format(i.ImportQty))
+        && ImportValueValueFilter.Matches(MoneyFormat.Format(i.ImportValue))
+        && ExportQtyValueFilter.Matches(MoneyFormat.Format(i.ExportQty))
+        && ExportValueValueFilter.Matches(MoneyFormat.Format(i.ExportValue))
+        && ClosingQtyValueFilter.Matches(MoneyFormat.Format(i.ClosingQty))
+        && ClosingValueValueFilter.Matches(MoneyFormat.Format(i.ClosingValue));
 
     private static bool TextMatches(string? text, string filter) =>
         string.IsNullOrWhiteSpace(filter)
@@ -480,8 +532,8 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
         printDialog.PrintDocument(paginatorSource.DocumentPaginator, "Tổng hợp tồn kho");
     }
 
-    // 12 cột (A–L) giống lưới: Mã hàng, Tên hàng, ĐVT, 4 nhóm × (Số lượng, Giá trị), Ngày HT.
-    private const int ExcelLastColumn = 12;
+    // 11 cột (A–K) giống lưới: Mã hàng, Tên hàng, ĐVT, 4 nhóm × (Số lượng, Giá trị).
+    private const int ExcelLastColumn = 11;
 
     private ClosedXML.Excel.XLWorkbook BuildWorkbook()
     {
@@ -501,7 +553,7 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
         worksheet.Cell(2, 1).Style.Font.Italic = true;
         worksheet.Cell(2, 1).Style.Alignment.Horizontal = center;
 
-        // Tiêu đề 2 tầng: Mã hàng/Tên hàng/ĐVT/Ngày HT gộp dọc, mỗi nhóm số liệu gộp ngang 2 ô.
+        // Tiêu đề 2 tầng: Mã hàng/Tên hàng/ĐVT gộp dọc, mỗi nhóm số liệu gộp ngang 2 ô.
         const int headerRow = 4;
         void Merged(int row1, int col1, int row2, int col2, string text)
         {
@@ -520,7 +572,6 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
             worksheet.Cell(headerRow + 1, col).Value     = "Số lượng";
             worksheet.Cell(headerRow + 1, col + 1).Value = "Giá trị";
         }
-        Merged(headerRow, ExcelLastColumn, headerRow + 1, ExcelLastColumn, "Ngày HT");
 
         var headerRange = worksheet.Range(headerRow, 1, headerRow + 1, ExcelLastColumn);
         headerRange.Style.Font.Bold = true;
@@ -543,7 +594,6 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
             worksheet.Cell(r, 9).Value  = item.ExportValue;
             worksheet.Cell(r, 10).Value = item.ClosingQty;
             worksheet.Cell(r, 11).Value = item.ClosingValue;
-            worksheet.Cell(r, 12).SetValue(DateText(item));
             if (item.IsGroupHeader)
             {
                 var groupRow = worksheet.Range(r, 1, r, ExcelLastColumn);
@@ -597,7 +647,6 @@ public partial class TongHopTonKhoViewModel : ViewModelBase
             Margin        = new Thickness(0, 0, 0, 12),
         });
 
-        // Bản in bỏ cột Ngày HT cho vừa khổ giấy dọc (vẫn có trong lưới và file Excel).
         var table = new Table { CellSpacing = 0 };
         foreach (var width in new[] { 50, 150, 40, 48, 70, 48, 70, 48, 70, 48, 70 })
             table.Columns.Add(new TableColumn { Width = new GridLength(width) });

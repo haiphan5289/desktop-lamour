@@ -114,7 +114,7 @@
                 <DockPanel LastChildFill="True">
                     <Button DockPanel.Dock="Right"
                             Content="✕"
-                            FontSize="11"
+                            FontSize="12"
                             Padding="6,0,0,0"
                             Background="Transparent"
                             BorderThickness="0"
@@ -158,7 +158,7 @@
                                     <TextBlock Text="Mã khách hàng" FontWeight="SemiBold"/>
                                     <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
                                                             Text="{Binding DataContext.FilterCode, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
-                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                                            FontWeight="SemiBold" FontSize="12" Height="22" Margin="0,4,4,2"/>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
@@ -170,7 +170,7 @@
                                     <TextBlock Text="Tên khách hàng" FontWeight="SemiBold"/>
                                     <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
                                                             Text="{Binding DataContext.FilterName, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
-                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                                            FontWeight="SemiBold" FontSize="12" Height="22" Margin="0,4,4,2"/>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
@@ -182,7 +182,7 @@
                                     <TextBlock Text="Địa chỉ" FontWeight="SemiBold"/>
                                     <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
                                                             Text="{Binding DataContext.FilterAddress, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
-                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                                            FontWeight="SemiBold" FontSize="12" Height="22" Margin="0,4,4,2"/>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
@@ -194,7 +194,7 @@
                                     <TextBlock Text="Tỉnh" FontWeight="SemiBold"/>
                                     <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
                                                             Text="{Binding DataContext.FilterProvince, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
-                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                                            FontWeight="SemiBold" FontSize="12" Height="22" Margin="0,4,4,2"/>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
@@ -206,7 +206,7 @@
                                     <TextBlock Text="Nhóm KH" FontWeight="SemiBold"/>
                                     <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
                                                             Text="{Binding DataContext.FilterCustomerGroup, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
-                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                                            FontWeight="SemiBold" FontSize="12" Height="22" Margin="0,4,4,2"/>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
@@ -218,7 +218,7 @@
                                     <TextBlock Text="Mã số thuế" FontWeight="SemiBold"/>
                                     <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
                                                             Text="{Binding DataContext.FilterTaxCode, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
-                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                                            FontWeight="SemiBold" FontSize="12" Height="22" Margin="0,4,4,2"/>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
@@ -230,7 +230,7 @@
                                     <TextBlock Text="Điện thoại" FontWeight="SemiBold"/>
                                     <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
                                                             Text="{Binding DataContext.FilterPhone, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
-                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                                            FontWeight="SemiBold" FontSize="12" Height="22" Margin="0,4,4,2"/>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
@@ -242,7 +242,7 @@
                                     <TextBlock Text="Sale" FontWeight="SemiBold"/>
                                     <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
                                                             Text="{Binding DataContext.FilterSaleCareEmployeeName, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
-                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                                            FontWeight="SemiBold" FontSize="12" Height="22" Margin="0,4,4,2"/>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>

@@ -1,5 +1,6 @@
 // Copyright © 2026 DesktopLamour. All rights reserved.
 using DesktopLamour.Shared.Controls;
+using DesktopLamour.Shared.Helpers;
 namespace DesktopLamour.Features.HomePage.ProductList.Domain.Models;
 
 public class Product : ISearchableItem
@@ -60,4 +61,12 @@ public class Product : ISearchableItem
     // Cột lưới "Vật tư hàng hóa" (khớp MISA) — tính tại client, BE không lưu.
     public decimal StockValue     => StockQuantity * CostPrice;
     public bool    IsStopTracking => !IsActive;
+
+    // 2026-11-15: cột phụ của dropdown chọn sản phẩm (Chứng từ bán hàng / Hàng bán bị trả lại, bật qua
+    // AppSearchableComboBox.ShowStockAndPrice) — khớp MISA "Số lượng tồn | Giá bán". Tồn = tổng mọi kho.
+    // Sản phẩm cọc (Đặt cọc / Trừ cọc) không có tồn kho/giá thật → để trống, không tô đỏ.
+    // Dịch vụ vẫn hiện tồn vì BE vẫn kiểm tra đủ tồn khi ghi sổ (chỉ bỏ qua khuyến mại/cọc).
+    public string DropdownStockText    => IsDepositProduct ? string.Empty : StockQuantity.ToString("N0", MoneyFormat.ViVn);
+    public string DropdownPriceText    => IsDepositProduct ? string.Empty : MoneyFormat.Format(SellingPrice);
+    public bool   IsDropdownOutOfStock => !IsDepositProduct && StockQuantity <= 0;
 }

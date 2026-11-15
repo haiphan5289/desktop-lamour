@@ -73,7 +73,7 @@
     <Style x:Key="AppTypography.BodySection" TargetType="{x:Type controls:AppLabel}"
            BasedOn="{StaticResource {x:Type controls:AppLabel}}">
         <Setter Property="FontSize"   Value="14"/>
-        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{StaticResource AppColor.TextPrimary}"/>
         <Setter Property="Padding"    Value="0"/>
     </Style>
@@ -81,7 +81,7 @@
     <Style x:Key="AppTypography.BodyCaption" TargetType="{x:Type controls:AppLabel}"
            BasedOn="{StaticResource {x:Type controls:AppLabel}}">
         <Setter Property="FontSize"   Value="12"/>
-        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{StaticResource AppColor.TextSecondary}"/>
         <Setter Property="Padding"    Value="0"/>
     </Style>
@@ -92,7 +92,7 @@
     <Style x:Key="AppTypography.NoteSection" TargetType="{x:Type controls:AppLabel}"
            BasedOn="{StaticResource {x:Type controls:AppLabel}}">
         <Setter Property="FontSize"   Value="12"/>
-        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="FontStyle"  Value="Italic"/>
         <Setter Property="Foreground" Value="{StaticResource AppColor.TextSecondary}"/>
         <Setter Property="Padding"    Value="0"/>

@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using DesktopLamour.Core.Diagnostics;
 using DesktopLamour.Features.HomePage.Sales.Data.Services.Dtos;
 using DesktopLamour.Features.HomePage.Sales.ViewModels;
 using DesktopLamour.Shared.Controls;
@@ -67,9 +68,12 @@ public partial class SalesOrderWindow : Window
     protected override async void OnContentRendered(EventArgs e)
     {
         base.OnContentRendered(e);
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        PerfLog.Write("SalesOrderWindow: đã hiện lên màn hình, bắt đầu nạp danh mục (khách/NV/sản phẩm/kho)");
         try
         {
             await ViewModel.InitializeAsync(_initialOrder);
+            PerfLog.Write($"SalesOrderWindow: nạp danh mục xong sau {sw.ElapsedMilliseconds} ms");
         }
         catch (Exception ex)
         {

@@ -1,12 +1,14 @@
 // SignUpWithPhoneUseCaseTests.cs
 // Copyright © 2026 DesktopLamour. All rights reserved.
 
+using System.Net.Http;
 using DesktopLamour.Core.Exceptions;
 using DesktopLamour.Features.Authentication.Data.Repositories;
 using DesktopLamour.Features.Authentication.Domain.Models;
 using DesktopLamour.Features.Authentication.Domain.UseCases;
 using FluentAssertions;
 using Moq;
+using Xunit;
 
 namespace DesktopLamour.Tests.Features.Authentication;
 

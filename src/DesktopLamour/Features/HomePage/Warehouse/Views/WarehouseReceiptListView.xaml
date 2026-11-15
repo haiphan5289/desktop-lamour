@@ -67,7 +67,7 @@
                 <DockPanel LastChildFill="True">
                     <Button DockPanel.Dock="Right"
                             Content="✕"
-                            FontSize="11"
+                            FontSize="12"
                             Padding="6,0,0,0"
                             Background="Transparent"
                             BorderThickness="0"

@@ -5,8 +5,8 @@
     <!--  Text Colors                                      -->
     <!-- ================================================ -->
     <SolidColorBrush x:Key="AppColor.TextPrimary"   Color="#1A1A1A"/>
-    <SolidColorBrush x:Key="AppColor.TextSecondary" Color="#6B6B6B"/>
-    <SolidColorBrush x:Key="AppColor.TextDisabled"  Color="#B0B0B0"/>
+    <SolidColorBrush x:Key="AppColor.TextSecondary" Color="#444444"/>
+    <SolidColorBrush x:Key="AppColor.TextDisabled"  Color="#8A8A8A"/>
     <SolidColorBrush x:Key="AppColor.TextError"     Color="#D0021B"/>
     <SolidColorBrush x:Key="AppColor.TextBrand"     Color="#F28A00"/>
     <SolidColorBrush x:Key="AppColor.TextInverted"  Color="#FFFFFF"/>

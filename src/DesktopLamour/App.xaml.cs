@@ -1,6 +1,7 @@
 // App.xaml.cs
 // Copyright © 2026 DesktopLamour. All rights reserved.
 
+using DesktopLamour.Core.Http;
 using DesktopLamour.Core.Navigation;
 using DesktopLamour.Core.Storage;
 using DesktopLamour.Features.Authentication;
@@ -27,6 +28,8 @@ public partial class App : Application
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
+        ApplyTextDefaults();
+
         var config = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
@@ -40,6 +43,25 @@ public partial class App : Application
 
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow.MainWindow>();
         mainWindow.Show();
+    }
+
+    // 2026-11-15: chữ toàn app "mờ, nhạt". Style ngầm định TargetType=Window trong App.xaml KHÔNG áp
+    // cho các cửa sổ kế thừa (MainWindow và ~28 popup đều là lớp con của Window — WPF chỉ khớp implicit
+    // style theo đúng kiểu, không theo lớp cha) nên TextFormattingMode=Display của 2026-09-13 thực tế
+    // chưa từng có hiệu lực. Áp thẳng lên từng Window khi nó hiện ra; cả 2 thuộc tính đều kế thừa xuống
+    // mọi control con (kể cả popup/dropdown nằm trong cây logic của cửa sổ). Chỉ gán lên Window nên
+    // control nào đặt FontWeight/FontSize riêng vẫn giữ giá trị riêng.
+    private static void ApplyTextDefaults()
+    {
+        EventManager.RegisterClassHandler(typeof(Window), FrameworkElement.LoadedEvent,
+            new RoutedEventHandler((sender, _) =>
+            {
+                if (sender is not Window w) return;
+                System.Windows.Media.TextOptions.SetTextFormattingMode(w, System.Windows.Media.TextFormattingMode.Display);
+                System.Windows.Media.TextOptions.SetTextRenderingMode(w, System.Windows.Media.TextRenderingMode.ClearType);
+                // Segoe UI chỉ có Normal/SemiBold — SemiBold là mức đậm "vừa" duy nhất.
+                w.SetValue(System.Windows.Documents.TextElement.FontWeightProperty, FontWeights.SemiBold);
+            }));
     }
 
     private static void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
@@ -66,6 +88,10 @@ public partial class App : Application
         // Core
         services.AddSingleton<INavigationService, NavigationService>();
         services.AddSingleton<IAuthTokenStorage, InMemoryAuthTokenStorage>();
+
+        // 401 chung cho MỌI HttpClient (typed client của mọi module) — xem UnauthorizedResponseHandler.
+        services.AddTransient<UnauthorizedResponseHandler>();
+        services.ConfigureHttpClientDefaults(b => b.AddHttpMessageHandler<UnauthorizedResponseHandler>());
 
         // Windows
         services.AddTransient<MainWindow.MainWindow>();

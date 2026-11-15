@@ -1,6 +1,7 @@
 // RegisterViewModelTests.cs
 // Copyright © 2026 DesktopLamour. All rights reserved.
 
+using System.Net.Http;
 using DesktopLamour.Core.Navigation;
 using DesktopLamour.Core.Storage;
 using DesktopLamour.Features.Authentication.Domain.Models;
@@ -9,6 +10,7 @@ using DesktopLamour.Features.Authentication.ViewModels;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
+using Xunit;
 
 namespace DesktopLamour.Tests.Features.Authentication;
 

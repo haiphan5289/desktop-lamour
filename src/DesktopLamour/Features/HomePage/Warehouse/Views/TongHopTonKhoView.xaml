@@ -59,7 +59,7 @@
                BasedOn="{StaticResource {x:Type controls:AppTextField}}">
             <Setter Property="Height"              Value="22"/>
             <Setter Property="FontSize"            Value="11"/>
-            <Setter Property="FontWeight"          Value="Normal"/>
+            <Setter Property="FontWeight"          Value="SemiBold"/>
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
         </Style>
         <DataTemplate x:Key="NumberFilterTemplate" DataType="{x:Type models:NumericColumnFilter}">
@@ -71,7 +71,7 @@
                 <ComboBox Grid.Column="0"
                           ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
                           SelectedItem="{Binding Operator}"
-                          Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                          Width="34" FontSize="12" Padding="2,0" Margin="0,0,3,0">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
@@ -161,7 +161,7 @@
                 <DockPanel LastChildFill="True">
                     <Button DockPanel.Dock="Right"
                             Content="✕"
-                            FontSize="11"
+                            FontSize="12"
                             Padding="6,0,0,0"
                             Background="Transparent"
                             BorderThickness="0"
@@ -181,8 +181,8 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- Tiêu đề bảng tự vẽ: 3 hàng (nhóm 24 / tiêu đề cột 26 / ô lọc). Độ rộng 12 cột PHẢI khớp
-                     DataGrid bên dưới: 110 · 200 · 70 · 100 110 · 90 110 · 90 110 · 100 110 · 130 (tổng 1330).
+                <!-- Tiêu đề bảng tự vẽ: 3 hàng (nhóm 24 / tiêu đề cột 26 / ô lọc). Độ rộng 11 cột PHẢI khớp
+                     DataGrid bên dưới: 110 · 200 · 70 · 100 110 · 90 110 · 90 110 · 100 110 (tổng 1200).
                      Khi lưới cuộn ngang, HeaderScroll dịch theo (xem code-behind OnGridScrollChanged). -->
                 <Border x:Name="HeaderClip" Grid.Row="0" ClipToBounds="True"
                         BorderBrush="{StaticResource GroupBorderBrush}" BorderThickness="1,1,0,0">
@@ -202,7 +202,6 @@
                             <ColumnDefinition Width="110"/>
                             <ColumnDefinition Width="100"/>
                             <ColumnDefinition Width="110"/>
-                            <ColumnDefinition Width="130"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="24"/>
@@ -244,58 +243,129 @@
                         <Border Grid.Row="1" Grid.Column="9"  Style="{StaticResource HeaderCell}"><TextBlock Text="Số lượng" Style="{StaticResource HeaderText}"/></Border>
                         <Border Grid.Row="1" Grid.Column="10" Style="{StaticResource HeaderCell}"><TextBlock Text="Giá trị"  Style="{StaticResource HeaderText}"/></Border>
 
-                        <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="11" Style="{StaticResource HeaderCell}">
-                            <TextBlock Text="Ngày HT" Style="{StaticResource HeaderText}"/>
-                        </Border>
-
-                        <!-- Hàng ô lọc: lọc ngay trên dữ liệu đã nạp -->
+                        <!-- Hàng ô lọc: lọc ngay trên dữ liệu đã nạp. Mỗi ô có thêm nút ▾ mở popup
+                             checkbox value-list kiểu Excel/MISA AutoFilter (ValueListFilterButton) bên
+                             cạnh ô lọc hiện có — 2 kiểu lọc AND với nhau, không thay thế nhau. -->
                         <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource FilterCell}">
-                            <controls:AppTextField Placeholder="Lọc..." Style="{StaticResource FilterField}"
-                                                   Text="{Binding FilterCode, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="16"/>
+                                </Grid.ColumnDefinitions>
+                                <controls:AppTextField Grid.Column="0" Placeholder="Lọc..." Style="{StaticResource FilterField}"
+                                                       Text="{Binding FilterCode, UpdateSourceTrigger=PropertyChanged}"/>
+                                <controls:ValueListFilterButton Grid.Column="1" Filter="{Binding CodeValueFilter}"/>
+                            </Grid>
                         </Border>
                         <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource FilterCell}">
-                            <controls:AppTextField Placeholder="Lọc..." Style="{StaticResource FilterField}"
-                                                   Text="{Binding FilterName, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="16"/>
+                                </Grid.ColumnDefinitions>
+                                <controls:AppTextField Grid.Column="0" Placeholder="Lọc..." Style="{StaticResource FilterField}"
+                                                       Text="{Binding FilterName, UpdateSourceTrigger=PropertyChanged}"/>
+                                <controls:ValueListFilterButton Grid.Column="1" Filter="{Binding NameValueFilter}"/>
+                            </Grid>
                         </Border>
                         <Border Grid.Row="2" Grid.Column="2" Style="{StaticResource FilterCell}">
-                            <controls:AppTextField Placeholder="Lọc..." Style="{StaticResource FilterField}"
-                                                   Text="{Binding FilterUnit, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="16"/>
+                                </Grid.ColumnDefinitions>
+                                <controls:AppTextField Grid.Column="0" Placeholder="Lọc..." Style="{StaticResource FilterField}"
+                                                       Text="{Binding FilterUnit, UpdateSourceTrigger=PropertyChanged}"/>
+                                <controls:ValueListFilterButton Grid.Column="1" Filter="{Binding UnitValueFilter}"/>
+                            </Grid>
                         </Border>
                         <Border Grid.Row="2" Grid.Column="3" Style="{StaticResource FilterCell}">
-                            <ContentControl Content="{Binding OpeningQtyFilter}" Focusable="False"
-                                            ContentTemplate="{StaticResource NumberFilterTemplate}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="16"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentControl Grid.Column="0" Content="{Binding OpeningQtyFilter}" Focusable="False"
+                                                ContentTemplate="{StaticResource NumberFilterTemplate}"/>
+                                <controls:ValueListFilterButton Grid.Column="1" Filter="{Binding OpeningQtyValueFilter}"/>
+                            </Grid>
                         </Border>
                         <Border Grid.Row="2" Grid.Column="4" Style="{StaticResource FilterCell}">
-                            <ContentControl Content="{Binding OpeningValueFilter}" Focusable="False"
-                                            ContentTemplate="{StaticResource NumberFilterTemplate}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="16"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentControl Grid.Column="0" Content="{Binding OpeningValueFilter}" Focusable="False"
+                                                ContentTemplate="{StaticResource NumberFilterTemplate}"/>
+                                <controls:ValueListFilterButton Grid.Column="1" Filter="{Binding OpeningValueValueFilter}"/>
+                            </Grid>
                         </Border>
                         <Border Grid.Row="2" Grid.Column="5" Style="{StaticResource FilterCell}">
-                            <ContentControl Content="{Binding ImportQtyFilter}" Focusable="False"
-                                            ContentTemplate="{StaticResource NumberFilterTemplate}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="16"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentControl Grid.Column="0" Content="{Binding ImportQtyFilter}" Focusable="False"
+                                                ContentTemplate="{StaticResource NumberFilterTemplate}"/>
+                                <controls:ValueListFilterButton Grid.Column="1" Filter="{Binding ImportQtyValueFilter}"/>
+                            </Grid>
                         </Border>
                         <Border Grid.Row="2" Grid.Column="6" Style="{StaticResource FilterCell}">
-                            <ContentControl Content="{Binding ImportValueFilter}" Focusable="False"
-                                            ContentTemplate="{StaticResource NumberFilterTemplate}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="16"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentControl Grid.Column="0" Content="{Binding ImportValueFilter}" Focusable="False"
+                                                ContentTemplate="{StaticResource NumberFilterTemplate}"/>
+                                <controls:ValueListFilterButton Grid.Column="1" Filter="{Binding ImportValueValueFilter}"/>
+                            </Grid>
                         </Border>
                         <Border Grid.Row="2" Grid.Column="7" Style="{StaticResource FilterCell}">
-                            <ContentControl Content="{Binding ExportQtyFilter}" Focusable="False"
-                                            ContentTemplate="{StaticResource NumberFilterTemplate}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="16"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentControl Grid.Column="0" Content="{Binding ExportQtyFilter}" Focusable="False"
+                                                ContentTemplate="{StaticResource NumberFilterTemplate}"/>
+                                <controls:ValueListFilterButton Grid.Column="1" Filter="{Binding ExportQtyValueFilter}"/>
+                            </Grid>
                         </Border>
                         <Border Grid.Row="2" Grid.Column="8" Style="{StaticResource FilterCell}">
-                            <ContentControl Content="{Binding ExportValueFilter}" Focusable="False"
-                                            ContentTemplate="{StaticResource NumberFilterTemplate}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="16"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentControl Grid.Column="0" Content="{Binding ExportValueFilter}" Focusable="False"
+                                                ContentTemplate="{StaticResource NumberFilterTemplate}"/>
+                                <controls:ValueListFilterButton Grid.Column="1" Filter="{Binding ExportValueValueFilter}"/>
+                            </Grid>
                         </Border>
                         <Border Grid.Row="2" Grid.Column="9" Style="{StaticResource FilterCell}">
-                            <ContentControl Content="{Binding ClosingQtyFilter}" Focusable="False"
-                                            ContentTemplate="{StaticResource NumberFilterTemplate}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="16"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentControl Grid.Column="0" Content="{Binding ClosingQtyFilter}" Focusable="False"
+                                                ContentTemplate="{StaticResource NumberFilterTemplate}"/>
+                                <controls:ValueListFilterButton Grid.Column="1" Filter="{Binding ClosingQtyValueFilter}"/>
+                            </Grid>
                         </Border>
                         <Border Grid.Row="2" Grid.Column="10" Style="{StaticResource FilterCell}">
-                            <ContentControl Content="{Binding ClosingValueFilter}" Focusable="False"
-                                            ContentTemplate="{StaticResource NumberFilterTemplate}"/>
-                        </Border>
-                        <Border Grid.Row="2" Grid.Column="11" Style="{StaticResource FilterCell}">
-                            <controls:AppTextField Placeholder="Lọc..." Style="{StaticResource FilterField}"
-                                                   Text="{Binding FilterDate, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="16"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentControl Grid.Column="0" Content="{Binding ClosingValueFilter}" Focusable="False"
+                                                ContentTemplate="{StaticResource NumberFilterTemplate}"/>
+                                <controls:ValueListFilterButton Grid.Column="1" Filter="{Binding ClosingValueValueFilter}"/>
+                            </Grid>
                         </Border>
                     </Grid>
                 </Border>
@@ -335,9 +405,6 @@
                         <DataGridTextColumn Binding="{Binding ExportValue,  Converter={StaticResource MoneyConverter}}" Width="110" ElementStyle="{StaticResource CellNumber}"/>
                         <DataGridTextColumn Binding="{Binding ClosingQty,   Converter={StaticResource MoneyConverter}}" Width="100" ElementStyle="{StaticResource CellNumber}"/>
                         <DataGridTextColumn Binding="{Binding ClosingValue, Converter={StaticResource MoneyConverter}}" Width="110" ElementStyle="{StaticResource CellNumber}"/>
-
-                        <DataGridTextColumn Binding="{Binding LatestAccountingDate, StringFormat=\{0:yyyyMMddHHmm\}}" Width="130"
-                                            ElementStyle="{StaticResource CellText}"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>

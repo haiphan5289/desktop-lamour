@@ -31,7 +31,7 @@
                                Foreground="{StaticResource AppColor.TextBrand}"
                                VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding BuildVersion}"
-                               FontSize="11"
+                               FontSize="12"
                                Foreground="{StaticResource AppColor.TextSecondary}"
                                VerticalAlignment="Center"
                                Margin="8,3,0,0"/>

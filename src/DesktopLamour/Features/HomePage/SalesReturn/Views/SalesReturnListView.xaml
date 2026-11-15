@@ -177,7 +177,7 @@
                 <DockPanel LastChildFill="True">
                     <Button DockPanel.Dock="Right"
                             Content="✕"
-                            FontSize="11"
+                            FontSize="12"
                             Padding="6,0,0,0"
                             Background="Transparent"
                             BorderThickness="0"
@@ -267,6 +267,11 @@
                                     <Condition Binding="{Binding IsHeld}" Value="True"/>
                                     <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
+                                <!-- 2026-10-12: TextBlock của cột là Content của DataGridCell → kế thừa Foreground từ cell
+                                     (logical parent), KHÔNG từ ContentPresenter trong template. Phải set thẳng Foreground trên
+                                     cell, nếu không chữ vẫn trắng (HighlightText) trên nền cam nhạt. -->
+                                <Setter Property="Foreground" Value="{StaticResource AppColor.TextPrimary}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
                                 <Setter Property="Template">
                                     <Setter.Value>
                                         <ControlTemplate TargetType="{x:Type DataGridCell}">
@@ -301,7 +306,7 @@
                                     <TextBlock Text="Loại chứng từ" FontWeight="SemiBold"/>
                                     <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
                                                             Text="{Binding DataContext.FilterReturnType, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
-                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                                            FontWeight="SemiBold" FontSize="12" Height="22" Margin="0,4,4,2"/>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
@@ -315,7 +320,7 @@
                                     <TextBlock Text="Số chứng từ" FontWeight="SemiBold"/>
                                     <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
                                                             Text="{Binding DataContext.FilterDocumentNumber, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
-                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                                            FontWeight="SemiBold" FontSize="12" Height="22" Margin="0,4,4,2"/>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
@@ -337,7 +342,7 @@
                                         <ComboBox Grid.Column="0"
                                                   ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
                                                   SelectedItem="{Binding DataContext.AccountingDateFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                  Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                                  Width="34" FontSize="12" Padding="2,0" Margin="0,0,3,0">
                                             <ComboBox.ItemTemplate>
                                                 <DataTemplate>
                                                     <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
@@ -348,7 +353,7 @@
                                         </ComboBox>
                                         <DatePicker Grid.Column="1" HorizontalAlignment="Stretch"
                                                     SelectedDate="{Binding DataContext.AccountingDateFilter.Value, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                    FontSize="10" Height="22"/>
+                                                    FontSize="12" Height="22"/>
                                     </Grid>
                                 </StackPanel>
                             </DataTemplate>
@@ -373,7 +378,7 @@
                                         <ComboBox Grid.Column="0"
                                                   ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
                                                   SelectedItem="{Binding DataContext.DocumentDateFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                  Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                                  Width="34" FontSize="12" Padding="2,0" Margin="0,0,3,0">
                                             <ComboBox.ItemTemplate>
                                                 <DataTemplate>
                                                     <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
@@ -384,7 +389,7 @@
                                         </ComboBox>
                                         <DatePicker Grid.Column="1" HorizontalAlignment="Stretch"
                                                     SelectedDate="{Binding DataContext.DocumentDateFilter.Value, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                    FontSize="10" Height="22"/>
+                                                    FontSize="12" Height="22"/>
                                     </Grid>
                                 </StackPanel>
                             </DataTemplate>
@@ -399,7 +404,7 @@
                                     <TextBlock Text="Khách hàng" FontWeight="SemiBold"/>
                                     <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
                                                             Text="{Binding DataContext.FilterCustomerName, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
-                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                                            FontWeight="SemiBold" FontSize="12" Height="22" Margin="0,4,4,2"/>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
@@ -413,7 +418,7 @@
                                     <TextBlock Text="Nhân viên" FontWeight="SemiBold"/>
                                     <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
                                                             Text="{Binding DataContext.FilterEmployeeName, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
-                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                                            FontWeight="SemiBold" FontSize="12" Height="22" Margin="0,4,4,2"/>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
@@ -429,7 +434,7 @@
                                     <TextBlock Text="Diễn giải" FontWeight="SemiBold"/>
                                     <controls:AppTextField Placeholder="Lọc..." HorizontalAlignment="Stretch"
                                                             Text="{Binding DataContext.FilterDescription, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
-                                                            FontWeight="Normal" FontSize="11" Height="22" Margin="0,4,4,2"/>
+                                                            FontWeight="SemiBold" FontSize="12" Height="22" Margin="0,4,4,2"/>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTextColumn.HeaderTemplate>
@@ -455,7 +460,7 @@
                                         <ComboBox Grid.Column="0"
                                                   ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
                                                   SelectedItem="{Binding DataContext.TotalAmountFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                  Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                                  Width="34" FontSize="12" Padding="2,0" Margin="0,0,3,0">
                                             <ComboBox.ItemTemplate>
                                                 <DataTemplate>
                                                     <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
@@ -466,7 +471,7 @@
                                         </ComboBox>
                                         <controls:AppTextField Grid.Column="1" Placeholder="Giá trị" TextAlignment="Right" HorizontalAlignment="Stretch"
                                                                 Text="{Binding DataContext.TotalAmountFilter.ValueText, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
-                                                                FontWeight="Normal" FontSize="11" Height="22"/>
+                                                                FontWeight="SemiBold" FontSize="12" Height="22"/>
                                     </Grid>
                                 </StackPanel>
                             </DataTemplate>
@@ -493,7 +498,7 @@
                                         <ComboBox Grid.Column="0"
                                                   ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
                                                   SelectedItem="{Binding DataContext.TotalDiscountFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                  Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                                  Width="34" FontSize="12" Padding="2,0" Margin="0,0,3,0">
                                             <ComboBox.ItemTemplate>
                                                 <DataTemplate>
                                                     <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
@@ -504,7 +509,7 @@
                                         </ComboBox>
                                         <controls:AppTextField Grid.Column="1" Placeholder="Giá trị" TextAlignment="Right" HorizontalAlignment="Stretch"
                                                                 Text="{Binding DataContext.TotalDiscountFilter.ValueText, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
-                                                                FontWeight="Normal" FontSize="11" Height="22"/>
+                                                                FontWeight="SemiBold" FontSize="12" Height="22"/>
                                     </Grid>
                                 </StackPanel>
                             </DataTemplate>
@@ -537,7 +542,7 @@
                                         <ComboBox Grid.Column="0"
                                                   ItemsSource="{x:Static models:FilterOperatorSymbols.All}"
                                                   SelectedItem="{Binding DataContext.TotalPaymentFilter.Operator, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                  Width="30" FontSize="10" Padding="2,0" Margin="0,0,3,0">
+                                                  Width="34" FontSize="12" Padding="2,0" Margin="0,0,3,0">
                                             <ComboBox.ItemTemplate>
                                                 <DataTemplate>
                                                     <TextBlock Text="{Binding Converter={StaticResource FilterOperatorSymbolConverter}}"
@@ -548,7 +553,7 @@
                                         </ComboBox>
                                         <controls:AppTextField Grid.Column="1" Placeholder="Giá trị" TextAlignment="Right" HorizontalAlignment="Stretch"
                                                                 Text="{Binding DataContext.TotalPaymentFilter.ValueText, RelativeSource={RelativeSource AncestorType=DataGrid}, UpdateSourceTrigger=PropertyChanged}"
-                                                                FontWeight="Normal" FontSize="11" Height="22"/>
+                                                                FontWeight="SemiBold" FontSize="12" Height="22"/>
                                     </Grid>
                                 </StackPanel>
                             </DataTemplate>

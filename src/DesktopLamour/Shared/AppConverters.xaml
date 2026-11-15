@@ -25,5 +25,6 @@
     <converters:NullToVisibilityConverter x:Key="InverseNullToVisibilityConverter" Invert="True"/>
     <converters:AnyNotNullToVisibilityConverter x:Key="AnyNotNullToVisibilityConverter"/>
     <converters:CommandAndFlagToVisibilityConverter x:Key="CommandAndFlagToVisibilityConverter"/>
+    <converters:FilterActiveBrushConverter x:Key="FilterActiveBrushConverter"/>
 
 </ResourceDictionary>

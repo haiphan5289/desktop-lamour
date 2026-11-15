@@ -6,6 +6,40 @@
 
     <UserControl.Resources>
         <controls:SearchableItemDropdownTextConverter x:Key="DropdownTextConverter"/>
+
+        <DataTemplate x:Key="DefaultItemTemplate">
+            <TextBlock Text="{Binding Converter={StaticResource DropdownTextConverter}}"/>
+        </DataTemplate>
+
+        <!-- 2026-11-15: ShowStockAndPrice=True — bảng "Mã hàng | Tên hàng | SL tồn | Giá bán" khớp MISA.
+             Item là Product (ProductList.Domain.Models). Cột cố định để thẳng hàng với StockPriceHeader;
+             đổi bề rộng cột ở đây thì đổi luôn ở header bên dưới. -->
+        <DataTemplate x:Key="StockPriceItemTemplate">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="70"/>
+                    <ColumnDefinition Width="290"/>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="100"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding Code}" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                           ToolTip="{Binding Name}" Margin="0,0,8,0"/>
+                <TextBlock Grid.Column="2" Text="{Binding DropdownStockText}" TextAlignment="Right">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsDropdownOutOfStock}" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource AppColor.TextError}"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock Grid.Column="3" Text="{Binding DropdownPriceText}" TextAlignment="Right"/>
+            </Grid>
+        </DataTemplate>
     </UserControl.Resources>
 
     <Grid>
@@ -85,7 +119,7 @@
                 <Button x:Name="ToggleButton"
                         Grid.Column="2"
                         Content="▾"
-                        FontSize="11"
+                        FontSize="12"
                         Background="Transparent"
                         BorderThickness="0"
                         Foreground="{StaticResource AppColor.TextSecondary}"
@@ -98,7 +132,7 @@
                 <Button x:Name="ClearButton"
                         Grid.Column="2"
                         Content="✕"
-                        FontSize="10"
+                        FontSize="12"
                         Background="Transparent"
                         BorderThickness="0"
                         Foreground="{StaticResource AppColor.TextSecondary}"
@@ -129,20 +163,42 @@
                     <DropShadowEffect Color="#000000" Opacity="0.10" BlurRadius="12" ShadowDepth="2"/>
                 </Border.Effect>
 
+                <DockPanel>
+                <!-- Header cột — chỉ hiện khi ShowStockAndPrice=True. Lề trái 14 = ListBox Padding 4 +
+                     ListBoxItem Padding 10 để thẳng hàng với StockPriceItemTemplate. -->
+                <Border x:Name="StockPriceHeader"
+                        DockPanel.Dock="Top"
+                        Visibility="Collapsed"
+                        Padding="14,8,14,6"
+                        BorderThickness="0,0,0,1"
+                        BorderBrush="{StaticResource AppColor.BorderThin}">
+                    <Grid TextBlock.FontFamily="Segoe UI"
+                          TextBlock.FontSize="13"
+                          TextBlock.FontWeight="SemiBold"
+                          TextBlock.Foreground="{StaticResource AppColor.TextSecondary}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="70"/>
+                            <ColumnDefinition Width="290"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="100"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Mã hàng"/>
+                        <TextBlock Grid.Column="1" Text="Tên hàng"/>
+                        <TextBlock Grid.Column="2" Text="SL tồn" TextAlignment="Right"/>
+                        <TextBlock Grid.Column="3" Text="Giá bán" TextAlignment="Right"/>
+                    </Grid>
+                </Border>
+
                 <ListBox x:Name="ItemsList"
                          BorderThickness="0"
                          Background="Transparent"
                          Padding="4"
                          MaxHeight="200"
+                         ItemTemplate="{StaticResource DefaultItemTemplate}"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          ScrollViewer.VerticalScrollBarVisibility="Auto"
                          FontFamily="Segoe UI"
                          FontSize="14">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Converter={StaticResource DropdownTextConverter}}"/>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
                     <ListBox.ItemContainerStyle>
                         <Style TargetType="ListBoxItem">
                             <Setter Property="Padding"    Value="10,7"/>
@@ -173,6 +229,7 @@
                         </Style>
                     </ListBox.ItemContainerStyle>
                 </ListBox>
+                </DockPanel>
             </Border>
         </Popup>
 
