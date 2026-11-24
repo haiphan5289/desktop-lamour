@@ -29,5 +29,8 @@ public class SalesOrderResponseDto
     [JsonPropertyName("grand_total")]       public decimal  GrandTotal     { get; set; }
     [JsonPropertyName("created_at")]        public DateTime CreatedAt      { get; set; }
     [JsonPropertyName("status")]            public int      Status         { get; set; }
+    // 2026-11-16: khác null khi chứng từ được lưu Treo vì thiếu tồn kho (BE không còn 400 + mất đơn).
+    // Nội dung = danh sách SP thiếu tồn ("Các sản phẩm không đủ tồn kho:\n• ...").
+    [JsonPropertyName("stock_warning")]     public string?  StockWarning   { get; set; }
     [JsonPropertyName("lines")]             public List<SalesOrderLineDto> Lines { get; set; } = new();
 }

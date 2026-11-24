@@ -87,13 +87,11 @@
                 </TextBox>
 
                 <!-- Placeholder overlay -->
-                <!-- 2026-09-13: đồng bộ với AppTextField — TextDisabled (#B0B0B0) quá nhạt, đổi
-                     sang TextSecondary (#6B6B6B) cho dễ đọc hơn, vẫn phân biệt được với chữ thật. -->
                 <TextBlock x:Name="PlaceholderText"
                            Grid.Column="0"
                            FontFamily="Segoe UI"
                            FontSize="14"
-                           Foreground="{StaticResource AppColor.TextSecondary}"
+                           Foreground="{StaticResource AppColor.TextDisabled}"
                            VerticalAlignment="Center"
                            IsHitTestVisible="False"/>
 

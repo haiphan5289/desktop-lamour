@@ -471,6 +471,10 @@ public partial class SalesOrderViewModel : ViewModelBase
             // 2026-09-11: "Cất" = "Ghi sổ" ngay (BE Create/UpdateSalesOrderUseCase giờ luôn kết thúc
             // ở Normal + trừ tồn kho ngay, đảo ngược quyết định 2026-09-10). KHÔNG tự mở cửa sổ in —
             // muốn in thì bấm nút "In" trên toolbar. Giữ popup MỞ sau khi Cất để bấm "In" ngay.
+
+            // 2026-11-16: thiếu tồn kho thì BE vẫn lưu đơn ở Treo (không trừ kho) kèm stock_warning
+            // thay vì 400 — báo thiếu tồn nhưng đơn không bị mất (khớp MISA).
+            ShowStockWarningIfAny(result);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -481,6 +485,21 @@ public partial class SalesOrderViewModel : ViewModelBase
             MessageBox.Show(ex.Message, "Không thể ghi sổ", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         finally { IsBusy = false; }
+    }
+
+    // Hiện cảnh báo thiếu tồn kho (nếu có) sau khi BE đã lưu đơn ở trạng thái Treo. Đơn đã nằm trên
+    // BE nên đây chỉ là thông báo — popup vẫn giữ mở ở đơn Treo, bấm Thêm mới/Đóng để ra đơn tiếp.
+    private void ShowStockWarningIfAny(SalesOrderResponseDto result)
+    {
+        if (string.IsNullOrWhiteSpace(result.StockWarning)) return;
+
+        _logger.LogWarning("SalesOrder {Id} saved as Held due to insufficient stock", result.Id);
+        MessageBox.Show(
+            $"{result.StockWarning}\n\nChứng từ '{result.DocumentNumber}' đã được lưu ở trạng thái Treo (chưa trừ tồn kho). " +
+            "Khi đủ hàng, mở chứng từ và bấm \"Ghi sổ\".",
+            "Không đủ tồn kho",
+            MessageBoxButton.OK,
+            MessageBoxImage.Warning);
     }
 
     private void ShowPrintPreview(SalesOrderResponseDto order)
@@ -890,6 +909,8 @@ public partial class SalesOrderViewModel : ViewModelBase
             CurrentOrder = result;
             IsReadOnly   = true; // form vẫn khóa tới khi bấm "Sửa"
             _logger.LogInformation("SalesOrder {Id} toggled confirm — new status {Status}", result.Id, result.Status);
+            // Ghi sổ đơn Treo mà vẫn thiếu tồn: BE trả đơn giữ nguyên Treo + stock_warning.
+            ShowStockWarningIfAny(result);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)

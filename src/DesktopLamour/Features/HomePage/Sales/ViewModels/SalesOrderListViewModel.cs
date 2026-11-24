@@ -20,7 +20,10 @@ namespace DesktopLamour.Features.HomePage.Sales.ViewModels;
 
 public partial class SalesOrderListViewModel : ViewModelBase
 {
-    private static readonly TimeSpan SearchDebounceDelay = TimeSpan.FromMilliseconds(400);
+    private static readonly TimeSpan SearchDebounceDelay       = TimeSpan.FromMilliseconds(400);
+    // 2026-11-19 (perf): lọc theo cột chạy trong RAM nhưng mỗi phím gõ = 1 lần Refresh() toàn bộ lưới
+    // (filter lại mọi dòng + DataGrid dựng lại) — gom lại sau 250ms ngừng gõ.
+    private static readonly TimeSpan ColumnFilterDebounceDelay = TimeSpan.FromMilliseconds(250);
 
     private readonly INavigationService          _navigationService;
     private readonly IGetSalesOrdersUseCase      _getOrders;
@@ -29,7 +32,15 @@ public partial class SalesOrderListViewModel : ViewModelBase
     private readonly IConfirmSalesOrderUseCase   _confirmOrder;
     private readonly IDuplicateSalesOrderUseCase _duplicateOrder;
     private readonly Func<SalesOrderWindow>      _formWindowFactory;
-    private readonly DebounceDispatcher          _searchDebounce = new();
+    private readonly DebounceDispatcher          _searchDebounce       = new();
+    private readonly DebounceDispatcher          _columnFilterDebounce = new();
+
+    // 2026-11-19 (perf): chỉ 1 lần tải danh sách được sống tại 1 thời điểm — lần mới huỷ lần cũ, tránh
+    // kết quả cũ về sau ghi đè kết quả mới và tránh 2 lần tải song song (vd. đổi Kỳ gán cả 2 ngày).
+    private CancellationTokenSource? _loadCts;
+    // Đang gán FilterFromDate + FilterToDate trong OnSelectedPeriodChanged → chặn auto-reload từng
+    // property, tải đúng 1 lần sau khi gán xong cả 2.
+    private bool _suppressDateReload;
 
     [ObservableProperty] private bool                _isLoading;
     [ObservableProperty] private bool                _hasError;
@@ -77,11 +88,19 @@ public partial class SalesOrderListViewModel : ViewModelBase
     [ObservableProperty] private string _filterEmployeeName   = string.Empty;
     [ObservableProperty] private string _filterDescription    = string.Empty;
 
+    // Trạng thái là combobox (thao tác rời rạc) → refresh ngay; các ô gõ chữ → debounce.
     partial void OnFilterStatusChanged(string value)         => SalesOrdersView.Refresh();
-    partial void OnFilterDocumentNumberChanged(string value) => SalesOrdersView.Refresh();
-    partial void OnFilterCustomerNameChanged(string value)   => SalesOrdersView.Refresh();
-    partial void OnFilterEmployeeNameChanged(string value)   => SalesOrdersView.Refresh();
-    partial void OnFilterDescriptionChanged(string value)    => SalesOrdersView.Refresh();
+    partial void OnFilterDocumentNumberChanged(string value) => RefreshViewDebounced();
+    partial void OnFilterCustomerNameChanged(string value)   => RefreshViewDebounced();
+    partial void OnFilterEmployeeNameChanged(string value)   => RefreshViewDebounced();
+    partial void OnFilterDescriptionChanged(string value)    => RefreshViewDebounced();
+
+    private void RefreshViewDebounced()
+        => _columnFilterDebounce.Debounce(ColumnFilterDebounceDelay, _ =>
+        {
+            SalesOrdersView.Refresh();
+            return Task.CompletedTask;
+        });
 
     // 2026-09-16: thêm AccountingDateFilter — cột "Ngày hạch toán" (thêm 2026-09-14, mirror
     // SalesReturnListViewModel) trước đó chỉ hiển thị, chưa có ô lọc riêng.
@@ -93,14 +112,14 @@ public partial class SalesOrderListViewModel : ViewModelBase
 
     private void WireColumnFilters()
     {
-        AccountingDateFilter.Changed = SalesOrdersView.Refresh;
-        DocumentDateFilter.Changed  = SalesOrdersView.Refresh;
-        TotalGrossFilter.Changed    = SalesOrdersView.Refresh;
-        TotalDiscountFilter.Changed = SalesOrdersView.Refresh;
-        TotalPaymentFilter.Changed  = SalesOrdersView.Refresh;
+        AccountingDateFilter.Changed = RefreshViewDebounced;
+        DocumentDateFilter.Changed  = RefreshViewDebounced;
+        TotalGrossFilter.Changed    = RefreshViewDebounced;
+        TotalDiscountFilter.Changed = RefreshViewDebounced;
+        TotalPaymentFilter.Changed  = RefreshViewDebounced;
     }
 
-    public ObservableCollection<SalesOrderListItem> SalesOrders { get; } = new();
+    public BulkObservableCollection<SalesOrderListItem> SalesOrders { get; } = new();
 
     public ICollectionView SalesOrdersView { get; }
 
@@ -157,8 +176,8 @@ public partial class SalesOrderListViewModel : ViewModelBase
     }
 
     // Đổi ngày là thao tác rời rạc (không gõ liên tục như SearchText) — reload ngay, không debounce.
-    partial void OnFilterFromDateChanged(DateTime? value) => _ = LoadSalesOrdersCommand.ExecuteAsync(null);
-    partial void OnFilterToDateChanged(DateTime? value)   => _ = LoadSalesOrdersCommand.ExecuteAsync(null);
+    partial void OnFilterFromDateChanged(DateTime? value) { if (!_suppressDateReload) _ = LoadSalesOrdersCommand.ExecuteAsync(null); }
+    partial void OnFilterToDateChanged(DateTime? value)   { if (!_suppressDateReload) _ = LoadSalesOrdersCommand.ExecuteAsync(null); }
 
     // Lọc giờ chạy dưới SQL (server-side) thay vì trong RAM — gõ liên tục sẽ bắn 1 HTTP request mỗi
     // ký tự nếu không debounce. Chờ người dùng ngừng gõ 400ms rồi mới gọi lại API.
@@ -166,6 +185,22 @@ public partial class SalesOrderListViewModel : ViewModelBase
         => _searchDebounce.Debounce(SearchDebounceDelay, ct => LoadSalesOrdersAsync(ct));
 
     partial void OnSelectedPeriodChanged(string value)
+    {
+        var previousFrom = FilterFromDate;
+        var previousTo   = FilterToDate;
+
+        _suppressDateReload = true;
+        try
+        {
+            ApplyPeriod(value);
+        }
+        finally { _suppressDateReload = false; }
+
+        if (FilterFromDate != previousFrom || FilterToDate != previousTo)
+            _ = LoadSalesOrdersCommand.ExecuteAsync(null);
+    }
+
+    private void ApplyPeriod(string value)
     {
         var today = DateTime.Today;
         switch (value)
@@ -245,35 +280,56 @@ public partial class SalesOrderListViewModel : ViewModelBase
     [RelayCommand]
     private async Task LoadSalesOrdersAsync(CancellationToken ct = default)
     {
+        // Huỷ lần tải trước (nếu còn đang chạy) — chỉ lần mới nhất được ghi vào lưới.
+        _loadCts?.Cancel();
+        var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        _loadCts = cts;
+        var token = cts.Token;
+
         IsLoading    = true;
         HasError     = false;
         ErrorMessage = string.Empty;
         try
         {
-            var items = await _getOrders.ExecuteAsync(FilterFromDate, FilterToDate, SearchText, ct);
+            var dtos = await _getOrders.ExecuteAsync(FilterFromDate, FilterToDate, SearchText, token);
+            token.ThrowIfCancellationRequested();
 
-            SalesOrders.Clear();
-            foreach (var dto in items
-                         .Select(SalesOrderListItem.FromDto)
-                         .OrderByDescending(o => o.DocumentDate))
-                SalesOrders.Add(dto);
+            // Map/sort trên thread pool, rồi đổ vào lưới 1 lần (1 sự kiện Reset) — Clear() + Add()
+            // từng dòng cũ bắn N lần CollectionChanged, mỗi lần chạy filter + DataGrid cập nhật.
+            var items = await Task.Run(() => dtos
+                .Select(SalesOrderListItem.FromDto)
+                .OrderByDescending(o => o.DocumentDate)
+                .ToList(), token);
+            token.ThrowIfCancellationRequested();
 
-            HasSalesOrders   = SalesOrders.Count > 0;
-            TotalCount       = SalesOrders.Count;
-            TotalGrossSum    = SalesOrders.Sum(o => o.TotalGross);
-            TotalDiscountSum = SalesOrders.Sum(o => o.TotalDiscount);
-            TotalTaxSum      = SalesOrders.Sum(o => o.TotalTax);
-            TotalPaymentSum  = SalesOrders.Sum(o => o.TotalPayment);
+            SalesOrders.ReplaceAll(items);
 
-            SalesOrdersView.Refresh();
+            HasSalesOrders   = items.Count > 0;
+            TotalCount       = items.Count;
+            TotalGrossSum    = items.Sum(o => o.TotalGross);
+            TotalDiscountSum = items.Sum(o => o.TotalDiscount);
+            TotalTaxSum      = items.Sum(o => o.TotalTax);
+            TotalPaymentSum  = items.Sum(o => o.TotalPayment);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
-            HasError     = true;
-            ErrorMessage = $"Không thể tải dữ liệu: {ex.Message}";
+            if (!token.IsCancellationRequested)
+            {
+                HasError     = true;
+                ErrorMessage = $"Không thể tải dữ liệu: {ex.Message}";
+            }
         }
-        finally { IsLoading = false; }
+        finally
+        {
+            // Lần tải đã bị lần mới thay thế thì KHÔNG tắt overlay — lần mới vẫn đang chạy.
+            if (ReferenceEquals(_loadCts, cts))
+            {
+                IsLoading = false;
+                _loadCts  = null;
+            }
+            cts.Dispose();
+        }
     }
 
     [RelayCommand]
@@ -389,9 +445,16 @@ public partial class SalesOrderListViewModel : ViewModelBase
             var duplicated = await _duplicateOrder.ExecuteAsync(sourceId, ct);
             await LoadSalesOrdersAsync(ct); // tự quản lý IsLoading — reload theo đúng filter đang xem
 
-            MessageBox.Show(
-                $"Đã nhân bản chứng từ '{sourceDocumentNumber}' thành '{duplicated.DocumentNumber}'.",
-                "Nhân bản thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+            // 2026-11-16: BE lưu bản sao ở Treo (không trừ kho) kèm stock_warning nếu thiếu tồn.
+            if (!string.IsNullOrWhiteSpace(duplicated.StockWarning))
+                MessageBox.Show(
+                    $"Đã nhân bản chứng từ '{sourceDocumentNumber}' thành '{duplicated.DocumentNumber}' " +
+                    $"nhưng ở trạng thái Treo (chưa trừ tồn kho).\n\n{duplicated.StockWarning}",
+                    "Không đủ tồn kho", MessageBoxButton.OK, MessageBoxImage.Warning);
+            else
+                MessageBox.Show(
+                    $"Đã nhân bản chứng từ '{sourceDocumentNumber}' thành '{duplicated.DocumentNumber}'.",
+                    "Nhân bản thành công", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
         {

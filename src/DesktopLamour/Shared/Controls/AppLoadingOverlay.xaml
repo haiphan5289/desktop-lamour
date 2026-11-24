@@ -35,22 +35,13 @@
                              StrokeDashArray="10 33"
                              StrokeDashCap="Round"
                              RenderTransformOrigin="0.5,0.5">
+                        <!-- 2026-11-19 (perf, user báo "lâu lâu lag/đơ"): KHÔNG còn EventTrigger Loaded +
+                             Storyboard RepeatBehavior=Forever — animation đó chạy mãi kể cả khi overlay đã
+                             Collapsed (tải xong), mỗi màn/popup mở ra lại thêm 1 vòng quay ngầm bắt WPF vẽ
+                             lại liên tục. Giờ code-behind chỉ quay khi IsLoading=true và đang Loaded. -->
                         <Ellipse.RenderTransform>
                             <RotateTransform x:Name="SpinnerRotate"/>
                         </Ellipse.RenderTransform>
-                        <Ellipse.Triggers>
-                            <EventTrigger RoutedEvent="Loaded">
-                                <BeginStoryboard>
-                                    <Storyboard RepeatBehavior="Forever">
-                                        <DoubleAnimation
-                                            Storyboard.TargetName="SpinnerRotate"
-                                            Storyboard.TargetProperty="Angle"
-                                            From="0" To="360"
-                                            Duration="0:0:0.85"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                        </Ellipse.Triggers>
                     </Ellipse>
 
                 </Grid>

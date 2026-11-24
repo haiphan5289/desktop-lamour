@@ -34,7 +34,7 @@
                                           VerticalAlignment="Center"/>
                             <TextBlock x:Name="PlaceholderText"
                                        Text="{TemplateBinding Placeholder}"
-                                       Foreground="{StaticResource AppColor.TextSecondary}"
+                                       Foreground="{StaticResource AppColor.TextDisabled}"
                                        VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                        IsHitTestVisible="False"
                                        Visibility="Collapsed"/>

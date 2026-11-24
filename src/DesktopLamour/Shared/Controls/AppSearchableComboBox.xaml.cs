@@ -2,12 +2,14 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using DesktopLamour.Shared.Helpers;
+using DesktopLamour.Shared.Utilities;
 
 namespace DesktopLamour.Shared.Controls;
 
@@ -149,7 +151,7 @@ public partial class AppSearchableComboBox : UserControl
 
     // ─── Internal ─────────────────────────────────────────────────────────────
 
-    private readonly ObservableCollection<ISearchableItem> _filtered = new();
+    private readonly BulkObservableCollection<ISearchableItem> _filtered = new();
     private bool _suppressTextChange;
     // Lựa chọn ngay trước khi user bắt đầu gõ (gõ là SelectedItem bị xoá) — CommitTypedText dùng để trả lại
     // khi chữ đã gõ không khớp dòng nào.
@@ -387,24 +389,72 @@ public partial class AppSearchableComboBox : UserControl
 
     private void PopulateFiltered(string query)
     {
-        _filtered.Clear();
-        if (ItemsSource is null) return;
+        if (ItemsSource is null)
+        {
+            _filtered.ReplaceAll(Array.Empty<ISearchableItem>());
+            return;
+        }
 
         // Bỏ dấu trước khi so khớp — user gõ không dấu ("tru", "coc") vẫn cần ra kết quả có dấu
         // ("Trừ Cọc"). Chỉ "Tr" khớp trước đây vì 2 ký tự đó không dấu nên khớp thẳng; "tru"/"coc"
         // không khớp vì "ừ"/"ọ" khác hẳn "u"/"o" theo Contains thông thường.
-        var term = RemoveDiacritics(query.Trim());
+        // 2026-11-19 (perf): Code/Name đã bỏ dấu được cache theo từng item (GetSearchKey) thay vì
+        // Normalize lại toàn bộ danh mục mỗi phím gõ, và đổ kết quả vào list 1 lần (1 sự kiện Reset)
+        // thay vì Clear() + Add() từng item.
+        var term    = RemoveDiacritics(query.Trim());
+        var matches = new List<ISearchableItem>();
         foreach (var obj in ItemsSource)
         {
             if (obj is not ISearchableItem item) continue;
-            if (string.IsNullOrEmpty(term)
-                || RemoveDiacritics(item.Code).Contains(term, StringComparison.OrdinalIgnoreCase)
-                || RemoveDiacritics(item.Name).Contains(term, StringComparison.OrdinalIgnoreCase)
+            if (string.IsNullOrEmpty(term))
+            {
+                matches.Add(item);
+                continue;
+            }
+
+            var key = GetSearchKey(item);
+            if (key.Code.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || key.Name.Contains(term, StringComparison.OrdinalIgnoreCase)
                 || (item.Phone is { Length: > 0 } phone && phone.Contains(term, StringComparison.OrdinalIgnoreCase)))
             {
-                _filtered.Add(item);
+                matches.Add(item);
             }
         }
+
+        _filtered.ReplaceAll(matches);
+    }
+
+    // Cache Code/Name đã bỏ dấu theo instance item — weak nên không giữ item sống thêm sau khi danh
+    // mục được nạp lại. Nếu Code/Name của item đổi thì tự tính lại.
+    private sealed class SearchKey
+    {
+        public required string RawCode { get; init; }
+        public required string RawName { get; init; }
+        public required string Code    { get; init; }
+        public required string Name    { get; init; }
+    }
+
+    private static readonly ConditionalWeakTable<ISearchableItem, SearchKey> SearchKeys = new();
+
+    private static SearchKey GetSearchKey(ISearchableItem item)
+    {
+        var rawCode = item.Code ?? string.Empty;
+        var rawName = item.Name ?? string.Empty;
+
+        if (SearchKeys.TryGetValue(item, out var cached)
+            && ReferenceEquals(cached.RawCode, rawCode)
+            && ReferenceEquals(cached.RawName, rawName))
+            return cached;
+
+        var key = new SearchKey
+        {
+            RawCode = rawCode,
+            RawName = rawName,
+            Code    = RemoveDiacritics(rawCode),
+            Name    = RemoveDiacritics(rawName),
+        };
+        SearchKeys.AddOrUpdate(item, key);
+        return key;
     }
 
     // Chuẩn hoá bỏ dấu tiếng Việt để filter không phân biệt có dấu/không dấu. FormD tách ký tự có
