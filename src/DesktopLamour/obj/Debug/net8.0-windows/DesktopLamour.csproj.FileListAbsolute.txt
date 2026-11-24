@@ -178,3 +178,14 @@
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/WarehouseReceiptPrintWindow.baml
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Shared/Controls/DocumentToolbar.baml
 /Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Shared/Controls/DocumentToolbar.g.cs
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Accounting/Views/CashLedgerDetailReportView.g.cs
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Accounting/Views/CashLedgerReportFilterWindow.g.cs
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Accounting/Views/ReceiptPrintWindow.g.cs
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/TongHopTonKhoParamsWindow.g.cs
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Shared/Controls/ValueListFilterButton.g.cs
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Accounting/Views/CashLedgerDetailReportView.baml
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Accounting/Views/CashLedgerReportFilterWindow.baml
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Accounting/Views/ReceiptPrintWindow.baml
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Features/HomePage/Warehouse/Views/TongHopTonKhoParamsWindow.baml
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Shared/Controls/ValueListFilterButton.baml
+/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/obj/Debug/net8.0-windows/Shared/Styles/AppNumberStyles.baml

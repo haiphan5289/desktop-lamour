@@ -58,4 +58,10 @@ F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Shared/Styles/A
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Shared/Styles/AppTextFieldStyles.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Themes/AppTypography.xaml;;
 F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Warehouse/Views/WarehouseReceiptPrintWindow.xaml;;
+F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Accounting/Views/CashLedgerDetailReportView.xaml;;
+F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Accounting/Views/CashLedgerReportFilterWindow.xaml;;
+F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Accounting/Views/ReceiptPrintWindow.xaml;;
+F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Features/HomePage/Warehouse/Views/TongHopTonKhoParamsWindow.xaml;;
+F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Shared/Controls/ValueListFilterButton.xaml;;
+F/Users/haiphan/Desktop/haiphan/desktop-lamour/src/DesktopLamour/Shared/Styles/AppNumberStyles.xaml;;
 
